@@ -9,6 +9,7 @@ tool — so it can be published and used with any LLM or agent framework.
 
 Each folder is one self-contained skill:
 
+- `architectural-decision-records/` — capture the *why* of significant decisions as MADR/Nygard ADRs
 - `comprehensive-test-strategy/` — test pyramid, contract, load/performance, chaos, quality gates
 - `compliance-data-lifecycle/` — SOC2/ISO, GDPR/CCPA, audit logging, retention, safe migrations & DR
 - `enterprise-architecture-standards/` — architecture styles, DB design, microservices, resilience, scalability
@@ -60,3 +61,10 @@ vendor.
 - Content contains no model, company, or product names — safe to share publicly.
 - Skill folder names are kebab-case and match the frontmatter `name`, which is
   what most loaders key on.
+
+## Acknowledgements
+
+The `architectural-decision-records` skill adapts the ADR practice and templates
+from the ADR community (https://adr.github.io/), Michael Nygard's original ADR
+concept ("Documenting Architecture Decisions", 2011), and the MADR project
+(https://adr.github.io/madr/).
