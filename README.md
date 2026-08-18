@@ -1,70 +1,306 @@
 # Engineering Standards — Portable Agent Skills
 
-A set of six model-agnostic "skills": condensed, actionable engineering
-standards that an AI coding agent (or a person) can load as context. The
-content is vendor-neutral — no reference to any specific model, assistant, or
-tool — so it can be published and used with any LLM or agent framework.
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+![Skills](https://img.shields.io/badge/skills-7-blue.svg)
+![Vendor-neutral](https://img.shields.io/badge/vendor-neutral-informational.svg)
 
-## What's in here
+A set of seven model-agnostic **skills**: condensed, actionable engineering
+standards that an AI coding agent — or a person — can load as context. Each one
+encodes the judgment a senior engineer applies to a change (how to secure it,
+how to test it, how to release it, why it was decided that way) so that *every*
+change can meet the same bar, not just the ones a specialist happens to review.
 
-Each folder is one self-contained skill:
+The content is deliberately **vendor-neutral** — no reference to any specific
+model, assistant, or tool — so it works with any LLM or agent framework, and
+reads perfectly well as plain engineering documentation for a human.
 
-- `architectural-decision-records/` — capture the *why* of significant decisions as MADR/Nygard ADRs
-- `comprehensive-test-strategy/` — test pyramid, contract, load/performance, chaos, quality gates
-- `compliance-data-lifecycle/` — SOC2/ISO, GDPR/CCPA, audit logging, retention, safe migrations & DR
-- `enterprise-architecture-standards/` — architecture styles, DB design, microservices, resilience, scalability
-- `owasp-secure-coding-bdd/` — OWASP threat-modeling checklists as BDD security scenarios
-- `release-deployment-safety/` — zero-downtime deploys, canary/blue-green, feature flags, rollback
-- `sre-operational-readiness/` — SLIs/SLOs, golden signals, alerting, incident response, runbooks
+> **New to this?** Think of a skill as a short, expert checklist your AI coding
+> assistant reads automatically when it's relevant — "you're touching auth, so
+> here's how to not get owned." You don't have to remember to ask; the skill's
+> description tells the tool when to pull it in.
 
-## Format
+---
 
-Every skill is a folder containing:
+## Table of contents
+
+- [Why this exists](#why-this-exists)
+- [The skills](#the-skills)
+- [What is a "skill"?](#what-is-a-skill)
+- [Install and use](#install-and-use)
+- [How the skills fit together](#how-the-skills-fit-together)
+- [Design principles](#design-principles)
+- [Contributing](#contributing)
+- [Repository layout](#repository-layout)
+- [License](#license)
+- [Acknowledgements](#acknowledgements)
+
+---
+
+## Why this exists
+
+Most of what separates production-grade software from a working prototype is
+**judgment that lives in people's heads**: the security engineer who knows the
+lockout check has to run before the delete, the SRE who insists on an SLO before
+launch, the architect who writes down *why* Postgres and not DynamoDB. That
+knowledge is unevenly distributed, easy to forget under deadline pressure, and
+almost never applied consistently to every change.
+
+These skills move that judgment out of people's heads and into loadable context.
+An agent (or a person) working on a feature pulls in the relevant standard and
+applies it *as part of doing the work* — threat-modeling the input, writing the
+test pyramid, recording the decision, planning the zero-downtime migration —
+instead of hoping a reviewer catches what was missed.
+
+Two audiences get value from the same files:
+
+- **Engineers and agent users** get a drop-in standard that holds the line on
+  security, testing, architecture, release safety, and operability.
+- **Learners** get a concrete, readable picture of what disciplined,
+  senior-level engineering actually looks like in practice — the checklists, the
+  trade-offs, the "don't ship it until…" bars.
+
+---
+
+## The skills
+
+Each folder is one self-contained skill. The **Triggers on** column is the gist
+of the skill's `description` — the text agent tooling uses to decide when to
+load it automatically.
+
+| Skill | What it enforces | Triggers on | Reference depth |
+|---|---|---|---|
+| [`enterprise-architecture-standards`](enterprise-architecture-standards/) | System & data architecture, microservices, resilience, scalability | Designing/architecting/refactoring a service, schema, API, or system | 9 refs |
+| [`architectural-decision-records`](architectural-decision-records/) | Capturing the *why* of significant decisions as MADR / Nygard ADRs | Any architecturally-significant choice: datastore, framework, contract, auth model | 5 refs · 2 scripts |
+| [`owasp-secure-coding-bdd`](owasp-secure-coding-bdd/) | OWASP threat-modeling turned into `@security` BDD scenarios | Auth, input, sessions, files, APIs, permissions, dependencies, AI/LLM code | 15 refs |
+| [`comprehensive-test-strategy`](comprehensive-test-strategy/) | The full test pyramid beyond behavioral BDD | Any code others depend on: unit/integration/e2e, contract, load, chaos, coverage gates | 5 refs |
+| [`release-deployment-safety`](release-deployment-safety/) | Shipping at scale without outages | Deploy, release, roll out, migration, cutover, hotfix, rollback, feature flag | 5 refs |
+| [`sre-operational-readiness`](sre-operational-readiness/) | Google-style SRE: is it safe to run in production? | SLOs, monitoring, alerting, on-call, incidents, runbooks, "how do we know it broke?" | 5 refs |
+| [`compliance-data-lifecycle`](compliance-data-lifecycle/) | Privacy, audit, retention, and safe data migrations / DR | PII, GDPR/CCPA, SOC2/ISO, audit logs, retention, backups, RTO/RPO | 5 refs |
+
+### What each one actually makes you do
+
+**`enterprise-architecture-standards`** — Applies the architecture, database,
+integration, resilience, and performance standards you'd expect from a senior
+team at a large company. Picks an architecture style deliberately, designs the
+schema for real trade-offs, chooses sync vs async on purpose, and builds in
+timeouts, retries, and backpressure rather than bolting them on later.
+
+**`architectural-decision-records`** — Treats a decision as unfinished until its
+*why* is written down. Produces a numbered ADR (MADR by default, Nygard for the
+small ones) in the same PR as the code, naming the options you *didn't* pick and
+the consequences you're accepting. Ships with scripts to scaffold and validate
+records.
+
+**`owasp-secure-coding-bdd`** — Runs a threat-modeling pass against the full
+OWASP Cheat Sheet Series (bundled locally — no web lookup), applies the matching
+secure-coding measures, and writes the result as executable `@security` Gherkin
+scenarios. Always runs the lockout / accidental-deletion safety check before any
+permission, access, or deletion change.
+
+**`comprehensive-test-strategy`** — Owns the ~70% of testing that behavioral BDD
+doesn't: the unit/integration/e2e pyramid, consumer-driven contract tests
+between services, load and chaos testing, property-based tests, and
+coverage/mutation quality gates — plus how to keep flaky tests from rotting the
+suite.
+
+**`release-deployment-safety`** — Turns "we merged it" into "it's safely live":
+zero-downtime deploys, canary / blue-green / rolling rollout, feature flags,
+instant rollback, and backward-compatible (expand/contract) database migrations
+so a deploy never takes the system down.
+
+**`sre-operational-readiness`** — Answers "is this safe to run?" *before* launch:
+SLIs/SLOs and error budgets, the four golden signals, symptom-based alerts that
+don't page on noise, incident response, blameless postmortems, runbooks, and a
+production-readiness review.
+
+**`compliance-data-lifecycle`** — Handles personal and regulated data
+responsibly: data classification, retention and deletion, tamper-evident audit
+logging, GDPR/CCPA data-subject rights, plus the mechanics of safe schema/data
+migrations, backups, and disaster recovery (RTO/RPO).
+
+---
+
+## What is a "skill"?
+
+A skill is a folder built around a single `SKILL.md` file, with optional
+supporting material the agent reads only when it needs the detail:
 
 ```
 <skill-name>/
   SKILL.md          # YAML frontmatter (name + description) + Markdown instructions
-  references/*.md    # deep-dive reference material the agent reads on demand
+  references/*.md   # deep-dive material, read on demand ("progressive disclosure")
+  scripts/*         # optional helper scripts the skill can run
+  assets/*          # optional drop-in files (templates, snippets)
 ```
 
-`SKILL.md` uses a tiny YAML front-matter header followed by plain Markdown:
+`SKILL.md` is a tiny YAML front-matter header followed by plain Markdown:
 
 ```yaml
 ---
-name: <skill-name>
-description: <when to use this skill — used for automatic triggering>
+name: architectural-decision-records
+description: "When to use this skill — the text used for automatic triggering"
 ---
 # ...instructions in Markdown...
 ```
 
-This is intentionally the lowest common denominator: any tool that supports
-the SKILL.md convention reads it natively, and any model that doesn't can
-still consume the file as ordinary Markdown. Nothing here is tied to one
-vendor.
+Two ideas make this work:
 
-## How to use it with different agents/models
+- **The `description` is a router.** Agent tooling reads it to decide whether the
+  skill is relevant to the task at hand, so it's written as *when to use this*,
+  not *what this is*.
+- **Progressive disclosure.** `SKILL.md` stays short and scannable; the heavy
+  detail lives in `references/*.md` and is loaded only when the task actually
+  needs it. That keeps the agent's context lean.
 
-- **Claude Code / SKILL.md-aware tools:** drop each `<skill-name>/` folder into
-  your skills directory (personal `~/.claude/skills/`, project `.claude/skills/`,
-  or a plugin). The agent auto-loads a skill when its `description` matches the task.
-- **Cursor / Copilot / Windsurf / rules-based tools:** point your project rules
-  at the relevant `SKILL.md` (or copy its body into your rules file). The
-  `references/*.md` files can be attached on demand.
-- **Any other model / custom agent:** treat `SKILL.md` as a system-prompt or
-  retrieval document. Load the frontmatter `description` to decide relevance,
-  then feed the Markdown body (and any referenced file) as context.
+This is intentionally the lowest common denominator: any tool that supports the
+SKILL.md convention reads it natively, and any model that doesn't can still
+consume the file as ordinary Markdown. Nothing here is tied to one vendor.
 
-## Publishing notes
+---
 
-- All frontmatter is valid YAML (descriptions containing `:` are quoted, so
-  strict parsers won't choke).
-- Content contains no model, company, or product names — safe to share publicly.
-- Skill folder names are kebab-case and match the frontmatter `name`, which is
-  what most loaders key on.
+## Install and use
+
+### SKILL.md-aware agents (e.g. Claude Code)
+
+Drop each `<skill-name>/` folder into a skills directory. The agent auto-loads a
+skill when its `description` matches the task.
+
+- **Personal (all your projects):** copy folders into `~/.claude/skills/`.
+- **Project (shared with the repo):** copy them into `.claude/skills/` and commit.
+- **As a plugin / bundle:** vendor this whole repo and point your skills path at it.
+
+```bash
+# personal install of one skill
+git clone https://github.com/techfleetworks/enterprise-software-AI-skills
+cp -r enterprise-software-AI-skills/architectural-decision-records ~/.claude/skills/
+```
+
+### Rules-based tools (Cursor, Copilot, Windsurf, …)
+
+Point your project rules at the relevant `SKILL.md`, or copy its body into your
+rules file. Attach the `references/*.md` files on demand when you're working in
+that area.
+
+### Any other model / custom agent / RAG
+
+Treat `SKILL.md` as a system-prompt fragment or a retrieval document. Use the
+frontmatter `description` to decide relevance, then feed the Markdown body (and
+any referenced file) as context. Because everything is plain Markdown, it drops
+straight into a vector store or a prompt without conversion.
+
+---
+
+## How the skills fit together
+
+No skill stands alone. A single feature usually pulls in several, and they
+reference each other on purpose — architecture decides the shape, ADRs record
+*why*, security and testing prove it, release and SRE get it safely live and
+keep it healthy, and compliance governs the data underneath.
+
+```mermaid
+flowchart TD
+    ARCH[enterprise-architecture-standards<br/>the *what* and *how*]
+    ADR[architectural-decision-records<br/>the *why*]
+    SEC[owasp-secure-coding-bdd<br/>security]
+    TEST[comprehensive-test-strategy<br/>proof it works]
+    REL[release-deployment-safety<br/>ship it safely]
+    SRE[sre-operational-readiness<br/>keep it healthy]
+    COMP[compliance-data-lifecycle<br/>govern the data]
+
+    ARCH -->|significant choices recorded as| ADR
+    ARCH -->|threat-modeled by| SEC
+    ARCH -->|verified by| TEST
+    SEC -->|expressed as @security scenarios in| TEST
+    TEST -->|gates the| REL
+    REL -->|canary signals watched by| SRE
+    COMP -->|constrains schema & migrations in| REL
+    COMP -.->|controls checked by| SEC
+    ADR -.->|links to tests, security, runbooks| SRE
+```
+
+The `architectural-decision-records` skill is the connective tissue: its records
+point at the tests that confirm a decision, the security scenarios it implies,
+and the operational plan it constrains.
+
+---
+
+## Design principles
+
+- **Vendor-neutral.** No model, company, or product names in skill content, so a
+  skill works with any LLM or agent framework — and reads fine to a human.
+- **Actionable over exhaustive.** Skills are condensed *working standards*, not
+  textbooks. `SKILL.md` stays scannable; depth goes in `references/`.
+- **Progressive disclosure.** Load the short instructions first; pull heavy
+  reference material only when the task needs it.
+- **Standards are non-optional, applied quietly.** The skills hold a firm bar
+  ("not done until it's tested / secured / recorded"), but by *doing* the work as
+  part of the task — not by lecturing the user about process.
+- **Right-sized.** A three-line Nygard ADR for a small decision; the full test
+  pyramid only for code others depend on. The skills tell you when *less* is
+  correct, too.
+
+---
+
+## Contributing
+
+Contributions and forks are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for
+the full guide. In short:
+
+1. Keep it **vendor-neutral** (no model/company/product names).
+2. Follow the **format**: `SKILL.md` with valid YAML frontmatter (quote any
+   `description` containing a `:`), depth in `references/`, kebab-case folder name
+   matching the frontmatter `name`.
+3. Open a PR describing what the skill helps an agent do and *when it should
+   trigger* — the `description` is what tools use for automatic selection.
+
+Adding a new skill is as small as one file:
+
+```yaml
+---
+name: your-skill-name
+description: "When to use this skill — used for automatic triggering"
+---
+# Instructions in Markdown...
+```
+
+---
+
+## Repository layout
+
+```
+.
+├── enterprise-architecture-standards/
+├── architectural-decision-records/
+├── owasp-secure-coding-bdd/
+├── comprehensive-test-strategy/
+├── release-deployment-safety/
+├── sre-operational-readiness/
+├── compliance-data-lifecycle/
+├── CONTRIBUTING.md
+├── LICENSE
+└── README.md
+```
+
+Every skill folder follows the same `SKILL.md` + `references/` (+ optional
+`scripts/`, `assets/`) shape described above.
+
+---
+
+## License
+
+[MIT](LICENSE) © Tech Fleet. Use, fork, adapt, and redistribute freely with
+attribution.
+
+---
 
 ## Acknowledgements
 
 The `architectural-decision-records` skill adapts the ADR practice and templates
-from the ADR community (https://adr.github.io/), Michael Nygard's original ADR
-concept ("Documenting Architecture Decisions", 2011), and the MADR project
-(https://adr.github.io/madr/).
+from the ADR community ([adr.github.io](https://adr.github.io/)), Michael
+Nygard's original ADR concept ("Documenting Architecture Decisions", 2011), and
+the MADR project ([adr.github.io/madr](https://adr.github.io/madr/)).
+
+The `owasp-secure-coding-bdd` skill is grounded in the
+[OWASP Cheat Sheet Series](https://cheatsheetseries.owasp.org/), © the OWASP
+Foundation.
