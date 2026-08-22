@@ -2,14 +2,20 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
-![Skills](https://img.shields.io/badge/skills-7-blue.svg)
+![Skills](https://img.shields.io/badge/skills-10-blue.svg)
 ![Vendor-neutral](https://img.shields.io/badge/vendor-neutral-informational.svg)
 
-A set of seven model-agnostic **skills**: condensed, actionable engineering
+A set of ten model-agnostic **skills**: condensed, actionable engineering
 standards that an AI coding agent — or a person — can load as context. Each one
 encodes the judgment a senior engineer applies to a change (how to secure it,
 how to test it, how to release it, why it was decided that way) so that *every*
 change can meet the same bar, not just the ones a specialist happens to review.
+
+They come in two groups: **seven engineering-standards** skills at the top level
+(security, testing, architecture, release, SRE, compliance, ADRs) and three
+**[requirements](requirements/)** skills that make what you build work for
+*everyone* — every browser and device, every ability, and anyone regardless of
+context or expertise.
 
 The content is deliberately **vendor-neutral** — no reference to any specific
 model, assistant, or tool — so it works with any LLM or agent framework, and
@@ -26,6 +32,7 @@ reads perfectly well as plain engineering documentation for a human.
 
 - [Why this exists](#why-this-exists)
 - [The skills](#the-skills)
+- [Requirements skills (universal quality)](#requirements-skills-universal-quality)
 - [What is a "skill"?](#what-is-a-skill)
 - [Install and use](#install-and-use)
 - [How the skills fit together](#how-the-skills-fit-together)
@@ -118,6 +125,28 @@ production-readiness review.
 responsibly: data classification, retention and deletion, tamper-evident audit
 logging, GDPR/CCPA data-subject rights, plus the mechanics of safe schema/data
 migrations, backups, and disaster recovery (RTO/RPO).
+
+---
+
+## Requirements skills (universal quality)
+
+The seven skills above make software **correct**. These three, grouped under
+[`requirements/`](requirements/), make it **usable by everyone** — every browser
+and device, every ability, and anyone regardless of context, literacy, or
+expertise. Where the engineering skills ask "is this built, secured, tested, and
+operable correctly?", these ask "can anyone actually *use* what we built?"
+
+| Skill | What it enforces | Triggers on |
+|---|---|---|
+| [`universal-browser-device-support`](requirements/universal-browser-device-support/) | Bug-free rendering and behavior across every supported browser engine and device | Any HTML/CSS/JS/UI change, responsive layout, "broken in Safari," mobile/touch, polyfills |
+| [`universal-accessibility-wcag`](requirements/universal-accessibility-wcag/) | WCAG 2.2 AA conformance so keyboard, screen-reader, and magnifier users aren't locked out | Forms, images, color/contrast, focus, keyboard, ARIA, screen readers, "a11y" |
+| [`usability-ux-universal-design`](requirements/usability-ux-universal-design/) | User-friendly, intuitive design for the widest range of people and situations | New UI/flows, navigation, onboarding, empty/error states, microcopy, "is this confusing?" |
+
+They layer, and are best applied in order on any UI change: **compatible** (it
+renders and works wherever the user is) → **accessible** (it's possible to use
+with any ability — the non-negotiable, often legally-required floor) → **usable**
+(it's effortless and approachable for anyone on top of that). See the
+[requirements README](requirements/README.md) for how they fit together.
 
 ---
 
@@ -277,13 +306,20 @@ description: "When to use this skill — used for automatic triggering"
 ├── release-deployment-safety/
 ├── sre-operational-readiness/
 ├── compliance-data-lifecycle/
+├── requirements/                          # universal-quality skills (grouped)
+│   ├── universal-browser-device-support/
+│   ├── universal-accessibility-wcag/
+│   ├── usability-ux-universal-design/
+│   └── README.md
 ├── CONTRIBUTING.md
 ├── LICENSE
 └── README.md
 ```
 
 Every skill folder follows the same `SKILL.md` + `references/` (+ optional
-`scripts/`, `assets/`) shape described above.
+`scripts/`, `assets/`) shape described above. The three universal-quality skills
+are grouped one level down under `requirements/`; each is still its own
+self-contained skill folder.
 
 ---
 
