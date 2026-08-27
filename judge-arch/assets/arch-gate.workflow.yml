@@ -8,6 +8,10 @@ on:
   push:
     branches: [main]
 
+# Least-privilege: the gate only needs to read the checkout.
+permissions:
+  contents: read
+
 jobs:
   arch-gate:
     runs-on: ubuntu-latest
