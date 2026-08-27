@@ -454,5 +454,4 @@ The `owasp-secure-coding-bdd` skill is grounded in the
 Foundation.
 
 The `judge-arch` and `arch-encode` skills are adapted from the workshop
-**"Who's Designing Your System? You, or Your Agent?"** — a certificates.dev / TechFleet workshop
-presented by Alex ([recording](https://www.youtube.com/live/b-Pom28zv7M)).
+**"Who's Designing Your System? You, or Your Agent?"** — a certificates.dev workshop
