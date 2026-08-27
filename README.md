@@ -2,17 +2,20 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
-![Skills](https://img.shields.io/badge/skills-10-blue.svg)
+![Skills](https://img.shields.io/badge/skills-12-blue.svg)
 ![Vendor-neutral](https://img.shields.io/badge/vendor-neutral-informational.svg)
 
-A set of ten model-agnostic **skills**: condensed, actionable engineering
+Created and maintained by **[Tech Fleet](https://techfleet.org)**.
+
+A set of twelve model-agnostic **skills**: condensed, actionable engineering
 standards that an AI coding agent — or a person — can load as context. Each one
 encodes the judgment a senior engineer applies to a change (how to secure it,
 how to test it, how to release it, why it was decided that way) so that *every*
 change can meet the same bar, not just the ones a specialist happens to review.
 
-They come in two groups: **seven engineering-standards** skills at the top level
-(security, testing, architecture, release, SRE, compliance, ADRs) and three
+They come in two groups: **nine engineering-standards** skills at the top level
+(security, testing, architecture, release, SRE, compliance, ADRs, plus architectural
+review and rule-encoding) and three
 **[requirements](requirements/)** skills that make what you build work for
 *everyone* — every browser and device, every ability, and anyone regardless of
 context or expertise.
@@ -84,6 +87,8 @@ load it automatically.
 | [`release-deployment-safety`](release-deployment-safety/) | Shipping at scale without outages | Deploy, release, roll out, migration, cutover, hotfix, rollback, feature flag | 5 refs |
 | [`sre-operational-readiness`](sre-operational-readiness/) | Google-style SRE: is it safe to run in production? | SLOs, monitoring, alerting, on-call, incidents, runbooks, "how do we know it broke?" | 5 refs |
 | [`compliance-data-lifecycle`](compliance-data-lifecycle/) | Privacy, audit, retention, and safe data migrations / DR | PII, GDPR/CCPA, SOC2/ISO, audit logs, retention, backups, RTO/RPO | 5 refs |
+| [`judge-arch`](judge-arch/) | Reviewing a change against the four questions and blocking drift mechanically | Before "done"/PR: reviewing a diff, branch, or area for architectural drift | 4 refs · 1 script |
+| [`arch-encode`](arch-encode/) | Turning a caught mistake into a specific, tested, enforced rule | After catching drift; "add a rule so this never happens again" | 2 refs |
 
 ### What each one actually makes you do
 
@@ -125,6 +130,19 @@ production-readiness review.
 responsibly: data classification, retention and deletion, tamper-evident audit
 logging, GDPR/CCPA data-subject rights, plus the mechanics of safe schema/data
 migrations, backups, and disaster recovery (RTO/RPO).
+
+**`judge-arch`** — Reads a change the way a skeptical senior architect would, in
+a *fresh context*, against four questions — is it in the right place, who owns
+this data, what does it now depend on, what happens when it breaks — and reports
+findings (not fixes), or PASS. Ships a dependency-free mechanical gate
+(`arch-gate.mjs`) so the checkable rules *block a merge* instead of merely being
+suggested. This is the review-and-enforce layer that makes the other skills'
+standards actually hold.
+
+**`arch-encode`** — Turns a caught mistake into a durable rule: a specific
+negative code example placed where the code lives, wired into the mechanical gate
+when it's checkable, then *proven* to hold by reverting, clearing context, and
+re-running the task. Keeps rule files lean and non-contradictory.
 
 ---
 
@@ -220,6 +238,91 @@ straight into a vector store or a prompt without conversion.
 
 ---
 
+## Adopt the architecture gate — step by step
+
+The `judge-arch` and `arch-encode` skills come with a **mechanical gate** so your standards are
+*enforced*, not merely suggested. Here is how a team adopts them in a repo — about ten minutes,
+and your existing code does **not** have to be clean first.
+
+> On a **React + Supabase** codebase, skip the hand-configuration: use the ready
+> [`react-supabase` preset](judge-arch/assets/presets/react-supabase/) — it's steps 2–3 done for you.
+
+**1 · Get the skills into the repo.** Clone this repo (or vendor it as a plugin), then copy the two
+governance skills into your repo's committed skills directory so every teammate's agent loads them:
+
+```bash
+git clone https://github.com/techfleetworks/enterprise-software-AI-skills
+cp -r enterprise-software-AI-skills/judge-arch   .claude/skills/
+cp -r enterprise-software-AI-skills/arch-encode  .claude/skills/
+git add .claude/skills && git commit -m "Add architecture review + gate skills"
+```
+
+**2 · Turn on the always-on rules.** Copy the vendor-neutral baseline into your repo's `AGENTS.md`
+(create it if absent), drop the scoped rules into the folders they govern, and seed a `decisions.md`
+you fill with pointers to your *own* good code:
+
+```bash
+cp enterprise-software-AI-skills/judge-arch/assets/AGENTS.baseline.md      AGENTS.md
+cp enterprise-software-AI-skills/judge-arch/assets/decisions.template.md   decisions.md
+# scoped rules, e.g.: src/components/AGENTS.md, src/services/AGENTS.md, supabase/functions/AGENTS.md
+```
+
+**3 · Install the mechanical gate.** The scanner is dependency-free (no `npm install`):
+
+```bash
+cp enterprise-software-AI-skills/judge-arch/scripts/arch-gate.mjs                 scripts/arch-gate.mjs
+cp enterprise-software-AI-skills/judge-arch/assets/arch-gate.config.example.json  arch-gate.config.json
+# edit arch-gate.config.json so its globs + forbidden patterns match your layers
+```
+
+**4 · Baseline your existing debt (so the gate is green on day one).** Generate a waiver file that
+grandfathers every *current* violation. The gate then blocks **new** violations while your backlog
+is enumerated and dated — a ratchet that only tightens:
+
+```bash
+node scripts/arch-gate.mjs --baseline > arch-gate.waivers.json
+```
+
+**5 · Wire it into CI and your hooks.**
+
+```jsonc
+// package.json  →  scripts
+"check:architecture":     "node scripts/arch-gate.mjs --changed",  // the PR ratchet
+"check:architecture:all": "node scripts/arch-gate.mjs"             // full drift scan
+```
+```bash
+cp enterprise-software-AI-skills/judge-arch/assets/arch-gate.workflow.yml  .github/workflows/arch-gate.yml
+# and add `npm run check:architecture` to your pre-push hook
+```
+
+From now on, **nothing is "done" until `check:architecture` exits 0 and a `judge-arch` review is
+clean or explicitly waived.** The only bypass is a dated, attributed waiver — never a self-declared
+"it's trivial." When you catch a *new* bad pattern, use `arch-encode` to turn it into a rule + gate
+check so it can't come back.
+
+### Where each file goes, and what to change
+
+Everything here is either the **shared standard** (use unchanged) or a **template** you copy into
+your repo and fill in with your own specifics. The full per-file map is in
+[`judge-arch/references/adoption.md`](judge-arch/references/adoption.md); the essentials:
+
+| From the clone | Copy to your repo as | Edit after copying? |
+|---|---|---|
+| `judge-arch/`, `arch-encode/` (whole folders) | `.claude/skills/…` (committed) or `~/.claude/skills/…` | **No** — the shared skill/engine |
+| `judge-arch/scripts/arch-gate.mjs` | `scripts/arch-gate.mjs` | **No** — the engine; your config drives it |
+| `judge-arch/assets/AGENTS.baseline.md` | `AGENTS.md` | **Yes** — add your specifics below the divider line |
+| `judge-arch/assets/decisions.template.md` *(or a preset's `decisions.md`)* | `decisions.md` | **Yes** — fill ✅/❌ with pointers to your own code |
+| a preset's `arch-gate.config.json` *(or `assets/arch-gate.config.example.json`)* | `arch-gate.config.json` | **Yes** — set globs + client path to your folders |
+| a preset's `scoped/*.AGENTS.md` | the folder each governs (e.g. `src/components/AGENTS.md`) | Usually **No** |
+| `judge-arch/assets/arch-gate.workflow.yml` | `.github/workflows/arch-gate.yml` | Minor — your Node version |
+| *(generated, not copied)* | `arch-gate.waivers.json` | `node scripts/arch-gate.mjs --baseline` |
+
+**`AGENTS.md`, `decisions.md`, and `arch-gate.config.json` are templates** — `AGENTS.baseline.md`,
+`decisions.template.md`, and the preset config are the blanks in this repo; every team copies them
+and points them at *their own* code. Only the skill folders and the gate engine are used unchanged.
+
+---
+
 ## How the skills fit together
 
 No skill stands alone. A single feature usually pulls in several, and they
@@ -246,6 +349,13 @@ flowchart TD
     COMP -->|constrains schema & migrations in| REL
     COMP -.->|controls checked by| SEC
     ADR -.->|links to tests, security, runbooks| SRE
+
+    JUDGE[judge-arch<br/>review + block drift]
+    ENC[arch-encode<br/>make the rule stick]
+    ARCH -->|every change reviewed by| JUDGE
+    SEC -->|every change reviewed by| JUDGE
+    JUDGE -->|confirmed violations become rules via| ENC
+    ENC -->|enforced on every future change, feeding back into| ARCH
 ```
 
 The `architectural-decision-records` skill is the connective tissue: its records
@@ -301,6 +411,8 @@ description: "When to use this skill — used for automatic triggering"
 .
 ├── enterprise-architecture-standards/
 ├── architectural-decision-records/
+├── judge-arch/                            # review a change + the mechanical gate that blocks drift
+├── arch-encode/                           # turn a caught mistake into an enforced, tested rule
 ├── owasp-secure-coding-bdd/
 ├── comprehensive-test-strategy/
 ├── release-deployment-safety/
@@ -325,8 +437,8 @@ self-contained skill folder.
 
 ## License
 
-[MIT](LICENSE) © Tech Fleet. Use, fork, adapt, and redistribute freely with
-attribution.
+[MIT](LICENSE) © [Tech Fleet](https://techfleet.org). Use, fork, adapt, and redistribute freely
+with attribution.
 
 ---
 
@@ -340,3 +452,7 @@ the MADR project ([adr.github.io/madr](https://adr.github.io/madr/)).
 The `owasp-secure-coding-bdd` skill is grounded in the
 [OWASP Cheat Sheet Series](https://cheatsheetseries.owasp.org/), © the OWASP
 Foundation.
+
+The `judge-arch` and `arch-encode` skills are adapted from the workshop
+**"Who's Designing Your System? You, or Your Agent?"** — a certificates.dev / TechFleet workshop
+presented by Alex ([recording](https://www.youtube.com/live/b-Pom28zv7M)).
