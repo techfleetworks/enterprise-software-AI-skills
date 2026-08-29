@@ -2,20 +2,20 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
-![Skills](https://img.shields.io/badge/skills-12-blue.svg)
+![Skills](https://img.shields.io/badge/skills-13-blue.svg)
 ![Vendor-neutral](https://img.shields.io/badge/vendor-neutral-informational.svg)
 
 Created and maintained by **[Tech Fleet](https://techfleet.org)**.
 
-A set of twelve model-agnostic **skills**: condensed, actionable engineering
+A set of thirteen model-agnostic **skills**: condensed, actionable engineering
 standards that an AI coding agent — or a person — can load as context. Each one
 encodes the judgment a senior engineer applies to a change (how to secure it,
 how to test it, how to release it, why it was decided that way) so that *every*
 change can meet the same bar, not just the ones a specialist happens to review.
 
-They come in two groups: **nine engineering-standards** skills at the top level
+They come in two groups: **ten engineering-standards** skills at the top level
 (security, testing, architecture, release, SRE, compliance, ADRs, plus architectural
-review and rule-encoding) and three
+review, rule-encoding, and verifiable quality gates) and three
 **[requirements](requirements/)** skills that make what you build work for
 *everyone* — every browser and device, every ability, and anyone regardless of
 context or expertise.
@@ -89,6 +89,7 @@ load it automatically.
 | [`compliance-data-lifecycle`](compliance-data-lifecycle/) | Privacy, audit, retention, and safe data migrations / DR | PII, GDPR/CCPA, SOC2/ISO, audit logs, retention, backups, RTO/RPO | 5 refs |
 | [`judge-arch`](judge-arch/) | Reviewing a change against the four questions and blocking drift mechanically | Before "done"/PR: reviewing a diff, branch, or area for architectural drift | 4 refs · 1 script |
 | [`arch-encode`](arch-encode/) | Turning a caught mistake into a specific, tested, enforced rule | After catching drift; "add a rule so this never happens again" | 2 refs |
+| [`verifiable-quality-gates`](verifiable-quality-gates/) | Proving every automated check can actually detect — coverage + mutation gates, prove-at-the-owning-layer | Adding/reviewing a CI check, guard, or fitness function; a green build you don't fully trust; making gates self-proving | 3 refs · 2 scripts |
 
 ### What each one actually makes you do
 
@@ -143,6 +144,16 @@ standards actually hold.
 negative code example placed where the code lives, wired into the mechanical gate
 when it's checkable, then *proven* to hold by reverting, clearing context, and
 re-running the task. Keeps rule files lean and non-contradictory.
+
+**`verifiable-quality-gates`** — Treats your automated checks as code that can
+silently stop detecting (a tightened regex, an inverted condition, a moved data
+source) and keep shipping green. Every check gets a committed test that runs the
+*real* check and **discriminates** — it fails when the check is replaced by a
+no-op — proven mechanically by a mutation gate, so a broken check can't ship
+green. Checks fail closed, and each invariant is proven at the layer that *owns*
+it rather than by a separate, unwired monitor. Ships dependency-free coverage and
+mutation-gate engines. This is the layer that keeps the *other* skills' gates
+honest.
 
 ---
 
@@ -413,6 +424,7 @@ description: "When to use this skill — used for automatic triggering"
 ├── architectural-decision-records/
 ├── judge-arch/                            # review a change + the mechanical gate that blocks drift
 ├── arch-encode/                           # turn a caught mistake into an enforced, tested rule
+├── verifiable-quality-gates/              # prove every automated check can actually detect (coverage + mutation gates)
 ├── owasp-secure-coding-bdd/
 ├── comprehensive-test-strategy/
 ├── release-deployment-safety/
