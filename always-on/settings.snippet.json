@@ -1,0 +1,31 @@
+{
+  "//": "Always-on enterprise skills. Merge the \"hooks\" block below into your settings.json (do not replace the whole file). SessionStart injects the directive into the main agent; SubagentStart injects it into every spawned subagent. Both are run by the harness, so the directive does not depend on model discretion. Requires Node.js on PATH and the companion file enterprise-skills-always-on.md at the path referenced below. For a personal, all-projects install, copy enterprise-skills-always-on.md to ~/.claude/ and use the paths as written. For a project install, commit it in the repo and point both commands at its path (e.g. \"$CLAUDE_PROJECT_DIR/.claude/enterprise-skills-always-on.md\").",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "node -e 'process.stdout.write(require(\"fs\").readFileSync(process.argv[1],\"utf8\"))' \"$HOME/.claude/enterprise-skills-always-on.md\"",
+            "timeout": 15,
+            "statusMessage": "Loading enterprise always-on skills directive"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "node -e 'const fs=require(\"fs\");process.stdout.write(JSON.stringify({hookSpecificOutput:{hookEventName:\"SubagentStart\",additionalContext:fs.readFileSync(process.argv[1],\"utf8\")}}))' \"$HOME/.claude/enterprise-skills-always-on.md\"",
+            "timeout": 15,
+            "statusMessage": "Loading enterprise always-on skills directive"
+          }
+        ]
+      }
+    ]
+  }
+}

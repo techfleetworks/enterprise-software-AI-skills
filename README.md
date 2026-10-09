@@ -2,20 +2,20 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
-![Skills](https://img.shields.io/badge/skills-13-blue.svg)
+![Skills](https://img.shields.io/badge/skills-14-blue.svg)
 ![Vendor-neutral](https://img.shields.io/badge/vendor-neutral-informational.svg)
 
 Created and maintained by **[Tech Fleet](https://techfleet.org)**.
 
-A set of thirteen model-agnostic **skills**: condensed, actionable engineering
+A set of fourteen model-agnostic **skills**: condensed, actionable engineering
 standards that an AI coding agent — or a person — can load as context. Each one
 encodes the judgment a senior engineer applies to a change (how to secure it,
 how to test it, how to release it, why it was decided that way) so that *every*
 change can meet the same bar, not just the ones a specialist happens to review.
 
-They come in two groups: **ten engineering-standards** skills at the top level
+They come in two groups: **eleven engineering-standards** skills at the top level
 (security, testing, architecture, release, SRE, compliance, ADRs, plus architectural
-review, rule-encoding, and verifiable quality gates) and three
+review, rule-encoding, verifiable quality gates, and skeptical self-audit) and three
 **[requirements](requirements/)** skills that make what you build work for
 *everyone* — every browser and device, every ability, and anyone regardless of
 context or expertise.
@@ -38,6 +38,7 @@ reads perfectly well as plain engineering documentation for a human.
 - [Requirements skills (universal quality)](#requirements-skills-universal-quality)
 - [What is a "skill"?](#what-is-a-skill)
 - [Install and use](#install-and-use)
+- [Always-on: fire every skill on every task](#always-on-fire-every-skill-on-every-task)
 - [How the skills fit together](#how-the-skills-fit-together)
 - [Design principles](#design-principles)
 - [Contributing](#contributing)
@@ -90,6 +91,7 @@ load it automatically.
 | [`judge-arch`](judge-arch/) | Reviewing a change against the four questions and blocking drift mechanically | Before "done"/PR: reviewing a diff, branch, or area for architectural drift | 4 refs · 1 script |
 | [`arch-encode`](arch-encode/) | Turning a caught mistake into a specific, tested, enforced rule | After catching drift; "add a rule so this never happens again" | 2 refs |
 | [`verifiable-quality-gates`](verifiable-quality-gates/) | Proving every automated check can actually detect — coverage + mutation gates, prove-at-the-owning-layer | Adding/reviewing a CI check, guard, or fitness function; a green build you don't fully trust; making gates self-proving | 3 refs · 2 scripts |
+| [`skeptical-audit`](skeptical-audit/) | Backing every factual claim with reproducible, sourced evidence before it ships — an evidence state, a re-runnable source, a named limitation | Any conclusion of fact: audits, reviews, status ("is it done/working/safe?"), "I verified X", counts, metrics, comparisons | 1 ref · 1 script |
 
 ### What each one actually makes you do
 
@@ -154,6 +156,17 @@ green. Checks fail closed, and each invariant is proven at the layer that *owns*
 it rather than by a separate, unwired monitor. Ships dependency-free coverage and
 mutation-gate engines. This is the layer that keeps the *other* skills' gates
 honest.
+
+**`skeptical-audit`** — Treats your first conclusion as a guess until a
+measurement says otherwise. Before any claim of fact ships — "it works," "tests
+pass," "it's unused," "it's safe," "I verified X" — it attaches three things: an
+evidence state (`observed` / `inferred` / `documented` / `reported` /
+`not-assessed`), a source another person can re-run, and a named limitation (what
+was *not* checked). It keeps conformance separate from adequacy, bans hedge-words
+standing in for a check, and delivers an evidence ledger instead of reassurance —
+an honest "3 observed, 2 not-assessed" over a confident "all good." Ships a
+dependency-free `claim-lint` smoke-alarm for hedge-words and untagged claims. This
+is the layer that keeps every *other* skill's findings honest.
 
 ---
 
@@ -246,6 +259,33 @@ Treat `SKILL.md` as a system-prompt fragment or a retrieval document. Use the
 frontmatter `description` to decide relevance, then feed the Markdown body (and
 any referenced file) as context. Because everything is plain Markdown, it drops
 straight into a vector store or a prompt without conversion.
+
+---
+
+## Always-on: fire every skill on every task
+
+By default a skill loads only when the task matches its `description` — which leaves
+coverage to discretion and skips the review and verification skills exactly when a
+change is rushed. The [`always-on/`](always-on/) folder makes **every skill in this
+repo always-on**: considered on every task, for the main agent *and* every spawned
+subagent, injected by the harness rather than left to the model to remember.
+
+It works through hooks, because Claude Code has no frontmatter or settings flag that
+forces a skill to load — a `SessionStart` hook injects the directive into the main
+agent and a `SubagentStart` hook injects it into every subagent. The directive names
+the skills and makes applying the relevant ones mandatory; it does **not** inline the
+full skill bodies (their descriptions are already always in context). A lighter,
+discretion-based alternative is to append the directive to `CLAUDE.md`.
+
+Personal install (all your projects), after cloning:
+
+```bash
+cp always-on/enterprise-skills-always-on.md ~/.claude/enterprise-skills-always-on.md
+# then merge the hooks block from always-on/settings.snippet.json into ~/.claude/settings.json
+```
+
+Full instructions — personal vs project, the CLAUDE.md alternative, requirements,
+and how to narrow or turn it off — are in the [`always-on/` README](always-on/).
 
 ---
 
@@ -425,6 +465,7 @@ description: "When to use this skill — used for automatic triggering"
 ├── judge-arch/                            # review a change + the mechanical gate that blocks drift
 ├── arch-encode/                           # turn a caught mistake into an enforced, tested rule
 ├── verifiable-quality-gates/              # prove every automated check can actually detect (coverage + mutation gates)
+├── skeptical-audit/                       # back every factual claim with reproducible, sourced evidence before it ships
 ├── owasp-secure-coding-bdd/
 ├── comprehensive-test-strategy/
 ├── release-deployment-safety/
@@ -435,6 +476,7 @@ description: "When to use this skill — used for automatic triggering"
 │   ├── universal-accessibility-wcag/
 │   ├── usability-ux-universal-design/
 │   └── README.md
+├── always-on/                              # make every skill fire on every task (SessionStart + SubagentStart hooks)
 ├── CONTRIBUTING.md
 ├── LICENSE
 └── README.md
