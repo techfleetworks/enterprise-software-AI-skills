@@ -180,7 +180,8 @@ if (!files) files = walk(ROOT, []);
 const isIgnoredPath = (f) => f.split('/').some((seg) => ignoreDirs.has(seg));
 files = files.filter((f) => {
   if (isIgnoredPath(f)) return false;
-  try { return fs.statSync(path.join(ROOT, f)).size <= MAX_BYTES; } catch { return false; }
+  try { return fs.statSync(path.join(ROOT, f)).size <= MAX_BYTES; }
+  catch (e) { if (e.code !== 'ENOENT') console.error(`arch-gate: cannot stat ${f} (${e.message}); not scanned`); return false; }
 });
 
 for (const file of files) {
@@ -189,7 +190,10 @@ for (const file of files) {
   const runBuiltins = CODE_EXT.has(ext) && !ignoreDirs.has(file.split('/')[0]);
   if (!applicableRules.length && !runBuiltins) continue;
   let content;
-  try { content = fs.readFileSync(path.join(ROOT, file), 'utf8'); } catch { continue; }
+  // The file passed the stat filter, so a read failure here is a real problem, not a deleted file —
+  // report it loudly (don't swallow) so an un-scanned file can't ship with no diagnostic.
+  try { content = fs.readFileSync(path.join(ROOT, file), 'utf8'); }
+  catch (e) { console.error(`arch-gate: WARNING — could not read ${file} (${e.message}); it was NOT scanned`); continue; }
   for (const r of applicableRules) for (const re of r.forbid) record(r.name, file, content, re);
   if (runBuiltins) for (const [key, label, re] of BUILTIN_CHECKS) if (builtins[key]) record(label, file, content, re);
 }

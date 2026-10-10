@@ -24,9 +24,10 @@
  * on an ephemeral checkout; if a local run is hard-killed mid-mutation, restore with your VCS
  * (e.g. re-checkout the checks directory).
  */
-import { readFileSync, writeFileSync, readdirSync, statSync, existsSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { spawnSync } from "node:child_process";
+import { loadConfig, enumerateChecks, execTestFiles, credits } from "./verifiable-lib.mjs";
 
 function die(msg) {
   console.error(`[verify-check-discrimination] FAIL — ${msg}`);
@@ -35,63 +36,40 @@ function die(msg) {
 
 const NOOP = "#!/usr/bin/env node\n// temporarily stubbed by the discrimination gate\nprocess.exit(0);\n";
 
-// --- config (fail closed) ----------------------------------------------------
-const configPath = resolve(process.argv[2] ?? "verifiable-gates.config.json");
-if (!existsSync(configPath)) die(`config not found: ${configPath}`);
-let cfg;
-try {
-  cfg = JSON.parse(readFileSync(configPath, "utf8"));
-} catch (e) {
-  die(`config is not valid JSON (${e.message})`);
-}
-for (const k of ["checksDir", "checkPattern", "testsDir", "testPattern", "allowlist", "testCommand"]) {
-  if (!cfg[k]) die(`config is missing "${k}"`);
-}
+// --- config + enumerate (shared with the coverage gate; see verifiable-lib.mjs) ---
+// Same owner as check-has-test: if the two gates enumerated checks or credited tests differently,
+// a check could be "covered" by one and "unmapped" by the other. One lib, one answer.
+const { cfg, checksDir, testsDir, checkRe, testRe, allowlist } = loadConfig(die, [
+  "checksDir", "checkPattern", "testsDir", "testPattern", "allowlist", "testCommand",
+]);
 if (!Array.isArray(cfg.testCommand) || cfg.testCommand.length === 0) {
   die(`"testCommand" must be a non-empty argv array, e.g. ["node","--test"]`);
 }
 
-const checksDir = resolve(cfg.checksDir);
-const testsDir = resolve(cfg.testsDir);
-if (!existsSync(checksDir)) die(`checksDir does not exist: ${checksDir}`);
-if (!existsSync(testsDir)) die(`testsDir does not exist: ${testsDir}`);
-
-const checkRe = new RegExp(cfg.checkPattern);
-const testRe = new RegExp(cfg.testPattern);
-
-let allowlist;
-try {
-  allowlist = new Set(JSON.parse(readFileSync(resolve(cfg.allowlist), "utf8")));
-} catch (e) {
-  die(`allowlist not found or invalid JSON at ${cfg.allowlist} (${e.message})`);
-}
-
-// --- enumerate + map checks to their crediting test files --------------------
-const checks = readdirSync(checksDir).filter((f) => checkRe.test(f));
+const checks = enumerateChecks(checksDir, checkRe);
 const required = checks.filter((c) => !allowlist.has(c));
 if (required.length === 0) {
   console.log("[verify-check-discrimination] OK — no non-allowlisted checks to mutate (nothing to do).");
   process.exit(0);
 }
 
-function walk(dir) {
-  const out = [];
-  for (const name of readdirSync(dir)) {
-    const p = join(dir, name);
-    if (statSync(p).isDirectory()) out.push(...walk(p));
-    else if (testRe.test(name)) out.push(p);
-  }
-  return out;
-}
-const EXEC = /\b(execFileSync|execSync|spawnSync|execFile|spawn|exec)\s*\(/;
-const testFiles = walk(testsDir).filter((tf) => EXEC.test(readFileSync(tf, "utf8")));
-
+// --- map each required check to its crediting test files ----------------------
+const testFiles = execTestFiles(testsDir, testRe);
 const mapped = new Map(); // check basename -> [test file paths]
 for (const c of required) {
-  const files = testFiles.filter((tf) => readFileSync(tf, "utf8").includes(c));
+  const files = testFiles.filter((tf) => credits(readFileSync(tf, "utf8"), c));
   if (files.length === 0) die(`required check has no test mapped to it: ${c} (coverage gate should have caught this)`);
   mapped.set(c, files);
 }
+
+// If this gate is itself invoked from inside a test runner (e.g. `node --test` wires it into the
+// suite), the runner exports NODE_TEST_CONTEXT/NODE_TEST_WORKER_ID. A nested `node --test` that
+// inherits those switches into child-reporter mode — it streams results over IPC and exits 0 even
+// when assertions fail, which would make a FAILING (good) test look like it PASSED against the
+// no-op and be reported as vacuous. Strip them so the inner runner's exit code is authoritative.
+const childEnv = { ...process.env };
+delete childEnv.NODE_TEST_CONTEXT;
+delete childEnv.NODE_TEST_WORKER_ID;
 
 // --- mutate one check at a time; its test(s) MUST fail -----------------------
 const backups = new Map(); // path -> original source
@@ -106,6 +84,7 @@ try {
     const res = spawnSync(cfg.testCommand[0], [...cfg.testCommand.slice(1), ...files], {
       stdio: "pipe",
       encoding: "utf8",
+      env: childEnv,
     });
     writeFileSync(checkPath, backups.get(checkPath)); // restore immediately so later runs see the real others
 
