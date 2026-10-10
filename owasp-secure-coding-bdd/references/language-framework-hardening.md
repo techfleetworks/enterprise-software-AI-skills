@@ -39,8 +39,10 @@ Covers: PHP Configuration, Laravel, Symfony.
 ## C / C++
 Covers: C-Based Toolchain Hardening.
 - Compile with hardening: `-fstack-protector-strong`, `-D_FORTIFY_SOURCE=2` (use
-  `-D_FORTIFY_SOURCE=3` on glibc 2.34+ for stronger, dynamic buffer checks), `-fPIE -pie`,
-  full RELRO (`-Wl,-z,relro,-z,now`), `-Wformat -Wformat-security`.
+  `-D_FORTIFY_SOURCE=3` for stronger, dynamic buffer checks where your toolchain supports it —
+  it needs **GCC 12+ or recent Clang** and **glibc 2.35+**, backported to glibc 2.34 on RHEL 9 and
+  derivatives; otherwise level 3 silently falls back to 2), `-fPIE -pie`,
+  full RELRO (`-Wl,-z,relro,-z,now`), `-Wformat -Wformat-security`. `[documented: Red Hat, "GCC's new fortification level"]`
 - Treat warnings as errors; run ASan/UBSan (and fuzzing) in CI.
 - Avoid unsafe functions (`strcpy`, `sprintf`, `gets`); use bounded equivalents.
 
