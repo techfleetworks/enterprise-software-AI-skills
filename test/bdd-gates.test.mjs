@@ -101,9 +101,9 @@ test("coverage: FLAGS an unknown log event (discriminating)", () => {
 });
 
 // --- check-bdd-executed (the suite actually ran) -----------------------------
-function writeReport(elements) {
+function writeReport(elements, uri = "sub/f.feature") {
   const p = join(mkdtempSync(join(tmpdir(), "rep-")), "cucumber.json");
-  writeFileSync(p, JSON.stringify([{ name: "Widget", elements }]));
+  writeFileSync(p, JSON.stringify([{ uri, name: "Widget", elements }]));
   return p;
 }
 const passed = (n) => ({ type: "scenario", name: n, steps: [{ result: { status: "passed" } }] });
@@ -133,4 +133,30 @@ test("executed: FLAGS an undefined step (discriminating)", () => {
 });
 test("executed: fails closed with no results report", () => {
   assert.equal(run(S("check-bdd-executed.mjs"), [features(VALID)]).status, 1);
+});
+test("executed: FLAGS a cross-feature name collision where one feature never ran (discriminating)", () => {
+  // Two features, same scenario name in each; only alpha's ran. Matching by bare name would credit
+  // beta's as passed (the false-green bug); matching by feature+scenario must flag beta.
+  const root = mkdtempSync(join(tmpdir(), "bdd-"));
+  const scen = (uc) => `  @audience:customer @usecase:${uc} @category:happy @quality:functional @severity:high\n  Scenario: shared name\n    Given a user\n    When x\n    Then y\n`;
+  mkdirSync(join(root, "alpha"), { recursive: true });
+  mkdirSync(join(root, "beta"), { recursive: true });
+  writeFileSync(join(root, "alpha", "a.feature"), "Feature: A\n\n" + scen("a-shared"));
+  writeFileSync(join(root, "beta", "b.feature"), "Feature: B\n\n" + scen("b-shared"));
+  run(S("bdd-index-generate.mjs"), [root]);
+  const rep = join(mkdtempSync(join(tmpdir(), "rep-")), "cucumber.json");
+  writeFileSync(rep, JSON.stringify([{ uri: "alpha/a.feature", name: "A", elements: [passed("shared name")] }]));
+  assert.equal(run(S("check-bdd-executed.mjs"), [root, "--results", rep]).status, 1);
+});
+
+// --- fail-closed on a present-but-malformed config ---------------------------
+test("tags: FLAGS a present-but-malformed bdd-config.json (fail closed, discriminating)", () => {
+  const root = features(VALID, { config: null, generate: false });
+  writeFileSync(join(root, "bdd-config.json"), '{"audiences":["customer"'); // truncated JSON
+  assert.equal(run(S("check-bdd-tags.mjs"), [root]).status, 1);
+});
+test("coverage: FLAGS a present-but-malformed bdd-config.json (fail closed, discriminating)", () => {
+  const root = features(VALID);
+  writeFileSync(join(root, "bdd-config.json"), "{bad json");
+  assert.equal(run(S("check-bdd-coverage.mjs"), [root]).status, 1);
 });

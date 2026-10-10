@@ -142,7 +142,14 @@ export function renderIndexMd(records) {
 }
 
 // Load optional repo config: features/bdd-config.json -> { audiences: [...] }.
+// Absent is fine (return {}); but a PRESENT-but-corrupt config must NOT silently disable the audience
+// gates — throw so the calling gate fails closed. (A malformed config that reads as "no config" would
+// turn off the declared-audience checks without anyone noticing.)
 export function loadConfig(featuresRoot) {
-  try { return JSON.parse(readFileSync(join(featuresRoot, "bdd-config.json"), "utf8")); }
-  catch { return {}; }
+  const p = join(featuresRoot, "bdd-config.json");
+  let raw;
+  try { raw = readFileSync(p, "utf8"); }
+  catch (e) { if (e.code === "ENOENT") return {}; throw e; }
+  try { return JSON.parse(raw); }
+  catch (e) { throw new Error(`${p} is present but not valid JSON: ${e.message}`); }
 }

@@ -108,6 +108,22 @@ All of the above run in the same CI wiring (see `storage-and-ci-wiring.md#ci-cd-
 that can reach `main` is Gherkin the official parser, the strict runner, and the tag vocabulary all
 accept. The author never decides what is legal; the parser does.
 
+**The four static gates are a set** — each closes a hole the others leave open (validity, taxonomy,
+coverage/sync/log, execution). Drop one from the required set and you reopen its hole; require all of
+them together.
+
+**Append-only is verifiable only against the previous revision**, so CI MUST hand the coverage gate the
+base-revision log, or it cannot check history (and says so rather than falsely claiming it did):
+
+```bash
+git show "origin/${GITHUB_BASE_REF:-main}:features/bdd-coverage-log.md" > /tmp/bdd-log-base.md 2>/dev/null || : > /tmp/bdd-log-base.md
+BDD_LOG_BASE=/tmp/bdd-log-base.md BDD_REQUIRE_LOG_BASE=1 node scripts/check-bdd-coverage.mjs features
+```
+
+`BDD_REQUIRE_LOG_BASE=1` makes a missing base a hard failure, so the tamper-evidence guarantee can't be
+silently skipped in CI. Without `BDD_LOG_BASE` the gate still runs every other check but reports
+"log append-only NOT verified" instead of claiming a guarantee it did not perform.
+
 ## Honest limitations (stated, not hidden)
 
 - **The parser settles syntax only.** `check-gherkin-valid` guarantees *syntactic* legality;

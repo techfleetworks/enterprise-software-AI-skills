@@ -40,7 +40,8 @@ const happyOnly = [...byFeature.entries()].filter(([, rs]) => rs.every((r) => r.
 if (happyOnly.length) fail(`feature(s) have only happy-path scenarios (add non-happy paths): ${happyOnly.join(", ")}`);
 
 // 4 — every declared audience is covered somewhere
-const cfg = loadConfig(root);
+let cfg;
+try { cfg = loadConfig(root); } catch (e) { fail(e.message); }
 if (Array.isArray(cfg.audiences)) {
   const covered = new Set(records.map((r) => r.audience));
   const uncovered = cfg.audiences.filter((a) => !covered.has(a));
@@ -54,11 +55,22 @@ if (!log || !log.trim()) fail(`coverage log missing or empty: ${logPath}`);
 for (const m of log.matchAll(/(?:^|\s)event:\s*([a-z-]+)/gim)) {
   if (!LOG_EVENTS.has(m[1])) fail(`coverage log has an unknown event "${m[1]}" (allowed: ${[...LOG_EVENTS].join(", ")})`);
 }
+// Append-only is verifiable only against the previous revision of the log. CI MUST export
+// BDD_LOG_BASE (e.g. `git show origin/main:features/bdd-coverage-log.md > base.md`); set
+// BDD_REQUIRE_LOG_BASE to make its absence a hard failure. We never CLAIM "append-only" we didn't
+// actually check — the success line reports exactly what was verified.
 const basePath = process.env.BDD_LOG_BASE;
+let logNote;
 if (basePath) {
   const base = read(basePath);
   if (base && !log.startsWith(base)) fail(`coverage log is not append-only — a prior entry was edited or removed (history must be immutable).`);
+  logNote = "log append-only verified";
+} else if (process.env.BDD_REQUIRE_LOG_BASE) {
+  fail(`cannot verify append-only history: BDD_LOG_BASE is unset but BDD_REQUIRE_LOG_BASE is set. ` +
+    `In CI, export BDD_LOG_BASE to the base-revision log (git show origin/main:features/bdd-coverage-log.md > base.md).`);
+} else {
+  logNote = "log append-only NOT verified (set BDD_LOG_BASE to check history)";
 }
 
-console.log(`[check-bdd-coverage] OK — ${records.length} scenario(s) across ${byFeature.size} feature(s); datastore in sync; log append-only.`);
+console.log(`[check-bdd-coverage] OK — ${records.length} scenario(s) across ${byFeature.size} feature(s); datastore in sync; ${logNote}.`);
 process.exit(0);

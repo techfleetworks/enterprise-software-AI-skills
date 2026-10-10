@@ -22,7 +22,9 @@ if (files.length === 0) {
   process.exit(1);
 }
 
-const cfg = loadConfig(root);
+let cfg;
+try { cfg = loadConfig(root); }
+catch (e) { console.error(`[check-bdd-tags] FAIL — ${e.message}`); process.exit(1); }
 const audiences = Array.isArray(cfg.audiences) ? new Set(cfg.audiences) : null;
 const problems = [];
 

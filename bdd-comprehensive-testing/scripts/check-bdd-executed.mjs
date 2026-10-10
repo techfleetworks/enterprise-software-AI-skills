@@ -28,14 +28,16 @@ catch { fail(`cannot read datastore ${join(root, "bdd-index.json")} — run bdd-
 try { report = JSON.parse(readFileSync(resolve(resultsPath), "utf8")); }
 catch (e) { fail(`cannot read/parse results report ${resultsPath}: ${e.message}`); }
 
-const expected = index.map((r) => r.scenario);
-if (expected.length === 0) fail("datastore lists zero scenarios (nothing to reconcile; fail closed).");
+if (index.length === 0) fail("datastore lists zero scenarios (nothing to reconcile; fail closed).");
 
-// Collapse the Cucumber-JSON report to scenario-name -> worst step status seen.
-// A scenario passes only if it executed and every step passed (outline rows with the same name all
-// must pass). Any failed/undefined/pending/skipped, or absence, is a failure.
-const ran = new Map(); // name -> "passed" | a non-passed status
+// Collect every executed scenario as { uri, name, status }. A scenario is "passed" only if it has
+// steps and all passed (outline rows with the same name must all pass); any failed/undefined/pending/
+// skipped wins. We keep the FEATURE identity (uri), not just the name — scenario names collide across
+// features, and crediting by bare name would mark feature B's scenario passed because feature A's
+// same-named one ran (the vacuous-green failure this gate exists to prevent).
+const runs = [];
 for (const feature of Array.isArray(report) ? report : []) {
+  const uri = String(feature.uri || "").split("\\").join("/");
   for (const el of feature.elements || []) {
     if (el.type && el.type !== "scenario") continue;
     const steps = el.steps || [];
@@ -44,18 +46,23 @@ for (const feature of Array.isArray(report) ? report : []) {
       const st = (s.result && s.result.status) || "undefined";
       if (st !== "passed") { status = st; break; }
     }
-    const prev = ran.get(el.name);
-    // keep the worst (non-passed wins) so a flaky/partial outline can't be credited
-    ran.set(el.name, prev && prev !== "passed" ? prev : status);
+    runs.push({ uri, name: el.name, status });
   }
 }
 
+// A report feature matches a datastore record when its uri equals, or ends with "/" + , the record's
+// featuresRoot-relative path (handles "features/payments/x.feature" vs "payments/x.feature"). The "/"
+// boundary avoids a false match of "banana.feature" against "a.feature".
+const matchesFeature = (uri, feat) => uri === feat || uri.endsWith("/" + feat);
+
 const problems = [];
-for (const name of expected) {
-  const st = ran.get(name);
-  if (st === undefined) problems.push(`"${name}": never executed (no result in the report)`);
-  else if (st !== "passed") problems.push(`"${name}": ${st} (must be passed)`);
+for (const r of index) {
+  const feat = String(r.feature).split("\\").join("/");
+  const hits = runs.filter((x) => x.name === r.scenario && matchesFeature(x.uri, feat));
+  if (hits.length === 0) problems.push(`"${r.feature} » ${r.scenario}": never executed (no result for that feature + scenario)`);
+  else { const bad = hits.find((h) => h.status !== "passed"); if (bad) problems.push(`"${r.feature} » ${r.scenario}": ${bad.status} (must be passed)`); }
 }
+const expected = index;
 
 if (problems.length) {
   console.error(`[check-bdd-executed] FAIL — ${problems.length} scenario(s) did not run-and-pass:`);
