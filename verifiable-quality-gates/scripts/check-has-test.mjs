@@ -23,64 +23,26 @@
  * Exit 0 = every non-allowlisted check has a crediting test. Non-zero = missing input (fail closed)
  * or one or more untested checks.
  */
-import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
-import { join, resolve, basename } from "node:path";
+import { readFileSync } from "node:fs";
+import { loadConfig, enumerateChecks, execTestFiles, credits } from "./verifiable-lib.mjs";
 
 function die(msg) {
   console.error(`[check-has-test] FAIL — ${msg}`);
   process.exit(1);
 }
 
-// --- config (fail closed on anything missing) --------------------------------
-const configPath = resolve(process.argv[2] ?? "verifiable-gates.config.json");
-if (!existsSync(configPath)) die(`config not found: ${configPath}`);
-let cfg;
-try {
-  cfg = JSON.parse(readFileSync(configPath, "utf8"));
-} catch (e) {
-  die(`config is not valid JSON (${e.message})`);
-}
-for (const k of ["checksDir", "checkPattern", "testsDir", "testPattern", "allowlist"]) {
-  if (!cfg[k]) die(`config is missing "${k}"`);
-}
-
-const checksDir = resolve(cfg.checksDir);
-const testsDir = resolve(cfg.testsDir);
-if (!existsSync(checksDir)) die(`checksDir does not exist: ${checksDir}`);
-if (!existsSync(testsDir)) die(`testsDir does not exist: ${testsDir}`);
-
-const checkRe = new RegExp(cfg.checkPattern);
-const testRe = new RegExp(cfg.testPattern);
-
-let allowlist;
-try {
-  allowlist = new Set(JSON.parse(readFileSync(resolve(cfg.allowlist), "utf8")));
-} catch (e) {
-  die(`allowlist not found or invalid JSON at ${cfg.allowlist} (${e.message})`);
-}
-
-// --- enumerate checks --------------------------------------------------------
-const checks = readdirSync(checksDir).filter((f) => checkRe.test(f));
+// --- config + enumerate (shared with the mutation gate; see verifiable-lib.mjs) ---
+// Both gates MUST load config, enumerate checks, and credit tests identically, or they drift
+// (one gate counts a check as covered that the other does not). verifiable-lib.mjs is that one owner.
+const { cfg, checksDir, testsDir, checkRe, testRe, allowlist } = loadConfig(die);
+const checks = enumerateChecks(checksDir, checkRe);
 if (checks.length === 0) die(`no checks matched ${cfg.checkPattern} in ${checksDir} (zero-scan)`);
 
-// --- read every test file, collect exec-credited check names -----------------
-function walk(dir) {
-  const out = [];
-  for (const name of readdirSync(dir)) {
-    const p = join(dir, name);
-    if (statSync(p).isDirectory()) out.push(...walk(p));
-    else if (testRe.test(name)) out.push(p);
-  }
-  return out;
-}
-const testFiles = walk(testsDir);
-const EXEC = /\b(execFileSync|execSync|spawnSync|execFile|spawn|exec)\s*\(/;
-
+// --- credit a check when some exec-test references its name -------------------
 const credited = new Set();
-for (const tf of testFiles) {
+for (const tf of execTestFiles(testsDir, testRe)) {
   const src = readFileSync(tf, "utf8");
-  if (!EXEC.test(src)) continue; // a test that spawns nothing cannot exec a check
-  for (const c of checks) if (src.includes(c)) credited.add(c);
+  for (const c of checks) if (credits(src, c)) credited.add(c);
 }
 
 // --- verdict -----------------------------------------------------------------

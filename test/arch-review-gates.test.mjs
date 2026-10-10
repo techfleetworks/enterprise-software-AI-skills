@@ -4,7 +4,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -81,6 +81,30 @@ test("coverage: FLAGS a stale entry not FOR this change (discriminating — the 
 test("coverage: fails closed when --base is given but missing (no silent skip)", () => {
   const missing = join(tmpdir(), "no-base-" + Date.now() + ".jsonl");
   assert.equal(cov(baseEntry(), "a.ts", ["--base", missing]), 1);
+});
+
+// --- Finding B: append-only check is optional but MUST be disclosed, with a force-knob ----------
+function covRun(entry, changedList, extra = [], env = {}, change = "c1") {
+  const log = typeof entry === "string" ? entry : writeLog(entry);
+  return spawnSync(process.execPath, [COV, "--log", log, "--change", change, "--changed-list", changedList, ...extra],
+    { encoding: "utf8", env: { ...process.env, ...env } });
+}
+test("coverage: without --base it PASSES but the OK line discloses append-only was NOT verified", () => {
+  const r = covRun(baseEntry(), "a.ts");
+  assert.equal(r.status, 0, (r.stdout || "") + (r.stderr || ""));
+  assert.match(r.stdout, /NOT verified/);
+});
+test("coverage: with a matching --base it PASSES and discloses append-only VERIFIED", () => {
+  const log = writeLog(baseEntry());
+  const base = join(mkdtempSync(join(tmpdir(), "base-")), "base.jsonl");
+  writeFileSync(base, readFileSync(log, "utf8")); // current log starts with (equals) the base
+  const r = covRun(log, "a.ts", ["--base", base]);
+  assert.equal(r.status, 0, (r.stdout || "") + (r.stderr || ""));
+  assert.match(r.stdout, /append-only verified/);
+});
+test("coverage: ARCH_REQUIRE_LOG_BASE=1 with no --base FAILS closed (discriminating force-knob)", () => {
+  const r = covRun(baseEntry(), "a.ts", [], { ARCH_REQUIRE_LOG_BASE: "1" });
+  assert.equal(r.status, 1);
 });
 
 // --- check-arch-rules-discriminate ------------------------------------------

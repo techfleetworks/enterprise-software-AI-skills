@@ -9,7 +9,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { writeFileSync, mkdtempSync } from "node:fs";
+import { writeFileSync, mkdtempSync, chmodSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -94,4 +94,23 @@ test("S6: an expired waiver no longer suppresses (exit 1)", () => {
   });
   const r = runGate(dir);
   assert.equal(r.status, 1, "an expired waiver must stop suppressing");
+});
+
+// Finding C (docs/arch-reviews/log.jsonl): a file that is present and stat-able but UNREADABLE must
+// be REPORTED, not silently skipped — otherwise it ships unscanned with no diagnostic. This exercises
+// the read-failure branch (arch-gate.mjs read catch). chmod 000 is enforced for the owner on POSIX
+// non-root (incl. the Linux CI runner, the authoritative `test (20)/(24)` gate); on Windows and when
+// running as root the OS won't remove read permission, so the test self-detects that and SKIPS rather
+// than asserting a condition the platform can't create. One code path runs everywhere (ADR-0002).
+test("Finding C: arch-gate reports (does not silently skip) an unreadable existing file", (t) => {
+  const dir = fixture({ config: {}, files: { "locked.mjs": "export const x = 1;\n" } });
+  const victim = join(dir, "locked.mjs");
+  let enforced = false;
+  try { chmodSync(victim, 0o000); readFileSync(victim, "utf8"); }
+  catch { enforced = true; }
+  if (!enforced) { chmodSync(victim, 0o644); return t.skip("OS/privilege does not enforce chmod 000 here (Windows or root)"); }
+  const r = runGate(dir);
+  chmodSync(victim, 0o644); // restore so the throwaway fixture can be cleaned up
+  assert.match(r.out, /could not read[^\n]*locked\.mjs/i,
+    "an unreadable but present code file must produce a WARNING, not a silent skip");
 });

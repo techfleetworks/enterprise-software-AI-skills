@@ -35,12 +35,19 @@ if (!existsSync(logPath)) die(`review log not found: ${logPath}`);
 const raw = readFileSync(logPath, "utf8");
 if (!raw.trim()) die(`review log is empty: ${logPath}`);
 
-// Append-only: the committed log must be a clean append to the base revision's log. A --base that is
-// given but unreadable is a hard error (never a silent skip) — only "no --base at all" skips the check.
+// Append-only: the committed log must be a clean append to the base revision's log. CI should pass the
+// base-revision log via --base; set ARCH_REQUIRE_LOG_BASE=1 to make its absence a hard failure. We
+// never silently skip AND claim it was checked — the OK line discloses exactly what was verified.
+let logNote;
 if (basePath) {
   if (!existsSync(basePath)) die(`--base given but not found: ${basePath} — cannot verify append-only (fail closed).`);
   const base = readFileSync(basePath, "utf8");
-  if (base && !raw.startsWith(base)) die("review log is not append-only — a prior entry was edited or removed.");
+  if (base && !raw.startsWith(base)) die("review log is not append-only — a prior entry was edited or removed (history must be immutable).");
+  logNote = "append-only verified";
+} else if (process.env.ARCH_REQUIRE_LOG_BASE) {
+  die("ARCH_REQUIRE_LOG_BASE is set but no --base was given — cannot verify append-only. In CI, pass --base <base-revision log> (e.g. git show origin/main:docs/arch-reviews/log.jsonl > base.jsonl).");
+} else {
+  logNote = "append-only NOT verified (pass --base to check history)";
 }
 
 const lines = raw.split(/\r?\n/).filter((l) => l.trim());
@@ -85,5 +92,5 @@ if (problems.length) {
   process.exit(1);
 }
 console.log(`[check-arch-review-coverage] OK — ${changed.length} changed file(s) fully reviewed ` +
-  `(× ${QUESTIONS.length} questions), every cell verdicted + evidenced, logged.`);
+  `(× ${QUESTIONS.length} questions), every cell verdicted + evidenced, logged; ${logNote}.`);
 process.exit(0);
