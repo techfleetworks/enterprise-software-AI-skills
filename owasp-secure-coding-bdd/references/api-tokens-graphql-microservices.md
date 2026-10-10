@@ -8,7 +8,7 @@ Covers: JSON Web Token (JWT), SAML Security, Web Service Security, GraphQL, Micr
 - Validate `exp` (expiry), `iss` (issuer), and `aud` (audience) claims on every verification, not just signature validity.
 - Keep access tokens short-lived (minutes); use a separate, revocable refresh token for longer sessions.
 - Support server-side revocation for tokens that must be invalidated before natural expiry (logout, compromise) — a short-lived-token + refresh-token pattern, or a deny-list checked at verification time.
-- Store JWTs client-side in a way that limits XSS exposure (an in-memory variable or `HttpOnly` cookie beats `localStorage`, which is readable by any script on the page).
+- Store JWTs client-side in a way that limits XSS exposure (an in-memory variable or `HttpOnly` cookie beats `localStorage`, which is readable by any script on the page). **Tradeoff:** an `HttpOnly` cookie is sent automatically by the browser, so it reopens **CSRF** exposure — pair it with `SameSite=Lax/Strict` and/or anti-CSRF tokens. An in-memory token avoids CSRF but is lost on reload (needs a refresh flow).
 
 ## SAML
 - Validate the XML signature on every SAML assertion using a library's built-in validation, never custom XML parsing/comparison.
@@ -54,6 +54,12 @@ Covers: JSON Web Token (JWT), SAML Security, Web Service Security, GraphQL, Micr
 Scenario: JWT with alg=none is rejected
   When a request includes a JWT with header alg set to "none" and no signature
   Then the token is rejected as invalid
+
+@security
+Scenario: JWT with a confused algorithm (RS256 verified as HS256) is rejected
+  Given the server issues RS256 (asymmetric) tokens
+  When a request includes a token whose header alg is changed to "HS256" and is signed with the RS256 public key as the HMAC secret
+  Then the token is rejected (the server verifies only against its expected algorithm, never the token's claimed one)
 
 @security
 Scenario: Expired JWT is rejected even with a valid signature

@@ -3,9 +3,9 @@
 Covers: Authentication, Password Storage, Session Management, Multifactor Authentication, Forgot Password/Credential Recovery, Credential Stuffing.
 
 ## Password handling
-- Hash passwords with **Argon2id** (preferred), or **bcrypt**/**scrypt** if the platform lacks Argon2 support. Never MD5, SHA-1, SHA-256 alone, or any fast general-purpose hash — those are crackable at billions of guesses/second on commodity GPUs.
+- Hash passwords with **Argon2id** (preferred) at the OWASP minimums — **m = 19456 KiB, t = 2, p = 1** — or **bcrypt** (work factor **≥ 10–12**) / **scrypt** (**N = 2¹⁷, r = 8, p = 1**) where Argon2 isn't available. Never MD5, SHA-1, SHA-256 alone, or any fast general-purpose hash — those are crackable at billions of guesses/second on commodity GPUs. `[documented: OWASP Password Storage Cheat Sheet]`
 - Use a unique random salt per password (handled automatically by Argon2id/bcrypt/scrypt libraries — don't roll your own).
-- Enforce a minimum length (12+ characters recommended) over complexity rules (arbitrary "must contain a symbol" rules push users toward predictable patterns). Do not enforce a maximum length below 64 characters.
+- Enforce a minimum length (12+ characters recommended) over complexity rules (arbitrary "must contain a symbol" rules push users toward predictable patterns). Do not enforce a maximum length below 64 characters. **Caveat for bcrypt specifically:** it silently **truncates input at 72 bytes**, so a 64-character *multibyte* passphrase can exceed that and have its tail ignored. If you must accept long inputs with bcrypt, pre-hash with a server-side **pepper** — `bcrypt(base64(HMAC-SHA-384(password, pepper)))` — which fixes both the 72-byte limit and the null-byte issue; a **plain** `SHA-256`-then-bcrypt pre-hash is discouraged because it enables **password shucking**. Simplest: prefer Argon2id, which has no 72-byte limit. `[documented: OWASP Password Storage Cheat Sheet]`
 - Never log passwords, even at debug level. Never send passwords back in any response, including in "confirm your details" emails.
 - On password change, invalidate all other active sessions/tokens.
 

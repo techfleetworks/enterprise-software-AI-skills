@@ -5,7 +5,7 @@ Covers: REST Security, HTTP Security Response Headers, Cross-Site Request Forger
 ## Cross-Site Scripting (XSS)
 - **Context-aware output encoding** is the primary defense: encode user-controlled data for the context it's rendered into — HTML entity encoding for HTML body content, JS string escaping for data injected into `<script>`, URL encoding for data in URLs/attributes. Most modern frameworks (React, Vue, Angular, Blazor) auto-escape by default when using their standard templating/binding — the risk is opting out of it.
 - Never use `dangerouslySetInnerHTML` (React), `v-html` (Vue), `[innerHTML]` (Angular), or raw string concatenation into HTML with unsanitized user input. If rendering user-supplied rich text/HTML is a genuine requirement, sanitize it server-side with a vetted allow-list sanitizer (DOMPurify client-side as defense-in-depth, plus a server-side sanitizer as the authoritative control) rather than trying to write custom regex filtering.
-- Set a **Content-Security-Policy** header restricting script sources (`script-src 'self'`, avoid `unsafe-inline`/`unsafe-eval`) as defense-in-depth even when output encoding is correct.
+- Set a **Content-Security-Policy** header restricting script sources as defense-in-depth even when output encoding is correct. Note `script-src 'self'` is **bypassable** (e.g. a JSONP endpoint or a same-origin file upload lets an attacker load script "from self") — prefer a **per-response nonce or hash** (`script-src 'nonce-<random>'`) plus **`'strict-dynamic'`** over a bare `'self'`, and always avoid `unsafe-inline`/`unsafe-eval`.
 - Set cookies `HttpOnly` (see authentication reference) so even a successful XSS can't directly read session cookies.
 
 ## DOM-based XSS
@@ -31,13 +31,13 @@ Covers: REST Security, HTTP Security Response Headers, Cross-Site Request Forger
 - Only set `Access-Control-Allow-Credentials: true` alongside a specific allow-listed origin, never alongside a wildcard.
 
 ## Clickjacking
-- Set `X-Frame-Options: DENY` (or `SAMEORIGIN` if legitimate same-site framing is needed) and/or the CSP `frame-ancestors` directive to prevent the page from being embedded in a malicious iframe for UI-redress attacks.
+- Prevent clickjacking/UI-redress with **CSP `frame-ancestors`** (`frame-ancestors 'none'` or an explicit allow-list) — this is the modern control that **supersedes `X-Frame-Options`** and is more expressive (multiple origins). Send `X-Frame-Options: DENY`/`SAMEORIGIN` too only for very old browsers that don't support `frame-ancestors`.
 
 ## Security response headers (baseline for every web app)
 - `Content-Security-Policy` — restrict script/style/resource sources
 - `X-Content-Type-Options: nosniff` — prevent MIME-sniffing
 - `X-Frame-Options: DENY` / `frame-ancestors 'none'`
-- `Strict-Transport-Security: max-age=31536000; includeSubDomains`
+- `Strict-Transport-Security: max-age=31536000; includeSubDomains` (add `; preload` to be eligible for the browser HSTS preload list — but only once you're sure every subdomain is HTTPS, as preload is hard to undo)
 - `Referrer-Policy: strict-origin-when-cross-origin` (avoid leaking full URLs, including tokens in query strings, to third parties)
 - Remove/avoid headers that leak stack info (`X-Powered-By`, verbose server version headers)
 
@@ -46,7 +46,7 @@ Covers: REST Security, HTTP Security Response Headers, Cross-Site Request Forger
 - Version APIs and deprecate old versions deliberately rather than leaving unmaintained, unpatched endpoints live indefinitely.
 - Apply rate limiting per API key/client, not just per IP, since IPs are shared/spoofable.
 - Don't expose internal implementation details in API responses (stack traces, ORM error messages, internal IDs that reveal system structure) — return a generic error to the client and log the detail server-side (see logging reference).
-- For GraphQL specifically: disable introspection in production if the schema shouldn't be public, enforce query depth/complexity limits to prevent resource-exhaustion via deeply nested queries, and apply the same field-level authorization checks as REST endpoint-level checks.
+- For GraphQL specifically, see the GraphQL section in `api-tokens-graphql-microservices.md` (the owner) — introspection off in prod, depth/complexity/cost limits, and field-level authorization. (Kept there once, not duplicated here.)
 
 ## BDD security scenario patterns
 
