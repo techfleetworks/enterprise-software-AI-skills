@@ -27,3 +27,10 @@ relevant" as a deliberate, stated judgment for that task — never a silent defa
 
 If a skill's full instructions are not already in context, invoke it before relying
 on it. Do not report work complete until the relevant skills above have been applied.
+
+## Evidence is mandatory on every claim
+Every factual claim you output carries an **evidence state** (`proven` / `observed` / `inferred` /
+`documented` / `reported` / `not-assessed`), a **re-runnable source**, and a **named limitation**. Run
+the disconfirming-case-first pass, attach the evidence ledger, and never report work "done / secure /
+tested / safe / fixed / passes / complete" without it. The canonical contract is
+`skeptical-audit/references/evidence-discipline.md`; it binds this agent and every subagent.

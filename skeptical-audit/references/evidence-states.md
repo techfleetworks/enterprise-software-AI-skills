@@ -3,19 +3,22 @@
 Read this when a claim is load-bearing enough that getting the state wrong would mislead someone, or
 when you need the full ledger template and a concrete end-to-end example.
 
-## 1. The five states, in depth
+## 1. The six states, in depth
 
 | State | Means | How you earn it | Fails when |
 | --- | --- | --- | --- |
+| `proven` | A committed, **discriminating** test or CI gate keeps it true on **every future change** | Wire the check into the required/blocking set and give it a discriminating test (no-op the check → its test fails), per `verifiable-quality-gates` | The gate isn't blocking, or its test still passes when the check is no-opped (vacuous) — then it's only `observed` |
 | `observed` | You executed it and saw the result **this session** | Run the command / probe / query; keep the raw output + exit code + timestamp | You *recall* seeing it, or saw it in a prior session — that is `reported` |
 | `inferred` | A deduction from `observed` facts | State the facts and that this is a deduction | The premises were themselves `inferred` or `documented` — say so; don't launder them into fact |
 | `documented` | A doc, spec, comment, or config asserts it | Cite the path + section/line | You treat intent as running reality — docs drift from code |
 | `reported` | A person or third-party tool stated it | Attribute the source | You drop the attribution and it reads as your own `observed` fact |
 | `not-assessed` | You did not check | Name what you'd run to check it | You let it read as a pass. `not-assessed` is a gap stated out loud, never a tick. |
 
-**The promotion rule:** you may only move *down* this list for free (observed → the weaker states),
-never *up*. Promoting `documented` to `observed` because "it's probably right" is the exact failure
-this skill prevents.
+**The promotion rule:** you may only move *down* this list for free (proven → observed → the weaker
+states), never *up*. Moving up takes a new measurement: `documented`/`reported`/`inferred` → `observed`
+means actually running it this session; **`observed` → `proven` means a committed, discriminating gate**
+that keeps it true on every change. Promoting `documented` to `observed` because "it's probably right"
+is the exact failure this skill prevents.
 
 ## 2. Conformance vs adequacy — why both
 
