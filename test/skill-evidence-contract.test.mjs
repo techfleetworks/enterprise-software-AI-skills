@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, writeFileSync, mkdirSync } from "node:fs";
+import { mkdtempSync, writeFileSync, mkdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -46,10 +46,12 @@ test("FLAGS a non-allowlisted skill missing the contract (discriminating)", () =
 test("grandfathers a non-compliant skill that is on the allowlist", () => {
   assert.equal(run(fixture({ alpha: false }, ["alpha"])).status, 0);
 });
-test("reports an allowlisted skill that now complies (removable)", () => {
+test("FAILS when an allowlisted skill already complies (shrink-only enforced, discriminating)", () => {
+  // You cannot grandfather a skill that already passes — this is what stops the allowlist from being
+  // grown to cover the compliant baseline and make the gate vacuously pass.
   const r = run(fixture({ alpha: true }, ["alpha"]));
-  assert.equal(r.status, 0);
-  assert.match(r.out, /REMOVED|remove/i);
+  assert.equal(r.status, 1);
+  assert.match(r.out, /shrink-only|REMOVE/i);
 });
 test("fails closed on zero skills", () => {
   const root = mkdtempSync(join(tmpdir(), "esc-"));
@@ -63,7 +65,12 @@ test("fails closed when the allowlist file is missing", () => {
   const r = spawnSync(process.execPath, [CHECK, root, "--allowlist", join(root, "nope.json")], { encoding: "utf8" });
   assert.equal(r.status, 1);
 });
-test("the REAL repo passes (2 compliant + 13 allowlisted)", () => {
+test("the REAL repo passes with the compliant skills NOT grandfathered", () => {
   const r = spawnSync(process.execPath, [CHECK, REPO], { encoding: "utf8" });
-  assert.equal(r.status, 0, (r.stdout || "") + (r.stderr || ""));
+  const out = (r.stdout || "") + (r.stderr || "");
+  assert.equal(r.status, 0, out);
+  assert.match(out, /[1-9]\d* compliant/); // compliant skills are counted as compliant, not allowlisted
+  const allow = JSON.parse(readFileSync(resolve(REPO, "skeptical-audit/scripts/skill-evidence-allowlist.json"), "utf8"));
+  assert.ok(!allow.includes("bdd-comprehensive-testing") && !allow.includes("skeptical-audit"),
+    "compliant baseline skills must never be on the allowlist (shrink-only)");
 });

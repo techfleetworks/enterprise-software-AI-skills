@@ -33,4 +33,6 @@ Every factual claim you output carries an **evidence state** (`proven` / `observ
 `documented` / `reported` / `not-assessed`), a **re-runnable source**, and a **named limitation**. Run
 the disconfirming-case-first pass, attach the evidence ledger, and never report work "done / secure /
 tested / safe / fixed / passes / complete" without it. The canonical contract is
-`skeptical-audit/references/evidence-discipline.md`; it binds this agent and every subagent.
+`skeptical-audit/references/evidence-discipline.md`. Installed via the always-on hook (which reads
+`$HOME/.claude/enterprise-skills-always-on.md`), this directive binds the main agent and every
+subagent; it takes effect once this file is copied to that hook path.

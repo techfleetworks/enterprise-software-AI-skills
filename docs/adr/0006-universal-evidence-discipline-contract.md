@@ -56,8 +56,14 @@ always-on directive and the governance Definition of done.
 
 `node skeptical-audit/scripts/check-skill-evidence-contract.mjs .` exits 0 (15 skills: 2 compliant, 13
 allowlisted). `test/skill-evidence-contract.test.mjs` proves the gate detects a non-compliant,
-non-allowlisted skill (and fails closed on zero skills / missing allowlist), and runs the real repo as
-a passing case. All run in CI via `npm test`.
+non-allowlisted skill, **fails when a compliant skill is grandfathered onto the allowlist** (shrink-only
+enforced), fails closed on zero skills / missing allowlist, and runs the real repo as a passing case
+that also asserts the compliant baseline is not on the allowlist. All run in CI via `npm test`.
+
+Activation caveat (`documented`, not yet `observed`): the always-on evidence mandate binds subagents
+only once `always-on/enterprise-skills-always-on.md` is installed at the hook path
+(`$HOME/.claude/`). This repo edits the template; a consuming environment must (re-)install it — the
+bootstrap installer (planned) does this. Until then, "binds every subagent" is `documented`.
 
 ## More Information
 

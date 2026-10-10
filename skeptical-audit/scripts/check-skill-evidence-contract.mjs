@@ -64,15 +64,21 @@ for (const f of skillFiles) {
   }
 }
 
-if (problems.length) {
-  console.error(`[check-skill-evidence-contract] FAIL — ${problems.length} skill(s) missing the evidence contract:`);
-  for (const p of problems) console.error("  • " + p);
-  console.error(`\nAdd the section (see skeptical-audit/references/evidence-discipline.md §5), or — only for a` +
-    ` pre-existing skill — add its id to ${relative(root, allowlistPath).split(sep).join("/")} (shrink-only; burn it down).`);
+if (problems.length || exemptNowCompliant.length) {
+  if (problems.length) {
+    console.error(`[check-skill-evidence-contract] FAIL — ${problems.length} skill(s) missing the evidence contract:`);
+    for (const p of problems) console.error("  • " + p);
+    console.error(`Add the section (see skeptical-audit/references/evidence-discipline.md §5), or — only for a` +
+      ` pre-existing skill — add its id to ${relative(root, allowlistPath).split(sep).join("/")} (shrink-only; burn it down).`);
+  }
+  if (exemptNowCompliant.length) {
+    // Enforce shrink-only mechanically: a skill that already complies may NOT sit on the allowlist.
+    // This is what stops anyone grandfathering a compliant skill back onto the list to make the gate
+    // vacuously pass — the ratchet can only tighten.
+    console.error(`[check-skill-evidence-contract] FAIL — ${exemptNowCompliant.length} skill(s) already comply but are ` +
+      `still on the allowlist; the allowlist is shrink-only, so REMOVE them: ${exemptNowCompliant.join(", ")}`);
+  }
   process.exit(1);
 }
 console.log(`[check-skill-evidence-contract] OK — ${skillFiles.length} skill(s): ${required.length} compliant, ${allow.size} on the shrink-only allowlist.`);
-if (exemptNowCompliant.length) {
-  console.log(`  note: ${exemptNowCompliant.length} allowlisted skill(s) now comply and should be REMOVED from the allowlist: ${exemptNowCompliant.join(", ")}`);
-}
 process.exit(0);
