@@ -22,6 +22,14 @@ behavioral layer and wires the suite into CI; that skill owns the full test *mix
 (unit/integration/e2e), contract, load, chaos, and the coverage/mutation quality gates. Use them
 together; don't duplicate the behavioral scenarios there.
 
+**Total coverage, but down the pyramid — not an ice-cream cone.** Covering every use case × audience
+does *not* mean running every scenario through the browser. Execute each behavioral scenario at the
+**lowest layer that proves the behavior** — subcutaneously, at the service/API boundary, wherever you
+can — and reserve full end-to-end UI runs for the few journeys that genuinely need the UI. Completeness
+is measured by *behavior* (the use-case × audience matrix), independent of layer, so you keep total
+coverage while keeping the suite fast and stable. See `comprehensive-test-strategy`'s pyramid "Rules of
+thumb" (push every test as far down as it can go; delete redundant higher-level tests).
+
 ## The non-negotiables
 
 These are not optional and not left to judgment. Every time this skill runs:

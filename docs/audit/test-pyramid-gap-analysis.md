@@ -41,11 +41,13 @@ grep -rniE "solitary|sociable|narrow integration|broad integration|subcutaneous|
 
 **G3 + G5 + G6 together are the reconciliation our BDD skill needs.** Our `bdd-comprehensive-testing`
 skill mandates "ALL use cases × ALL audiences, every push." Taken naively that risks the ice-cream cone
-Fowler warns against. We already added the right answer to the BDD skill ("run scenarios at the lowest
-layer that proves the behavior") — but `comprehensive-test-strategy` never states **push-down**,
-**acceptance-tests-can-be-low**, or **subcutaneous** as first-class rules, so the two skills aren't yet
-saying the same thing in the same words. Closing G3/G5/G6 makes the pyramid discipline and the
-total-coverage mandate explicitly consistent.
+Fowler warns against. Before this change **neither** skill stated the reconciliation (`grep -rni "lowest
+layer" .` → 0 hits): `comprehensive-test-strategy` named no push-down / acceptance-can-be-low /
+subcutaneous rules, and `bdd-comprehensive-testing` was silent on layering. The fix makes **both** sides
+say the same thing — `comprehensive-test-strategy` gains those rules of thumb, and
+`bdd-comprehensive-testing` gains an explicit "run each scenario at the **lowest layer that proves the
+behavior** — subcutaneously where possible" note — so completeness and the pyramid are now explicitly
+consistent.
 
 ## Recommended fix (the PR)
 
@@ -58,8 +60,17 @@ total-coverage mandate explicitly consistent.
    behavior per test / AAA, deleting redundant tests (G9).
 4. New `references/exploratory-testing.md` — scheduled exploration, destructive mindset, findings →
    automated regressions (G4).
-5. `SKILL.md` — a step for exploratory testing, the push-down rule in the core principle, and the
-   staged-by-speed-and-scope note (G11); update the reference table.
+5. `comprehensive-test-strategy/SKILL.md` — a step for exploratory testing, the push-down rule in the
+   core principle, and the staged-by-speed-and-scope note (G11); update the reference table.
+6. `bdd-comprehensive-testing/SKILL.md` — add the reconciliation note ("run each scenario at the
+   lowest layer that proves the behavior — subcutaneously where possible"), so the alignment with the
+   pyramid is mutual, not one-sided.
+
+**Not recommended: a separate "test pyramid" skill.** `comprehensive-test-strategy` already owns the
+pyramid and the full test mix; a third skill would duplicate it and drift, violating the repo's
+one-owner rule. Deliver *teach / install / implement* instead via: this skill (teach), the bootstrap
+installer scaffolding the pyramid's test layout + configs per stack (install), and a future
+`check-test-shape` gate measuring real layer ratios/runtimes from test reports (implement/prove).
 
 ## Evidence ledger
 

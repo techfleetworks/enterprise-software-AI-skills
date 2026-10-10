@@ -41,7 +41,12 @@ in-memory-DB caveat, the private-method/SRP rule, and a **Rules of thumb** block
 lower-level-gap rule, delete-the-duplicate, acceptance-can-live-low); `contract-testing.md` gains the
 third-party-fake-drift → contract-test pairing; two new references cover test code quality (DAMP vs
 DRY, Rule of Three, one-behavior-per-test, deleting redundant tests) and exploratory testing; and the
-SKILL adds the push-down principle, an exploratory-testing step, and stage-by-speed-not-type.
+`comprehensive-test-strategy` SKILL adds the push-down principle, an exploratory-testing step, and
+stage-by-speed-not-type. To make the reconciliation **mutual** rather than one-sided,
+`bdd-comprehensive-testing/SKILL.md` also gains an explicit "run each scenario at the lowest layer that
+proves the behavior — subcutaneously where possible" note, so both test skills now state the same
+pyramid discipline. (No separate "test pyramid" skill is created — `comprehensive-test-strategy`
+already owns the pyramid, and a third skill would duplicate and drift.)
 
 ### Consequences
 
@@ -54,7 +59,8 @@ SKILL adds the push-down principle, an exploratory-testing step, and stage-by-sp
 
 Re-running the audit's baseline grep now returns hits for every previously-missing term
 (solitary/sociable, narrow/broad integration, subcutaneous, push-down, sunk cost, exploratory, Rule of
-Three, DAMP). The gap-analysis document lists each gap, its proof, and the closing edit.
+Three, DAMP), and `grep -rni "lowest layer" bdd-comprehensive-testing/` now returns the reconciliation
+note (it was 0 before). The gap-analysis document lists each gap, its proof, and the closing edit.
 
 ## More Information
 
