@@ -29,6 +29,11 @@ fewer, high-value end-to-end/BDD tests for critical journeys; plus specialized t
 end-to-end is slow, flaky, and expensive; a suite that's all unit misses integration and
 scale failures.
 
+**Push every test as far DOWN the pyramid as it can go, and delete a higher-level test once a
+lower level covers it** — this is what keeps the shape over time, not a one-off ratio. The full
+operational rules (push-down, the lower-level-gap rule, delete-the-duplicate, and "acceptance tests
+can live low") are in `references/test-pyramid-and-types.md`.
+
 ## The workflow
 
 ### Step 1: Design the test mix for the change (the pyramid)
@@ -82,14 +87,25 @@ Read `references/quality-gates-and-flaky-tests.md`. Configure CI to:
 - **Quarantine and fix flaky tests** — a flaky suite that people re-run until green is
   worse than no suite, because it trains the team to ignore failures.
 
-### Step 6: Wire everything into CI/CD (shared with bdd-comprehensive-testing)
+### Step 6: Schedule exploratory testing (the human layer)
+
+Read `references/exploratory-testing.md`. Automated tests only check what you thought to specify;
+schedule regular, time-boxed **exploratory** sessions with a destructive mindset to find what
+automation misses — usability snags, confusing errors, slow responses, design issues. **Turn every
+reproducible finding into an automated test at the lowest layer that proves it** (push it down), and
+treat an escaped defect as a missing lower-level test, not just a bug to patch. This complements the
+pyramid; it never replaces it.
+
+### Step 7: Wire everything into CI/CD (shared with bdd-comprehensive-testing)
 
 The pipeline runs the pyramid on every PR (fast tests first, fail fast), contract tests on
-change, and heavier load/chaos suites on a schedule or pre-release gate. Reuse the CI setup
-from `bdd-comprehensive-testing`'s `ci-cd-wiring` rather than building a parallel one. Every
-test type publishes a readable report; the build fails on real failures and blocks merge.
+change, and heavier load/chaos suites on a schedule or pre-release gate. **Order stages by speed and
+scope, not by test type** — fast narrow integration tests can share the unit stage; what matters is
+that feedback arrives in minutes, not that each "type" gets its own stage. Reuse the CI setup from
+`bdd-comprehensive-testing`'s `ci-cd-wiring` rather than building a parallel one. Every test type
+publishes a readable report; the build fails on real failures and blocks merge.
 
-### Step 7: Confirm the strategy before calling it done
+### Step 8: Confirm the strategy before calling it done
 
 - [ ] Logic covered by unit tests at the lowest useful level
 - [ ] Seams (DB/queue/external) covered by integration tests
@@ -97,6 +113,8 @@ test type publishes a readable report; the build fails on real failures and bloc
 - [ ] Cross-service boundaries covered by contract tests (if applicable)
 - [ ] Performance validated against SLOs (if hot path / scale requirement)
 - [ ] Resilience validated by fault injection (if availability matters)
+- [ ] Each behavior tested at the **lowest layer that proves it**; redundant higher-level tests deleted
+- [ ] Exploratory session run on a cadence; findings turned into lower-level automated tests
 - [ ] Coverage gate passes; no known flaky tests left unquarantined
 - [ ] All of it runs in CI and blocks merge on failure
 
@@ -115,8 +133,10 @@ test type publishes a readable report; the build fails on real failures and bloc
 
 | Topic | File |
 |---|---|
-| Test pyramid, unit/integration/e2e, test doubles, what to test where | `references/test-pyramid-and-types.md` |
-| Consumer-driven contract testing (Pact), provider verification, versioning | `references/contract-testing.md` |
+| Test pyramid, solitary/sociable units, narrow/broad integration, subcutaneous, test doubles, the push-down rules of thumb | `references/test-pyramid-and-types.md` |
+| Consumer-driven contract testing (Pact), provider verification, keeping third-party fakes faithful | `references/contract-testing.md` |
 | Load / stress / soak / spike testing, baselines, tooling, CI perf gates | `references/load-and-performance-testing.md` |
 | Chaos engineering, fault injection, game days, resilience validation | `references/chaos-engineering.md` |
 | Coverage + mutation + property-based testing, flaky-test management, CI gates | `references/quality-gates-and-flaky-tests.md` |
+| Test code quality: DAMP vs DRY, Rule of Three, one-behavior-per-test, deleting redundant tests | `references/test-code-quality.md` |
+| Exploratory / manual testing, destructive mindset, findings → automated regressions | `references/exploratory-testing.md` |
