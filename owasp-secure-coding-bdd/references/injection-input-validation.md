@@ -40,8 +40,10 @@ Never build a query, command, or interpreter statement by concatenating or strin
 @security
 Scenario Outline: Rejects SQL injection payloads in search field
   When a user searches for "<payload>"
-  Then the query executes as a parameterized statement
-  And no database error is returned to the client
+  # "executes as a parameterized statement" is a WHITE-BOX claim — you can't observe it from outside.
+  # Assert it structurally (a query spy / DB log shows a bound parameter, not interpolated SQL), and
+  # assert the BLACK-BOX outcome below, which is what a caller can actually see.
+  Then no database error is returned to the client
   And the result set is empty or a normal "no results" response
 
   Examples:

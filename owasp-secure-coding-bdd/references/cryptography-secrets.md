@@ -5,7 +5,7 @@ Covers: Cryptographic Storage, Key Management, Secrets Management, Transport Lay
 ## Data at rest
 - Encrypt sensitive data at rest (PII, financial data, health data, tokens) using a well-vetted authenticated encryption mode: **AES-256-GCM** (or ChaCha20-Poly1305). Never use unauthenticated modes like ECB or plain CBC without a MAC — they don't protect integrity and ECB leaks patterns.
 - Never write custom cryptographic algorithms. Use vetted libraries (libsodium, platform crypto APIs like `crypto` in Node, `cryptography` in Python, BouncyCastle/JCA in Java, `System.Security.Cryptography` in .NET).
-- Generate a unique random IV/nonce per encryption operation — never reuse an IV with the same key (catastrophic for GCM: it can leak the authentication key).
+- Generate a unique random IV/nonce per encryption operation — never reuse an IV with the same key (catastrophic for GCM: it can leak the authentication key). With a **random 96-bit** GCM nonce, rotate the key well before **~2³² messages** under one key (the birthday bound on nonce collisions); beyond that, use a deterministic/counter nonce or a nonce-misuse-resistant mode like **AES-GCM-SIV**. `[documented: NIST SP 800-38D]`
 - Distinguish hashing from encryption: passwords are **hashed** (one-way, see authentication reference) never merely encrypted; data you need to read back later is **encrypted** (reversible with the key).
 
 ## Key management
