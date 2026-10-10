@@ -24,6 +24,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-      # Dependency-free: the scripts and tests use only Node built-ins, so there is nothing to install.
+          cache: npm
+      # The arch-gate/claim-lint scripts are dependency-free; the BDD gates use the official
+      # @cucumber/gherkin parser (a devDependency), so install from the committed lockfile.
+      - name: Install
+        run: npm ci
       - name: Run gate-script tests
         run: npm test

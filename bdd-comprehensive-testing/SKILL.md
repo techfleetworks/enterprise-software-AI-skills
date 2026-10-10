@@ -348,6 +348,33 @@ Run all of them in the same CI wiring as **required** checks, plus the pre-push 
 Gherkin that can reach `main` is Gherkin the official parser, the strict runner, and the tag
 vocabulary all accept. The author never decides what's legal; the parser does.
 
+## The suite must actually run — execution is gated, not just the files
+
+The checks above prove the *specification* is complete, legal, and categorized. They do **not**, on
+their own, prove the scenarios were executed against the real system — a CI job could lint the
+`.feature` files and go green while no behavior was ever exercised. Writing Gherkin is not testing;
+**the scenarios must be bound to real code and run**. So execution is gated too:
+
+- **Bind every scenario to step definitions and run it against the real system.** The BDD runner
+  (Cucumber / pytest-bdd / behave / SpecFlow / godog) executes the scenarios — not a stand-in for them
+  — on every PR and push, in **strict mode**, so an undefined or pending step is a hard failure. This
+  is what forces real step definitions wired to the actual code: a scenario with no implementation
+  cannot pass.
+- **Emit a machine-readable results report** from the run (Cucumber JSON, which cucumber-js, behave
+  `-f json`, Cucumber-JVM, and others can all produce, or the runner's equivalent).
+- **Reconcile the run against the datastore — `check-bdd-executed`.** It reads the results report and
+  **fails closed unless every scenario in the datastore actually executed and passed, with zero
+  undefined / pending / skipped / failed.** A misconfigured job that runs zero scenarios, or silently
+  skips some, fails the build instead of going green. This is the piece that makes "the autotests
+  really ran and really covered every scenario" *provable*, not assumed — the vacuous-green failure
+  mode this repo exists to prevent. It ships with a discriminating test (feed it a report with a
+  missing / failed / undefined scenario → it must go red).
+
+So the full required set on every push is: `check-gherkin-valid` (syntax) → `check-bdd-tags`
+(taxonomy) → the **strict runner** (real execution against the code) → `check-bdd-executed` (every
+scenario ran and passed) → `check-bdd-coverage` (matrix + datastore + append-only log). Static
+completeness and live execution are **both** required; neither alone is enough.
+
 ## Definition of done
 
 - [ ] Audiences established with certainty (asked the user if uncertain) and recorded.

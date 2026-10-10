@@ -82,6 +82,25 @@ accepted — malformed Gherkin fails `check-gherkin-valid` before it could reach
 check a faithful fixture and a discriminating test (no-op the check → its test fails) so the coverage
 gate itself can't rot.
 
+## `check-bdd-executed` — the suite actually ran, not just the files
+
+The checks above prove the *specification* is complete, legal, and categorized; they do **not** prove
+the scenarios were executed. `check-bdd-executed` closes that gap: the strict BDD runner executes the
+scenarios against the real system and emits a machine-readable report (Cucumber JSON), and this gate
+reconciles the report against the datastore — it **fails closed unless every scenario in
+`features/bdd-index.json` executed and passed, with zero undefined / pending / skipped / failed**.
+
+```bash
+# run the suite with a JSON report, then reconcile it against the datastore
+cucumber-js --strict --format json:reports/cucumber.json
+node scripts/check-bdd-executed.mjs features --results reports/cucumber.json
+```
+
+A misconfigured job that runs zero scenarios, or silently skips some, fails the build instead of going
+green — the vacuous-green failure mode this repo exists to prevent. `[documented]` Cucumber JSON is
+emitted by cucumber-js, behave (`-f json`), Cucumber-JVM and others; confirm your runner's flag. Ships
+with a discriminating test (a report with a missing / failed / undefined scenario → it must go red).
+
 ## Where these run
 
 All of the above run in the same CI wiring (see `storage-and-ci-wiring.md#ci-cd-wiring`) as
