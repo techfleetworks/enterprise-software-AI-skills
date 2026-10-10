@@ -11,7 +11,10 @@
 // Evidence states it recognises (case-insensitive, backticks ignored):
 //   observed · inferred · documented · reported · not-assessed / not assessed
 //
-// Exit 0 = clean. Exit 1 = findings. Exit 2 = bad usage.
+// Exit codes:
+//   0 = clean, OR findings in warn-only mode (no --strict) — prints them, does not block.
+//   1 = findings AND --strict — blocks (use this in CI to fail the build on untagged claims).
+//   2 = bad usage (no file / unreadable file).
 // It is a smoke alarm, not a judge: a clean run only means the obvious misses
 // are gone — the skeptic's loop still owns the subtle ones.
 
@@ -102,4 +105,6 @@ for (const f of findings) {
   console.log(`         > ${f.line}`);
 }
 console.log("\nFix: attach an evidence state + a re-runnable source + a named limitation, or downgrade the claim.");
-process.exit(strict ? 1 : 1);
+if (!strict) console.log("(warn-only: re-run with --strict to make these findings block.)");
+// Findings exist here (the clean case already exited 0 above): block only under --strict.
+process.exit(strict ? 1 : 0);
