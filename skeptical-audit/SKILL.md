@@ -141,7 +141,14 @@ upgrade it), and `claim-lint --strict` is green on the draft.
 - `scripts/check-skill-evidence-contract.mjs` — the gate that requires every skill to carry the evidence contract (shrink-only allowlist).
 
 ## Provenance and sharing
-Generalized from an evidence-discipline practice developed for audit work on the SWERL / TalkStash
-systems, where an independent review router issued AGREE / SEND BACK verdicts and caught claims
-pitched above their evidence. Written to be portable: it names no private system, credential, or
-person, so it can be dropped into any repo's `skills/` directory and shared across teams unchanged.
+This skill distills **standard skeptical-audit practice** into a portable contract: adversarial,
+disconfirming-case-first review; claims graded by an evidence state and backed by a re-runnable
+source; and an independent review step that sends work back when a claim outruns its support. These
+are recognized norms, not a proprietary method — evidence-based reasoning, red-team/independent
+review, and the principle that a claim's strength must match its evidence's strength. [documented —
+general evidence-based-reasoning and software-review practice]
+
+Grounding it in citable practice (rather than an origin story a reader can't verify) is itself the
+discipline: provenance you can't check carries no evidence weight. The contract names no private
+system, credential, or person, so it drops into any repo's `skills/` directory and is shared across
+teams unchanged.

@@ -33,10 +33,22 @@ Document, before the incident, the manual override when automation fails:
 - For destructive migrations, take a point-in-time backup immediately before, and confirm
   it's restorable.
 
-## DORA metric: MTTR
-Mean Time To Restore is one of the four elite-performance metrics. Optimize it by making
-rollback fast and rehearsed, not by trying to never fail. Elite teams restore in under an
-hour; the mechanism is flags + immutable artifacts + practiced procedures.
+## DORA metric: recovery time (precisely named)
+Recovery time is one of the four DORA keys. The name has shifted, and the shift matters:
+older DORA material called it **Time to Restore Service**; recent *State of DevOps* reports
+call it **Failed deployment recovery time** — scoped to recovering from a *failed
+deployment*, not to every incident. "MTTR" (mean time to recovery/repair/restore) is a looser
+industry alias that usually spans *all* incidents, so don't treat it as a synonym or you'll
+average two different populations together. [documented]
+
+Optimize it by making rollback fast and rehearsed, not by trying to never fail: feature flags +
+immutable, redeployable artifacts + practiced procedures. Report the **median and p90**, not the
+mean (recovery times are heavily skewed), and read the current *State of DevOps* report for the
+performance-tier bands rather than quoting a fixed "under an hour" — the tier thresholds are
+revised each year.
+
+*Source:* Google Cloud / DORA — "DORA's software delivery metrics: the four keys" and the annual
+*State of DevOps* report, dora.dev (retrieved 2026-10-10). [documented]
 
 ## Before-you-deploy checklist
 - [ ] Rollback mechanism identified and achievable in < 5 min

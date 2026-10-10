@@ -16,8 +16,20 @@ deletion or export request, no policy will save you.
 - **Accountability** — be able to *demonstrate* compliance (records of processing, DPIAs).
 
 ## Data-subject rights — design so they're executable
-GDPR (and similarly CCPA/CPRA) grant individuals rights you must be able to fulfill,
-usually within a legal deadline (GDPR: ~1 month):
+GDPR (and similarly CCPA/CPRA) grant individuals rights you must be able to fulfill within a
+**legal deadline** — the deadline is why these must be engineered, not handled manually:
+
+- **GDPR:** respond "without undue delay and in any event within **one month** of receipt"
+  (Art. 12(3)). You may extend by **two further months** for complex or numerous requests, but
+  you must inform the subject of the extension (with reasons) **within the first month**; no
+  permission is needed. [documented — GDPR Art. 12(3)]
+- **CCPA/CPRA:** respond to a **verifiable consumer request** (the statutory term) within **45
+  calendar days**; extendable
+  **once by another 45** (90 total), with notice to the consumer. Confirm receipt within **10
+  business days**. Verification does not pause the 45-day clock. [documented — Cal. Civ. Code
+  §1798.130(a)(2)]
+
+The rights themselves:
 - **Access / portability** — export all personal data you hold on them, in a usable format.
   Requires knowing everywhere that data lives (primary DB, derived tables, search index,
   analytics, logs, third parties).
@@ -41,7 +53,14 @@ what makes these requests impossible.
 ## CCPA/CPRA specifics (California; similar US state laws proliferating)
 - Rights to know, delete, correct, and **opt out of "sale"/sharing** of personal
   information. Provide a clear opt-out mechanism ("Do Not Sell or Share").
-- Applies to businesses meeting thresholds; treat US personal data with equivalent care.
+- **Who it covers:** a for-profit doing business in California that meets **any one** of three
+  thresholds (as amended by the CPRA): (a) **> $25M** gross annual revenue in the prior calendar
+  year (counted globally, not just CA); (b) buys, sells, or shares the personal information of
+  **≥ 100,000** CA consumers or households; or (c) derives **≥ 50%** of annual revenue from
+  selling or sharing consumers' personal information. [documented — Cal. Civ. Code §1798.140(d);
+  note the CPRA raised the data-volume prong from the original CCPA's 50,000]
+- Treat US personal data with equivalent care even below the thresholds; other state laws
+  (e.g. Virginia, Colorado) carry their own.
 
 ## DPIA (Data Protection Impact Assessment)
 For high-risk processing (large-scale sensitive data, systematic monitoring, new tech):

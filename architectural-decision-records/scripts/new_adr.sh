@@ -53,6 +53,23 @@ detect_dir() {
 LOG_DIR="$(detect_dir)"
 mkdir -p "$LOG_DIR"
 
+# --- lock: serialize id allocation + file creation ----------------------------
+# "next id = max(existing)+1" has a race: two runs started together read the same max and mint the
+# SAME number under different slugs (the exact ADR-number collision this script exists to avoid).
+# mkdir is atomic on POSIX, so it is a portable lock (no flock, which macOS lacks). Hold it across
+# the id compute AND the write; release on any exit.
+LOCK_DIR="$LOG_DIR/.adr-lock"
+tries=0
+until mkdir "$LOCK_DIR" 2>/dev/null; do
+  tries=$((tries + 1))
+  if [ "$tries" -gt 100 ]; then
+    echo "error: could not acquire ADR lock at $LOCK_DIR after 10s — remove it if a prior run died" >&2
+    exit 1
+  fi
+  sleep 0.1
+done
+trap 'rmdir "$LOCK_DIR" 2>/dev/null || true' EXIT
+
 # --- compute next id ----------------------------------------------------------
 highest=0
 while IFS= read -r f; do
@@ -71,6 +88,9 @@ ID="$(printf '%04d' "$next")"
 SLUG="$(echo "$TITLE_RAW" \
   | tr '[:upper:]' '[:lower:]' \
   | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')"
+# A title with no [a-z0-9] (e.g. only punctuation or non-Latin script) collapses to an empty slug,
+# which would produce "NNNN-.md". Fall back so the filename is always well-formed.
+[ -z "$SLUG" ] && SLUG="decision"
 FILE="$LOG_DIR/${ID}-${SLUG}.md"
 
 if [ -e "$FILE" ]; then
