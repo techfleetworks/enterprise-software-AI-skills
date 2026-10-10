@@ -1,0 +1,8 @@
+{
+  "rules": [
+    { "name": "dependency: web concern in a service", "include": ["services/**"], "forbid": ["\\brequest\\b"], "message": "services must not reference request/response — pass plain data in" },
+    { "name": "boundary: business logic in a component", "include": ["components/**"], "forbid": ["function\\s+(calculate|validate|charge)\\w*"], "message": "move business rules out of UI components into a service" },
+    { "name": "ownership: write into another module's table", "include": ["**/*.ts"], "forbid": ["otherModule\\.table\\."], "message": "write through the owning module's interface, not its tables" }
+  ],
+  "builtins": { "emptyCatch": true, "swallowReturn": true, "keepInSync": true }
+}
