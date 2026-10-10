@@ -19,25 +19,29 @@ that stays green is the defect.
 ## The algorithm
 
 ```
-for each check that is expected to have a test (i.e. not on the shrink-only allowlist):
+map each check (not on the shrink-only allowlist) to the test file(s) that exec it
+for each such check, ONE AT A TIME:
     save the check's real source
     overwrite the check with a no-op stub that exits 0
-run the whole check-test suite ONCE
-restore every check from its saved source        # always, even on error (finally)
-for each check:
-    if its test(s) PASSED against the no-op:      # vacuous — the failure it should catch didn't happen
-        report it and fail the gate
-if any vacuous test was found: exit non-zero
+    run ONLY that check's mapped test(s)
+    restore the check from its saved source        # immediately, so later checks see the real others
+    if its test(s) PASSED against the no-op:        # vacuous — the failure it should catch didn't happen
+        record it
+restore every check in a finally (defensive sweep, even on crash)
+if any vacuous test was found: exit non-zero (list them)
 else: exit 0 with evidence ("N checks, each test fails when its check is a no-op")
 ```
 
 Key properties, each of which matters:
 
-- **Run the suite once, not per-mutant.** No-opping *all* checks together and running the suite a
-  single time is dramatically cheaper than mutating one check at a time, and it's sufficient: a
-  test is mapped to the check(s) it exercises, so a test that stays green is vacuous regardless of
-  what the other stubs did. (You can escalate to per-check mutation later if a check's test
-  touches several checks; for the no-op mutant it's rarely needed.)
+- **Mutate one check at a time, not all at once.** No-opping *every* check simultaneously is cheaper
+  (one suite run), but it lets one stubbed check **mask** another: if a test touches more than one
+  check, a second no-op can be the reason it goes red, so the gate can't attribute the red to the
+  check it's actually proving. Mutating per-check and running only that check's mapped tests removes
+  the ambiguity — a red is unambiguously caused by *this* check being neutralized. The reference
+  implementation (`verify-check-discrimination.mjs`) does exactly this, restoring each check before
+  moving to the next. The all-at-once variant is a valid optimization only when every test is mapped
+  to exactly one check; prefer per-check as the safe default.
 
 - **Restore in a `finally`.** The gate mutates real files on disk. It **must** restore them even
   if the runner throws, is killed, or a test hangs. Save original contents first; restore in a

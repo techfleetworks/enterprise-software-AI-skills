@@ -1,0 +1,29 @@
+# Runs the discriminating tests for the repo's own gate scripts (claim-lint, arch-gate, …).
+# These scripts ARE the mechanical enforcement engines; if they regress, every skill that leans on
+# them quietly loses its guarantee — so their tests are a required, blocking check.
+name: tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Least-privilege: the tests only need to read the checkout.
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # Lower bound (engines.node) and current, so a fix that relies on a newer Node is caught.
+        node: [20, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      # Dependency-free: the scripts and tests use only Node built-ins, so there is nothing to install.
+      - name: Run gate-script tests
+        run: npm test
