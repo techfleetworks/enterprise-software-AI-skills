@@ -20,7 +20,11 @@ ones) are hypotheses; testing is evidence.
 ## You need far fewer participants than you'd think
 
 - **~5 users per round** typically surface the large majority of usability problems for a
-  given design — diminishing returns kick in fast.
+  given design — diminishing returns kick in fast. (Nielsen & Landauer / NN/g,
+  <https://www.nngroup.com/articles/why-you-only-need-to-test-with-5-users/>, retrieved
+  2026-10-10 `[documented]`. The "5 users ≈ 85%" figure is **debated and task-dependent** — it
+  assumes one homogeneous user group; distinct audiences each need their own ~5, and quantitative
+  studies need far more. Treat it as a floor for a qualitative round, not a law.)
 - **Prefer several small rounds over one big study**: test 5, fix the top issues, test
   another 5 on the fixed version. Iteration finds and confirms fixes faster than one large
   test.

@@ -1,6 +1,6 @@
 ---
 name: owasp-secure-coding-bdd
-description: Use for EVERY feature touching user input, auth, sessions, data storage, files, APIs, external requests, permissions, dependencies, or infra config — most features. Run a threat-modeling pass against the FULL OWASP Cheat Sheet Series (bundled locally in reference files, no web lookup needed), apply matching secure-coding measures, write results as @security Gherkin scenarios, and ALWAYS run the lockout/accidental-deletion safety check before any permission, access, credential, or deletion change. Trigger on login, passwords, sessions, tokens, forms, uploads, DB queries, outbound HTTP, deserialization, admin/role checks, permissions, firewall/IAM rules, keys, dependencies, or AI/LLM/agent/RAG/MCP code — even without the words "security" or "OWASP." All 120 OWASP cheat sheets are bundled locally in references/owasp-full-index.md.
+description: Use for EVERY feature touching user input, auth, sessions, data storage, files, APIs, external requests, permissions, dependencies, or infra config — most features. Run a threat-modeling pass against the FULL OWASP Cheat Sheet Series (bundled locally in reference files, no web lookup needed), apply matching secure-coding measures, write results as @security Gherkin scenarios, and ALWAYS run the lockout/accidental-deletion safety check before any permission, access, credential, or deletion change. Trigger on login, passwords, sessions, tokens, forms, uploads, DB queries, outbound HTTP, deserialization, admin/role checks, permissions, firewall/IAM rules, keys, dependencies, or AI/LLM/agent/RAG/MCP code — even without the words "security" or "OWASP." The full OWASP Cheat Sheet Series is bundled locally in references/owasp-full-index.md (every sheet listed; 117 carry condensed controls).
 ---
 
 # OWASP Secure Coding & Threat Modeling in BDD
@@ -11,7 +11,7 @@ Most vulnerabilities are not exotic — they're the same handful of well-documen
 
 This skill bundles condensed, actionable checklists covering the OWASP Cheat Sheet Series directly in its reference files, so you do not need to search the web every time you write code. Read the relevant reference file(s) from disk instead.
 
-**Coverage is complete, not a curated subset.** `references/owasp-full-index.md` contains an entry for **every one of the 120 cheat sheets in the series**, each with its condensed local controls — it is the master list and your starting point. The other reference files are deep dives for the highest-traffic topics. Always scan the full index first so no applicable cheat sheet is missed; then open the matching deep-dive file(s) for topics the feature leans on heavily.
+**Coverage is complete, not a curated subset.** `references/owasp-full-index.md` lists **every cheat sheet in the series** — 117 with their condensed local controls, the rest by name — and it is the master list and your starting point. (The live series size is a moving target; confirm it against the official index rather than a fixed number.) The other reference files are deep dives for the highest-traffic topics. Always scan the full index first so no applicable cheat sheet is missed; then open the matching deep-dive file(s) for topics the feature leans on heavily.
 
 ## The workflow
 
@@ -41,11 +41,11 @@ Before or while implementing, ask what the feature actually touches. Check each 
 
 ### Step 2: Map the attack surface to the relevant reference files
 
-**Start with `references/owasp-full-index.md`** — it lists all 120 cheat sheets grouped into clusters, so you can confirm which ones apply (including specialized ones like AI/LLM, WebSockets, subdomain takeover, payment gateways, automotive, etc. that aren't in the summary table below). Then read only the deep-dive files that match what Step 1 found — don't read all of them for a feature that doesn't touch that surface, that's wasted context. Deep-dive mapping:
+**Start with `references/owasp-full-index.md`** — it lists every cheat sheet grouped into clusters, so you can confirm which ones apply (including specialized ones like AI/LLM, WebSockets, subdomain takeover, payment gateways, automotive, etc. that aren't in the summary table below). Then read only the deep-dive files that match what Step 1 found — don't read all of them for a feature that doesn't touch that surface, that's wasted context. Deep-dive mapping:
 
 | Attack surface from Step 1 | Reference file |
 |---|---|
-| ANYTHING — confirm the complete set of applicable cheat sheets first | `references/owasp-full-index.md` (all 120, always check) |
+| ANYTHING — confirm the complete set of applicable cheat sheets first | `references/owasp-full-index.md` (every sheet, always check) |
 | Login, signup, password reset, MFA, security questions, session/token handling | `references/authentication-session.md` |
 | Any user input reaching a query, shell command, or interpreter (SQL, NoSQL, LDAP, OS commands, search/graph query languages) | `references/injection-input-validation.md` |
 | Role checks, ownership checks, permissions, multi-tenant data, mass assignment | `references/access-control-authorization.md` |

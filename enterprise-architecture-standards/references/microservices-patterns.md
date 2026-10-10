@@ -16,7 +16,7 @@ Covers: Service decomposition via DDD, API Gateway, Service Discovery, sync/asyn
 
 ### Synchronous (REST, gRPC)
 - Use when the caller needs an immediate response to proceed (e.g., "is this payment authorized").
-- Always apply timeouts, retries with backoff, and circuit breakers on synchronous calls (see `resilience-reliability-patterns.md`) — a synchronous call chain across several services multiplies latency and failure probability with every hop; a hard dependency chain of 5 synchronous services each with 99.9% availability yields under 99.5% for the whole chain.
+- Always apply timeouts, retries with backoff, and circuit breakers on synchronous calls (see `resilience-reliability-patterns.md`) — a synchronous call chain across several services multiplies latency and failure probability with every hop; a hard dependency chain of 10 synchronous services each with 99.9% availability yields only ≈99.0% for the whole chain (0.999¹⁰ ≈ 0.990), because availabilities multiply with every hop (`[observed]`: `node -e 'console.log(Math.pow(0.999,10))'` → 0.99004…).
 - Minimize synchronous call depth/fan-out; a request that synchronously calls 6 other services to render one page is fragile and slow. Prefer async/event-driven for anything that doesn't need an immediate response, or aggregate data ahead of time (see CQRS below).
 
 ### Asynchronous (message queues, event streaming — Kafka, RabbitMQ, SQS/SNS, etc.)
