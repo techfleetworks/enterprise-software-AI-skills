@@ -9,8 +9,8 @@ differences, and experts skimming quickly.
 
 - **Aim for ~8th-grade reading level.** Short words, short sentences, one idea per sentence.
   This isn't "dumbing down" — even experts read plain language faster and prefer it.
-- **Active voice, present tense.** "We saved your changes," not "Your changes have been
-  saved." "Enter your email," not "The email must be entered."
+- **Active voice, present tense.** "We save your changes automatically," not "Your changes
+  are saved automatically." "Enter your email," not "The email must be entered."
 - **Avoid jargon and internal terms.** Use the words your users use. If a technical term is
   unavoidable, define it in place. No acronyms without expansion.
 - **Be concise.** Cut filler ("please note that," "in order to," "at this time"). Users

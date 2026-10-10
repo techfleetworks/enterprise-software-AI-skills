@@ -7,27 +7,27 @@ versions that don't exist yet.
 
 Layer the experience so each layer is optional:
 
-1. **Content & structure** â€” semantic HTML that delivers the core task on its own.
-2. **Presentation** â€” CSS enhances the look; if it fails, content is still readable.
-3. **Behavior** â€” JavaScript enhances interaction; if it fails to load or throws, the
+1. **Content & structure** — semantic HTML that delivers the core task on its own.
+2. **Presentation** — CSS enhances the look; if it fails, content is still readable.
+3. **Behavior** — JavaScript enhances interaction; if it fails to load or throws, the
    core task still completes via the HTML layer.
 
-The test: **disable JavaScript (or let a script 404) â€” can the user still accomplish the
+The test: **disable JavaScript (or let a script 404) — can the user still accomplish the
 primary task?** A form should submit via a real `<form action>`; a link should navigate
 via a real `href`. Enhancement makes it *nicer* (inline validation, no full reload), not
 *possible*. This is the opposite of "blank page until the JS bundle boots."
 
 Graceful degradation (build the rich version, then patch older browsers) is the weaker
-inverse â€” it tends to leave the floor broken. Prefer enhancement.
+inverse — it tends to leave the floor broken. Prefer enhancement.
 
 ## Feature detection (ask what the browser can do)
 
 Branch on **capabilities**, never on identity.
 
-### In CSS â€” `@supports`
+### In CSS — `@supports`
 
 ```css
-/* fallback first â€” everyone gets this */
+/* fallback first — everyone gets this */
 .card { display: block; }
 
 /* enhancement only where supported */
@@ -38,7 +38,7 @@ Branch on **capabilities**, never on identity.
 
 `@supports` also tests values and can negate: `@supports not (aspect-ratio: 1)`.
 
-### In JavaScript â€” capability checks
+### In JavaScript — capability checks
 
 ```js
 if ('IntersectionObserver' in window) {
@@ -64,7 +64,7 @@ Parsing `navigator.userAgent` for a brand or version to decide behavior is banne
   API exist," which feature detection answers directly.
 
 The rare legitimate exception is working around a *known, documented* engine bug that
-cannot be feature-detected â€” isolate it, comment it with the bug link, and delete it when
+cannot be feature-detected — isolate it, comment it with the bug link, and delete it when
 the bug is fixed.
 
 ## Don't assume the environment
