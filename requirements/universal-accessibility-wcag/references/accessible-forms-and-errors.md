@@ -40,6 +40,22 @@ frustrate; it blocks the task entirely.
 - **Accessible authentication** (3.3.8): don't require solving a puzzle or transcribing a
   code with no accessible alternative; allow paste and password managers.
 
+```html
+<!-- ❌ never — placeholder as label, error shown by color only, nothing linked to the input -->
+<input type="email" placeholder="Email">
+<span style="color:red">Invalid</span>
+
+<!-- ✅ always — persistent label, aria-invalid on the field, error linked via aria-describedby -->
+<label for="email">Email address</label>
+<input
+  id="email"
+  type="email"
+  autocomplete="email"
+  aria-invalid="true"
+  aria-describedby="email-error">
+<p id="email-error" class="error">Enter a valid email address, e.g. name@example.com.</p>
+```
+
 ## Announcing dynamic changes — live regions (WCAG 4.1.3)
 
 When content changes without a page load, sighted users see it but AT users won't unless
@@ -53,6 +69,22 @@ you announce it:
   that's disruptive; live regions announce *without* stealing focus.
 - Reflect state changes (`aria-expanded`, `aria-selected`, `aria-checked`, `aria-busy`) as
   they happen so the widget's state is always accurate to AT.
+
+```html
+<!-- The live region exists in the DOM up front, empty; you fill it when errors occur. -->
+<div role="alert" aria-live="assertive" id="form-errors"></div>
+```
+
+```js
+// ❌ never — innerHTML with text that may echo user input is an XSS footgun
+formErrors.innerHTML = `We couldn't save: ${userMessage}`;
+
+// ✅ always — set textContent; it announces via the live region and can't inject markup
+formErrors.textContent = `We couldn't save: ${userMessage}`;
+```
+
+When an error/live-region message may include user-supplied text, write it with
+**`textContent`, not `innerHTML`** — `innerHTML` would execute injected markup (XSS).
 
 ## Form accessibility checklist
 

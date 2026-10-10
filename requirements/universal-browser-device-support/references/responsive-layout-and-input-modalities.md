@@ -40,9 +40,11 @@ stylus — often on the same device.
 
 - **Pointer events / device-agnostic handlers.** Prefer `click` and Pointer Events over
   mouse-only events so touch and stylus work without separate code paths.
-- **Hit-target size.** Interactive targets should be roughly **44×44 px** minimum with
-  spacing, so fingers (not just cursors) can hit them (aligns with WCAG target-size
-  guidance).
+- **Hit-target size.** The WCAG AA floor is modest — WCAG 2.2 **SC 2.5.8 Target Size
+  (Minimum)** requires **24×24 CSS px** (or 24px spacing). 44×44 is *not* the AA
+  baseline: that's WCAG 2.1 **SC 2.5.5 Target Size (Enhanced)** = AAA, and Apple's HIG
+  touch guidance. So meet 24×24 as the minimum, and design toward ~44 (AAA / Apple HIG)
+  with spacing, so fingers — not just cursors — can hit comfortably.
 - **No hover-only affordances.** Anything revealed on `:hover` must also be reachable by
   tap and keyboard focus — touch has no hover, and a hover menu is invisible on a phone.
   Use `@media (hover: hover)` to *add* hover niceties, not to gate essential actions.

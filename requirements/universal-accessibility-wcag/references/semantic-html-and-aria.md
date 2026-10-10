@@ -44,6 +44,26 @@ component — dialog, disclosure, tabs, menu, combobox, accordion, tooltip, etc.
 specifies the required roles, states, and **keyboard interaction** (which arrow keys,
 Home/End, Escape, etc.). Don't invent your own; the patterns encode what AT users expect.
 
+A modal dialog, per the APG, is labelled, marked modal, and manages focus:
+
+```html
+<!-- ❌ never — a "dialog" that's just a div; no role, no label, focus not trapped -->
+<div class="modal"><h2>Delete file?</h2> … </div>
+
+<!-- ✅ always — APG dialog: role, aria-modal, and an accessible name via the heading -->
+<div role="dialog" aria-modal="true" aria-labelledby="dlg-title">
+  <h2 id="dlg-title">Delete file?</h2>
+  <p>This can't be undone.</p>
+  <button type="button">Cancel</button>
+  <button type="button">Delete</button>
+</div>
+```
+
+Focus-trap note: on open, move focus into the dialog (usually the first control or the
+heading); keep Tab/Shift+Tab cycling *within* it while open; close on Escape; and return
+focus to the element that opened it. (The native `<dialog>` element with `.showModal()`
+gives you modality, the Escape key, and focus return for free — prefer it where supported.)
+
 ## Accessible names — how AT identifies things
 
 Every control needs an **accessible name**. In priority order, prefer:
@@ -55,6 +75,18 @@ Every control needs an **accessible name**. In priority order, prefer:
 
 Icon-only buttons **must** have a name (`aria-label` or visually-hidden text). Don't rely
 on `title` for naming — it's inconsistent across AT and hidden on touch.
+
+```html
+<!-- ❌ never — icon button with no accessible name; AT announces just "button" -->
+<button><svg aria-hidden="true">…</svg></button>
+
+<!-- ✅ always — name it; mark the decorative glyph aria-hidden so it isn't double-read -->
+<button type="button" aria-label="Close dialog">
+  <svg aria-hidden="true" focusable="false">…</svg>
+</button>
+<!-- or keep visible text for everyone and visually hide it:
+<button type="button"><svg aria-hidden="true">…</svg><span class="sr-only">Close dialog</span></button> -->
+```
 
 ## Common structure mistakes
 

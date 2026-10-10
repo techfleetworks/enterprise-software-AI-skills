@@ -1,6 +1,6 @@
 ---
 name: universal-browser-device-support
-description: Use for ANY frontend/UI change — HTML, CSS, JavaScript, components, layouts — to make it work correctly and bug-free across every supported browser and device, not just the one it was written on. Covers defining a support matrix, feature detection and progressive enhancement (never user-agent sniffing), responsive layout, input modalities (touch/mouse/keyboard/stylus), cross-browser CSS/JS quirks and fallbacks, low-end-device performance, and automated cross-browser/device testing wired into CI. Trigger proactively on "works on my machine," "broken in Safari/Firefox/Edge," CSS layout, responsive, mobile, tablet, touch, viewport, breakpoint, polyfill, vendor prefix, "looks different in," or any code that renders in a browser — even without those words.
+description: Use for ANY frontend/UI change — HTML, CSS, JavaScript, components, layouts — to make it work correctly across every browser and device in the committed support matrix, not just the one it was written on. Covers defining a support matrix, feature detection and progressive enhancement (never user-agent sniffing), responsive layout, input modalities (touch/mouse/keyboard/stylus), cross-browser CSS/JS quirks and fallbacks, low-end-device performance, and automated cross-browser/device testing wired into CI. Trigger proactively on "works on my machine," "broken in Safari/Firefox/Edge," CSS layout, responsive, mobile, tablet, touch, viewport, breakpoint, polyfill, vendor prefix, "looks different in," or any code that renders in a browser — even without those words.
 ---
 
 # Universal Browser & Device Support
@@ -14,10 +14,10 @@ janky on a three-year-old Android. Users don't file bugs — they leave. This sk
 makes cross-browser, cross-device correctness a *property of how the code is written
 and tested*, not something a QA pass discovers later (or a user does, in production).
 
-The goal is not "test more browsers at the end." It is to write code that is
-**correct by construction** across environments — standards-based, feature-detected,
+The goal is not "test more browsers at the end." It is to write code that
+**works across the committed support matrix** — standards-based, feature-detected,
 responsive, and progressively enhanced — and then to *prove* it with automated tests
-across a real matrix.
+across that matrix.
 
 ## The core principle
 
@@ -68,8 +68,10 @@ Read `references/responsive-layout-and-input-modalities.md`. Cover:
   magic numbers.
 - **The viewport meta tag** and safe-area insets; never disable user zoom.
 - **Every interactive target works by touch, mouse, and keyboard.** Adequate hit-target
-  size (~44×44px), no hover-only affordances, `:focus-visible` states, pointer events
-  over mouse-only events.
+  size — WCAG 2.2 **SC 2.5.8 Target Size (Minimum)** is AA = **24×24 CSS px** (or 24px
+  spacing); 44×44 is *not* the WCAG AA floor (that's WCAG 2.1 **SC 2.5.5 Target Size
+  (Enhanced)** = AAA, and Apple's HIG). AA minimum 24×24; design toward ~44 for comfort.
+  No hover-only affordances, `:focus-visible` states, pointer events over mouse-only events.
 - **Respect user/system settings**: `prefers-reduced-motion`, `prefers-color-scheme`,
   text scaling, and OS-level zoom.
 

@@ -13,7 +13,7 @@ Same format as every other skill in this repo: each folder has a `SKILL.md`
 
 | Skill | What it enforces | Triggers on |
 |---|---|---|
-| [`universal-browser-device-support`](universal-browser-device-support/) | Bug-free rendering and behavior across every supported browser engine and device | Any HTML/CSS/JS/UI change, responsive layout, "broken in Safari," mobile/touch, polyfills |
+| [`universal-browser-device-support`](universal-browser-device-support/) | Rendering and behavior that works across the committed support matrix of browser engines and devices | Any HTML/CSS/JS/UI change, responsive layout, "broken in Safari," mobile/touch, polyfills |
 | [`universal-accessibility-wcag`](universal-accessibility-wcag/) | WCAG 2.2 AA conformance so people using a keyboard, screen reader, or magnifier aren't locked out | Forms, images, color/contrast, focus, keyboard, ARIA, screen readers, "a11y" |
 | [`usability-ux-universal-design`](usability-ux-universal-design/) | User-friendly, intuitive design for the widest range of people and situations | New UI/flows, navigation, onboarding, empty/error states, microcopy, "is this confusing?" |
 

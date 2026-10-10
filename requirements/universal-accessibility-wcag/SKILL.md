@@ -65,6 +65,10 @@ Read `references/keyboard-and-focus-management.md`. This is where custom UIs fai
 - **Manage focus** for dynamic UI: move focus into an opened dialog, trap it there, return
   it on close; move focus to newly revealed content; don't let it fall to a hidden element.
 - **Skip link** to bypass repeated navigation (2.4.1).
+- **Dragging movements** (2.5.7, AA — new in 2.2): any drag-based action has a single-pointer
+  alternative (tap/click), so it works without a drag gesture.
+- **Target size** (2.5.8, AA — new in 2.2): interactive targets are at least **24×24 CSS px**
+  or have 24px spacing (design toward ~44px for comfort).
 
 ### Step 4: Make it Perceivable — text alternatives, contrast, media
 
@@ -77,8 +81,11 @@ Read `references/color-contrast-and-visual-design.md` and
   UI components/graphical objects (1.4.3, 1.4.11).
 - **Never rely on color alone** to convey meaning (1.4.1) — pair it with text/icon/shape.
 - **Reflow & resize**: usable at 320px width and at 200% zoom without loss (1.4.4, 1.4.10).
-- **Media**: captions for video, transcripts for audio, no content that flashes more than
-  three times per second (2.3.1).
+- **Media**: for video, **captions** (1.2.2, A) and **audio description** (1.2.5, AA);
+  for audio-only, a **transcript** (1.2.1, A). No content that flashes more than three
+  times per second (2.3.1).
+- **Content on hover or focus** (1.4.13, AA — from 2.1): tooltips/popovers triggered by
+  hover or focus must be dismissable, hoverable, and persistent.
 
 ### Step 5: Make forms and errors Understandable
 
@@ -91,12 +98,23 @@ Read `references/accessible-forms-and-errors.md`. Forms are the highest-stakes s
   (1.3.5), and announce validation results to assistive tech.
 - Consistent, predictable navigation and behavior (3.2); clear instructions; don't rely
   on placeholder text as the only label.
+- **Label in Name** (2.5.3, A — from 2.1): a control's accessible name includes its visible
+  label text, so voice-control users can activate it by speaking what they see.
+- **Consistent Help** (3.2.6, A — new in 2.2): help mechanisms (contact link, help link)
+  appear in the same relative order across pages.
+- **Redundant Entry** (3.3.7, A — new in 2.2): don't make users re-enter information they
+  already provided in the same session — auto-populate it or let them pick it.
+- **Accessible Authentication (Minimum)** (3.3.8, AA — new in 2.2): don't require a cognitive
+  function test (remembering/transcribing) to log in with no accessible alternative; allow
+  paste and password managers.
 
 ### Step 6: Make it Robust
 
 Read `references/semantic-html-and-aria.md`. Robust = works with current and future
 assistive tech: **valid, well-formed markup**; correct name/role/value on every component
 (4.1.2); status messages announced via live regions (4.1.3) without stealing focus.
+(Note: the old **4.1.1 Parsing** criterion was *removed / made obsolete in WCAG 2.2* —
+clean markup still matters, but it's no longer a scored success criterion.)
 
 ### Step 7: Verify — automated + keyboard + screen reader, in CI
 

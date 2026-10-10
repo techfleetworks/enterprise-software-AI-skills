@@ -7,8 +7,10 @@ vague goal into a testable, tool-readable contract.
 
 - **Rendering engines, not just brands.** There are three that matter: **Blink**
   (Chrome, Edge, most Android browsers, Electron), **WebKit** (Safari on macOS, and —
-  critically — *every* browser on iOS, since all iOS browsers use WebKit), and **Gecko**
-  (Firefox). Testing "Chrome and Edge" is testing Blink twice. Cover all three engines.
+  critically — effectively all iOS browsers use WebKit today; note that since **iOS 17.4**
+  the EU's Digital Markets Act permits alternative browser engines on iOS 17.4+ in the EU),
+  and **Gecko** (Firefox). Testing "Chrome and Edge" is testing Blink twice. Cover all
+  three engines.
 - **Versions.** How far back you support (e.g. last 2 major versions, or a market-share
   threshold). Older = more fallbacks and polyfills = more cost. Make it explicit.
 - **Devices & viewports.** Smallest supported width (commonly ~320–360px), through
@@ -38,10 +40,18 @@ versions. Check what a config resolves to with `npx browserslist`.
 
 ## Prefer Baseline features
 
-**Baseline** (the web-platform status signal maintained across browser vendors)
-classifies features as *Widely available* (safe across the current + prior major
-versions of all engines), *Newly available* (works in the latest of all engines but not
-older ones), or *Limited*. Rule of thumb:
+**Baseline** (the web-platform status signal from the W3C WebDX Community Group, surfaced
+on MDN and web.dev) classifies a feature as:
+
+- *Newly available* — it has **just become supported across the core browser set** (Chrome,
+  Edge, Firefox, Safari — desktop and mobile), i.e. it recently landed and is now
+  interoperable, but users on older versions won't have it yet.
+- *Widely available* — it has been **supported across that core browser set for ≥30 months**,
+  so the overwhelming majority of users have it and most sites can rely on it.
+- *Limited availability* — not yet supported across all core browsers.
+
+(Source: web.dev/baseline — "Widely available" = interoperable for ≥30 months; "Newly
+available" = just reached support in all core browsers.) Rule of thumb:
 
 - **Widely available** → use freely.
 - **Newly available** → use *with* a `@supports`/capability fallback (some users are on
