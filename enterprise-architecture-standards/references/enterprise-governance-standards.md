@@ -4,28 +4,7 @@ Covers: Architecture Decision Records, non-functional requirements, technical de
 
 ## Architecture Decision Records (ADRs)
 - For any decision with real long-term consequences (a new service boundary, a database technology choice, a major library/framework adoption, an API contract other teams will build against, a significant pattern change), write a short ADR rather than letting the reasoning live only in chat history, a Slack thread, or one person's memory.
-- Minimal ADR format — keep it short enough that it actually gets written and read:
-
-  ```markdown
-  # ADR-00X: <short title>
-
-  ## Status
-  Proposed / Accepted / Superseded by ADR-00Y
-
-  ## Context
-  What problem are we solving, and what constraints apply (team size, timeline, existing systems)?
-
-  ## Decision
-  What we're doing.
-
-  ## Alternatives considered
-  What else we looked at, and why we didn't choose it.
-
-  ## Consequences
-  What this makes easier, what it makes harder, and what we're explicitly accepting as a tradeoff.
-  ```
-
-- Store ADRs in version control alongside the code they affect (commonly `docs/adr/` or `architecture/decisions/`), numbered sequentially, never deleted — a superseded decision is marked superseded and linked to its replacement, not removed, since the history of *why* something changed has real value later.
+- **The `architectural-decision-records` skill is the single owner of the ADR format, numbering, storage, and lifecycle** — MADR by default (Nygard for small decisions), stored in `docs/adr/`, numbered sequentially, never deleted (a superseded record is marked superseded and linked to its replacement, since the history of *why* something changed has real value later). Use that skill to scaffold and validate records; do **not** define a parallel ADR format here.
 - Revisit an ADR's stated consequences honestly when circumstances change significantly (major scale change, a new regulatory requirement) rather than treating the original decision as permanently settled regardless of context — write a new ADR that supersedes the old one rather than silently drifting away from a documented decision without saying so.
 
 ## Non-functional requirements (NFRs)

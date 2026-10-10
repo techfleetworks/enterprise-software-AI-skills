@@ -1,6 +1,7 @@
 # Color, Contrast & Visual Design for Accessibility
 
-Low-vision users, color-blind users (~8% of men), older users, and anyone in bright
+Low-vision users, color-blind users (~8% of men / ~1 in 12 — Colour Blind Awareness,
+<https://www.colourblindawareness.org/>, retrieved 2026-10-10 `[documented]`), older users, and anyone in bright
 sunlight all depend on sufficient contrast and non-color cues.
 
 ## Contrast ratios (WCAG 1.4.3 AA / 1.4.11)

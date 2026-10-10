@@ -29,10 +29,25 @@ depends on until nothing depends on it.
 - **Changing a type**: add new column of new type → backfill → switch → drop old.
 - **Dropping a column/table**: stop writing → stop reading → deploy → drop in a later
   release. Confirm nothing reads it (grep + logs) first.
-- **Adding an index**: build concurrently (`CREATE INDEX CONCURRENTLY` in Postgres) to
-  avoid locking; watch for long-running builds on huge tables.
-- **NOT NULL / constraints**: add as `NOT VALID` then `VALIDATE CONSTRAINT` separately
-  (Postgres) to avoid a full-table lock.
+- **Adding an index**: build with `CREATE INDEX CONCURRENTLY` (Postgres) to avoid an
+  `ACCESS EXCLUSIVE` lock that blocks writes. Two foot-guns: `CONCURRENTLY` **cannot run
+  inside a transaction block** — most migration tools wrap each migration in one, so opt
+  *that* migration out of the transaction — and if the build fails it leaves an **`INVALID`
+  index** behind that you must `DROP INDEX` and rebuild. Watch for long builds on huge tables.
+- **Adding a `NOT NULL` on a column** (Postgres 12+): you **cannot** mark a column `NOT NULL`
+  as `NOT VALID` — `NOT VALID` applies only to `CHECK` and `FOREIGN KEY` constraints. Do it in
+  three steps so `SET NOT NULL` skips the full-table scan (it trusts the already-validated CHECK):
+  `ALTER TABLE t ADD CONSTRAINT c CHECK (col IS NOT NULL) NOT VALID;` →
+  `ALTER TABLE t VALIDATE CONSTRAINT c;` → `ALTER TABLE t ALTER COLUMN col SET NOT NULL;`.
+- **`CHECK` / `FOREIGN KEY` constraints**: add them `NOT VALID` then `VALIDATE CONSTRAINT` in a
+  separate step (Postgres) — the add takes only a brief lock and the validation scans without
+  blocking writes.
+
+> Sources (retrieved 2026-10-10): PostgreSQL `CREATE INDEX` — `CONCURRENTLY` cannot run in a
+> transaction block and a failed build leaves an INVALID index
+> (<https://www.postgresql.org/docs/current/sql-createindex.html>); `ALTER TABLE` — `NOT VALID` is
+> allowed only for `CHECK` and `FOREIGN KEY` constraints
+> (<https://www.postgresql.org/docs/current/sql-altertable.html>). `[documented]`
 
 ## Backfills / large data migrations
 - Batch it (e.g. 1–10k rows per batch) with a sleep between batches to protect the DB.

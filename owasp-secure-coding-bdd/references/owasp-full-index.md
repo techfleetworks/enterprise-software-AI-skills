@@ -1,9 +1,11 @@
-# OWASP Cheat Sheet Series — Complete Local Index (all 120 sheets)
+# OWASP Cheat Sheet Series — Local Index
 
-This is the authoritative, no-web-lookup index for the **entire** OWASP Cheat Sheet
-Series (120 cheat sheets as published). Every cheat sheet in the series has an entry
-here with its condensed, actionable controls, so you never need to go online to know
-which sheets exist or what each one requires.
+This is the authoritative, no-web-lookup index for the OWASP Cheat Sheet Series. **117 sheets
+have an entry here with condensed, actionable controls** (`[observed]`: `grep -c '^- \*\*'` →
+117); the full alphabetical checklist at the end lists every sheet **by name**, so you know
+which sheets exist even where the condensed controls aren't inlined yet. The live series size is
+a moving target — confirm it against the official index
+(<https://cheatsheetseries.owasp.org/>, retrieved 2026-10-10) rather than trusting a fixed number.
 
 How to use this file in the Step 2 mapping:
 1. From the attack surface identified in Step 1 of `SKILL.md`, scan the relevant
@@ -362,9 +364,10 @@ Deep dive: `references/privacy-threat-modeling-business-logic.md`
 
 ---
 
-## Full alphabetical checklist (all 120 — confirm none skipped)
+## Full alphabetical checklist (every sheet by name — confirm against the official series)
 
-Use this to verify completeness on any feature review. Each name maps to its cluster above.
+Use this to verify completeness on any feature review. Each name maps to its cluster above; a few
+are **names only** (no condensed controls inlined yet) — for those, do a single targeted lookup.
 
 A: AI Agent Security · AJAX Security · AML Sanctions AI Agent Payments · Abuse Case ·
 Access Control · Attack Surface Analysis · Authentication · Authorization · Authorization
@@ -412,6 +415,8 @@ Z: Zero Trust Architecture
 > OAuth2 and SAML Security appear in Cluster 2/9 handling (tokens & API auth) and are
 > detailed in `references/api-tokens-graphql-microservices.md`.
 
-**Total: 120 cheat sheets, all represented locally. No web lookup required for routine
-work.** For an unusual edge case beyond these condensed controls, a single targeted lookup
-of that one sheet is acceptable — but it should be the exception, not the default.
+**117 sheets carry condensed controls above; every sheet is listed by name in the checklist.**
+No web lookup required for routine work. For a names-only sheet, or an unusual edge case beyond
+these condensed controls, a single targeted lookup of that one sheet is acceptable — the exception,
+not the default. Verify the live series count at <https://cheatsheetseries.owasp.org/> (it changes
+over time).

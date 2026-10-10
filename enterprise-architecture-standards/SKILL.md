@@ -33,7 +33,7 @@ For anything beyond a trivial change, briefly state (to yourself and, for signif
 - What does each trade off (complexity vs. flexibility, consistency vs. availability, latency vs. throughput, cost vs. resilience)?
 - Which one fits this system's actual current scale and team size — not the scale it might have in five years. Over-engineering (premature microservices, premature sharding, speculative abstraction layers) is as much a violation of sound architecture as under-engineering. Match the solution to the problem's actual current and near-term requirements.
 
-For decisions with real long-term consequences (a new service boundary, a database technology choice, an API contract other teams will depend on), write this down as a lightweight Architecture Decision Record — see `references/enterprise-governance-standards.md` for the format — rather than letting the reasoning live only in chat history.
+For decisions with real long-term consequences (a new service boundary, a database technology choice, an API contract other teams will depend on), write this down as an Architecture Decision Record using the `architectural-decision-records` skill (the single owner of the ADR format, numbering, and lifecycle) — rather than letting the reasoning live only in chat history.
 
 ### Step 3: Apply the relevant principles as you build, not as an afterthought
 
