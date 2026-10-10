@@ -1,0 +1,57 @@
+[
+  {
+    "feature": "payments/refund.feature",
+    "scenario": "A double-submitted refund is only applied once",
+    "domain": "payments",
+    "audience": "customer",
+    "usecase": "refund-double-submit",
+    "category": "concurrency",
+    "quality": "reliability",
+    "severity": "critical",
+    "status": "covered"
+  },
+  {
+    "feature": "payments/refund.feature",
+    "scenario": "A guest cannot refund any order",
+    "domain": "payments",
+    "audience": "guest",
+    "usecase": "refund-permission-denied",
+    "category": "permission",
+    "quality": "security",
+    "severity": "critical",
+    "status": "covered"
+  },
+  {
+    "feature": "payments/refund.feature",
+    "scenario": "Admin refund surfaces a downstream payment failure",
+    "domain": "payments",
+    "audience": "admin",
+    "usecase": "refund-failure",
+    "category": "error",
+    "quality": "reliability",
+    "severity": "critical",
+    "status": "covered"
+  },
+  {
+    "feature": "payments/refund.feature",
+    "scenario": "Customer cannot refund an order past the refund window",
+    "domain": "payments",
+    "audience": "customer",
+    "usecase": "refund-ineligible",
+    "category": "negative",
+    "quality": "functional",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "payments/refund.feature",
+    "scenario": "Customer refunds an eligible order",
+    "domain": "payments",
+    "audience": "customer",
+    "usecase": "refund-happy-path",
+    "category": "happy",
+    "quality": "functional",
+    "severity": "high",
+    "status": "covered"
+  }
+]

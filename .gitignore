@@ -1,0 +1,6 @@
+# Node dependencies (restored with `npm ci` from package-lock.json)
+node_modules/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
