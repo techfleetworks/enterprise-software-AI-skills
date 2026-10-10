@@ -6,7 +6,7 @@
   "license": "MIT",
   "scripts": {
     "_comment_test": "Explicit file list on purpose: bare `node --test` auto-discovery also matches *-test.mjs and would run check-has-test.mjs (a CLI script) as a failing 'test'; a positional glob needs Node 21+ and breaks the Node 20 leg. Explicit paths run on every Node/shell and can never silently run zero tests. Add each new test file here.",
-    "test": "node --test test/arch-gate.test.mjs test/claim-lint.test.mjs test/bdd-gates.test.mjs"
+    "test": "node --test test/arch-gate.test.mjs test/claim-lint.test.mjs test/bdd-gates.test.mjs test/skill-evidence-contract.test.mjs"
   },
   "engines": {
     "node": ">=20"

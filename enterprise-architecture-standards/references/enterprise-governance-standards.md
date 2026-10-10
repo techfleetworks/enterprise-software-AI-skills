@@ -52,5 +52,6 @@ For a feature/change to be considered complete at an enterprise standard, it sho
 - [ ] Is observable in production (relevant logs/metrics/traces exist, and a meaningful health/readiness signal reflects its actual dependency state)
 - [ ] Is documented sufficiently for someone other than the author to operate and extend it
 - [ ] Runs in CI/CD with all of the above enforced as automated gates, not manual checklist items trusted to memory
+- [ ] Central claims carry an evidence state (`proven`/`observed`/…) and the **evidence ledger** is attached; the evidence-contract gate (`check-skill-evidence-contract`) is green (`skeptical-audit/references/evidence-discipline.md`)
 
 This definition of done is the practical synthesis of everything in this skill and its two companions (`bdd-comprehensive-testing`, `owasp-secure-coding-bdd`) — treat "done" as meaning all of this, not just "the happy path works on my machine."

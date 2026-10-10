@@ -1,6 +1,6 @@
 ---
 name: skeptical-audit
-description: Challenge your own conclusion before you state it, and back every factual claim with measurable, reproducible, sourced evidence. Use on ANY task that ends in an assertion of fact — audits, code/security/architecture reviews, status reports ("is it done / working / safe?"), research findings, debugging conclusions, "I verified / checked / confirmed X", comparisons, counts, metrics, or any claim about what code, config, a system, or a document actually does. Trigger it BEFORE writing the conclusion, not after — especially when tempted to say something "works", "passes", "is fixed", "is unused", "is running", "is safe", or "should be fine". Replaces guessing, hedge-words, and config-read-as-runtime with an evidence state (observed / inferred / documented / reported / not-assessed), a re-runnable source, and a named limitation. Applies to every agent and subagent by default.
+description: Challenge your own conclusion before you state it, and back every factual claim with measurable, reproducible, sourced evidence. Use on ANY task that ends in an assertion of fact — audits, code/security/architecture reviews, status reports ("is it done / working / safe?"), research findings, debugging conclusions, "I verified / checked / confirmed X", comparisons, counts, metrics, or any claim about what code, config, a system, or a document actually does. Trigger it BEFORE writing the conclusion, not after — especially when tempted to say something "works", "passes", "is fixed", "is unused", "is running", "is safe", or "should be fine". Replaces guessing, hedge-words, and config-read-as-runtime with an evidence state (proven / observed / inferred / documented / reported / not-assessed), a re-runnable source, and a named limitation. Applies to every agent and subagent by default.
 ---
 
 # skeptical-audit — prove it, or don't claim it
@@ -14,7 +14,7 @@ stranger can re-run — and so you never have to be told, again, to check your w
 
 ## The one rule
 No claim ships without three things attached:
-1. an **evidence state** — `observed` / `inferred` / `documented` / `reported` / `not-assessed`;
+1. an **evidence state** — `proven` / `observed` / `inferred` / `documented` / `reported` / `not-assessed`;
 2. a **source you can re-run** — the exact command + its output and exit code, a `file:line`, a
    content hash, a query, a version/commit SHA, or a URL + retrieval date;
 3. a **named limitation** — what you did *not* check (which surface, input class, or environment).
@@ -23,7 +23,8 @@ If you cannot attach all three, you do not assert it. You state the honest evide
 what it would take to upgrade it. **Downgrading a claim is not failure — it is the deliverable.**
 
 ## The evidence states (never interchange these)
-- **observed** — you ran it and saw the result this session. The strongest state. Attach the raw output.
+- **proven** — a committed, *discriminating* test or CI gate keeps it true on every future change (per `verifiable-quality-gates`). The strongest state, and the only one that survives regression by construction. Earned only when the gate exists, is in the required set, and its own test fails if the check is no-opped.
+- **observed** — you ran it and saw the result this session. Attach the raw output.
 - **inferred** — a reasonable deduction from observed facts. Say which facts, and that it is a deduction.
 - **documented** — a doc/spec/comment says so. Documents describe intent, not running reality — never promote to `observed`.
 - **reported** — a human or a third-party tool told you. Attribute it; it is a claim, not a fact.
@@ -118,9 +119,26 @@ carry no evidence state. The linter is a smoke alarm, not a judge — it catches
 the skeptic's loop catches the subtle ones. A clean lint is `observed` evidence that you ran the
 check, nothing more.
 
+## Evidence & skeptical assessment (required)
+This skill **owns** the evidence discipline every other skill depends on — the canonical contract is
+[`references/evidence-discipline.md`](references/evidence-discipline.md) (the taxonomy, the required
+ledger, and the per-skill obligation that `check-skill-evidence-contract` enforces). Its central claims
+and how each is proven:
+
+| Claim | Reaches `observed` by | Becomes `proven` when |
+|---|---|---|
+| "This draft carries no untagged factual claims" | `node scripts/claim-lint.mjs <draft> --strict` exit 0 | `claim-lint --strict` is wired as a blocking CI gate over findings docs (it has a discriminating test) |
+| "Every skill carries the evidence contract" | `node scripts/check-skill-evidence-contract.mjs .` exit 0 | that gate runs in CI with a discriminating test; the shrink-only allowlist tightens to 100% |
+
+**Definition of done** for any audit or finding this skill produces: the evidence ledger is attached,
+the central claim is `observed`/`proven` (or an explicit `not-assessed` + the measurement that would
+upgrade it), and `claim-lint --strict` is green on the draft.
+
 ## Bundled resources
-- `references/evidence-states.md` — the five states in depth, a copy-paste ledger template, a full worked audit, and the overstatement-recovery protocol.
+- `references/evidence-discipline.md` — the canonical contract: the six-state taxonomy, the required ledger, the adversarial loop, and the per-skill obligation other skills link to.
+- `references/evidence-states.md` — the states in depth, a copy-paste ledger template, a full worked audit, and the overstatement-recovery protocol.
 - `scripts/claim-lint.mjs` — dependency-free Node scanner for hedge-words and untagged claims in a text/markdown file.
+- `scripts/check-skill-evidence-contract.mjs` — the gate that requires every skill to carry the evidence contract (shrink-only allowlist).
 
 ## Provenance and sharing
 Generalized from an evidence-discipline practice developed for audit work on the SWERL / TalkStash
