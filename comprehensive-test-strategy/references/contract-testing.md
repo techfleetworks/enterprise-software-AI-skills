@@ -37,6 +37,14 @@ Pact (multi-language: JS, JVM, .NET, Python, Go, Ruby), Spring Cloud Contract (J
 provider verification and can-i-deploy into the CI pipeline shared with
 `bdd-comprehensive-testing`.
 
+## Keeping a third-party fake faithful (the integration-test link)
+When you integration-test against a **fake** of a service you don't own (e.g. a WireMock stub of a
+payment API — see `test-pyramid-and-types.md`), the fake can silently **drift** from the real service
+as it changes, and your green tests then prove nothing. Pair the fake with a **contract test run
+against the real (or a dedicated test) instance** on a schedule, so a drift fails loudly instead of
+leaking to production. A consumer (Pact) test can double as the narrow integration test for that
+client — use one or the other per client, not both.
+
 ## Good practices
 - Keep contracts focused on structure and semantics the consumer relies on — not exhaustive
   data values (that's the provider's functional tests).
