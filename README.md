@@ -2,12 +2,12 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
-![Skills](https://img.shields.io/badge/skills-14-blue.svg)
+![Skills](https://img.shields.io/badge/skills-15-blue.svg)
 ![Vendor-neutral](https://img.shields.io/badge/vendor-neutral-informational.svg)
 
 Created and maintained by **[Tech Fleet](https://techfleet.org)**.
 
-A set of fourteen model-agnostic **skills**: condensed, actionable engineering
+A set of fifteen model-agnostic **skills**: condensed, actionable engineering
 standards that an AI coding agent — or a person — can load as context. Each one
 encodes the judgment a senior engineer applies to a change (how to secure it,
 how to test it, how to release it, why it was decided that way) so that *every*
@@ -84,6 +84,7 @@ load it automatically.
 | [`enterprise-architecture-standards`](enterprise-architecture-standards/) | System & data architecture, microservices, resilience, scalability | Designing/architecting/refactoring a service, schema, API, or system | 9 refs |
 | [`architectural-decision-records`](architectural-decision-records/) | Capturing the *why* of significant decisions as MADR / Nygard ADRs | Any architecturally-significant choice: datastore, framework, contract, auth model | 5 refs · 2 scripts |
 | [`owasp-secure-coding-bdd`](owasp-secure-coding-bdd/) | OWASP threat-modeling turned into `@security` BDD scenarios | Auth, input, sessions, files, APIs, permissions, dependencies, AI/LLM code | 15 refs |
+| [`bdd-comprehensive-testing`](bdd-comprehensive-testing/) | Every use case × audience as legal, tagged, logged Gherkin, gated on every push | Any behavior change: build/add/implement/fix/change/push — even without "tests/BDD/CI" | 4 refs · 5 scripts |
 | [`comprehensive-test-strategy`](comprehensive-test-strategy/) | The full test pyramid beyond behavioral BDD | Any code others depend on: unit/integration/e2e, contract, load, chaos, coverage gates | 5 refs |
 | [`release-deployment-safety`](release-deployment-safety/) | Shipping at scale without outages | Deploy, release, roll out, migration, cutover, hotfix, rollback, feature flag | 5 refs |
 | [`sre-operational-readiness`](sre-operational-readiness/) | Google-style SRE: is it safe to run in production? | SLOs, monitoring, alerting, on-call, incidents, runbooks, "how do we know it broke?" | 5 refs |
@@ -112,6 +113,13 @@ OWASP Cheat Sheet Series (bundled locally — no web lookup), applies the matchi
 secure-coding measures, and writes the result as executable `@security` Gherkin
 scenarios. Always runs the lockout / accidental-deletion safety check before any
 permission, access, or deletion change.
+
+**`bdd-comprehensive-testing`** — Turns a change into the *complete* set of
+behavioral scenarios: every use case (happy + every non-happy path) crossed with
+every audience — asking you when the audiences aren't certain, never guessing —
+written out as legal Gherkin (the official parser is the judge), categorized on a
+shared taxonomy, stored in a committed datastore with an append-only coverage log,
+and gated on every push so illegal or incomplete coverage can't merge.
 
 **`comprehensive-test-strategy`** — Owns the ~70% of testing that behavioral BDD
 doesn't: the unit/integration/e2e pyramid, consumer-driven contract tests
@@ -386,6 +394,7 @@ flowchart TD
     ARCH[enterprise-architecture-standards<br/>the *what* and *how*]
     ADR[architectural-decision-records<br/>the *why*]
     SEC[owasp-secure-coding-bdd<br/>security]
+    BDD[bdd-comprehensive-testing<br/>behavioral scenarios]
     TEST[comprehensive-test-strategy<br/>proof it works]
     REL[release-deployment-safety<br/>ship it safely]
     SRE[sre-operational-readiness<br/>keep it healthy]
@@ -394,7 +403,9 @@ flowchart TD
     ARCH -->|significant choices recorded as| ADR
     ARCH -->|threat-modeled by| SEC
     ARCH -->|verified by| TEST
-    SEC -->|expressed as @security scenarios in| TEST
+    SEC -->|expressed as @security scenarios in| BDD
+    BDD -->|companion to| TEST
+    BDD -->|gates the| REL
     TEST -->|gates the| REL
     REL -->|canary signals watched by| SRE
     COMP -->|constrains schema & migrations in| REL
@@ -467,6 +478,7 @@ description: "When to use this skill — used for automatic triggering"
 ├── verifiable-quality-gates/              # prove every automated check can actually detect (coverage + mutation gates)
 ├── skeptical-audit/                       # back every factual claim with reproducible, sourced evidence before it ships
 ├── owasp-secure-coding-bdd/
+├── bdd-comprehensive-testing/               # every use case × audience as legal, tagged, logged Gherkin, gated on every push
 ├── comprehensive-test-strategy/
 ├── release-deployment-safety/
 ├── sre-operational-readiness/

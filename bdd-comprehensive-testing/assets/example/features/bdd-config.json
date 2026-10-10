@@ -1,0 +1,3 @@
+{
+  "audiences": ["customer", "guest", "admin"]
+}

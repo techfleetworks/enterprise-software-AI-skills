@@ -10,6 +10,7 @@ relevant" as a deliberate, stated judgment for that task — never a silent defa
 - `enterprise-architecture-standards` — system & data architecture, resilience, scalability
 - `architectural-decision-records` — record the *why* of every significant decision, in the same change
 - `owasp-secure-coding-bdd` — threat-model and secure anything touching input, auth, sessions, data, files, or dependencies
+- `bdd-comprehensive-testing` — enumerate every use case × audience, write them as Gherkin, store + categorize + log them in-repo, and gate every push on legal, complete, tagged coverage
 - `comprehensive-test-strategy` — the full test pyramid beyond behavioral BDD (unit/integration/e2e, contract, load, chaos, coverage gates)
 - `release-deployment-safety` — zero-downtime deploys, expand/contract migrations, feature flags, instant rollback
 - `sre-operational-readiness` — SLIs/SLOs, the four golden signals, symptom-based alerts, runbooks, before launch
