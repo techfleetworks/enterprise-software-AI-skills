@@ -70,3 +70,11 @@ test("FLAGS an <ADR-00Y> reference stub (discriminating)", opts, () => {
 test("does NOT flag <owner>/<repo> command args alone (no false positive)", opts, () => {
   assert.equal(run(VALID).status, 0);
 });
+test("FLAGS a single-token {YYYY-MM-DD} placeholder (discriminating — regression guard)", opts, () => {
+  const r = run(VALID.replace("Date: 2026-10-10", "Date: {YYYY-MM-DD}"));
+  assert.equal(r.status, 1);
+});
+test("does NOT flag an inline inequality like 'latency < 5 ms' (no false positive)", opts, () => {
+  const r = run(VALID.replace(CTX, CTX + " We require latency < 5 ms and error rate > 1 percent."));
+  assert.equal(r.status, 0, r.out);
+});

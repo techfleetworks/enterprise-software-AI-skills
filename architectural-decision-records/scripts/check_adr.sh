@@ -37,8 +37,13 @@ check_file() {
   # Strip fenced code blocks (awk) and inline `code` spans (sed) first, so an ADR that *discusses*
   # placeholder syntax in code formatting isn't flagged — only bare, unfilled placeholders in prose are.
   local prose; prose="$(awk '/^[[:space:]]*```/{f=!f;next} !f' "$f" | sed 's/`[^`]*`//g')"
+  # With code stripped, a bracketed token containing a letter is a template placeholder
+  # ({YYYY-MM-DD}, {argument}, {short title}, <short title>, <ADR-00Y>). The angle form must start
+  # with a letter so it skips inequalities like "latency < 5 ms", and autolinks (<https://…>) are
+  # excluded explicitly.
   if printf '%s\n' "$prose" \
-       | grep -E '\{[^}]* [^}]*\}|<[^>]* [^>]*>|[<{]ADR-[0-9NXY]*[NXY][0-9NXY]*[>}]' \
+       | grep -E '\{[^}]*[A-Za-z][^}]*\}|<[A-Za-z][^>]*>' \
+       | grep -vE '<https?://' \
        | grep -q .; then
     errs+=("unfilled placeholder tokens remain ({…} or <…>)")
   fi

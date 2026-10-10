@@ -149,7 +149,7 @@ rather than dogma is what yields the best results.
   checks that guard important properties (e.g. build-time dependency/boundary rules via
   ArchUnit/dependency-cruiser, latency budgets, coupling metrics) — so the system doesn't
   silently drift away from its intended design as it grows.
-- Record significant decisions as **ADRs** (see `enterprise-governance-standards.md`) so the
+- Record significant decisions as **ADRs** (use the `architectural-decision-records` skill) so the
   *why* behind the chosen style survives team turnover and can be revisited deliberately.
 
 ## Internal code organization patterns (apply within any of the above)

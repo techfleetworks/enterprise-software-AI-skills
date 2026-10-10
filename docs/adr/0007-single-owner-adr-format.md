@@ -51,8 +51,8 @@ and fenced JSON/generics alone.
 
 ### Confirmation
 
-`bash architectural-decision-records/scripts/check_adr.sh docs/adr/` → all 6 existing ADRs PASS
-(incl. ADR-0003, which contains `<owner>/<repo>`). `test/check-adr.test.mjs` proves the validator flags
+`bash architectural-decision-records/scripts/check_adr.sh docs/adr/` → all 7 ADRs PASS
+(incl. ADR-0003, which contains a backticked `<owner>/<repo>`). `test/check-adr.test.mjs` proves the validator flags
 `<short title>`, `{option 1}`, and `<ADR-00Y>`, and does not flag `<owner>/<repo>` or fenced JSON —
 runs in CI via `npm test` (45/45).
 
