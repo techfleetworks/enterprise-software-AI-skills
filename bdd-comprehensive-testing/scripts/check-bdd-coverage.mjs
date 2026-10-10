@@ -60,12 +60,21 @@ for (const m of log.matchAll(/(?:^|\s)event:\s*([a-z-]+)/gim)) {
 // BDD_REQUIRE_LOG_BASE to make its absence a hard failure. We never CLAIM "append-only" we didn't
 // actually check — the success line reports exactly what was verified.
 const basePath = process.env.BDD_LOG_BASE;
+const require_base = process.env.BDD_REQUIRE_LOG_BASE;
 let logNote;
 if (basePath) {
   const base = read(basePath);
-  if (base && !log.startsWith(base)) fail(`coverage log is not append-only — a prior entry was edited or removed (history must be immutable).`);
-  logNote = "log append-only verified";
-} else if (process.env.BDD_REQUIRE_LOG_BASE) {
+  if (base === null) {
+    // base path given but unreadable — do NOT claim a guarantee we couldn't check
+    if (require_base) fail(`BDD_LOG_BASE (${basePath}) is unreadable — cannot verify append-only history.`);
+    logNote = "log append-only NOT verified (base unreadable)";
+  } else if (base === "") {
+    logNote = "log append-only verified (no prior history)"; // empty base = nothing to violate
+  } else {
+    if (!log.startsWith(base)) fail(`coverage log is not append-only — a prior entry was edited or removed (history must be immutable).`);
+    logNote = "log append-only verified";
+  }
+} else if (require_base) {
   fail(`cannot verify append-only history: BDD_LOG_BASE is unset but BDD_REQUIRE_LOG_BASE is set. ` +
     `In CI, export BDD_LOG_BASE to the base-revision log (git show origin/main:features/bdd-coverage-log.md > base.md).`);
 } else {

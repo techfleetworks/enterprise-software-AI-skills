@@ -160,3 +160,22 @@ test("coverage: FLAGS a present-but-malformed bdd-config.json (fail closed, disc
   writeFileSync(join(root, "bdd-config.json"), "{bad json");
   assert.equal(run(S("check-bdd-coverage.mjs"), [root]).status, 1);
 });
+test("coverage: FLAGS an unreadable BDD_LOG_BASE when required (discriminating)", () => {
+  // base path set but missing + required → must fail, not falsely report "verified"
+  const root = features(VALID);
+  const missing = join(tmpdir(), "no-base-" + Date.now() + ".md");
+  assert.equal(run(S("check-bdd-coverage.mjs"), [root], { BDD_LOG_BASE: missing, BDD_REQUIRE_LOG_BASE: "1" }).status, 1);
+});
+test("executed: FLAGS a path-suffix feature collision (deeper run must not credit the shallower, discriminating)", () => {
+  // root a.feature and sub/a.feature both have "shared name"; only sub ran. A suffix match would
+  // credit the root feature off sub's run; longest-match attribution must flag root as never-run.
+  const root = mkdtempSync(join(tmpdir(), "bdd-"));
+  const scen = (uc) => `  @audience:customer @usecase:${uc} @category:happy @quality:functional @severity:high\n  Scenario: shared name\n    Given a user\n    When x\n    Then y\n`;
+  mkdirSync(join(root, "sub"), { recursive: true });
+  writeFileSync(join(root, "a.feature"), "Feature: Root\n\n" + scen("root-shared"));
+  writeFileSync(join(root, "sub", "a.feature"), "Feature: Sub\n\n" + scen("sub-shared"));
+  run(S("bdd-index-generate.mjs"), [root]);
+  const rep = join(mkdtempSync(join(tmpdir(), "rep-")), "cucumber.json");
+  writeFileSync(rep, JSON.stringify([{ uri: "sub/a.feature", name: "Sub", elements: [passed("shared name")] }]));
+  assert.equal(run(S("check-bdd-executed.mjs"), [root, "--results", rep]).status, 1);
+});

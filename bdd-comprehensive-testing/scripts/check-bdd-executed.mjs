@@ -50,24 +50,36 @@ for (const feature of Array.isArray(report) ? report : []) {
   }
 }
 
-// A report feature matches a datastore record when its uri equals, or ends with "/" + , the record's
-// featuresRoot-relative path (handles "features/payments/x.feature" vs "payments/x.feature"). The "/"
-// boundary avoids a false match of "banana.feature" against "a.feature".
-const matchesFeature = (uri, feat) => uri === feat || uri.endsWith("/" + feat);
+// Attribute each run to the MOST SPECIFIC datastore feature it matches. A report uri matches a
+// datastore feature path when it equals it, or ends with "/" + it (handles "features/payments/x.feature"
+// vs "payments/x.feature"; the "/" boundary rejects "banana.feature" vs "a.feature"). Longest match
+// wins, so a run of "sub/a.feature" credits "sub/a.feature" and NOT a shallower "a.feature" — a plain
+// suffix match would let the deeper feature's run credit the shallower same-basename one (false green).
+const feats = [...new Set(index.map((r) => String(r.feature).split("\\").join("/")))]
+  .sort((a, b) => b.length - a.length);
+const attribute = (uri) => feats.find((f) => uri === f || uri.endsWith("/" + f)) ?? null;
+
+const ran = new Map(); // "feat::scenario" -> worst status seen (non-passed wins)
+for (const x of runs) {
+  const feat = attribute(x.uri);
+  if (!feat) continue; // a run for a feature not in the datastore — not our concern
+  const key = feat + "::" + x.name;
+  const prev = ran.get(key);
+  ran.set(key, prev && prev !== "passed" ? prev : x.status);
+}
 
 const problems = [];
 for (const r of index) {
-  const feat = String(r.feature).split("\\").join("/");
-  const hits = runs.filter((x) => x.name === r.scenario && matchesFeature(x.uri, feat));
-  if (hits.length === 0) problems.push(`"${r.feature} » ${r.scenario}": never executed (no result for that feature + scenario)`);
-  else { const bad = hits.find((h) => h.status !== "passed"); if (bad) problems.push(`"${r.feature} » ${r.scenario}": ${bad.status} (must be passed)`); }
+  const key = String(r.feature).split("\\").join("/") + "::" + r.scenario;
+  const st = ran.get(key);
+  if (st === undefined) problems.push(`"${r.feature} » ${r.scenario}": never executed (no result for that feature + scenario)`);
+  else if (st !== "passed") problems.push(`"${r.feature} » ${r.scenario}": ${st} (must be passed)`);
 }
-const expected = index;
 
 if (problems.length) {
   console.error(`[check-bdd-executed] FAIL — ${problems.length} scenario(s) did not run-and-pass:`);
   for (const p of problems) console.error("  • " + p);
   process.exit(1);
 }
-console.log(`[check-bdd-executed] OK — all ${expected.length} datastore scenario(s) executed and passed.`);
+console.log(`[check-bdd-executed] OK — all ${index.length} datastore scenario(s) executed and passed.`);
 process.exit(0);
