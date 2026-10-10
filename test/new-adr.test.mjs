@@ -13,8 +13,12 @@ import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const NEW_ADR = resolve(REPO, "architectural-decision-records/scripts/new_adr.sh");
-const bashOK = spawnSync("bash", ["--version"], { stdio: "ignore" }).status === 0;
-const opts = { skip: bashOK ? false : "bash not on PATH (CI runs this)" };
+// Probe that bash can actually RUN this script at its (possibly Windows) path, not merely that a
+// `bash` exists: a WSL bash on a Windows PATH can't resolve "C:\...\new_adr.sh" and would make the
+// tests fail red (exit 127) instead of skipping — the same false-red this commit removes elsewhere.
+// `new_adr.sh -h` prints help and exits 0, so a 0 here means "runnable"; anything else → skip.
+const bashOK = spawnSync("bash", [NEW_ADR, "-h"], { stdio: "ignore" }).status === 0;
+const opts = { skip: bashOK ? false : "bash cannot run this script here (CI/ubuntu runs it)" };
 
 function run(title, dir) {
   const r = spawnSync("bash", [NEW_ADR, "-d", dir, title], { encoding: "utf8" });

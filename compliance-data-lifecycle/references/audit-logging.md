@@ -45,8 +45,9 @@ Use a **consistent, structured schema** (see the logging-vocabulary idea in
 ## Retention
 - Retain audit logs per the applicable requirement, defined explicitly and enforced. Concrete
   anchors (verify against the current standard for your sector):
-  - **PCI DSS Req. 10.7** — keep audit-trail history **≥ 1 year**, with **≥ 3 months immediately
-    available** for analysis. [documented — PCI DSS v4.0 Req. 10.7]
+  - **PCI DSS Req. 10.5.1** — retain audit log history **≥ 12 months**, with the **most recent
+    3 months immediately available** for analysis. [documented — PCI DSS v4.0 Req. 10.5.1; this
+    was Req. 10.7 in v3.2.1]
   - **HIPAA §164.316(b)(2)(i)** — retain required Security Rule documentation **6 years** from
     creation or last-effective date. The audit-control standard (§164.312(b)) sets *no* period, so
     the 6-year figure is the common reading of logs as part of that documentation set, not an
