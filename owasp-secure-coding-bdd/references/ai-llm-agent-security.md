@@ -9,8 +9,14 @@ AI system take actions (especially financial or otherwise irreversible ones).
 ## The one rule that underlies all of this
 Everything the model reads that you did not fully control is untrusted input — user
 messages, retrieved documents, web pages, tool outputs, file contents, prior model
-output. Prompt injection is the injection vulnerability of this cluster: treat model-
-visible text with the same suspicion you treat a SQL parameter.
+output. Prompt injection is the injection vulnerability of this cluster — but, crucially,
+**it has no complete fix**: SQL injection is fully solved by parameterization (data can't
+become code), whereas there is **no reliable equivalent** that separates instructions from
+data inside an LLM. So treating model-visible text as untrusted is necessary defense in depth,
+not a cure. The **structural control lives outside the model**: enforce least privilege and,
+for dangerous/irreversible actions, human approval at the **tool/action layer**, so that even a
+successful injection cannot make the agent do something harmful. Never rely on prompt wording
+alone to hold.
 
 ## Prompt injection prevention
 - Separate trust levels: keep system instructions distinct from user/retrieved content;
