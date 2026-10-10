@@ -33,11 +33,13 @@ can never recur. Use them together: judgment finds it, the mechanical gate makes
 Not optional, not left to discretion. Every review:
 
 1. **Total coverage — EVERY changed file × EVERY question.** Build the review matrix: each file in the
-   change crossed with each of the four questions (boundary placement · data ownership · dependency
-   direction · error handling) plus the two drift directions (over- / under-engineering). **Every cell
-   gets a verdict**: a *finding*, or `cleared` with the evidence that cleared it, or `N/A` with a
-   recorded reason. A sampled review — "I looked at the main file" — is a fail. The deliverable is the
-   complete matrix for the change, not an impression of it.
+   change crossed with the **four questions** (boundary placement · data ownership · dependency
+   direction · error handling) — these are the required per-cell matrix. **Every cell gets a verdict**:
+   a *finding*, or `cleared` with the evidence that cleared it, or `n/a` with a recorded reason. The two
+   drift directions (over- / under-engineering) are surfaced as *findings* where present, not required
+   per-cell. A sampled review — "I looked at the main file" — is a fail. The deliverable is the complete
+   matrix for the change, not an impression of it. (`check-arch-review-coverage` enforces the four-cell
+   matrix; the `n/a` verdict is lowercase to match the gate's vocabulary.)
 
 2. **Fresh context — mandatory.** Review from a blank slate, never from the conversation that wrote the
    code — that context makes you lenient and blind to what a newcomer hits. **Dispatch the actual review
@@ -365,7 +367,9 @@ green. A greppable finding isn't fully resolved until its rule lives in `arch-ga
 ## Why this holds for every developer and every agent
 It binds universally because it lives in committed artifacts, not memory. **Agents** get it via the
 always-on hook (the directive is injected every session/subagent). **Humans and agents alike** are bound
-by the three **required** CI gates — a change that wasn't reviewed, or was reviewed partially or without
+by the three per-change **required** CI gates (`arch-gate`, `check-arch-review-coverage`,
+`check-arch-rules-discriminate`; the fourth, the evidence-contract gate, keeps this skill itself honest) —
+a change that wasn't reviewed, or was reviewed partially or without
 evidence, cannot merge. **It survives any individual** because the review log, the gates, and `decisions.md`
 are all in git. The honest limit (above) stands: this makes *not looking* impossible, not *flawless
 perception* guaranteed — the achievable, enforceable half of "impossible to miss."

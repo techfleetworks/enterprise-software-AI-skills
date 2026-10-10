@@ -32,9 +32,9 @@ function writeLog(entry) {
   writeFileSync(p, JSON.stringify(entry) + "\n");
   return p;
 }
-function cov(entry, changedList, extra = []) {
+function cov(entry, changedList, extra = [], change = "c1") {
   const log = typeof entry === "string" ? entry : writeLog(entry);
-  const r = spawnSync(process.execPath, [COV, "--log", log, "--changed-list", changedList, ...extra], { encoding: "utf8" });
+  const r = spawnSync(process.execPath, [COV, "--log", log, "--change", change, "--changed-list", changedList, ...extra], { encoding: "utf8" });
   return r.status;
 }
 
@@ -73,6 +73,14 @@ test("coverage: FLAGS a non-append (edited history) log (discriminating)", () =>
   const base = join(mkdtempSync(join(tmpdir(), "base-")), "base.jsonl");
   writeFileSync(base, JSON.stringify({ date: "2000-01-01", different: true }) + "\n"); // current log doesn't start with this
   assert.equal(cov(log, "a.ts", ["--base", base]), 1);
+});
+test("coverage: FLAGS a stale entry not FOR this change (discriminating — the HIGH false-pass)", () => {
+  const e = baseEntry(); e.change = "OLD-PR-99 (unrelated)"; // lists a.ts, fully evidenced, but for another change
+  assert.equal(cov(e, "a.ts", [], "c1"), 1);
+});
+test("coverage: fails closed when --base is given but missing (no silent skip)", () => {
+  const missing = join(tmpdir(), "no-base-" + Date.now() + ".jsonl");
+  assert.equal(cov(baseEntry(), "a.ts", ["--base", missing]), 1);
 });
 
 // --- check-arch-rules-discriminate ------------------------------------------

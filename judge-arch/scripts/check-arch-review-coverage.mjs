@@ -6,7 +6,7 @@
 // `finding` and every `cleared` cell (no silent clears), valid @question/@severity on every finding,
 // and the grep-battery recorded as run. Fail-closed. See references/review-log-and-coverage.md.
 //
-//   node check-arch-review-coverage.mjs --changed-list a.ts,b.ts [--log docs/arch-reviews/log.jsonl] [--base <base-log>]
+//   node check-arch-review-coverage.mjs --change <ref> --changed-list a.ts,b.ts [--log docs/arch-reviews/log.jsonl] [--base <base-log>]
 //
 // Exit 0 = the change is fully, evidently reviewed. Exit 1 = a gap or missing input.
 import { readFileSync, existsSync } from "node:fs";
@@ -18,6 +18,7 @@ const opt = (n) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : un
 
 const logPath = resolve(opt("--log") ?? "docs/arch-reviews/log.jsonl");
 const changedArg = opt("--changed-list");
+const change = opt("--change");
 const basePath = opt("--base");
 const QUESTIONS = ["boundary", "ownership", "dependency", "error-handling"];
 const VERDICTS = new Set(["finding", "cleared", "n/a"]);
@@ -25,6 +26,7 @@ const SEVERITY = new Set(["high", "med", "low"]);
 const QUESTION_TAGS = new Set([...QUESTIONS, "over-engineering", "under-engineering"]);
 const nonEmpty = (v) => v != null && String(v).trim() !== "";
 
+if (!change) die("no --change <ref> given (the commit/PR this review must be FOR; fail closed).");
 if (!changedArg) die("no --changed-list given (the changed code files to require coverage for; fail closed).");
 const changed = changedArg.split(",").map((s) => s.trim().split("\\").join("/")).filter(Boolean);
 if (changed.length === 0) die("empty changed-list (fail closed).");
@@ -33,16 +35,21 @@ if (!existsSync(logPath)) die(`review log not found: ${logPath}`);
 const raw = readFileSync(logPath, "utf8");
 if (!raw.trim()) die(`review log is empty: ${logPath}`);
 
-// Append-only: the committed log must be a clean append to the base revision's log.
+// Append-only: the committed log must be a clean append to the base revision's log. A --base that is
+// given but unreadable is a hard error (never a silent skip) — only "no --base at all" skips the check.
 if (basePath) {
-  const base = existsSync(basePath) ? readFileSync(basePath, "utf8") : null;
+  if (!existsSync(basePath)) die(`--base given but not found: ${basePath} — cannot verify append-only (fail closed).`);
+  const base = readFileSync(basePath, "utf8");
   if (base && !raw.startsWith(base)) die("review log is not append-only — a prior entry was edited or removed.");
 }
 
 const lines = raw.split(/\r?\n/).filter((l) => l.trim());
-let entry;
-try { entry = JSON.parse(lines[lines.length - 1]); }
-catch (e) { die(`the latest log entry is not valid JSON: ${e.message}`); }
+let entries;
+try { entries = lines.map((l) => JSON.parse(l)); }
+catch (e) { die(`a log entry is not valid JSON: ${e.message}`); }
+// The review must be FOR this change — not just any past entry that happens to mention these files.
+const entry = [...entries].reverse().find((e) => e && e.change === change);
+if (!entry) die(`no review record whose change == "${change}" — append a review for THIS change (a stale entry for an unrelated change does not count).`);
 
 const matrix = entry.matrix || {};
 const problems = [];
