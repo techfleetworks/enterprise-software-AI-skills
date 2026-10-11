@@ -1,213 +1,221 @@
 ---
 name: pattern-selector
-description: Use whenever designing, adding, or refactoring any feature, class, module, service, or data flow — analyze the problem's forces and select the design pattern(s) that fit, or deliberately none, stating the pros, cons, the failure/rot each prevents, its security and operational trade-offs, the simpler alternative rejected, how to adopt it safely in running code, and how the choice is verified. Covers the 23 Gang-of-Four patterns, the enterprise/persistence/domain/messaging/presentation/concurrency layer (Fowler PoEAA, DDD tactical, DI/IoC, cloud patterns), functional/immutable patterns, an anti-pattern catalog, a symptom→pattern decision engine, and the honest limits (patterns remove specific rot modes; misapplied they add rot). Trigger proactively on build, add, implement, design, refactor, change, "which pattern," "best way to structure," factory, repository, strategy, observer, state machine, adapter — even when "pattern" is never said.
+description: Use when you design, add, or change any feature, class, module, service, or data flow. Work out the forces in the problem, then pick the design pattern that fits, or pick none on purpose. State the pros, the cons, the failure it prevents, its security and operational cost, the simpler option you skipped, how to add it safely to running code, and how to check it. Covers the 23 Gang of Four patterns, the enterprise layer (Fowler PoEAA, DDD, dependency injection, cloud patterns), functional patterns, an anti-pattern list, a step-by-step chooser, and the honest limits (a pattern removes one kind of rot, and the wrong pattern adds rot). Triggers on build, add, implement, design, refactor, change, "which pattern," "best way to structure," factory, repository, strategy, observer, state machine, adapter, even when nobody says "pattern."
 ---
 
 # Pattern Selector
 
 ## Why this exists
 
-Agents (and people) reach for a design pattern by name — "let's use a Factory here" — before naming the
-problem, and they reach for one far too often. Both failure modes are expensive. A pattern applied
-*without its problem* is pure cost: indirection, extra classes, and cognitive load with no benefit — and
-over-abstraction is itself one of the top causes of the rot this library fights. A pattern *missed* where
-its problem is real leaves duplication, tangled coupling, and change-amplifying code. This skill makes
-pattern selection a **deliberate, evidence-backed decision on every feature**: name the forces, check
-whether a pattern is even warranted, pick the one that fits (or none), and record *why* — including the
-failure it prevents, its security and operational cost, the cheaper alternative, and how the choice is checked.
+People name a pattern before they name the problem. They say "let's use a Factory here" and reach for a
+pattern far too often. Both habits cost you.
 
-## The core principle (read this first — it is the honest frame)
+A pattern used without its problem is pure cost. It adds indirection, extra classes, and more to read, with
+no payoff. Too much structure is one of the main ways code rots. A pattern missed where its problem is real
+leaves duplicate code and tangled parts that are hard to change.
 
-**A pattern removes a *specific* failure/rot mode. Misapplied, it *adds* rot. Patterns do not make code
-"impossible to fail."** The hard guarantees in this library come from **types, database constraints,
-tests, and gates** — the pattern makes the code *shaped right*; those make it *provably correct*. So this
-skill always does two things together: it recommends a pattern (or declines one) **and** names the real
-guarantee and where it lives. The default answer to "which pattern?" is often **"none — a plain
-function/class is correct here."**
+This skill makes pattern choice a real decision on every feature. Name the forces. Check whether a pattern
+is even needed. Pick the one that fits, or pick none. Then write down why, including the failure it
+prevents, its security and run cost, the simpler option you passed up, and how you will check it.
 
-## The selection engine (every run follows this)
+## The main idea (read this first)
 
-Read `references/choosing-a-pattern.md`. The flow is deterministic:
+A pattern removes one specific kind of failure or rot. The wrong pattern adds rot. A pattern does not make
+code "impossible to fail."
 
-1. **Name the problem as forces, not a pattern.** What varies? What must stay stable? What is duplicated?
-   What is coupled that shouldn't be? (The GoF lens: *encapsulate what varies; program to an interface,
-   not an implementation; favor composition over inheritance* — GoF 1994, ch. 1.)
-2. **The YAGNI gate — do you even need a pattern?** Most problems don't. If a plain function, class, or
-   language feature solves it, **stop here** and record "no pattern, because …". A pattern without its
-   problem is rejected by default. (If the code instead shows an **anti-pattern** — God Object, Anemic
-   Domain Model, Big Ball of Mud — the job is to *remove* structure; see `references/anti-patterns-and-smells.md`.)
-3. **Map symptoms → candidate patterns** using the decision matrix (catalog + `choosing-a-pattern.md`).
-4. **Score the candidates** on all five axes, not just elegance: (a) does it match the forces? (b) cost —
-   indirection, classes, learning; (c) **security** — does it widen the attack surface (global mutable
-   state, deserialization, a new trust boundary, injection)? (d) **operational cost** — observability
-   burden, new failure modes, debuggability, tuning; (e) the cheaper alternative / the modern language
-   feature that supersedes it (first-class functions, sum types + pattern-matching, a DI container).
-5. **Pick one, combine deliberately, or decline.** Record the decision (output contract below) with the
-   pros/cons accepted and the failure/rot it prevents.
-6. **Say how it is verified, and how to adopt it safely.** Name the *pattern-specific* check (a contract
-   test, an exhaustive-transition test, a type, or an `arch-gate` rule — not just "a functional test
-   passes"); and if refactoring running code, the safe transition (Strangler / expand-contract /
-   reversibility — `release-deployment-safety`).
+The strong guarantees in this library come from types, database constraints, tests, and gates. A pattern
+makes the code the right shape. Those other things make it provably correct. So this skill always does two
+things at once. It recommends a pattern (or says to use none), and it names the real guarantee and where it
+lives. The most common right answer to "which pattern?" is "none. A plain function or class is correct
+here."
 
-## Output contract — the pattern-decision record (no pattern is applied without it)
+## How to choose (run these steps every time)
 
-Every run emits a short record. Evidence states are the canonical six from
-`skeptical-audit` (`proven` > `observed` > `inferred` > `documented` > `reported` > `not-assessed`):
+Read `references/choosing-a-pattern.md`. The steps are:
+
+1. Name the problem as forces, not as a pattern. What changes? What has to stay the same? What is copied?
+   What is tied together that should not be?
+2. Run the gate in two parts, in order.
+   a. Is the current code using an anti-pattern (God Object, anemic domain model, big ball of mud,
+      premature abstraction, Singleton as global state)? If no, go to part b. If yes, scope the work to
+      remove it, and still do part b. See `references/anti-patterns-and-smells.md`.
+   b. Does this code need a pattern? A pattern earns its place only when a named force calls for it and no
+      plain function, class, or language feature already solves it. If yes, pick a pattern and scope it. If
+      no, and part a found an anti-pattern, just remove the anti-pattern and make the result scalable and
+      performant, then move on. If no, and there was no anti-pattern, write "no pattern, because ..." and
+      stop.
+3. Match the symptoms to candidate patterns using the table in the catalog and the chooser.
+4. Score each candidate on five things, not just how clean it looks: does it fit the forces; what does it
+   cost in classes and reading; does it open a security hole (global state, unsafe deserialize, a new trust
+   boundary, an injection point); what does it cost to run (harder to trace, new failure modes, latency,
+   tuning); and is there a plain language feature that does the same job with less.
+5. Pick one, combine a few on purpose, or decline.
+6. Say how you will check it, and how to add it safely. Name the check that proves the pattern is applied
+   right (a contract test, an exhaustive state test, a type, or an arch-gate rule), not just "the feature's
+   tests pass." If you are changing running code, add the pattern behind the current interface, expand and
+   contract any schema, and keep it reversible. See `release-deployment-safety`.
+
+## What to write down (the pattern-decision record)
+
+Every run writes a short record. Evidence states are the six from `skeptical-audit`: proven, observed,
+inferred, documented, reported, not-assessed.
 
 ```
-Problem / forces:           what varies, what must stay stable, what's duplicated/coupled
-Forces evidence:            [state] about the EXISTING code — e.g. [observed: 2 runtime-selected pricing rules, pricing.ts:40-88]
-Candidates considered:      the patterns the forces pointed to (and the no-pattern option)
-Decision:                   the chosen pattern(s) — or "no pattern, because …"
+Problem / forces:           what changes, what must stay the same, what is copied or tied together
+Forces evidence:            [state] about the current code, e.g. [observed: two pricing rules at pricing.ts:40-88]
+Candidates considered:      the patterns the forces point to, plus the no-pattern option
+Decision:                   the pattern(s) you chose, or "no pattern, because ..."
 Pros / cons accepted:       the real benefit, and the cost you are taking on
-Failure/rot prevented:      the specific decay this removes (not "cleaner code")
-Security trade-off:         attack surface it opens or closes — threat-model via owasp-secure-coding-bdd
-Operational cost:           observability burden, new failure modes, tuning/debuggability — sre-operational-readiness
-Simpler alternative:        what you rejected and why (the YAGNI line)
-Adopt safely:               if changing running code — Strangler / expand-contract / reversibility (release-deployment-safety)
-Verify correct application: the pattern-specific test TYPE / type / arch-gate rule (e.g. Repository→contract test;
-                            State→exhaustive-transition) — proves the PATTERN holds, not just that the code runs
-Verification status:        [state] about that check — e.g. [not-assessed → observed once the contract test is green]
-ADR:                        if the choice is cross-cutting/significant, the ADR id (architectural-decision-records)
-Real guarantee:             the type / DB constraint / test / gate that actually makes the invariant hold
+Failure/rot prevented:      the exact decay this removes, not "cleaner code"
+Security trade-off:         what attack surface it opens or closes (threat-model with owasp-secure-coding-bdd)
+Operational cost:           tracing, new failure modes, tuning (see sre-operational-readiness)
+Simpler alternative:        what you rejected, and why
+Adopt safely:               if changing running code, the safe path (Strangler, expand/contract, reversible)
+Verify correct application: the pattern-specific check (name the test type or the arch-gate rule)
+Verification status:        [state] about that check, e.g. [not-assessed, becomes observed when the test is green]
+ADR:                        if the choice is cross-cutting or large, the ADR id (architectural-decision-records)
+Real guarantee:             the type, DB constraint, test, or gate that actually holds the invariant
 ```
 
-## The catalog and the layers it covers
+## What the catalog covers
 
-- **The 23 Gang-of-Four patterns** live in `references/design-patterns-catalog.md`, each on one strict
-  template: intent · forces · best-situation · pros · cons · avoid-when · failure-rot-prevented ·
-  **misuse-anti-pattern** · **security-trade-off** · **operational-cost** · **adopt-safely** ·
-  modern-alternative · **verify-correct-application (named test type)** · ❌/✅ example · sources. Intents
-  from GoF 1994; applicability/pros/cons from Refactoring.Guru; measured trade-offs from the peer-reviewed
-  studies; security framing cross-linked to `owasp-secure-coding-bdd`.
-- **The enterprise/tactical layer GoF omits** lives in `references/enterprise-patterns.md`: DI/IoC;
-  persistence (Repository, Unit of Work, Data Mapper, Identity Map, Lazy Load, Query Object,
-  Specification); DDD tactical (Value Object, Entity, Aggregate, Domain Event, Null Object, Result/Either);
-  **functional & immutable** (higher-order-function composition, pipelines, immutability-as-default,
-  lenses — first-class, not just "modern alternatives"); application/integration (Service Layer, DTO,
-  Gateway, Anti-Corruption Layer, Transactional Outbox, Idempotent Receiver, Competing Consumers,
-  Claim-Check); **security patterns as first-class** (trust boundary, validate-at-the-edge,
-  defense-in-depth — cross-linked to owasp); presentation (MVC/MVVM/MVP, Flux/Redux); concurrency
-  (Producer-Consumer, Thread Pool, Actor, Immutable Object, Future/Promise). Sourced from Fowler *PoEAA*
-  (page citations) and the Microsoft Azure *Cloud Design Patterns* catalog.
-  - **Cross-cutting caveats baked into that reference:** any pattern that copies/serializes records
-    (Repository, Data Mapper, DTO, Identity Map, Serialized LOB) inherits the data-map, retention, and
-    deletion-propagation duties of `compliance-data-lifecycle`; any presentation pattern must still
-    satisfy `universal-accessibility-wcag`, `universal-browser-device-support`, and
-    `usability-ux-universal-design` (the pattern shapes code, not conformance).
-- **Anti-patterns to detect and remove** live in `references/anti-patterns-and-smells.md` (God Object,
-  Anemic Domain Model, Big Ball of Mud, premature abstraction, Singleton-as-global-state). A selector's
-  most valuable output is often "undo this structure," not "add one."
-- **Do not duplicate** the architectural/distributed/resilience patterns this library already owns
-  (Hexagonal/Clean, Layered, CQRS, Event Sourcing, Saga, Strangler Fig, Circuit Breaker, Retry, Bulkhead,
-  Cache-Aside) — the catalog **cross-links** to `enterprise-architecture-standards`,
-  `release-deployment-safety`, `sre-operational-readiness`, and the requirements skills instead.
+- The 23 Gang of Four patterns are in `references/design-patterns-catalog.md`. Each one uses the same
+  template: intent, forces, best situation, pros, cons, avoid when, failure prevented, misuse, security
+  trade-off, operational cost, adopt safely, modern alternative, how to verify it, a bad-then-good example,
+  and sources. Intents come from the Gang of Four book (1994). Pros and cons come from Refactoring.Guru.
+  Measured risks come from the research papers. Security notes link to `owasp-secure-coding-bdd`.
+- The enterprise layer that the Gang of Four book leaves out is in `references/enterprise-patterns.md`.
+  It covers dependency injection; persistence patterns like Repository, Unit of Work, and Data Mapper; DDD
+  tactical patterns like Value Object, Aggregate, Null Object, and Result; functional patterns like
+  higher-order-function composition and immutability; security patterns like trust boundary and
+  validate-at-the-edge; application and messaging patterns like Service Layer, Gateway, Anti-Corruption
+  Layer, and Transactional Outbox; presentation patterns like MVC and Flux/Redux; and concurrency patterns.
+  Sources are Fowler's Patterns of Enterprise Application Architecture (with page numbers) and the Microsoft
+  Azure Cloud Design Patterns catalog.
+  - Two caveats live in that file. Any pattern that copies or serializes records (Repository, Data Mapper,
+    DTO, Identity Map) takes on the data-map, retention, and deletion duties from `compliance-data-lifecycle`.
+    Any presentation pattern still has to meet `universal-accessibility-wcag`,
+    `universal-browser-device-support`, and `usability-ux-universal-design`. The pattern shapes the code, not
+    the conformance.
+- Anti-patterns to find and remove are in `references/anti-patterns-and-smells.md` (God Object, anemic
+  domain model, big ball of mud, premature abstraction, Singleton used as global state). The best answer is
+  often to take structure out, not add it.
+- Do not copy patterns this library already owns (Hexagonal/Clean, Layered, CQRS, Event Sourcing, Saga,
+  Strangler Fig, Circuit Breaker, Retry, Bulkhead, Cache-Aside). The catalog links to
+  `enterprise-architecture-standards`, `release-deployment-safety`, `sre-operational-readiness`, and the
+  requirements skills instead.
 
-## Mechanical gate (what this skill enforces itself)
+## What this skill enforces on its own
 
-Honest scope: *selecting* the right pattern is judgment and can't be fully mechanized — but the **quality
-and integrity of the catalog this skill decides from** can be, and must be (every other skill here ships a
-gate). `scripts/check-catalog-completeness.mjs` fails closed when any catalog/enterprise entry is missing
-a required template field **or** a primary-source citation — so an uncited pro/con or a half-filled entry
-can't ship. It carries a discriminating test (a stripped entry → the gate fails). The *decision-record*
-discipline (every choice names its forces, simpler-alternative, and failure-prevented) is held by the
-Definition of done below and a fresh-context `judge-arch` review — and a future change-type→required-artifact
-routing gate can make a missing record fail CI; this gate does not claim to do that today. What stays judgment — "is this abstraction premature?", "do the
-forces really call for Strategy?" — is routed to `judge-arch` (reviewed against **all four** questions,
-not just over-engineering) and, where a choice is greppable ("data access only via a Repository in
-`domain/`"), encoded as an `arch-gate` rule via `arch-encode` with a real ❌/✅ example.
+Picking the right pattern is a judgment call, so it cannot be fully automated. But the catalog this skill
+chooses from can be kept honest, and it must be, because every other skill here ships a gate.
+`scripts/check-catalog-completeness.mjs` fails when any catalog entry is missing a template field or a
+primary-source citation. So a half-filled or uncited entry cannot ship. It comes with a test that strips a
+field from a sample entry and confirms the gate then fails.
 
-## Confirm before calling it done
+The decision-record habit (every choice names its forces, its simpler option, and the failure it prevents)
+is held by the Definition of done below and by a fresh-context `judge-arch` review. A later change-type to
+required-artifact routing gate can make a missing record fail CI. This gate does not do that today, and it
+does not claim to.
 
-- [ ] The problem was stated as **forces**, not named as a pattern up front.
-- [ ] The **YAGNI gate** was applied — "no pattern" (or "remove this anti-pattern") was a live option.
-- [ ] A **pattern-decision record** (the evidence ledger) exists with all fields, including **security
-      trade-off**, **operational cost**, **adopt-safely**, and the six-state evidence markers.
-- [ ] The failure/rot prevented is named concretely — and the **real guarantee** (type / DB constraint /
-      test / gate) is identified where "impossible to fail" is actually required.
-- [ ] **Verify correct application** names a *pattern-specific* check (test type / type / arch-gate rule),
-      authored under `bdd-comprehensive-testing` / `comprehensive-test-strategy` so it actually runs.
-- [ ] If the choice is cross-cutting/significant (per the ADR significance test), an **ADR** is written via
-      `architectural-decision-records`; the decision record becomes its Decision Drivers + Considered Options.
-- [ ] A greppable choice is encoded as an `arch-gate` rule via `arch-encode`; judgment calls go to `judge-arch`.
-- [ ] `check-catalog-completeness.mjs` passes (every entry fully templated + cited).
+What stays judgment ("is this abstraction premature?", "do the forces really call for Strategy?") goes to
+`judge-arch`, which reviews it against all four questions, not just over-engineering. Where a choice is
+greppable ("data access only through a Repository in `domain/`"), turn it into an arch-gate rule with
+`arch-encode` and a real bad-then-good example.
+
+## Before you call it done
+
+- [ ] You stated the problem as forces. You did not open by naming a pattern.
+- [ ] You checked whether a pattern was needed. "No pattern" or "remove this anti-pattern" was a real option.
+- [ ] You wrote a pattern-decision record (the evidence ledger) with every field, including the security
+      trade-off, the operational cost, the adopt-safely path, and the six-state evidence markers.
+- [ ] You named the failure the pattern prevents, and you named the real guarantee (a type, DB constraint,
+      test, or gate) wherever "impossible to fail" is actually required.
+- [ ] "Verify correct application" names a pattern-specific check, written under `bdd-comprehensive-testing`
+      or `comprehensive-test-strategy` so it actually runs.
+- [ ] If the choice is cross-cutting or large, you wrote an ADR with `architectural-decision-records`.
+- [ ] A greppable choice is an arch-gate rule via `arch-encode`. A judgment call goes to `judge-arch`.
+- [ ] `check-catalog-completeness.mjs` passes.
 
 ## Reference files
 
 | Topic | File |
 |---|---|
-| The 23 GoF patterns, one strict decision-oriented template each (+ security/operational/adopt-safely) | `references/design-patterns-catalog.md` |
-| Enterprise/persistence/domain/messaging/presentation/concurrency + DI/IoC + functional + security patterns (Fowler PoEAA + Azure) | `references/enterprise-patterns.md` |
-| The decision engine: symptom→candidate matrix, scoring, YAGNI gate, which choices are mechanizable (❌/✅ arch-gate rules), worked example | `references/choosing-a-pattern.md` |
-| The honest limits: patterns as a smell, language features that supersede them, patterns that widen the attack surface, measured risks, patterns≠guarantees | `references/criticism-and-limits.md` |
-| Anti-patterns & smells to detect and remove (God Object, Anemic Domain Model, premature abstraction) | `references/anti-patterns-and-smells.md` |
-| Mechanical gate: catalog-completeness + citation linter (fail-closed, discriminating-tested) | `scripts/check-catalog-completeness.mjs` |
+| The 23 Gang of Four patterns, one strict template each (plus security, operational, adopt-safely) | `references/design-patterns-catalog.md` |
+| Enterprise, persistence, domain, messaging, presentation, concurrency, DI, functional, and security patterns | `references/enterprise-patterns.md` |
+| The chooser: symptom-to-candidate table, scoring, the YAGNI gate, which choices are automatable, a worked example | `references/choosing-a-pattern.md` |
+| The honest limits: patterns as a smell, language features that replace them, patterns that widen the attack surface, measured risks | `references/criticism-and-limits.md` |
+| Anti-patterns and smells to find and remove | `references/anti-patterns-and-smells.md` |
+| The gate: catalog-completeness and citation linter (fails closed, has a discriminating test) | `scripts/check-catalog-completeness.mjs` |
 
 ## Evidence & skeptical assessment (required)
 
-A pattern recommendation is a factual claim about a problem's forces, so it carries the repo's evidence
-discipline (canonical contract:
+A pattern recommendation is a claim about a problem's forces, so it follows the library's evidence rules
+(the contract is in
 [`skeptical-audit/references/evidence-discipline.md`](../skeptical-audit/references/evidence-discipline.md)),
-using the full six states. The **pattern-decision record is the evidence ledger** — it separates the
-**forces evidence** (a claim about *existing* code, which can be `observed`/`proven`) from the
-**verification status** (the holds-test/gate, which starts `not-assessed` and is upgraded when it runs).
-No pattern is applied, and no "this is the right pattern" asserted, as a bare claim.
+using all six states. The pattern-decision record is the evidence ledger. It keeps the forces evidence (a
+claim about code that already exists, which can be observed or proven) separate from the verification status
+(the check, which starts at not-assessed and goes up when it runs). No pattern is applied, and no "this is
+the right pattern" is stated, as a bare claim.
 
 | Claim | Reaches `observed` by | Becomes `proven` when |
 |---|---|---|
-| "This feature needs pattern X" | the named forces are visible in the code/spec (`file:line`, the duplicated block, the two call sites) | the "verify correct application" test/type exists and passes, or an `arch-gate` rule enforces it |
-| "No pattern is needed here" | the plain solution is written and covered by a test | — (the absence of indirection is self-evident in the diff) |
-| "Pattern X prevents failure F" | F is a concrete, nameable decay (data sprawl, null-deref, shared-mutable-state, SSRF) | a test/type/gate makes F unrepresentable or caught on every PR |
-| "The catalog entry is sound" | every template field present | `check-catalog-completeness.mjs` passes with its citation (required CI check, discriminating-tested) |
+| "This feature needs pattern X" | the forces are visible in the code (file:line, the copied block, the two call sites) | the "verify correct application" check exists and passes, or an arch-gate rule enforces it |
+| "No pattern is needed here" | the plain solution is written and has a test | the diff shows no indirection was added |
+| "Pattern X prevents failure F" | F is a concrete, named decay (data sprawl, null-deref, shared state, SSRF) | a type, test, or gate makes F impossible or catches it on every PR |
+| "The catalog entry is sound" | every template field is present | `check-catalog-completeness.mjs` passes with its citation (a required CI check, with a discriminating test) |
 
-**Definition of done:** a pattern-decision record (the **evidence ledger**) exists with forces + forces
-evidence, decision, pros/cons, failure-prevented, security + operational trade-offs, simpler-alternative,
-adopt-safely, verify-correct-application, and verification status; the real "impossible to fail" guarantee
-is routed to a type/constraint/test/gate (not claimed of the pattern); an ADR exists if the choice is
-significant; every catalog fact cited to a primary source and `check-catalog-completeness.mjs` green. A
-greppable choice isn't fully resolved until its rule lives in `arch-gate` (then `proven`).
+**Definition of done:** a pattern-decision record (the evidence ledger) exists with forces and forces
+evidence, the decision, pros and cons, the failure prevented, the security and operational trade-offs, the
+simpler alternative, the adopt-safely path, the verify step, and the verification status. The real
+guarantee is routed to a type, constraint, test, or gate, not claimed of the pattern. An ADR exists if the
+choice is large. Every catalog fact is cited to a primary source, and `check-catalog-completeness.mjs` is
+green. A greppable choice is not fully resolved until its rule lives in arch-gate, where it becomes proven.
 
-## Why this holds for every developer and every agent
+## Why this works for every developer and every agent
 
-It binds universally because it lives in committed artifacts, not memory. **Agents** get it via the
-always-on hook (this skill is listed in `always-on/enterprise-skills-always-on.md`, injected every
-session/subagent) and it is referenced from `enterprise-architecture-standards` as part of the
-architecture decision. **Humans and agents alike** are held by the gates: `check-catalog-completeness.mjs`
-keeps the catalog honest on every PR; where a pattern choice is greppable it becomes an `arch-gate` rule
-(via `arch-encode`) that blocks the opposite; and `judge-arch` reviews the judgment calls against all four
-questions in fresh context. **It survives any individual** because the catalog, the decision records, the
-gate rules, and `decisions.md` are in git. **Honest limit (stated, not hidden):** greppable choices reach
-`proven`; the genuinely judgment-bound ones ("is this abstraction premature?") stay at `observed` + a
-`judge-arch` second look — this makes *choosing deliberately and recording why* unavoidable, not the
-choice always optimal. The catalog's measured trade-offs and the fresh-context review are how the residual
-shrinks.
+It binds everyone because it lives in committed files, not in memory. Agents get it through the always-on
+hook. This skill is listed in `always-on/enterprise-skills-always-on.md`, which is injected into every
+session and subagent, and it is referenced from `enterprise-architecture-standards` as part of the
+architecture decision. People and agents are both held by the gates. `check-catalog-completeness.mjs` keeps
+the catalog honest on every PR. A greppable choice becomes an arch-gate rule through `arch-encode`.
+`judge-arch` reviews the judgment calls in fresh context against all four questions. It survives any one
+person because the catalog, the decision records, the gate rules, and `decisions.md` are all in git.
+
+Here is the honest limit. Greppable choices reach proven. The real judgment calls ("is this abstraction
+premature?") stay at observed, backed by a `judge-arch` second look. This makes choosing on purpose and
+writing down why unavoidable. It does not make the choice always right. The catalog's measured trade-offs
+and the fresh-context review are how that gap shrinks.
 
 ## Sources and attribution
 
-Primary and peer-reviewed only — **Wikipedia is not an acceptable citation in this skill** (pattern
-intents come from GoF 1994 / Fowler *PoEAA*, not encyclopedia summaries).
+Sources are primary wherever one exists, and Wikipedia is never used (the gate rejects it). Pattern
+intents come from the Gang of Four book or Fowler's Patterns of Enterprise Application Architecture, not
+from encyclopedia summaries. A few newer patterns have no canonical book. Those cite the originating
+author's own write-up or the reference implementation instead (for example, Result/Either cites Wlaschin's
+Railway Oriented Programming, and Lens/Optics cites the reference library docs). Measured claims cite the
+peer-reviewed studies below.
 
-- **Gang of Four** — Gamma, Helm, Johnson, Vlissides, *Design Patterns: Elements of Reusable
-  Object-Oriented Software*, Addison-Wesley 1994 (ISBN 0-201-63361-2) — the 23 patterns, their intents,
-  and the OO principles. `[documented]`
-- **Fowler, Rice, Foemmel, Hieatt, Mee & Stafford** — *Patterns of Enterprise Application Architecture*,
-  Addison-Wesley 2002 (ISBN 0-321-12742-0) — the enterprise/persistence/presentation/concurrency layer,
-  cited by page (e.g. *Repository (322)*, *Unit of Work (184)*). Public index:
+- Gang of Four: Gamma, Helm, Johnson, Vlissides, *Design Patterns: Elements of Reusable Object-Oriented
+  Software*, Addison-Wesley 1994 (ISBN 0-201-63361-2). The 23 patterns, their intents, and the OO
+  principles. `[documented]`
+- Fowler, Rice, Foemmel, Hieatt, Mee & Stafford, *Patterns of Enterprise Application Architecture*,
+  Addison-Wesley 2002 (ISBN 0-321-12742-0). The enterprise layer, cited by page. Public index:
   <https://martinfowler.com/eaaCatalog/>. `[documented]`
-- **Martin Fowler** — *Inversion of Control Containers and the Dependency Injection pattern*,
-  <https://martinfowler.com/articles/injection.html> (DI/IoC). `[documented]`
-- **Microsoft Azure Architecture Center** — *Cloud Design Patterns*,
-  <https://learn.microsoft.com/azure/architecture/patterns/> (cloud/messaging patterns). `[documented]`
-- **Refactoring.Guru** — *The Catalog of Design Patterns*,
-  <https://refactoring.guru/design-patterns/catalog> (applicability + pros/cons, retrieved 2026-10-10). `[documented]`
-- **Peter Norvig** — *Design Patterns in Dynamic Languages*, <https://norvig.com/design-patterns/> — 16 of
-  23 GoF patterns are simplified or invisible given first-class functions/types. `[documented]`
-- **Paul Graham** — *Revenge of the Nerds*, <https://www.paulgraham.com/icad.html> — patterns as a sign
-  of abstractions that aren't powerful enough. `[documented]`
-- **Gamma, Helm, Johnson** — *Design Patterns 15 Years Later* (InformIT, 2009),
-  <https://www.informit.com/articles/article.aspx?p=1404056> — the authors would add dependency injection,
+- Martin Fowler, *Inversion of Control Containers and the Dependency Injection pattern*,
+  <https://martinfowler.com/articles/injection.html>. `[documented]`
+- Microsoft Azure Architecture Center, *Cloud Design Patterns*,
+  <https://learn.microsoft.com/azure/architecture/patterns/>. `[documented]`
+- Refactoring.Guru, *The Catalog of Design Patterns*,
+  <https://refactoring.guru/design-patterns/catalog> (retrieved 2026-10-10). Applicability and pros/cons. `[documented]`
+- Peter Norvig, *Design Patterns in Dynamic Languages*, <https://norvig.com/design-patterns/>. 16 of 23
+  Gang of Four patterns are simpler or invisible with first-class functions and types. `[documented]`
+- Paul Graham, *Revenge of the Nerds*, <https://www.paulgraham.com/icad.html>. A pattern can be a sign that
+  an abstraction is not strong enough. `[documented]`
+- Gamma, Helm, Johnson, *Design Patterns 15 Years Later* (InformIT, 2009),
+  <https://www.informit.com/articles/article.aspx?p=1404056>. The authors would add dependency injection,
   null object, type object, and extension object, and reconsider Singleton. `[documented]`
-- **Hussain, Keung, Khan** — *The Effect of GoF Design Patterns Usage on Design Quality Attributes*, IEEE
-  QRS 2017, doi:10.1109/QRS.2017.37 — measured trade-offs. `[documented]`
-- **Almadi, Hooshyar, Ahmad** — *Bad Smells of Gang of Four Design Patterns: A Decade Systematic
-  Literature Review*, Sustainability 13(18):10256, 2021, doi:10.3390/su131810256 — measured risks. `[documented]`
+- Hussain, Keung, Khan, *The Effect of GoF Design Patterns Usage on Design Quality Attributes*, IEEE QRS
+  2017, doi:10.1109/QRS.2017.37. Measured trade-offs. `[documented]`
+- Almadi, Hooshyar, Ahmad, *Bad Smells of Gang of Four Design Patterns: A Decade Systematic Literature
+  Review*, Sustainability 13(18):10256, 2021, doi:10.3390/su131810256. Measured risks. `[documented]`

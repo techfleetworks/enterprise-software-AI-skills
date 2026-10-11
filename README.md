@@ -13,8 +13,8 @@ encodes the judgment a senior engineer applies to a change (how to secure it,
 how to test it, how to release it, why it was decided that way) so that *every*
 change can meet the same bar, not just the ones a specialist happens to review.
 
-They come in two groups: **twelve engineering-standards** skills at the top level
-(security, testing, architecture, release, SRE, compliance, ADRs, plus architectural
+They come in two groups: **thirteen engineering-standards** skills at the top level
+(security, BDD, test strategy, architecture, release, SRE, compliance, ADRs, plus architectural
 review, rule-encoding, verifiable quality gates, skeptical self-audit, and design-pattern
 selection) and three
 **[requirements](requirements/)** skills that make what you build work for

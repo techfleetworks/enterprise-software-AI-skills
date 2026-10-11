@@ -1,4 +1,4 @@
-# Anti-Patterns & Smells — what to detect and REMOVE
+# Anti-Patterns & Smells, what to detect and REMOVE
 
 A pattern selector's most valuable output is often "undo this structure," not "add one." Over-abstraction
 is itself a top cause of rot, so this reference is the counterweight to the catalog: the recurring *bad*
@@ -8,26 +8,26 @@ these, the job is removal/refactoring, not a new pattern.
 Each entry: what it is · how to spot it · why it rots · the fix · source.
 
 ### God Object / God Class
-- **Spot it:** one class/module that knows or does "everything" — hundreds of lines, many unrelated
+- **Spot it:** one class/module that knows or does "everything", hundreds of lines, many unrelated
   responsibilities, most of the system reaching into it. A Facade or Mediator that kept accreting.
 - **Rots because:** every change touches it (merge contention, ripple bugs); it can't be tested in
   isolation; it violates single-responsibility and boundary placement.
 - **Fix:** split by responsibility into cohesive units behind their own interfaces (the "S" in SOLID);
-  move data to its owner. Not a new pattern — *less* concentration.
+  move data to its owner. Not a new pattern, *less* concentration.
 - **Source:** Brown et al., *AntiPatterns* (1998, ISBN 0-471-19713-0); SOLID/SRP (Martin, *Clean
   Architecture* 2017).
 
 ### Anemic Domain Model
 - **Spot it:** "domain" objects that are just bags of getters/setters with no behavior; all the logic lives
   in service/"manager" classes operating *on* them.
-- **Rots because:** it's procedural code wearing OO clothes — invariants aren't enforced where the data
+- **Rots because:** it's procedural code wearing OO clothes, invariants aren't enforced where the data
   lives, so they're re-checked (or forgotten) everywhere; the model guarantees nothing.
 - **Fix:** move the behavior/invariants onto the entity/value object (a rich Domain Model); the Result/Value
   Object/Aggregate entries in `enterprise-patterns.md` are the constructive side.
 - **Source:** Fowler, *Anemic Domain Model*, <https://martinfowler.com/bliki/AnemicDomainModel.html>.
 
 ### Big Ball of Mud
-- **Spot it:** no discernible architecture — everything depends on everything, boundaries are accidental,
+- **Spot it:** no discernible architecture, everything depends on everything, boundaries are accidental,
   control flow is spaghetti.
 - **Rots because:** change is unpredictable and risky; nothing can be reasoned about locally.
 - **Fix:** introduce boundaries incrementally (Strangler Fig, an Anti-Corruption Layer at the worst seam);
@@ -38,7 +38,7 @@ Each entry: what it is · how to spot it · why it rots · the fix · source.
 - **Spot it:** an interface/factory/manager/strategy with exactly one implementation; a framework built for
   a second use case that doesn't exist; a pattern applied because it's "best practice," not because a force
   demanded it.
-- **Rots because:** indirection with no payoff — more files to read, more hops to trace, a worse change
+- **Rots because:** indirection with no payoff, more files to read, more hops to trace, a worse change
   than the straight-line code it replaced. It is the failure mode the YAGNI gate exists to stop.
 - **Fix:** inline it back to the concrete code until a second real case appears (Rule of Three). This is a
   valid, common decision outcome: "remove this pattern."
@@ -47,9 +47,9 @@ Each entry: what it is · how to spot it · why it rots · the fix · source.
 
 ### Singleton-as-global-state
 - **Spot it:** a Singleton holding mutable state, reached directly from everywhere (`X.getInstance()`).
-- **Rots because:** hidden global dependency — untestable (can't substitute it), order-dependent, and a
+- **Rots because:** hidden global dependency, untestable (can't substitute it), order-dependent, and a
   concurrency hazard. The GoF authors themselves said they'd reconsider Singleton (InformIT 2009).
-- **Fix:** a single instance *provided by a DI container/scope* and injected — one instance, no global
+- **Fix:** a single instance *provided by a DI container/scope* and injected, one instance, no global
   access. See DI/IoC in `enterprise-patterns.md`.
 - **Source:** GoF 1994 (ISBN 0-201-63361-2) + InformIT 2009 interview.
 

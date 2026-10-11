@@ -48,14 +48,42 @@ test("PASSES a fully-templated, cited entry", () => {
   assert.equal(run(render(entryFields())).status, 0, run(render(entryFields())).out);
 });
 
-for (const field of ["Intent", "Security trade-off", "Operational cost", "Adopt safely", "Verify correct application", "Source(s)"]) {
+// Every one of the 15 required fields must be individually enforced (discriminating on all, not a subset).
+for (const field of Object.keys(entryFields())) {
   test(`FAILS when the "${field}" field is missing (discriminating)`, () => {
     const f = entryFields(); delete f[field];
-    const r = run(render(f));
-    assert.equal(r.status, 1, r.out);
-    assert.match(r.out, new RegExp(field.replace(/[()/]/g, "\\$&").split(" ")[0]));
+    assert.equal(run(render(f)).status, 1, `expected FAIL when "${field}" is missing`);
   });
 }
+
+// A present-but-EMPTY field (label with no content) must also fail — not just a missing label.
+test("FAILS when a field label is present but its value is empty (discriminating)", () => {
+  const f = entryFields(); f["Security trade-off"] = "";
+  assert.equal(run(render(f)).status, 1);
+});
+
+test("FAILS when the only citation is Wikipedia (the no-Wikipedia rule is enforced, not just stated)", () => {
+  const f = entryFields();
+  f["Source(s)"] = "https://en.wikipedia.org/wiki/Factory_method_pattern";
+  const r = run(render(f));
+  assert.equal(r.status, 1, r.out);
+  assert.match(r.out, /citation/);
+});
+
+test("FAILS when a bare year like (1994) is the only citation token (not a real source)", () => {
+  const f = entryFields();
+  f["Source(s)"] = "the book, published (1994)";
+  assert.equal(run(render(f)).status, 1);
+});
+
+test("fields written only INSIDE a fenced code block do not satisfy the entry (fence-blind fix)", () => {
+  const fenced = "# Catalog\n\nintro\n\n### Foo — Creational\n```\n" +
+    Object.entries(entryFields()).map(([k, v]) => `${k}: ${v}`).join("\n") +
+    "\n### Nested Heading In Fence\n```\n";
+  const r = run(fenced);
+  assert.equal(r.status, 1, r.out); // the real entry has no fields once the fence is stripped
+  assert.doesNotMatch(r.out, /Nested Heading/); // and the ### inside the fence is not a spurious entry
+});
 
 test("FAILS when the entry has no citation (even if all fields present)", () => {
   const f = entryFields();

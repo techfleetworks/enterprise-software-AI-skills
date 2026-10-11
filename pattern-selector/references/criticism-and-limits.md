@@ -1,4 +1,4 @@
-# Criticism & Limits — so the skill never cargo-cults
+# Criticism & Limits, so the skill never cargo-cults
 
 Design patterns are a vocabulary and a set of trade-offs, not a quality guarantee. This reference is the
 honest counterweight the skill is required to carry: when a pattern is a *smell*, when a language feature
@@ -64,12 +64,12 @@ The empirical record is not uniformly positive. Peer-reviewed studies find patte
 trade-offs, not just folklore benefits:
 
 - Hussain, Keung, Khan, *The Effect of GoF Design Patterns Usage on Design Quality Attributes*, IEEE QRS
-  2017, doi:10.1109/QRS.2017.37 — pattern use affects quality attributes in both directions. `[documented]`
+  2017, doi:10.1109/QRS.2017.37, pattern use affects quality attributes in both directions. `[documented]`
 - Almadi, Hooshyar, Ahmad, *Bad Smells of GoF Design Patterns: A Decade Systematic Literature Review*,
-  Sustainability 13(18):10256, 2021, doi:10.3390/su131810256 — patterns are associated with specific bad
+  Sustainability 13(18):10256, 2021, doi:10.3390/su131810256, patterns are associated with specific bad
   smells when misapplied. `[documented]`
 
-So the YAGNI gate is not a style preference — it's supported by the evidence. A pattern applied without its
+So the YAGNI gate is not a style preference, it's supported by the evidence. A pattern applied without its
 problem adds indirection, classes, and cognitive load: the opposite of robustness. The skill's default
 answer is often **"no pattern."**
 
@@ -78,12 +78,12 @@ answer is often **"no pattern."**
 A pattern makes code *shaped right*; it does not make it *provably correct*. The "structurally impossible to
 fail" guarantees this library cares about come from:
 
-- **Types** — a discriminated `Result`/sum type makes an unhandled case a *compile error*; a `Money` value
+- **Types**, a discriminated `Result`/sum type makes an unhandled case a *compile error*; a `Money` value
   object makes an invalid amount unrepresentable.
-- **Database constraints** — `NOT NULL`, `FK`, `UNIQUE`, `CHECK` enforce invariants no amount of patterning
+- **Database constraints**, `NOT NULL`, `FK`, `UNIQUE`, `CHECK` enforce invariants no amount of patterning
   can.
-- **Tests** — a contract/property/exhaustive-transition test proves the behavior holds.
-- **Gates** — `arch-gate`/`check-*` make the rule un-skippable on every PR.
+- **Tests**, a contract/property/exhaustive-transition test proves the behavior holds.
+- **Gates**, `arch-gate`/`check-*` make the rule un-skippable on every PR.
 
 So every pattern-decision record names the pattern **and** the real guarantee, and routes the hard one to a
 type/constraint/test/gate. Claiming a pattern alone makes code "impossible to fail" would violate this
