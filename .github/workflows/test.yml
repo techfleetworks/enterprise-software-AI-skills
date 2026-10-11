@@ -1,6 +1,8 @@
-# Runs the discriminating tests for the repo's own gate scripts (claim-lint, arch-gate, …).
-# These scripts ARE the mechanical enforcement engines; if they regress, every skill that leans on
-# them quietly loses its guarantee — so their tests are a required, blocking check.
+# Runs the discriminating tests for the repo's own gate scripts (claim-lint, arch-gate, ...), then
+# runs the architecture gate against this repo itself. These scripts ARE the mechanical enforcement
+# engines; if they regress, every skill that leans on them quietly loses its guarantee, so their
+# tests are a required, blocking check. ADR-0015 added the second step: the repo now holds its own
+# code and docs to the same gate it ships, so house-style and script-hygiene drift cannot merge.
 name: tests
 
 on:
@@ -31,3 +33,7 @@ jobs:
         run: npm ci
       - name: Run gate-script tests
         run: npm test
+      # The architecture gate holds THIS repo to its own rules (house style + script hygiene).
+      # Dependency-free; exits non-zero on any violation, which fails the required check (ADR-0015).
+      - name: Architecture gate
+        run: npm run check:architecture
