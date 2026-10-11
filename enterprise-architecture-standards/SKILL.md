@@ -17,7 +17,7 @@ Different work calls for different reference files. Identify which of these appl
 
 - **New service or system boundary** (a new microservice, a new bounded context, splitting a monolith) → `references/software-architecture-styles.md` + `references/microservices-patterns.md`
 - **Database schema, data model, or persistence choice** (new tables, new data store, migration, sharding) → `references/database-architecture.md`
-- **Any non-trivial function, class, or module** (the actual code, regardless of scale) → `references/coding-principles.md`
+- **Any non-trivial function, class, or module** (the actual code, regardless of scale) → `references/coding-principles.md`; for *selecting the specific design pattern(s)* — the forces, the pattern or deliberately none, its trade-offs, and how it's verified — use the `pattern-selector` skill
 - **Service-to-service communication, external integration, or public/internal API** → `references/api-integration-design.md`
 - **Anything that can fail, time out, or cascade** (calls to other services, databases, queues) → `references/resilience-reliability-patterns.md`
 - **Anything with a load, latency, or scale requirement**, or that touches a hot path → `references/performance-scalability.md`
