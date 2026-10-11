@@ -1,0 +1,14 @@
+{
+  "_comment": "Maps a security-relevant code surface to the @security scenario(s) a change touching it must carry. check-security-coverage.mjs triggers a rule when a changed file's content matches any contentMatch (case-insensitive), then requires each requireTags tag to appear on a @security scenario in the shared feature index (or a valid waiver). This is a STARTING map: tune contentMatch and add rules for your stack. The requireTags use the @owasp:<topic> convention the per-sheet @security scenarios are tagged with. 'sheets' names the cheat sheet(s) to apply, for the failure message.",
+  "rules": [
+    { "surface": "sql-injection", "contentMatch": ["\\bSELECT\\b[\\s\\S]{0,120}\\bFROM\\b", "\\b(INSERT\\s+INTO|UPDATE\\s+\\w+\\s+SET|DELETE\\s+FROM)\\b", "\\.(query|execute|raw)\\s*\\(", "createQueryBuilder"], "requireTags": ["@owasp:sql-injection"], "sheets": ["SQL_Injection_Prevention", "Query_Parameterization"] },
+    { "surface": "xss", "contentMatch": ["innerHTML", "dangerouslySetInnerHTML", "v-html", "document\\.write\\s*\\(", "\\.insertAdjacentHTML\\s*\\("], "requireTags": ["@owasp:xss"], "sheets": ["Cross_Site_Scripting_Prevention", "DOM_based_XSS_Prevention"] },
+    { "surface": "password-storage", "contentMatch": ["\\bbcrypt\\b", "\\bargon2\\b", "\\bscrypt\\b", "\\bpbkdf2\\b", "hashPassword", "password_hash\\s*\\("], "requireTags": ["@owasp:password-storage"], "sheets": ["Password_Storage", "Authentication"] },
+    { "surface": "jwt", "contentMatch": ["jsonwebtoken", "jwt\\.(sign|verify|decode)", "\\balg\\b\\s*[:=]\\s*['\"]?none", "\\bHS256\\b", "\\bRS256\\b"], "requireTags": ["@owasp:jwt"], "sheets": ["JSON_Web_Token"] },
+    { "surface": "file-upload", "contentMatch": ["\\bmulter\\b", "multipart/form-data", "formidable", "busboy", "\\.(saveAs|moveTo)\\s*\\("], "requireTags": ["@owasp:file-upload"], "sheets": ["File_Upload"] },
+    { "surface": "ssrf", "contentMatch": ["\\bfetch\\s*\\(\\s*(req|request|user|input|url)", "axios\\.(get|post|request)\\s*\\(", "http\\.request\\s*\\(", "requests\\.(get|post)\\s*\\(", "urllib"], "requireTags": ["@owasp:ssrf"], "sheets": ["Server_Side_Request_Forgery_Prevention"] },
+    { "surface": "session-cookie", "contentMatch": ["set-?cookie", "\\.cookie\\s*\\(", "express-session", "httpOnly", "sameSite"], "requireTags": ["@owasp:session"], "sheets": ["Session_Management", "Cookie_Theft_Mitigation"] },
+    { "surface": "command-injection", "contentMatch": ["child_process", "\\bexec(Sync)?\\s*\\(", "\\bspawn(Sync)?\\s*\\(", "os\\.system\\s*\\(", "subprocess\\.(run|call|Popen)"], "requireTags": ["@owasp:command-injection"], "sheets": ["OS_Command_Injection_Defense"] },
+    { "surface": "deserialization", "contentMatch": ["\\bpickle\\.(load|loads)", "yaml\\.load\\b(?!er)", "ObjectInputStream", "\\bunserialize\\s*\\(", "Marshal\\.load"], "requireTags": ["@owasp:deserialization"], "sheets": ["Deserialization"] }
+  ]
+}

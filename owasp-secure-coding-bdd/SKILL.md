@@ -37,15 +37,47 @@ the proof that they hold comes from `@security` scenarios wired into CI.
    parameterized query, contextual output encoding, an Argon2id hash, a DB constraint) is what makes every case
    safe. State both, so no one mistakes a passing test for a proof.
 
-## How to use this skill, step by step
+## The selection flow: OWASP threat modeling (required, enforced)
 
-1. **Scope.** List what the change touches (input, auth, data, files, APIs, dependencies, infra, AI).
-2. **Route.** Find the matching sheets in the catalog and open their per-sheet files.
-3. **Apply.** Implement the controls, preferring the structural one the cheat sheet names first.
-4. **Prove.** Add each sheet's `@security` scenario to the shared feature-file index and wire it into CI, so
-   the secure coding is tested on every push (via `bdd-comprehensive-testing`). Keep the per-sheet doc's
-   scenario and the one in the feature index identical.
-5. **Confirm.** Run the catalog gate and the secure-coding lints, and record the evidence ledger.
+Choosing the right cheat sheets is not left to chance. Follow OWASP's own Threat Modeling Process, which runs
+in four steps, and the flow produces a security-decision record plus the executable scenarios the enforcement
+gate checks. This is the secure-coding analogue of how `pattern-selector` forces a deliberate pattern choice.
+
+### Step 1: Scope your work
+Map the change's surface the way OWASP's first step does: the entry and exit points, the assets worth
+protecting, the trust boundaries the data crosses, and the data flows. From that surface, SELECT the cheat
+sheets that apply. For example, a login form that writes to SQL crosses an authentication trust boundary and
+touches a database, so it selects Authentication, Session Management, Password Storage, and SQL Injection
+Prevention.
+
+### Step 2: Determine threats
+For the scoped surface, name what can go wrong using a categorization such as STRIDE, and map each threat to
+the cheat sheet that addresses it. Rank the threats high, medium, or low by exploitability and impact, as
+OWASP's process does, so the most dangerous are handled first.
+
+### Step 3: Determine countermeasures and mitigation
+Apply each selected sheet's controls, preferring the structural one it names first. For every threat choose a
+risk response the way OWASP's third step frames it: eliminate, mitigate, transfer, or (rarely, with a stated
+reason) accept. A threat with no countermeasure is a vulnerability, not a decision. Add each control's
+`@security` scenario to the shared feature-file index (via `bdd-comprehensive-testing`), so the countermeasure
+is tested, not merely asserted.
+
+### Step 4: Assess your work (the security-decision record)
+Record the result: the surface, the cheat sheets selected, the threats and their ranking, the countermeasures
+applied, the `@security` scenarios added (or the explicit, reasoned waivers), and the real guarantee for each.
+This security-decision record is the evidence that the flow ran, and it is exactly what OWASP's fourth step
+asks for: a scope, a threat list, and a control list that exist and are reviewable.
+
+### What makes this impossible to skip, and the honest limit
+The flow is enforced at the OUTCOME, not on trust. `scripts/check-security-coverage.mjs` maps the changed code
+to the security surfaces it touches (SQL, auth, sessions, uploads, JWT, rendering, SSRF, command execution,
+deserialization, and more in `assets/security-coverage.config.json`) and FAILS the build when a triggered
+surface has no matching `@security` scenario in the feature index and no reasoned, unexpired waiver. So
+shipping security-relevant code with nothing testing it cannot pass CI, and it cannot regress silently,
+because the gate runs on every change and has a discriminating test. The honest limit: the gate makes it
+impossible to SKIP the flow or ship an untested surface; it cannot guarantee you picked the perfect set of
+sheets or wrote a perfect scenario. That judgment is caught by a `judge-arch` review, and every gap found
+becomes a new surface rule in the config, so the part that rests on judgment only shrinks.
 
 ## The cheat-sheet catalog (the routing index)
 
@@ -213,6 +245,11 @@ Every `references/cheatsheets/<Slug>.md` follows the same shape, and the catalog
 
 ## Mechanical gate
 
+- `scripts/check-security-coverage.mjs` (test: `test/owasp-security-coverage.test.mjs`) is the enforcement gate
+  for the selection flow. It maps the changed code to the security surfaces it touches
+  (`assets/security-coverage.config.json`) and fails closed when a triggered surface has no matching
+  `@security` scenario in the feature index and no valid waiver. This is what makes the flow impossible to skip
+  on a security-relevant change. Adopters run it on their changed files in CI.
 - `scripts/check-cheatsheet-catalog.mjs` (test: `test/owasp-cheatsheet-catalog.test.mjs`) fails closed unless
   every `done` sheet has its file, all required sections, a citation URL, and an executable `@security` Gherkin
   scenario, and is indexed above, with no orphan files. It reports progress toward all 137.
@@ -223,11 +260,15 @@ Every `references/cheatsheets/<Slug>.md` follows the same shape, and the catalog
 
 ## Before you call it done
 
-- [ ] The relevant cheat sheet(s) for the change are identified and their controls applied.
+- [ ] The selection flow ran: the change's surface was scoped, threats determined and ranked, and the cheat
+      sheet(s) selected (OWASP threat modeling steps 1 and 2).
+- [ ] Countermeasures applied, each with a risk response (eliminate, mitigate, transfer, or reasoned accept).
 - [ ] Each control has an executable `@security` scenario in the repo's shared feature-file index, wired into
       CI, not just prose in the per-sheet doc.
 - [ ] The structural guarantee is named, separate from what the scenario checks.
-- [ ] `check-cheatsheet-catalog.mjs` and `check-owasp-lints.mjs` pass.
+- [ ] The **security-decision record** (OWASP threat modeling step 4) exists: surface, sheets selected, threats
+      and ranking, countermeasures, scenarios added or reasoned waivers, and the real guarantee for each.
+- [ ] `check-security-coverage.mjs`, `check-cheatsheet-catalog.mjs`, and `check-owasp-lints.mjs` pass.
 - [ ] The run records its **evidence ledger**: each control, the attack it stops, the `@security` scenario that
       tests it, and the source read, each with an evidence state and a re-runnable source.
 
@@ -238,8 +279,12 @@ Every `references/cheatsheets/<Slug>.md` follows the same shape, and the catalog
 | The authoritative list of all 137 cheat sheets | `references/cheatsheets-manifest.json` |
 | One file per cheat sheet (the routing targets) | `references/cheatsheets/<Slug>.md` |
 | Example executable `@security` feature (merges into the adopter's shared index) | `assets/example/features/owasp-security.feature` |
+| Enforcement gate for the selection flow (change-type to required scenario) | `scripts/check-security-coverage.mjs` |
+| The surface-to-scenario map the enforcement gate reads (tune per stack) | `assets/security-coverage.config.json` |
 | Completeness gate for the per-sheet catalog | `scripts/check-cheatsheet-catalog.mjs` |
 | Code-level secure-coding lints | `scripts/check-owasp-lints.mjs` |
+| Fetch the exact upstream OWASP text (CC-BY-SA, on demand) | `tools/vendor-owasp.mjs` (`npm run vendor:owasp`) |
+| The vendored exact text and its attribution | `third_party/owasp/NOTICE.md` |
 
 The following interim cluster references hold the deep phase-2 content and are being migrated into the per-sheet
 files, after which they will be removed: `references/access-control-authorization.md`,
