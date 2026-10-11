@@ -210,7 +210,7 @@
       "slug": "Database_Security",
       "title": "Database Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Database_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: input, injection & data stores"
     },
     {
@@ -231,7 +231,7 @@
       "slug": "Deserialization",
       "title": "Deserialization",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: input, injection & data stores"
     },
     {
@@ -378,7 +378,7 @@
       "slug": "Injection_Prevention",
       "title": "Injection Prevention",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: input, injection & data stores"
     },
     {
@@ -392,7 +392,7 @@
       "slug": "Input_Validation",
       "title": "Input Validation",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: input, injection & data stores"
     },
     {
@@ -455,7 +455,7 @@
       "slug": "LDAP_Injection_Prevention",
       "title": "LDAP Injection Prevention",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/LDAP_Injection_Prevention_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: input, injection & data stores"
     },
     {
@@ -490,7 +490,7 @@
       "slug": "Mass_Assignment",
       "title": "Mass Assignment",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: input, injection & data stores"
     },
     {
@@ -574,7 +574,7 @@
       "slug": "NoSQL_Security",
       "title": "NoSQL Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/NoSQL_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: input, injection & data stores"
     },
     {
@@ -595,7 +595,7 @@
       "slug": "OS_Command_Injection_Defense",
       "title": "OS Command Injection Defense",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: input, injection & data stores"
     },
     {
@@ -644,7 +644,7 @@
       "slug": "Query_Parameterization",
       "title": "Query Parameterization",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Query_Parameterization_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: input, injection & data stores"
     },
     {
@@ -735,14 +735,14 @@
       "slug": "Server_Side_Request_Forgery_Prevention",
       "title": "Server Side Request Forgery Prevention",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: input, injection & data stores"
     },
     {
       "slug": "Server_Side_Template_Injection_Prevention",
       "title": "Server Side Template Injection Prevention",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Template_Injection_Prevention_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: input, injection & data stores"
     },
     {
@@ -924,21 +924,21 @@
       "slug": "XML_External_Entity_Prevention",
       "title": "XML External Entity Prevention",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: input, injection & data stores"
     },
     {
       "slug": "XML_Security",
       "title": "XML Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/XML_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: input, injection & data stores"
     },
     {
       "slug": "XPath_Injection_Prevention",
       "title": "XPath Injection Prevention",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/XPath_Injection_Prevention_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: input, injection & data stores"
     },
     {

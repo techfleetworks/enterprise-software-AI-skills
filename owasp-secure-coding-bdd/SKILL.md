@@ -89,6 +89,7 @@ scenario; `pending` sheets are being migrated from the interim cluster reference
 section, a citation, an executable `@security` scenario, and an entry in this index.
 
 
+
 ### Frontend & browser (16/16)
 
 | Cheat sheet | File | Status |
@@ -110,25 +111,25 @@ section, a citation, an executable `@security` scenario, and an entry in this in
 | [XS Leaks](references/cheatsheets/XS_Leaks.md) | `references/cheatsheets/XS_Leaks.md` | done |
 | [XSS Filter Evasion](references/cheatsheets/XSS_Filter_Evasion.md) | `references/cheatsheets/XSS_Filter_Evasion.md` | done |
 
-### Backend: input, injection & data stores (1/15)
+### Backend: input, injection & data stores (15/15)
 
 | Cheat sheet | File | Status |
 |---|---|---|
-| Injection Prevention | `references/cheatsheets/Injection_Prevention.md` | pending |
-| Input Validation | `references/cheatsheets/Input_Validation.md` | pending |
+| [Injection Prevention](references/cheatsheets/Injection_Prevention.md) | `references/cheatsheets/Injection_Prevention.md` | done |
+| [Input Validation](references/cheatsheets/Input_Validation.md) | `references/cheatsheets/Input_Validation.md` | done |
 | [SQL Injection Prevention](references/cheatsheets/SQL_Injection_Prevention.md) | `references/cheatsheets/SQL_Injection_Prevention.md` | done |
-| Query Parameterization | `references/cheatsheets/Query_Parameterization.md` | pending |
-| OS Command Injection Defense | `references/cheatsheets/OS_Command_Injection_Defense.md` | pending |
-| LDAP Injection Prevention | `references/cheatsheets/LDAP_Injection_Prevention.md` | pending |
-| XPath Injection Prevention | `references/cheatsheets/XPath_Injection_Prevention.md` | pending |
-| Server Side Template Injection Prevention | `references/cheatsheets/Server_Side_Template_Injection_Prevention.md` | pending |
-| Server Side Request Forgery Prevention | `references/cheatsheets/Server_Side_Request_Forgery_Prevention.md` | pending |
-| Deserialization | `references/cheatsheets/Deserialization.md` | pending |
-| XML External Entity Prevention | `references/cheatsheets/XML_External_Entity_Prevention.md` | pending |
-| XML Security | `references/cheatsheets/XML_Security.md` | pending |
-| Mass Assignment | `references/cheatsheets/Mass_Assignment.md` | pending |
-| Database Security | `references/cheatsheets/Database_Security.md` | pending |
-| NoSQL Security | `references/cheatsheets/NoSQL_Security.md` | pending |
+| [Query Parameterization](references/cheatsheets/Query_Parameterization.md) | `references/cheatsheets/Query_Parameterization.md` | done |
+| [OS Command Injection Defense](references/cheatsheets/OS_Command_Injection_Defense.md) | `references/cheatsheets/OS_Command_Injection_Defense.md` | done |
+| [LDAP Injection Prevention](references/cheatsheets/LDAP_Injection_Prevention.md) | `references/cheatsheets/LDAP_Injection_Prevention.md` | done |
+| [XPath Injection Prevention](references/cheatsheets/XPath_Injection_Prevention.md) | `references/cheatsheets/XPath_Injection_Prevention.md` | done |
+| [Server Side Template Injection Prevention](references/cheatsheets/Server_Side_Template_Injection_Prevention.md) | `references/cheatsheets/Server_Side_Template_Injection_Prevention.md` | done |
+| [Server Side Request Forgery Prevention](references/cheatsheets/Server_Side_Request_Forgery_Prevention.md) | `references/cheatsheets/Server_Side_Request_Forgery_Prevention.md` | done |
+| [Deserialization](references/cheatsheets/Deserialization.md) | `references/cheatsheets/Deserialization.md` | done |
+| [XML External Entity Prevention](references/cheatsheets/XML_External_Entity_Prevention.md) | `references/cheatsheets/XML_External_Entity_Prevention.md` | done |
+| [XML Security](references/cheatsheets/XML_Security.md) | `references/cheatsheets/XML_Security.md` | done |
+| [Mass Assignment](references/cheatsheets/Mass_Assignment.md) | `references/cheatsheets/Mass_Assignment.md` | done |
+| [Database Security](references/cheatsheets/Database_Security.md) | `references/cheatsheets/Database_Security.md` | done |
+| [NoSQL Security](references/cheatsheets/NoSQL_Security.md) | `references/cheatsheets/NoSQL_Security.md` | done |
 
 ### Backend: authentication & sessions (1/11)
 
