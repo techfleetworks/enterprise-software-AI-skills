@@ -2,11 +2,11 @@
 
 ## Statuses
 
-- **proposed** — written, not yet ratified. Use when the team still needs to agree. The decision isn't binding yet.
-- **accepted** — the decision is in force. Most ADRs an agent writes alongside shipping code are born `accepted`, because writing the code *is* the ratification.
-- **rejected** — an option that a `proposed` ADR explicitly turned down, or a proposal the team declined. Rejected ADRs are kept, not deleted — knowing what was rejected and why is as valuable as knowing what was chosen.
-- **deprecated** — the decision no longer applies but nothing specific replaced it (e.g. the component it governed was removed).
-- **superseded by ADR-NNNN** — a newer decision replaces this one. Link forward to the replacement.
+- **proposed**, written, not yet ratified. Use when the team still needs to agree. The decision isn't binding yet.
+- **accepted**, the decision is in force. Most ADRs an agent writes alongside shipping code are born `accepted`, because writing the code *is* the ratification.
+- **rejected**, an option that a `proposed` ADR explicitly turned down, or a proposal the team declined. Rejected ADRs are kept, not deleted, knowing what was rejected and why is as valuable as knowing what was chosen.
+- **deprecated**, the decision no longer applies but nothing specific replaced it (e.g. the component it governed was removed).
+- **superseded by ADR-NNNN**, a newer decision replaces this one. Link forward to the replacement.
 
 ## The immutability principle
 
@@ -22,11 +22,11 @@ When a new decision reverses or replaces an earlier one:
 2. Edit the **old** ADR's status to `superseded by ADR-NNNN` (the new id) and add a link to it. Leave the rest of the old ADR untouched.
 3. In the new ADR, link back: "Supersedes ADR-MMMM."
 
-Both directions matter — someone landing on either record can navigate to the other.
+Both directions matter, someone landing on either record can navigate to the other.
 
 ## Reversals mid-flight
 
-If a `proposed` ADR is discussed and the team picks a different option, you don't need a supersede chain — just update that ADR: mark the chosen option in Decision Outcome, or set the ADR `rejected` and write the one that won. Supersession is for decisions that were *accepted and acted upon*, then later changed.
+If a `proposed` ADR is discussed and the team picks a different option, you don't need a supersede chain, just update that ADR: mark the chosen option in Decision Outcome, or set the ADR `rejected` and write the one that won. Supersession is for decisions that were *accepted and acted upon*, then later changed.
 
 ## Confirmation / fitness functions
 

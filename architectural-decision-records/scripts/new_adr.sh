@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# new_adr.sh — scaffold the next-numbered ADR in a repo's decision log.
+# new_adr.sh, scaffold the next-numbered ADR in a repo's decision log.
 #
 # Usage:
 #   scripts/new_adr.sh "use postgres for billing"            # MADR (default)
@@ -63,7 +63,7 @@ tries=0
 until mkdir "$LOCK_DIR" 2>/dev/null; do
   tries=$((tries + 1))
   if [ "$tries" -gt 100 ]; then
-    echo "error: could not acquire ADR lock at $LOCK_DIR after 10s — remove it if a prior run died" >&2
+    echo "error: could not acquire ADR lock at $LOCK_DIR after 10s, remove it if a prior run died" >&2
     exit 1
   fi
   sleep 0.1

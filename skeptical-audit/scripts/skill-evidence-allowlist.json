@@ -1,9 +1,6 @@
 [
-  "arch-encode",
-  "architectural-decision-records",
   "compliance-data-lifecycle",
   "comprehensive-test-strategy",
-  "enterprise-architecture-standards",
   "owasp-secure-coding-bdd",
   "release-deployment-safety",
   "sre-operational-readiness",

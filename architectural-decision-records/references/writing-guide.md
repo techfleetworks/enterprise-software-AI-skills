@@ -1,6 +1,6 @@
 # Writing guide: what makes an ADR useful
 
-An ADR is only worth the disk it sits on if a future engineer can read it and understand *why*, well enough to either trust the decision or safely change it. Placeholder-grade ADRs ("we chose X because it's better") are worse than none — they imply reasoning happened when it didn't. The quality lives almost entirely in three sections.
+An ADR is only worth the disk it sits on if a future engineer can read it and understand *why*, well enough to either trust the decision or safely change it. Placeholder-grade ADRs ("we chose X because it's better") are worse than none, they imply reasoning happened when it didn't. The quality lives almost entirely in three sections.
 
 ## Context and Problem Statement
 
@@ -11,15 +11,15 @@ State the forces as **facts**, value-neutrally, so a reader can later check whet
 
 ## Decision Drivers
 
-The specific qualities/forces the decision optimizes for, pulled out as a list so the trade-off is legible. These are the criteria you'll judge the options against. If a driver wouldn't change the answer, it's not a real driver — cut it.
+The specific qualities/forces the decision optimizes for, pulled out as a list so the trade-off is legible. These are the criteria you'll judge the options against. If a driver wouldn't change the answer, it's not a real driver, cut it.
 
 ## Considered Options and their Pros/Cons
 
-Name **at least two** genuinely-considered options. One option means the decision looks unconsidered — even if the answer was obvious, record the obvious alternative and why it lost. For each option, give the honest goods and bads *against the drivers above*. The reader should be able to see that you understood the option you rejected, not strawmanned it.
+Name **at least two** genuinely-considered options. One option means the decision looks unconsidered, even if the answer was obvious, record the obvious alternative and why it lost. For each option, give the honest goods and bads *against the drivers above*. The reader should be able to see that you understood the option you rejected, not strawmanned it.
 
 ## Decision Outcome and Consequences
 
-State the choice plainly and tie the justification back to a driver ("because it's the only option meeting the read-after-write requirement without new ops load"). Then record consequences **including the ones you don't like** — the latency you're accepting, the coupling you're introducing, the migration debt you're taking on. An ADR that lists only benefits is not believed, because every real decision has a cost, and hiding it just means the reader has to rediscover it the hard way.
+State the choice plainly and tie the justification back to a driver ("because it's the only option meeting the read-after-write requirement without new ops load"). Then record consequences **including the ones you don't like**, the latency you're accepting, the coupling you're introducing, the migration debt you're taking on. An ADR that lists only benefits is not believed, because every real decision has a cost, and hiding it just means the reader has to rediscover it the hard way.
 
 ## Worked example: before → after
 
@@ -32,7 +32,7 @@ State the choice plainly and tie the justification back to a driver ("because it
 > ## Consequences
 > The service will have a database.
 
-This records nothing. Any datastore is "reliable and well-supported"; there's no driver, no alternative, no cost — so the next engineer learns nothing and can't tell whether revisiting is safe.
+This records nothing. Any datastore is "reliable and well-supported"; there's no driver, no alternative, no cost, so the next engineer learns nothing and can't tell whether revisiting is safe.
 
 **After (useful, Nygard format):**
 

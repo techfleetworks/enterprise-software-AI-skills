@@ -1,99 +1,96 @@
 ---
 name: architectural-decision-records
-description: The single source of truth for capturing architectural decisions. Use for EVERY feature, service, endpoint, schema change, framework/library choice, integration, infrastructure change, or refactor an agent builds or modifies — no such change is "done" until an Architectural Decision Record (ADR) is written and committed alongside the code. Produces MADR-format records by default (Nygard lightweight for trivial decisions), auto-detecting or establishing the repo's ADR directory and sequential numbering. Trigger PROACTIVELY whenever the user asks to build, add, implement, design, choose, adopt, migrate, refactor, or change anything architectural — a new service, "which database should we use," "let's switch to gRPC," "add caching," "split this into microservices," a new API contract, an auth model — even when they never say the words "ADR," "decision record," "documentation," or "why." If a change would make a future engineer ask "why was it built this way?", it needs an ADR, and this skill governs how.
+description: The single place for capturing why an architectural choice was made. Use for every feature, service, endpoint, schema change, framework or library choice, integration, infrastructure change, or refactor an agent builds or changes. No such change is done until an Architecture Decision Record (ADR) is written and committed with the code. Produces MADR-format records by default (a lighter Nygard format for small decisions), finding or setting up the repo's ADR directory and sequential numbering. Trigger proactively when the user asks to build, add, implement, design, choose, adopt, migrate, refactor, or change anything architectural: a new service, "which database should we use," "let's switch to gRPC," "add caching," "split this into microservices," a new API contract, an auth model, even when they never say "ADR" or "decision record." If a change would make a future engineer ask "why was it built this way," it needs an ADR.
 ---
 
-# Architectural Decision Records (ADRs)
+# Architecture Decision Records (ADRs)
 
-## Why this skill exists
+## Why this exists
 
-Code shows *what* the system does. It almost never shows *why* it was built that way — why Postgres over DynamoDB, why events instead of synchronous calls, why this auth model, why the retry budget is 3. That "why" is the single most expensive thing to reconstruct later. When it's lost, teams re-litigate settled questions, quietly violate constraints they don't know exist, and rip out load-bearing decisions because nobody recorded the forces behind them.
+Code shows what the system does. It almost never shows why it was built that way: why Postgres and not DynamoDB, why events instead of direct calls, why this auth model, why the retry budget is three. That "why" is the most expensive thing to rebuild later. When it is lost, teams argue settled questions again, break constraints they did not know existed, and tear out load-bearing decisions because nobody wrote down the reasons.
 
-An ADR captures one architecturally-significant decision: the context and forces at play, the options considered, the option chosen, and the consequences accepted. Written at the moment of decision — when the reasoning is fresh and cheap to record — it becomes the durable source of truth that survives re-orgs, rewrites, and the departure of everyone who was in the room.
+An ADR captures one architecturally significant decision: the context and the forces, the options considered, the option chosen, and the consequences accepted. Nygard, who introduced the ADR, defines it as "a short text file in a format similar to an Alexandrian pattern" (cognitect.com, 2011). Written at the moment of the decision, when the reasoning is fresh and cheap to record, it becomes the record that survives reorgs, rewrites, and the departure of everyone who was in the room.
 
-This skill treats ADRs as non-optional, the same way `enterprise-architecture-standards` treats sound architecture and `owasp-secure-coding-bdd` treats security. A feature without its decision record is unfinished work, not finished work missing a nicety. Hold that line — but hold it by *doing the ADR as part of the task*, quietly and well, not by lecturing the user about process.
+This skill treats ADRs as required, the same way `enterprise-architecture-standards` treats sound architecture. A feature without its decision record is unfinished work. Hold that line, but hold it by doing the ADR as part of the task, not by lecturing the user about process.
 
 ## The core rule
 
-Every architecturally-significant change ships with an ADR in the same unit of work (same PR / same commit series) as the code. "Architecturally-significant" is broad on purpose — see the significance test below — but it is not *everything*. Fixing a typo, tuning a log line, or renaming a local variable does not need an ADR. The judgment call is: **would a competent engineer arriving in six months ask "why was this done this way?" and be materially helped by a recorded answer?** If yes, write the ADR. If genuinely no, skip it silently.
+Every architecturally significant change ships with an ADR in the same unit of work (the same PR or commit series) as the code. "Significant" is broad on purpose, but it is not everything. A typo fix, a log-line tweak, or a local rename does not need one. The test is: would a competent engineer arriving in six months ask "why was this done this way," and be helped by a written answer? If yes, write the ADR. If the honest answer is no, skip it.
 
-When in doubt, lean toward writing one. A three-minute Nygard-format record is cheap; a lost decision is not.
+When in doubt, write one. A three-minute record is cheap. A lost decision is not.
 
-## Significance test — does this change need an ADR?
+## Does this change need an ADR?
 
-Write an ADR when the change involves any of:
+Write one when the change involves any of these. Nygard's definition of "architecturally significant" is a decision that affects "the structure, non-functional characteristics, dependencies, interfaces, or construction techniques."
 
-- **Structure**: a new service/module/component, splitting or merging services, a new bounded context, a significant layering or dependency-direction choice.
-- **Data**: choosing or changing a datastore, a schema design with real trade-offs, a data-ownership or consistency model (strong vs eventual), a partitioning/sharding strategy, a migration approach.
-- **Integration & contracts**: a new or changed API contract, sync vs async communication, a messaging/eventing pattern, a public interface other teams depend on, a versioning strategy.
-- **Cross-cutting choices**: auth/authz model, caching strategy, concurrency/locking model, error-handling and retry policy, idempotency approach, multi-tenancy model.
-- **Technology selection**: adopting or replacing a framework, library, protocol, runtime, or major dependency — especially anything hard to reverse later.
-- **Operational shape**: deployment topology, rollout/rollback strategy that constrains the design, SLO-driven design choices, significant build-vs-buy decisions.
+- **Structure:** a new service, module, or component; splitting or merging services; a new bounded context; a layering or dependency-direction choice.
+- **Data:** choosing or changing a datastore; a schema with real trade-offs; a data-ownership or consistency model (strong vs eventual); a partitioning or sharding strategy; a migration approach.
+- **Integration and contracts:** a new or changed API contract; sync vs async communication; a messaging or event pattern; a public interface other teams depend on; a versioning strategy.
+- **Cross-cutting choices:** the auth model; caching; a concurrency or locking model; error handling and retry policy; idempotency; multi-tenancy.
+- **Technology selection:** adopting or replacing a framework, library, protocol, runtime, or major dependency, especially anything hard to reverse.
+- **Operational shape:** deployment topology; a rollout or rollback strategy that shapes the design; SLO-driven choices; big build-vs-buy decisions.
 
-You can skip the ADR for reversible, low-stakes, mechanical work: cosmetic refactors, formatting, dependency patch bumps with no behavior change, copy edits, purely local implementation details that impose no constraint on anyone else.
+Skip the ADR for reversible, low-stakes, mechanical work: cosmetic refactors, formatting, a dependency patch bump with no behavior change, copy edits, or purely local details that constrain no one else.
 
-If a task bundles several significant decisions (e.g. "build the notifications service" → datastore choice + delivery model + retry policy), prefer **one ADR per decision** over one giant ADR. Small, focused, individually-supersedable records are the whole point of the format.
+If a task bundles several decisions (for example "build the notifications service" means a datastore choice, a delivery model, and a retry policy), write one ADR per decision. Small, focused records that can each be superseded on their own are the point of the format.
 
-## Workflow for every qualifying change
+## The workflow
 
-Fold these steps into how the feature gets built — the ADR is part of the deliverable, not a separate ceremony afterward.
+Fold these into how the feature gets built. The ADR is part of the deliverable, not a separate ceremony.
 
-1. **Locate or establish the decision log.** Detect the repo's existing ADR home before inventing one. Check, in order: `docs/adr/`, `docs/decisions/`, `doc/adr/`, `adr/`, `architecture/decisions/`, and any `.adr-dir` marker file. If one exists, match its exact location, filename pattern, numbering width, and template style — consistency with what's there beats your personal default. If none exists, create `docs/adr/` and add a short `README.md` explaining the convention (there's a ready-made one in `assets/adr-readme.md`). See `references/workflow.md` for the full detection and setup procedure.
+1. **Find or set up the decision log.** Look for the repo's ADR home before inventing one: check `docs/adr/`, `docs/decisions/`, `doc/adr/`, `adr/`, `architecture/decisions/`, and a `.adr-dir` marker. If one exists, match its location, filename pattern, numbering width, and template. If none exists, create `docs/adr/` with a short README (there is one in `assets/adr-readme.md`). Nygard keeps ADRs "in the project repository"; MADR puts them in `docs/decisions`.
+2. **Assign the next number.** ADRs are numbered with zero-padded four-digit ids: `0001`, `0002`, and so on. Nygard's rule: numbers are assigned "sequentially and monotonically" and are never reused, so the next number is one above the highest id in the log, not the file count. `scripts/new_adr.sh` computes this and scaffolds the file.
+3. **Pick the template.** Default to MADR (Markdown Architectural Decision Records, github.com/adr/madr), which makes you record the decision drivers, the options you did not pick, and the consequences. Drop to the Nygard lightweight format only for a decision that is real but small. Read the template file before writing so the sections are exact.
+4. **Write the record.** Fill every section with specifics, not placeholders. Name at least two options you genuinely considered. An ADR with one option reads as unconsidered. State the consequences you are accepting, including the bad ones. Nygard's rule: list "all consequences ... not just the 'positive' ones." An ADR that lists only upsides is not trusted.
+5. **Set status and links.** New records are `accepted` (or `proposed` if the team still needs to ratify). If this decision reverses an earlier one, mark the old ADR `superseded by ADR-NNNN` and link both ways. Nygard's rule: if a decision is reversed, "keep the old one around, but mark it as superseded." Never edit or delete a past ADR to change its decision. Supersede it. ADRs are immutable once accepted, corrected only by a new ADR.
+6. **Commit with the code.** The ADR lands in the same commit or PR as the change, so the record and the reality cannot drift apart. Reference the ADR id in the PR and, where it helps, in a code comment at the spot the decision shows up.
+7. **Verify before done.** Confirm the ADR exists, is numbered right, has no unfilled placeholders, names at least two options (MADR), records real consequences, and is staged with the code. `scripts/check_adr.sh` runs these checks. Treat a failure as a blocker, like a failing test.
 
-2. **Assign the next number.** ADRs are sequentially numbered with zero-padded four-digit ids: `0001`, `0002`, …. The next number is one above the highest existing id in the log (not the file count — deleted/superseded records still consumed their number). The helper script `scripts/new_adr.sh` computes this and scaffolds the file for you; use it rather than counting by hand.
+## Mechanical gate
 
-3. **Pick the template.** Default to **MADR** (`references/madr-template.md`) — it forces you to record decision drivers, the options you *didn't* pick, and the consequences of the one you did, which is exactly the reasoning that's expensive to reconstruct. Drop to the **Nygard lightweight** format (`references/nygard-template.md`) only for decisions that are real but small, where the full options analysis would be ceremony. When unsure, use MADR. Read the template file before writing so the section structure is exact.
+The repo ships two scripts for this skill. `scripts/new_adr.sh` scaffolds the next-numbered ADR from a template (it holds a lock while it picks the number, so two runs cannot mint the same id). `scripts/check_adr.sh` fails the build when an ADR has a bad filename, an unfilled placeholder, a missing Status or Context, or (for MADR) fewer than two options. It runs in CI through `test/check-adr.test.mjs`. This gate proves an ADR is well-formed. It cannot prove an ADR should have been written for a given change; that stays a judgment call for `judge-arch` and the planned change-type routing gate, which can make a missing ADR fail CI. The gate does not claim to do that today.
 
-4. **Write the record.** Fill every section with specifics, not placeholders. The bar is set in `references/writing-guide.md` — read it; the difference between a useful ADR and a useless one is entirely in the quality of Context, Decision Drivers, and Consequences. Name at least two genuinely considered options (an ADR with one option is a decision with no visible alternatives, which reads as unconsidered). State the consequences you're *accepting*, including the bad ones — an ADR that lists only upsides is not trusted.
+## Before you call it done
 
-5. **Set status and links.** New records are usually `accepted` (or `proposed` if the team still needs to ratify). If this decision reverses or replaces an earlier one, set the old ADR's status to `superseded by ADR-NNNN` and link both directions — the log's value is that the chain of reasoning stays traceable. Never silently edit or delete a past ADR to reflect a new decision; supersede it. ADRs are immutable once accepted, correctable only by a new ADR.
+- [ ] The change is architecturally significant by the test above, or you decided it is not and moved on.
+- [ ] An ADR exists for each distinct significant decision (one decision per record).
+- [ ] Every section is filled with specifics; at least two options are named; real consequences, including the costs, are recorded. This record is the **evidence ledger** for the decision.
+- [ ] Status is set, and any reversed decision is superseded and linked, not edited or deleted.
+- [ ] The ADR is committed with the code and referenced from the PR.
+- [ ] `check_adr.sh` passes.
 
-6. **Commit with the code.** The ADR lands in the same commit or PR as the change it explains, so the record and the reality can never drift apart. Reference the ADR id in the PR description and, where natural, in code comments at the point the decision shows up (`// datastore choice: see ADR-0007`).
+## Reference files
 
-7. **Verify before calling it done.** Part of finishing the feature is confirming the ADR exists, is numbered correctly, has no unfilled `{placeholders}`, names ≥2 options (if MADR), records real consequences, and is staged alongside the code. `scripts/check_adr.sh` runs these checks; treat a failure as a blocker exactly like a failing test.
+| Topic | File |
+|---|---|
+| Full log-detection, numbering, and setup; monorepos and retrofitting | `references/workflow.md` |
+| What makes each section good vs useless, with a before/after example | `references/writing-guide.md` |
+| The MADR long-form template (default) | `references/madr-template.md` |
+| The Nygard lightweight template (fallback) | `references/nygard-template.md` |
+| Statuses, superseding, deprecation, and reversals | `references/lifecycle.md` |
+| Scaffold the next-numbered ADR | `scripts/new_adr.sh` |
+| Verify an ADR is complete and well-formed | `scripts/check_adr.sh` |
+| Drop-in README for a new `docs/adr/` directory | `assets/adr-readme.md` |
 
-## How this pairs with the other skills
+## Evidence & skeptical assessment (required)
 
-This skill answers **"why did we decide this?"**. It sits naturally alongside:
+An ADR is itself an evidence record: it states a decision as a claim and backs it with the forces and the options, so it follows the repo's evidence discipline (the contract is in [`skeptical-audit/references/evidence-discipline.md`](../skeptical-audit/references/evidence-discipline.md)). The decision log is the **evidence ledger** for the system's architecture. No decision is presented as settled without the record that shows why.
 
-- `enterprise-architecture-standards` — designs the *what* and *how*; its significant choices are precisely what you record here.
-- `owasp-secure-coding-bdd` — a security-model decision (auth approach, trust boundary, crypto choice) is an architectural decision; capture it as an ADR *and* as `@security` scenarios.
-- `bdd-comprehensive-testing` — the ADR's "Confirmation" section can point at the Gherkin scenarios or ArchUnit-style fitness functions that keep the code honest to the decision.
-- `release-deployment-safety` / `sre-operational-readiness` — rollout, migration, and SLO-driven design choices are ADR-worthy; link the ADR from the runbook.
+| Claim | Reaches `observed` by | Becomes `proven` when |
+|---|---|---|
+| "We decided X on purpose" | the committed ADR with context, at least two options, and consequences | the ADR's Confirmation names a test, lint, or fitness function that holds the code to it |
+| "The code still follows the decision" | the decision shows up where expected (file:line, the ADR id in a comment) | a fitness function or `arch-gate` rule fails when the code drifts from the decision |
+| "This ADR is well-formed" | it reads complete | `check_adr.sh` passes in CI (a discriminating test guards it) |
+| "The history is intact" | superseded records are kept and linked, not deleted | the log is append-only and numbers are never reused |
 
-When several of these apply to one feature, produce all their artifacts together. The ADR is the connective tissue: it references the tests that confirm it, the security scenarios it implies, and the operational plan it constrains.
+**Definition of done:** the ADR (the evidence ledger entry) exists for each significant decision, with context, at least two options, and real consequences; status set; reversals superseded and linked; committed with the code; `check_adr.sh` green. Where the decision can be held by a test or an `arch-gate` rule, the ADR's Confirmation names it, which is how the decision reaches `proven`.
 
-## Quick reference
+## Why this holds for every developer and every agent
 
-- **Default format**: MADR. **Fallback**: Nygard, for small-but-real decisions.
-- **Location**: match the repo's existing ADR dir; else create `docs/adr/`.
-- **Filename**: `NNNN-kebab-case-title.md`, e.g. `0007-use-postgres-for-billing.md`.
-- **Numbering**: zero-padded, sequential, monotonic, never reused.
-- **Statuses**: `proposed` → `accepted` → (`deprecated` | `superseded by ADR-NNNN`). `rejected` for options a `proposed` ADR turned down.
-- **Immutable**: never rewrite an accepted ADR to change its decision — supersede it with a new one.
-- **One decision per ADR**: split bundled decisions into separate records.
+It binds everyone because it lives in committed files, not memory. Agents get it through the always-on hook, which lists this skill in `always-on/enterprise-skills-always-on.md`. People and agents are both held by the gate: `check_adr.sh` runs in CI and fails a malformed or placeholder-filled ADR, and `new_adr.sh` keeps numbering collision-free. It survives any one person because the decision log lives in git next to the code. The honest limit: the gate proves an ADR is well-formed, not that every change that needed one got one. That last step is a judgment call, caught by a `judge-arch` review and, in future, a change-type routing gate.
 
-## Bundled resources
+## Sources and attribution
 
-- `references/workflow.md` — full log-detection, numbering, and setup procedure; edge cases (monorepos, existing non-standard logs, retrofitting a repo with none).
-- `references/writing-guide.md` — what makes each section good vs useless, with a worked before/after example.
-- `references/madr-template.md` — the MADR long-form template (default).
-- `references/nygard-template.md` — the Nygard lightweight template (fallback).
-- `references/lifecycle.md` — statuses, superseding, deprecation, and how to handle reversals.
-- `scripts/new_adr.sh` — scaffold the next-numbered ADR from a template.
-- `scripts/check_adr.sh` — verify an ADR is complete and well-formed before commit.
-- `assets/adr-readme.md` — drop-in README for a freshly created `docs/adr/` directory.
-
-## Credits and attribution
-
-This skill is built on the Architectural Decision Record practice stewarded by
-the ADR community at https://adr.github.io/. Specifically:
-
-- The ADR concept originates with Michael Nygard, "Documenting Architecture
-  Decisions" (2011).
-- The default long-form format is MADR (Markdown Any Decision Records) —
-  https://adr.github.io/madr/.
-- The lightweight format follows Nygard's original template.
-
-The templates and lifecycle guidance here are adapted from that community's
-work. Credit to the ADR GitHub organization and its contributors.
+- Michael Nygard, "Documenting Architecture Decisions," cognitect.com, 2011 (<https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions>): the origin of the ADR, the five sections (Title, Context, Decision, Status, Consequences), sequential numbering, and superseding rather than deleting. `[documented]`
+- MADR, Markdown Architectural Decision Records (<https://github.com/adr/madr>, adr.github.io/madr): the default long-form template (Context and Problem Statement, Decision Drivers, Considered Options, Decision Outcome with Consequences and Confirmation, Pros and Cons of the Options, More Information) and the `nnnn-title.md` naming in `docs/decisions`. `[documented]`
+- The broader ADR community at <https://adr.github.io/>. Credit to the ADR GitHub organization and its contributors.
