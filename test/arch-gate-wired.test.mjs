@@ -32,6 +32,8 @@ const REQUIRED_INCLUDE = [
   "architectural-decision-records/**/*.md",
   "enterprise-architecture-standards/**/*.md",
   "judge-arch/SKILL.md",
+  "comprehensive-test-strategy/SKILL.md",
+  "verifiable-quality-gates/SKILL.md",
   "docs/arch-reviews/README.md",
   "docs/audit/README.md",
 ];
