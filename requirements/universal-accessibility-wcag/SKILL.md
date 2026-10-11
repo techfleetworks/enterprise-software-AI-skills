@@ -123,7 +123,12 @@ the rest need human testing. Do all three:
 
 - **Automated**: an axe-based check (`jest-axe` / `axe-playwright`) on components and key
   pages, plus `eslint-plugin-jsx-a11y` (or framework equivalent) as a lint gate — **run
-  in CI, failing the build on violations.**
+  in CI, failing the build on violations.** A ready pair is provided: `scripts/run-axe.mjs`
+  (a Playwright + `@axe-core/playwright` scaffold that scans the configured pages) feeding
+  `scripts/check-axe-results.mjs` (the dependency-free **verdict** — fails CI on any
+  critical/serious violation that isn't covered by a time-boxed, WCAG-SC-justified allowlist
+  entry). The verdict logic is discriminating-tested; the browser scaffold needs the two
+  devDependencies and a running app (so it lives in your e2e stage, not this gate's own CI).
 - **Keyboard-only**: unplug the mouse and complete every flow.
 - **Screen reader**: verify with at least one real screen reader (NVDA/JAWS on Windows,
   VoiceOver on macOS/iOS, TalkBack on Android) that names, roles, states, and updates are
@@ -171,6 +176,7 @@ the rest need human testing. Do all three:
 | Color contrast ratios, not-color-alone, reflow/zoom, motion, visual design for a11y | `references/color-contrast-and-visual-design.md` |
 | Labels, error identification & suggestions, fieldsets, input types, live-region announcements | `references/accessible-forms-and-errors.md` |
 | Automated (axe/lint) + manual keyboard + screen-reader testing, CI gating, audit checklist | `references/accessibility-testing.md` |
+| Mechanical gate: axe runner scaffold + the dependency-free pass/fail verdict | `scripts/run-axe.mjs`, `scripts/check-axe-results.mjs` |
 
 ## Sources & further reading
 
