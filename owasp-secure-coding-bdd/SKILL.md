@@ -247,26 +247,26 @@ section, a citation, an executable `@security` scenario, and an entry in this in
 | [Secure Coding with AI](references/cheatsheets/Secure_Coding_with_AI.md) | `references/cheatsheets/Secure_Coding_with_AI.md` | done |
 | [Verifying Third Party Agent Execution Evidence](references/cheatsheets/Verifying_Third_Party_Agent_Execution_Evidence.md) | `references/cheatsheets/Verifying_Third_Party_Agent_Execution_Evidence.md` | done |
 
-### Language & framework guides (0/16)
+### Language & framework guides (16/16)
 
 | Cheat sheet | File | Status |
 |---|---|---|
-| Bean Validation | `references/cheatsheets/Bean_Validation.md` | pending |
-| C-Based Toolchain Hardening | `references/cheatsheets/C-Based_Toolchain_Hardening.md` | pending |
-| Django REST Framework | `references/cheatsheets/Django_REST_Framework.md` | pending |
-| Django Security | `references/cheatsheets/Django_Security.md` | pending |
-| DotNet Security | `references/cheatsheets/DotNet_Security.md` | pending |
-| FastAPI Security | `references/cheatsheets/FastAPI_Security.md` | pending |
-| Injection Prevention in Java | `references/cheatsheets/Injection_Prevention_in_Java.md` | pending |
-| JAAS | `references/cheatsheets/JAAS.md` | pending |
-| Java Security | `references/cheatsheets/Java_Security.md` | pending |
-| JavaScript and TypeScript Security | `references/cheatsheets/JavaScript_and_TypeScript_Security.md` | pending |
-| Laravel | `references/cheatsheets/Laravel.md` | pending |
-| Nextjs Security | `references/cheatsheets/Nextjs_Security.md` | pending |
-| Nodejs Security | `references/cheatsheets/Nodejs_Security.md` | pending |
-| PHP Configuration | `references/cheatsheets/PHP_Configuration.md` | pending |
-| Ruby on Rails | `references/cheatsheets/Ruby_on_Rails.md` | pending |
-| Symfony | `references/cheatsheets/Symfony.md` | pending |
+| [Bean Validation](references/cheatsheets/Bean_Validation.md) | `references/cheatsheets/Bean_Validation.md` | done |
+| [C-Based Toolchain Hardening](references/cheatsheets/C-Based_Toolchain_Hardening.md) | `references/cheatsheets/C-Based_Toolchain_Hardening.md` | done |
+| [Django REST Framework](references/cheatsheets/Django_REST_Framework.md) | `references/cheatsheets/Django_REST_Framework.md` | done |
+| [Django Security](references/cheatsheets/Django_Security.md) | `references/cheatsheets/Django_Security.md` | done |
+| [DotNet Security](references/cheatsheets/DotNet_Security.md) | `references/cheatsheets/DotNet_Security.md` | done |
+| [FastAPI Security](references/cheatsheets/FastAPI_Security.md) | `references/cheatsheets/FastAPI_Security.md` | done |
+| [Injection Prevention in Java](references/cheatsheets/Injection_Prevention_in_Java.md) | `references/cheatsheets/Injection_Prevention_in_Java.md` | deprecated |
+| [JAAS](references/cheatsheets/JAAS.md) | `references/cheatsheets/JAAS.md` | done |
+| [Java Security](references/cheatsheets/Java_Security.md) | `references/cheatsheets/Java_Security.md` | done |
+| [JavaScript and TypeScript Security](references/cheatsheets/JavaScript_and_TypeScript_Security.md) | `references/cheatsheets/JavaScript_and_TypeScript_Security.md` | done |
+| [Laravel](references/cheatsheets/Laravel.md) | `references/cheatsheets/Laravel.md` | done |
+| [Nextjs Security](references/cheatsheets/Nextjs_Security.md) | `references/cheatsheets/Nextjs_Security.md` | done |
+| [Nodejs Security](references/cheatsheets/Nodejs_Security.md) | `references/cheatsheets/Nodejs_Security.md` | done |
+| [PHP Configuration](references/cheatsheets/PHP_Configuration.md) | `references/cheatsheets/PHP_Configuration.md` | done |
+| [Ruby on Rails](references/cheatsheets/Ruby_on_Rails.md) | `references/cheatsheets/Ruby_on_Rails.md` | done |
+| [Symfony](references/cheatsheets/Symfony.md) | `references/cheatsheets/Symfony.md` | done |
 
 ### Mobile & embedded (0/3)
 
