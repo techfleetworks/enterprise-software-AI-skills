@@ -173,24 +173,24 @@ section, a citation, an executable `@security` scenario, and an entry in this in
 | [Web Cache Security](references/cheatsheets/Web_Cache_Security.md) | `references/cheatsheets/Web_Cache_Security.md` | done |
 | [Third Party Payment Gateway Integration](references/cheatsheets/Third_Party_Payment_Gateway_Integration.md) | `references/cheatsheets/Third_Party_Payment_Gateway_Integration.md` | done |
 
-### API & services (0/14)
+### API & services (14/14)
 
 | Cheat sheet | File | Status |
 |---|---|---|
-| GraphQL | `references/cheatsheets/GraphQL.md` | pending |
-| gRPC Security | `references/cheatsheets/gRPC_Security.md` | pending |
-| REST Assessment | `references/cheatsheets/REST_Assessment.md` | pending |
-| REST Security | `references/cheatsheets/REST_Security.md` | pending |
-| Web Service Security | `references/cheatsheets/Web_Service_Security.md` | pending |
-| Webhook Security | `references/cheatsheets/Webhook_Security.md` | pending |
-| WebSocket Security | `references/cheatsheets/WebSocket_Security.md` | pending |
-| Microservices Security | `references/cheatsheets/Microservices_Security.md` | pending |
-| Microservices based Security Arch Doc | `references/cheatsheets/Microservices_based_Security_Arch_Doc.md` | pending |
-| JSON Web Token | `references/cheatsheets/JSON_Web_Token.md` | pending |
-| OAuth2 | `references/cheatsheets/OAuth2.md` | pending |
-| SAML Security | `references/cheatsheets/SAML_Security.md` | pending |
-| Identity Propagation Patterns | `references/cheatsheets/Identity_Propagation_Patterns.md` | pending |
-| Workload Identity Federation | `references/cheatsheets/Workload_Identity_Federation.md` | pending |
+| [GraphQL](references/cheatsheets/GraphQL.md) | `references/cheatsheets/GraphQL.md` | done |
+| [gRPC Security](references/cheatsheets/gRPC_Security.md) | `references/cheatsheets/gRPC_Security.md` | done |
+| [REST Assessment](references/cheatsheets/REST_Assessment.md) | `references/cheatsheets/REST_Assessment.md` | done |
+| [REST Security](references/cheatsheets/REST_Security.md) | `references/cheatsheets/REST_Security.md` | done |
+| [Web Service Security](references/cheatsheets/Web_Service_Security.md) | `references/cheatsheets/Web_Service_Security.md` | done |
+| [Webhook Security](references/cheatsheets/Webhook_Security.md) | `references/cheatsheets/Webhook_Security.md` | done |
+| [WebSocket Security](references/cheatsheets/WebSocket_Security.md) | `references/cheatsheets/WebSocket_Security.md` | done |
+| [Microservices Security](references/cheatsheets/Microservices_Security.md) | `references/cheatsheets/Microservices_Security.md` | done |
+| [Microservices based Security Arch Doc](references/cheatsheets/Microservices_based_Security_Arch_Doc.md) | `references/cheatsheets/Microservices_based_Security_Arch_Doc.md` | done |
+| [JSON Web Token](references/cheatsheets/JSON_Web_Token.md) | `references/cheatsheets/JSON_Web_Token.md` | done |
+| [OAuth2](references/cheatsheets/OAuth2.md) | `references/cheatsheets/OAuth2.md` | done |
+| [SAML Security](references/cheatsheets/SAML_Security.md) | `references/cheatsheets/SAML_Security.md` | done |
+| [Identity Propagation Patterns](references/cheatsheets/Identity_Propagation_Patterns.md) | `references/cheatsheets/Identity_Propagation_Patterns.md` | done |
+| [Workload Identity Federation](references/cheatsheets/Workload_Identity_Federation.md) | `references/cheatsheets/Workload_Identity_Federation.md` | done |
 
 ### Cryptography, secrets & transport (0/10)
 

@@ -331,14 +331,14 @@
       "slug": "GraphQL",
       "title": "GraphQL",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/GraphQL_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "API & services"
     },
     {
       "slug": "gRPC_Security",
       "title": "gRPC Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/gRPC_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "API & services"
     },
     {
@@ -366,7 +366,7 @@
       "slug": "Identity_Propagation_Patterns",
       "title": "Identity Propagation Patterns",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Identity_Propagation_Patterns_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "API & services"
     },
     {
@@ -429,7 +429,7 @@
       "slug": "JSON_Web_Token",
       "title": "JSON Web Token",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "API & services"
     },
     {
@@ -513,14 +513,14 @@
       "slug": "Microservices_based_Security_Arch_Doc",
       "title": "Microservices based Security Arch Doc",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Microservices_based_Security_Arch_Doc_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "API & services"
     },
     {
       "slug": "Microservices_Security",
       "title": "Microservices Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Microservices_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "API & services"
     },
     {
@@ -590,7 +590,7 @@
       "slug": "OAuth2",
       "title": "OAuth2",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/OAuth2_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "API & services"
     },
     {
@@ -660,14 +660,14 @@
       "slug": "REST_Assessment",
       "title": "REST Assessment",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/REST_Assessment_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "API & services"
     },
     {
       "slug": "REST_Security",
       "title": "REST Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "API & services"
     },
     {
@@ -681,7 +681,7 @@
       "slug": "SAML_Security",
       "title": "SAML Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/SAML_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "API & services"
     },
     {
@@ -898,28 +898,28 @@
       "slug": "Web_Service_Security",
       "title": "Web Service Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Web_Service_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "API & services"
     },
     {
       "slug": "Webhook_Security",
       "title": "Webhook Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Webhook_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "API & services"
     },
     {
       "slug": "WebSocket_Security",
       "title": "WebSocket Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/WebSocket_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "API & services"
     },
     {
       "slug": "Workload_Identity_Federation",
       "title": "Workload Identity Federation",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Workload_Identity_Federation_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "API & services"
     },
     {
