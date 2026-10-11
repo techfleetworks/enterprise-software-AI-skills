@@ -8,6 +8,7 @@ relevant" as a deliberate, stated judgment for that task — never a silent defa
 
 ## Engineering standards — apply to any code, schema, service, API, or infra change
 - `enterprise-architecture-standards` — system & data architecture, resilience, scalability
+- `pattern-selector` — on every feature/refactor, select the design pattern(s) that fit the forces (or deliberately none), with pros/cons, the failure/rot prevented, security + operational trade-offs, and how it's verified
 - `architectural-decision-records` — record the *why* of every significant decision, in the same change
 - `owasp-secure-coding-bdd` — threat-model and secure anything touching input, auth, sessions, data, files, or dependencies
 - `bdd-comprehensive-testing` — enumerate every use case × audience, write them as Gherkin, store + categorize + log them in-repo, and gate every push on legal, complete, tagged coverage

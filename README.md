@@ -2,20 +2,21 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
-![Skills](https://img.shields.io/badge/skills-15-blue.svg)
+![Skills](https://img.shields.io/badge/skills-16-blue.svg)
 ![Vendor-neutral](https://img.shields.io/badge/vendor-neutral-informational.svg)
 
 Created and maintained by **[Tech Fleet](https://techfleet.org)**.
 
-A set of fifteen model-agnostic **skills**: condensed, actionable engineering
+A set of sixteen model-agnostic **skills**: condensed, actionable engineering
 standards that an AI coding agent — or a person — can load as context. Each one
 encodes the judgment a senior engineer applies to a change (how to secure it,
 how to test it, how to release it, why it was decided that way) so that *every*
 change can meet the same bar, not just the ones a specialist happens to review.
 
-They come in two groups: **eleven engineering-standards** skills at the top level
+They come in two groups: **twelve engineering-standards** skills at the top level
 (security, testing, architecture, release, SRE, compliance, ADRs, plus architectural
-review, rule-encoding, verifiable quality gates, and skeptical self-audit) and three
+review, rule-encoding, verifiable quality gates, skeptical self-audit, and design-pattern
+selection) and three
 **[requirements](requirements/)** skills that make what you build work for
 *everyone* — every browser and device, every ability, and anyone regardless of
 context or expertise.
@@ -82,6 +83,7 @@ load it automatically.
 | Skill | What it enforces | Triggers on | Reference depth |
 |---|---|---|---|
 | [`enterprise-architecture-standards`](enterprise-architecture-standards/) | System & data architecture, microservices, resilience, scalability | Designing/architecting/refactoring a service, schema, API, or system | 9 refs |
+| [`pattern-selector`](pattern-selector/) | Selecting the design pattern that fits the forces — or deliberately none — with pros/cons, security + operational trade-offs, and a verification | Designing/adding/refactoring any feature, class, module, or data flow; "which pattern / best way to structure" | 5 refs · 1 script |
 | [`architectural-decision-records`](architectural-decision-records/) | Capturing the *why* of significant decisions as MADR / Nygard ADRs | Any architecturally-significant choice: datastore, framework, contract, auth model | 5 refs · 2 scripts |
 | [`owasp-secure-coding-bdd`](owasp-secure-coding-bdd/) | OWASP threat-modeling turned into `@security` BDD scenarios | Auth, input, sessions, files, APIs, permissions, dependencies, AI/LLM code | 15 refs |
 | [`bdd-comprehensive-testing`](bdd-comprehensive-testing/) | Every use case × audience as legal, tagged, logged Gherkin, gated on every push | Any behavior change: build/add/implement/fix/change/push — even without "tests/BDD/CI" | 4 refs · 5 scripts |
@@ -101,6 +103,15 @@ integration, resilience, and performance standards you'd expect from a senior
 team at a large company. Picks an architecture style deliberately, designs the
 schema for real trade-offs, chooses sync vs async on purpose, and builds in
 timeouts, retries, and backpressure rather than bolting them on later.
+
+**`pattern-selector`** — On every feature, names the problem as *forces*, checks
+whether a pattern is even warranted (the default is often "no pattern"), then picks
+the GoF or enterprise pattern that fits — stating its pros/cons, the failure/rot it
+prevents, its security and operational trade-offs, the simpler alternative rejected,
+and the pattern-specific test that proves it was applied right. Covers the 23 GoF plus
+the enterprise/PoEAA/DDD/DI/functional/security layer, an anti-pattern catalog for when
+the job is to *remove* structure, and ships a catalog-completeness gate so every entry
+stays fully templated and sourced.
 
 **`architectural-decision-records`** — Treats a decision as unfinished until its
 *why* is written down. Produces a numbered ADR (MADR by default, Nygard for the
