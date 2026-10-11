@@ -222,16 +222,16 @@ section, a citation, an executable `@security` scenario, and an entry in this in
 | [Subdomain Takeover Prevention](references/cheatsheets/Subdomain_Takeover_Prevention.md) | `references/cheatsheets/Subdomain_Takeover_Prevention.md` | done |
 | [Multi Tenant Security](references/cheatsheets/Multi_Tenant_Security.md) | `references/cheatsheets/Multi_Tenant_Security.md` | done |
 
-### CI/CD & supply chain (0/6)
+### CI/CD & supply chain (6/6)
 
 | Cheat sheet | File | Status |
 |---|---|---|
-| CI CD Security | `references/cheatsheets/CI_CD_Security.md` | pending |
-| GitHub Actions Security | `references/cheatsheets/GitHub_Actions_Security.md` | pending |
-| Dependency Graph SBOM | `references/cheatsheets/Dependency_Graph_SBOM.md` | pending |
-| Vulnerable Dependency Management | `references/cheatsheets/Vulnerable_Dependency_Management.md` | pending |
-| Software Supply Chain Security | `references/cheatsheets/Software_Supply_Chain_Security.md` | pending |
-| NPM Security | `references/cheatsheets/NPM_Security.md` | pending |
+| [CI CD Security](references/cheatsheets/CI_CD_Security.md) | `references/cheatsheets/CI_CD_Security.md` | done |
+| [GitHub Actions Security](references/cheatsheets/GitHub_Actions_Security.md) | `references/cheatsheets/GitHub_Actions_Security.md` | done |
+| [Dependency Graph SBOM](references/cheatsheets/Dependency_Graph_SBOM.md) | `references/cheatsheets/Dependency_Graph_SBOM.md` | done |
+| [Vulnerable Dependency Management](references/cheatsheets/Vulnerable_Dependency_Management.md) | `references/cheatsheets/Vulnerable_Dependency_Management.md` | done |
+| [Software Supply Chain Security](references/cheatsheets/Software_Supply_Chain_Security.md) | `references/cheatsheets/Software_Supply_Chain_Security.md` | done |
+| [NPM Security](references/cheatsheets/NPM_Security.md) | `references/cheatsheets/NPM_Security.md` | done |
 
 ### AI, LLM & agents (0/9)
 

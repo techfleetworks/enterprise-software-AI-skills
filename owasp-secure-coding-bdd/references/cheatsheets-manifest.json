@@ -156,7 +156,7 @@
       "slug": "CI_CD_Security",
       "title": "CI CD Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/CI_CD_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "CI/CD & supply chain"
     },
     {
@@ -226,7 +226,7 @@
       "slug": "Dependency_Graph_SBOM",
       "title": "Dependency Graph SBOM",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Dependency_Graph_SBOM_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "CI/CD & supply chain"
     },
     {
@@ -324,7 +324,7 @@
       "slug": "GitHub_Actions_Security",
       "title": "GitHub Actions Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/GitHub_Actions_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "CI/CD & supply chain"
     },
     {
@@ -583,7 +583,7 @@
       "slug": "NPM_Security",
       "title": "NPM Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/NPM_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "CI/CD & supply chain"
     },
     {
@@ -765,7 +765,7 @@
       "slug": "Software_Supply_Chain_Security",
       "title": "Software Supply Chain Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Software_Supply_Chain_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "CI/CD & supply chain"
     },
     {
@@ -881,7 +881,7 @@
       "slug": "Vulnerable_Dependency_Management",
       "title": "Vulnerable Dependency Management",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "CI/CD & supply chain"
     },
     {
