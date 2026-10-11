@@ -19,10 +19,14 @@
  *     "layers": { "unit": ["*.unit.*","/unit/"], "integration": ["/integration/"], "e2e": ["/e2e/"] },
  *     "minShare": { "unit": 0.6 },          // unit must be >= 60% of CLASSIFIED tests
  *     "maxShare": { "e2e": 0.15 },          // e2e must be <= 15%
- *     "requirePyramid": true,               // count(unit) >= count(integration) >= count(e2e)
- *     "maxUnclassifiedShare": 0.2,          // too many untagged tests -> can't assess -> fail
+ *     "requirePyramid": true,               // counts non-increasing down `layers` (which is BASE→TOP)
+ *     "maxUnclassifiedShare": 0.2,          // untagged cap; DEFAULTS to 0.2 when any threshold is set
  *     "maxTotalSeconds": { "e2e": 600 }     // optional runtime cap on a layer's summed time
  *   }
+ * `layers` is ordered BASE→TOP (unit first, e2e last) — `requirePyramid` reads that order, so it works
+ * for any layer names, not just unit/integration/e2e. `maxUnclassifiedShare` can't be silently absent:
+ * if you set any shape threshold, it defaults to 0.2 (so a verdict is never rendered on a tiny
+ * classified sample while most tests are untagged).
  *
  * Exit 0 = the shape is within thresholds. 1 = a threshold is breached. 2 = bad usage / unreadable /
  * unparseable report / zero tests (fail closed — an unmeasurable suite is not a passing suite).
@@ -70,19 +74,22 @@ const classify = (key) => {
 
 // --- parse JUnit testcases ---------------------------------------------------
 const xml = readFileSync(resolve(reportPath), "utf8");
-const attr = (tag, name) => { const m = tag.match(new RegExp(`\\b${name}\\s*=\\s*"([^"]*)"`, "i")); return m ? m[1] : ""; };
-const cases = xml.match(/<testcase\b[^>]*?\/?>/gi) || [];
+const attr = (tagAttrs, name) => { const m = tagAttrs.match(new RegExp(`\\b${name}\\s*=\\s*"([^"]*)"`, "i")); return m ? m[1] : ""; };
+// Quote-aware: a literal '>' is legal inside an XML attribute value, so don't stop at the first '>'.
+// Capture the attribute run, allowing '>' only inside quotes, else a `classname="a>b"` truncates the
+// tag and the test is silently dropped to unclassified (moving the pass/fail boundary).
+const cases = [...xml.matchAll(/<testcase\b((?:[^>"']|"[^"]*"|'[^']*')*)\/?>/gi)].map((m) => m[1]);
 if (cases.length === 0) die("no <testcase> entries in the report (zero tests — fail closed)");
 
 const counts = {}; // layer -> count
 const seconds = {}; // layer -> summed time
 let unclassified = 0;
-for (const tag of cases) {
-  const key = attr(tag, "classname") || attr(tag, "name") || attr(tag, "file");
+for (const tagAttrs of cases) {
+  const key = attr(tagAttrs, "classname") || attr(tagAttrs, "name") || attr(tagAttrs, "file");
   const layer = classify(key);
   if (!layer) { unclassified++; continue; }
   counts[layer] = (counts[layer] || 0) + 1;
-  seconds[layer] = (seconds[layer] || 0) + (parseFloat(attr(tag, "time")) || 0);
+  seconds[layer] = (seconds[layer] || 0) + (parseFloat(attr(tagAttrs, "time")) || 0);
 }
 const classified = Object.values(counts).reduce((a, b) => a + b, 0);
 const total = classified + unclassified;
@@ -92,9 +99,21 @@ const share = (layer) => (classified ? (counts[layer] || 0) / classified : 0);
 const pct = (x) => (x * 100).toFixed(1) + "%";
 const problems = [];
 
+// The gate's integrity depends on most tests being classifiable: if too many are untagged, a verdict
+// computed on the small classified remainder is unrepresentative (a 9-untagged/1-unit suite would show
+// unit=100%). So when ANY shape threshold is configured, apply a default unclassified cap (0.2) unless
+// the author set their own — the guard can't be silently absent. With no thresholds at all, there is
+// nothing to protect, so no cap is applied.
+const anyShapeThreshold =
+  (cfg.minShare && Object.keys(cfg.minShare).length) ||
+  (cfg.maxShare && Object.keys(cfg.maxShare).length) ||
+  !!cfg.requirePyramid ||
+  (cfg.maxTotalSeconds && Object.keys(cfg.maxTotalSeconds).length);
+const unclCap = cfg.maxUnclassifiedShare != null ? cfg.maxUnclassifiedShare : (anyShapeThreshold ? 0.2 : null);
 const unclShare = total ? unclassified / total : 0;
-if (cfg.maxUnclassifiedShare != null && unclShare > cfg.maxUnclassifiedShare) {
-  problems.push(`${pct(unclShare)} of tests (${unclassified}/${total}) matched no layer — over the ${pct(cfg.maxUnclassifiedShare)} cap; the shape can't be assessed (tag them or widen layer patterns)`);
+if (unclCap != null && unclShare > unclCap) {
+  const dflt = cfg.maxUnclassifiedShare == null ? " (default; set maxUnclassifiedShare to override)" : "";
+  problems.push(`${pct(unclShare)} of tests (${unclassified}/${total}) matched no layer — over the ${pct(unclCap)} cap${dflt}; the shape can't be assessed (tag them or widen layer patterns)`);
 }
 if (classified === 0) problems.push("no tests matched any layer — cannot assess the pyramid (fail closed)");
 
@@ -105,8 +124,13 @@ for (const [layer, max] of Object.entries(cfg.maxShare || {})) {
   if (share(layer) > max) problems.push(`${layer} is ${pct(share(layer))} of classified tests — above the ${pct(max)} cap (too top-heavy — ice-cream cone)`);
 }
 if (cfg.requirePyramid) {
-  const u = counts.unit || 0, i = counts.integration || 0, e = counts.e2e || 0;
-  if (!(u >= i && i >= e)) problems.push(`pyramid order violated: unit(${u}) >= integration(${i}) >= e2e(${e}) is false`);
+  // Order is DECLARED by the config: `layers` is listed base→top, and counts must be non-increasing
+  // down that list. Deriving it from the declared layers (not hardcoded unit/integration/e2e) keeps the
+  // gate config-driven — otherwise a repo whose layers are named differently gets `0>=0>=0` = silent pass.
+  const order = Object.keys(cfg.layers);
+  let prev = Infinity, ok = true;
+  const shown = order.map((l) => { const c = counts[l] || 0; if (c > prev) ok = false; prev = c; return `${l}(${c})`; });
+  if (!ok) problems.push(`pyramid order violated: counts must be non-increasing base→top (config order), got ${shown.join(" >= ")}`);
 }
 for (const [layer, cap] of Object.entries(cfg.maxTotalSeconds || {})) {
   if ((seconds[layer] || 0) > cap) problems.push(`${layer} tests take ${(seconds[layer] || 0).toFixed(1)}s total — over the ${cap}s cap`);

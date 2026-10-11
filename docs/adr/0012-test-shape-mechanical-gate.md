@@ -33,10 +33,14 @@ test so the gate can't rot.
 Chosen option: "parse a JUnit report." JUnit XML is the near-universal test-report format (most runners
 emit it directly or via a reporter), so the gate stays runner-agnostic. It classifies each `<testcase>`
 into a layer by matching its `classname`/`name` against config glob/substring patterns, then enforces
-any of: a `minShare` floor per layer (unit base), a `maxShare` cap (e2e top), `requirePyramid`
-(`unit ≥ integration ≥ e2e` by count), a `maxUnclassifiedShare` guard (too many untagged tests means
-the shape can't be assessed → fail), and an optional `maxTotalSeconds` runtime cap per layer. Counting
-tests (not files) reflects the real pyramid; the report is the honest, measured input.
+any of: a `minShare` floor per layer (unit base), a `maxShare` cap (e2e top), `requirePyramid` (counts
+non-increasing down the `layers` list, which is declared **base→top** — so it works for any layer
+names, not just unit/integration/e2e), a `maxUnclassifiedShare` guard, and an optional `maxTotalSeconds`
+runtime cap per layer. Two integrity rules keep the gate from silently no-opping: the pyramid order is
+derived from the declared layers (never hardcoded names), and `maxUnclassifiedShare` **defaults to 0.2
+whenever any shape threshold is set**, so a verdict is never rendered on a tiny classified sample while
+most tests are untagged. Counting tests (not files) reflects the real pyramid; the report is the honest,
+measured input.
 
 ### Consequences
 
@@ -48,10 +52,12 @@ tests (not files) reflects the real pyramid; the report is the honest, measured 
 
 ### Confirmation
 
-`test/test-shape.test.mjs` (11 tests): a healthy pyramid passes; an inverted cone, an over-cap e2e
-share, an under-floor unit base, a violated `requirePyramid` order, an over-cap unclassified share, and
-an over-budget layer runtime each fail; glob classification is proven; and a zero-testcase report, a
-missing report, and a layerless config each fail closed (exit 2). All run in CI via `npm test`.
+`test/test-shape.test.mjs` (14 tests): a healthy pyramid passes; an inverted cone, an over-cap e2e
+share, an under-floor unit base, a violated `requirePyramid` order (incl. with **custom layer names**),
+an over-cap unclassified share (incl. via the **default** guard with no explicit key), and an
+over-budget layer runtime each fail; glob classification and a `>`-in-classname case are proven; and a
+zero-testcase report, a missing report, and a layerless config each fail closed (exit 2). All run in CI
+via `npm test`.
 
 ## More Information
 

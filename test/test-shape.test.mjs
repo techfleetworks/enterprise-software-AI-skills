@@ -85,6 +85,36 @@ test("classifies via a glob pattern (*.unit.* / *.e2e.*) — no thresholds, prov
   assert.match(r.out, /e2e=1/);
 });
 
+// --- fixes from the fresh-context review -------------------------------------
+test("requirePyramid uses the DECLARED layer order — custom names, inverted → fails (#1)", () => {
+  const cfg = { layers: { unit: ["/unit/"], component: ["/component/"], ui: ["/ui/"] }, requirePyramid: true };
+  const xml = `<testsuite>` +
+    `<testcase classname="tests/unit/a" name="a" time="0.01"/>` +
+    `<testcase classname="tests/component/b" name="b" time="0.01"/>` +
+    Array.from({ length: 8 }, (_, i) => `<testcase classname="tests/ui/c${i}" name="c${i}" time="0.01"/>`).join("") +
+    `</testsuite>`;
+  const r = run([], cfg, { rawXml: xml });
+  assert.equal(r.status, 1, r.out); // 1 unit / 1 component / 8 ui is inverted → must fail
+  assert.match(r.out, /pyramid order/);
+});
+test("a mostly-untagged suite FAILS even without an explicit maxUnclassifiedShare (#2 default guard)", () => {
+  const cfg = { layers: { unit: ["/unit/"], e2e: ["/e2e/"] }, minShare: { unit: 0.6 } }; // no maxUnclassifiedShare
+  const xml = `<testsuite><testcase classname="tests/unit/a" name="a" time="0.01"/>` +
+    Array.from({ length: 9 }, (_, i) => `<testcase classname="tests/misc/m${i}" name="m${i}" time="0.01"/>`).join("") +
+    `</testsuite>`;
+  const r = run([], cfg, { rawXml: xml });
+  assert.equal(r.status, 1, r.out); // 9/10 untagged → default 0.2 cap breached
+  assert.match(r.out, /no layer|unclassified/i);
+});
+test("a '>' inside a classname attribute does not drop the test to unclassified (#3)", () => {
+  const cfg = { layers: { unit: ["/unit/"] } };
+  const xml = `<testsuite><testcase classname="src/foo>bar/unit/x" name="a" time="0.01"/>` +
+    `<testcase classname="tests/unit/b" name="b" time="0.01"/></testsuite>`;
+  const r = run([], cfg, { rawXml: xml });
+  assert.equal(r.status, 0, r.out);
+  assert.match(r.out, /unit=2/); // both counted as unit, none unclassified
+});
+
 // --- fail closed -------------------------------------------------------------
 test("fails closed (exit 2) on a report with zero testcases", () => {
   assert.equal(run([], BASE_CFG, { rawXml: "<testsuite></testsuite>" }).status, 2);
