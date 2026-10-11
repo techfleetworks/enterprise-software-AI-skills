@@ -23,21 +23,21 @@
       "slug": "AI_Agent_Security",
       "title": "AI Agent Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "AI, LLM & agents"
     },
     {
       "slug": "AI-Powered_Advertising_Systems_Security",
       "title": "AI-Powered Advertising Systems Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/AI-Powered_Advertising_Systems_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "AI, LLM & agents"
     },
     {
       "slug": "AML_Sanctions_AI_Agent_Payments",
       "title": "AML Sanctions AI Agent Payments",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/AML_Sanctions_AI_Agent_Payments_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "AI, LLM & agents"
     },
     {
@@ -471,7 +471,7 @@
       "slug": "LLM_Prompt_Injection_Prevention",
       "title": "LLM Prompt Injection Prevention",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "AI, LLM & agents"
     },
     {
@@ -499,7 +499,7 @@
       "slug": "MCP_Security",
       "title": "MCP Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/MCP_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "AI, LLM & agents"
     },
     {
@@ -653,7 +653,7 @@
       "slug": "RAG_Security",
       "title": "RAG Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/RAG_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "AI, LLM & agents"
     },
     {
@@ -695,7 +695,7 @@
       "slug": "Secure_AI_Model_Ops",
       "title": "Secure AI Model Ops",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Secure_AI_Model_Ops_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "AI, LLM & agents"
     },
     {
@@ -716,7 +716,7 @@
       "slug": "Secure_Coding_with_AI",
       "title": "Secure Coding with AI",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Coding_with_AI_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "AI, LLM & agents"
     },
     {
@@ -860,7 +860,7 @@
       "slug": "Verifying_Third_Party_Agent_Execution_Evidence",
       "title": "Verifying Third Party Agent Execution Evidence",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Verifying_Third_Party_Agent_Execution_Evidence_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "AI, LLM & agents"
     },
     {
