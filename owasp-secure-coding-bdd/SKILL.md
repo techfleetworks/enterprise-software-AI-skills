@@ -192,20 +192,20 @@ section, a citation, an executable `@security` scenario, and an entry in this in
 | [Identity Propagation Patterns](references/cheatsheets/Identity_Propagation_Patterns.md) | `references/cheatsheets/Identity_Propagation_Patterns.md` | done |
 | [Workload Identity Federation](references/cheatsheets/Workload_Identity_Federation.md) | `references/cheatsheets/Workload_Identity_Federation.md` | done |
 
-### Cryptography, secrets & transport (0/10)
+### Cryptography, secrets & transport (10/10)
 
 | Cheat sheet | File | Status |
 |---|---|---|
-| Cryptographic Storage | `references/cheatsheets/Cryptographic_Storage.md` | pending |
-| Key Management | `references/cheatsheets/Key_Management.md` | pending |
-| Secrets Management | `references/cheatsheets/Secrets_Management.md` | pending |
-| TLS Cipher String | `references/cheatsheets/TLS_Cipher_String.md` | pending |
-| Transport Layer Security | `references/cheatsheets/Transport_Layer_Security.md` | pending |
-| Transport Layer Protection | `references/cheatsheets/Transport_Layer_Protection.md` | pending |
-| HTTP Strict Transport Security | `references/cheatsheets/HTTP_Strict_Transport_Security.md` | pending |
-| Pinning | `references/cheatsheets/Pinning.md` | pending |
-| Post Quantum Cryptography | `references/cheatsheets/Post_Quantum_Cryptography.md` | pending |
-| User Privacy Protection | `references/cheatsheets/User_Privacy_Protection.md` | pending |
+| [Cryptographic Storage](references/cheatsheets/Cryptographic_Storage.md) | `references/cheatsheets/Cryptographic_Storage.md` | done |
+| [Key Management](references/cheatsheets/Key_Management.md) | `references/cheatsheets/Key_Management.md` | done |
+| [Secrets Management](references/cheatsheets/Secrets_Management.md) | `references/cheatsheets/Secrets_Management.md` | done |
+| [TLS Cipher String](references/cheatsheets/TLS_Cipher_String.md) | `references/cheatsheets/TLS_Cipher_String.md` | deprecated |
+| [Transport Layer Security](references/cheatsheets/Transport_Layer_Security.md) | `references/cheatsheets/Transport_Layer_Security.md` | done |
+| [Transport Layer Protection](references/cheatsheets/Transport_Layer_Protection.md) | `references/cheatsheets/Transport_Layer_Protection.md` | deprecated |
+| [HTTP Strict Transport Security](references/cheatsheets/HTTP_Strict_Transport_Security.md) | `references/cheatsheets/HTTP_Strict_Transport_Security.md` | done |
+| [Pinning](references/cheatsheets/Pinning.md) | `references/cheatsheets/Pinning.md` | done |
+| [Post Quantum Cryptography](references/cheatsheets/Post_Quantum_Cryptography.md) | `references/cheatsheets/Post_Quantum_Cryptography.md` | done |
+| [User Privacy Protection](references/cheatsheets/User_Privacy_Protection.md) | `references/cheatsheets/User_Privacy_Protection.md` | done |
 
 ### Infrastructure, containers & cloud (0/10)
 
