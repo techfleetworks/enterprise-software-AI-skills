@@ -87,3 +87,9 @@ Modeling Process was read at community.owasp.org/Threat_Modeling_Process (2026-1
 sources (the OWASP GenAI agentic threats document and the GenAI Security Project repositories) are recorded for
 the AI and agent cheat-sheet content waves, where they will be mined in their own words and vendored, not
 reproduced.
+
+Update 2026-10-11: the vendored directory was moved from `third_party/` to `owasp-secure-coding-bdd/vendor/`
+to consolidate all OWASP content under the skill it serves, and the vendor tool to
+`owasp-secure-coding-bdd/tools/`. The decision (vendor from source, aggregate under CC-BY-SA, keep out of the
+MIT files) is unchanged; only the location changed. The arch-gate ignore entry changed from `third_party` to
+`vendor` accordingly.

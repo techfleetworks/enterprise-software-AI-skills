@@ -5,20 +5,20 @@
 // CC-BY-SA-4.0; this repo's own code is MIT. You may use and redistribute OWASP's text WITH attribution and
 // ShareAlike, but you may NOT relicense it as MIT by pasting it into our skill files. So the exact verbatim
 // text is not committed here. Instead, this tool fetches it from the official upstream repositories into
-// third_party/owasp/ (gitignored), which is a clean "aggregation": the CC-BY-SA text sits in its own
-// directory with its upstream LICENSE and our NOTICE, separate from the MIT-licensed skill files.
+// owasp-secure-coding-bdd/vendor/ (gitignored), which is a clean "aggregation": the CC-BY-SA text sits in its
+// own directory with its upstream LICENSE and our NOTICE, separate from the MIT-licensed skill files.
 //
-// Run: `npm run vendor:owasp`  (or `node tools/vendor-owasp.mjs`). It only reads from the network and writes
-// under third_party/owasp/. It is NOT a gate script (it lives in tools/, not scripts/) because it makes
-// outbound calls on purpose.
+// Run: `npm run vendor:owasp` (or `node owasp-secure-coding-bdd/tools/vendor-owasp.mjs`). It is NOT a gate
+// script (it lives in tools/, not scripts/) because it makes outbound calls on purpose. It only reads from the
+// network and writes under owasp-secure-coding-bdd/vendor/.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const OUT = path.join(REPO, "third_party", "owasp");
+const SKILL_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const OUT = path.join(SKILL_DIR, "vendor");
 const CS_OUT = path.join(OUT, "cheatsheets-src");
-const MANIFEST = path.join(REPO, "owasp-secure-coding-bdd", "references", "cheatsheets-manifest.json");
+const MANIFEST = path.join(SKILL_DIR, "references", "cheatsheets-manifest.json");
 
 const CS_RAW = "https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master";
 const LLM_RAW = "https://raw.githubusercontent.com/OWASP/www-project-top-10-for-large-language-model-applications/main";
@@ -48,7 +48,7 @@ async function main() {
     fs.writeFileSync(path.join(CS_OUT, name), md);
     ok++;
   }
-  console.log(`CheatSheetSeries: vendored ${ok}/${manifest.sheets.length} sheets into ${path.relative(REPO, CS_OUT)}`);
+  console.log(`CheatSheetSeries: vendored ${ok}/${manifest.sheets.length} sheets into ${path.relative(SKILL_DIR, CS_OUT)}`);
   if (missed.length) console.error(`  (${missed.length} slug(s) had no upstream match, check names: ${missed.slice(0, 10).join(", ")}${missed.length > 10 ? " ..." : ""})`);
 
   // 3. The LLM / GenAI project's top-level docs (its full Top 10 content is also published at genai.owasp.org).
@@ -60,7 +60,7 @@ async function main() {
   if (llmReadme) { fs.writeFileSync(path.join(llmOut, "README.md"), llmReadme); console.log("LLM Top 10: vendored README (full content: https://genai.owasp.org/llm-top-10/)"); }
   else console.error("WARNING: could not fetch the LLM Top 10 README; cite https://genai.owasp.org/llm-top-10/ directly.");
 
-  console.log("\nDone. third_party/owasp/ holds CC-BY-SA-4.0 content; see third_party/owasp/NOTICE.md for attribution.");
+  console.log("\nDone. owasp-secure-coding-bdd/vendor/ holds CC-BY-SA-4.0 content; see its NOTICE.md for attribution.");
 }
 
 main().catch((e) => { console.error("vendor-owasp failed:", e.message); process.exit(1); });
