@@ -1,6 +1,6 @@
 {
   "_comment": "Root architecture gate for THIS repo (a library of skills + offline gate scripts). The built-in error-handling checks (emptyCatch/swallowReturn/keepInSync) are left OFF here on purpose: the gate scripts use deliberate best-effort catches, and judge-arch/assets/discriminate-fixtures holds intentionally-bad code used by the mutation test. Those built-ins belong in an adopter's application config (they are ON in the presets under judge-arch/assets/presets). What this root gate enforces is what is true and valuable for this repo: house style and script hygiene. Expand house-style-no-em-dash's include list as each skill is rewritten clean (ratchet).",
-  "ignore": ["discriminate-fixtures", "third_party"],
+  "ignore": ["discriminate-fixtures", "vendor"],
   "builtins": { "emptyCatch": false, "swallowReturn": false, "keepInSync": false },
   "rules": [
     {

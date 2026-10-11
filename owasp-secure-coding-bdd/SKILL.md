@@ -284,7 +284,7 @@ Every `references/cheatsheets/<Slug>.md` follows the same shape, and the catalog
 | Completeness gate for the per-sheet catalog | `scripts/check-cheatsheet-catalog.mjs` |
 | Code-level secure-coding lints | `scripts/check-owasp-lints.mjs` |
 | Fetch the exact upstream OWASP text (CC-BY-SA, on demand) | `tools/vendor-owasp.mjs` (`npm run vendor:owasp`) |
-| The vendored exact text and its attribution | `third_party/owasp/NOTICE.md` |
+| The vendored exact text and its attribution | `vendor/NOTICE.md` |
 
 The following interim cluster references hold the deep phase-2 content and are being migrated into the per-sheet
 files, after which they will be removed: `references/access-control-authorization.md`,
