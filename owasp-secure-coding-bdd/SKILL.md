@@ -207,45 +207,45 @@ section, a citation, an executable `@security` scenario, and an entry in this in
 | [Post Quantum Cryptography](references/cheatsheets/Post_Quantum_Cryptography.md) | `references/cheatsheets/Post_Quantum_Cryptography.md` | done |
 | [User Privacy Protection](references/cheatsheets/User_Privacy_Protection.md) | `references/cheatsheets/User_Privacy_Protection.md` | done |
 
-### Infrastructure, containers & cloud (0/10)
+### Infrastructure, containers & cloud (10/10)
 
 | Cheat sheet | File | Status |
 |---|---|---|
-| Docker Security | `references/cheatsheets/Docker_Security.md` | pending |
-| NodeJS Docker | `references/cheatsheets/NodeJS_Docker.md` | pending |
-| Kubernetes Security | `references/cheatsheets/Kubernetes_Security.md` | pending |
-| Infrastructure as Code Security | `references/cheatsheets/Infrastructure_as_Code_Security.md` | pending |
-| Secure Cloud Architecture | `references/cheatsheets/Secure_Cloud_Architecture.md` | pending |
-| Network Segmentation | `references/cheatsheets/Network_Segmentation.md` | pending |
-| Serverless FaaS Security | `references/cheatsheets/Serverless_FaaS_Security.md` | pending |
-| Zero Trust Architecture | `references/cheatsheets/Zero_Trust_Architecture.md` | pending |
-| Subdomain Takeover Prevention | `references/cheatsheets/Subdomain_Takeover_Prevention.md` | pending |
-| Multi Tenant Security | `references/cheatsheets/Multi_Tenant_Security.md` | pending |
+| [Docker Security](references/cheatsheets/Docker_Security.md) | `references/cheatsheets/Docker_Security.md` | done |
+| [NodeJS Docker](references/cheatsheets/NodeJS_Docker.md) | `references/cheatsheets/NodeJS_Docker.md` | done |
+| [Kubernetes Security](references/cheatsheets/Kubernetes_Security.md) | `references/cheatsheets/Kubernetes_Security.md` | done |
+| [Infrastructure as Code Security](references/cheatsheets/Infrastructure_as_Code_Security.md) | `references/cheatsheets/Infrastructure_as_Code_Security.md` | done |
+| [Secure Cloud Architecture](references/cheatsheets/Secure_Cloud_Architecture.md) | `references/cheatsheets/Secure_Cloud_Architecture.md` | done |
+| [Network Segmentation](references/cheatsheets/Network_Segmentation.md) | `references/cheatsheets/Network_Segmentation.md` | done |
+| [Serverless FaaS Security](references/cheatsheets/Serverless_FaaS_Security.md) | `references/cheatsheets/Serverless_FaaS_Security.md` | done |
+| [Zero Trust Architecture](references/cheatsheets/Zero_Trust_Architecture.md) | `references/cheatsheets/Zero_Trust_Architecture.md` | done |
+| [Subdomain Takeover Prevention](references/cheatsheets/Subdomain_Takeover_Prevention.md) | `references/cheatsheets/Subdomain_Takeover_Prevention.md` | done |
+| [Multi Tenant Security](references/cheatsheets/Multi_Tenant_Security.md) | `references/cheatsheets/Multi_Tenant_Security.md` | done |
 
-### CI/CD & supply chain (0/6)
-
-| Cheat sheet | File | Status |
-|---|---|---|
-| CI CD Security | `references/cheatsheets/CI_CD_Security.md` | pending |
-| GitHub Actions Security | `references/cheatsheets/GitHub_Actions_Security.md` | pending |
-| Dependency Graph SBOM | `references/cheatsheets/Dependency_Graph_SBOM.md` | pending |
-| Vulnerable Dependency Management | `references/cheatsheets/Vulnerable_Dependency_Management.md` | pending |
-| Software Supply Chain Security | `references/cheatsheets/Software_Supply_Chain_Security.md` | pending |
-| NPM Security | `references/cheatsheets/NPM_Security.md` | pending |
-
-### AI, LLM & agents (0/9)
+### CI/CD & supply chain (6/6)
 
 | Cheat sheet | File | Status |
 |---|---|---|
-| AI Agent Security | `references/cheatsheets/AI_Agent_Security.md` | pending |
-| AI-Powered Advertising Systems Security | `references/cheatsheets/AI-Powered_Advertising_Systems_Security.md` | pending |
-| AML Sanctions AI Agent Payments | `references/cheatsheets/AML_Sanctions_AI_Agent_Payments.md` | pending |
-| LLM Prompt Injection Prevention | `references/cheatsheets/LLM_Prompt_Injection_Prevention.md` | pending |
-| MCP Security | `references/cheatsheets/MCP_Security.md` | pending |
-| RAG Security | `references/cheatsheets/RAG_Security.md` | pending |
-| Secure AI Model Ops | `references/cheatsheets/Secure_AI_Model_Ops.md` | pending |
-| Secure Coding with AI | `references/cheatsheets/Secure_Coding_with_AI.md` | pending |
-| Verifying Third Party Agent Execution Evidence | `references/cheatsheets/Verifying_Third_Party_Agent_Execution_Evidence.md` | pending |
+| [CI CD Security](references/cheatsheets/CI_CD_Security.md) | `references/cheatsheets/CI_CD_Security.md` | done |
+| [GitHub Actions Security](references/cheatsheets/GitHub_Actions_Security.md) | `references/cheatsheets/GitHub_Actions_Security.md` | done |
+| [Dependency Graph SBOM](references/cheatsheets/Dependency_Graph_SBOM.md) | `references/cheatsheets/Dependency_Graph_SBOM.md` | done |
+| [Vulnerable Dependency Management](references/cheatsheets/Vulnerable_Dependency_Management.md) | `references/cheatsheets/Vulnerable_Dependency_Management.md` | done |
+| [Software Supply Chain Security](references/cheatsheets/Software_Supply_Chain_Security.md) | `references/cheatsheets/Software_Supply_Chain_Security.md` | done |
+| [NPM Security](references/cheatsheets/NPM_Security.md) | `references/cheatsheets/NPM_Security.md` | done |
+
+### AI, LLM & agents (9/9)
+
+| Cheat sheet | File | Status |
+|---|---|---|
+| [AI Agent Security](references/cheatsheets/AI_Agent_Security.md) | `references/cheatsheets/AI_Agent_Security.md` | done |
+| [AI-Powered Advertising Systems Security](references/cheatsheets/AI-Powered_Advertising_Systems_Security.md) | `references/cheatsheets/AI-Powered_Advertising_Systems_Security.md` | done |
+| [AML Sanctions AI Agent Payments](references/cheatsheets/AML_Sanctions_AI_Agent_Payments.md) | `references/cheatsheets/AML_Sanctions_AI_Agent_Payments.md` | done |
+| [LLM Prompt Injection Prevention](references/cheatsheets/LLM_Prompt_Injection_Prevention.md) | `references/cheatsheets/LLM_Prompt_Injection_Prevention.md` | done |
+| [MCP Security](references/cheatsheets/MCP_Security.md) | `references/cheatsheets/MCP_Security.md` | done |
+| [RAG Security](references/cheatsheets/RAG_Security.md) | `references/cheatsheets/RAG_Security.md` | done |
+| [Secure AI Model Ops](references/cheatsheets/Secure_AI_Model_Ops.md) | `references/cheatsheets/Secure_AI_Model_Ops.md` | done |
+| [Secure Coding with AI](references/cheatsheets/Secure_Coding_with_AI.md) | `references/cheatsheets/Secure_Coding_with_AI.md` | done |
+| [Verifying Third Party Agent Execution Evidence](references/cheatsheets/Verifying_Third_Party_Agent_Execution_Evidence.md) | `references/cheatsheets/Verifying_Third_Party_Agent_Execution_Evidence.md` | done |
 
 ### Language & framework guides (0/16)
 

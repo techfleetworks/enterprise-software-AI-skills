@@ -23,21 +23,21 @@
       "slug": "AI_Agent_Security",
       "title": "AI Agent Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "AI, LLM & agents"
     },
     {
       "slug": "AI-Powered_Advertising_Systems_Security",
       "title": "AI-Powered Advertising Systems Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/AI-Powered_Advertising_Systems_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "AI, LLM & agents"
     },
     {
       "slug": "AML_Sanctions_AI_Agent_Payments",
       "title": "AML Sanctions AI Agent Payments",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/AML_Sanctions_AI_Agent_Payments_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "AI, LLM & agents"
     },
     {
@@ -156,7 +156,7 @@
       "slug": "CI_CD_Security",
       "title": "CI CD Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/CI_CD_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "CI/CD & supply chain"
     },
     {
@@ -226,7 +226,7 @@
       "slug": "Dependency_Graph_SBOM",
       "title": "Dependency Graph SBOM",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Dependency_Graph_SBOM_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "CI/CD & supply chain"
     },
     {
@@ -254,7 +254,7 @@
       "slug": "Docker_Security",
       "title": "Docker Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Infrastructure, containers & cloud"
     },
     {
@@ -324,7 +324,7 @@
       "slug": "GitHub_Actions_Security",
       "title": "GitHub Actions Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/GitHub_Actions_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "CI/CD & supply chain"
     },
     {
@@ -373,7 +373,7 @@
       "slug": "Infrastructure_as_Code_Security",
       "title": "Infrastructure as Code Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Infrastructure_as_Code_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Infrastructure, containers & cloud"
     },
     {
@@ -443,7 +443,7 @@
       "slug": "Kubernetes_Security",
       "title": "Kubernetes Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Kubernetes_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Infrastructure, containers & cloud"
     },
     {
@@ -471,7 +471,7 @@
       "slug": "LLM_Prompt_Injection_Prevention",
       "title": "LLM Prompt Injection Prevention",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "AI, LLM & agents"
     },
     {
@@ -499,7 +499,7 @@
       "slug": "MCP_Security",
       "title": "MCP Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/MCP_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "AI, LLM & agents"
     },
     {
@@ -534,7 +534,7 @@
       "slug": "Multi_Tenant_Security",
       "title": "Multi Tenant Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Multi_Tenant_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Infrastructure, containers & cloud"
     },
     {
@@ -548,7 +548,7 @@
       "slug": "Network_Segmentation",
       "title": "Network Segmentation",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Network_Segmentation_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Infrastructure, containers & cloud"
     },
     {
@@ -562,7 +562,7 @@
       "slug": "NodeJS_Docker",
       "title": "NodeJS Docker",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/NodeJS_Docker_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Infrastructure, containers & cloud"
     },
     {
@@ -583,7 +583,7 @@
       "slug": "NPM_Security",
       "title": "NPM Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/NPM_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "CI/CD & supply chain"
     },
     {
@@ -653,7 +653,7 @@
       "slug": "RAG_Security",
       "title": "RAG Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/RAG_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "AI, LLM & agents"
     },
     {
@@ -695,14 +695,14 @@
       "slug": "Secure_AI_Model_Ops",
       "title": "Secure AI Model Ops",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Secure_AI_Model_Ops_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "AI, LLM & agents"
     },
     {
       "slug": "Secure_Cloud_Architecture",
       "title": "Secure Cloud Architecture",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Cloud_Architecture_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Infrastructure, containers & cloud"
     },
     {
@@ -716,7 +716,7 @@
       "slug": "Secure_Coding_with_AI",
       "title": "Secure Coding with AI",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Coding_with_AI_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "AI, LLM & agents"
     },
     {
@@ -751,7 +751,7 @@
       "slug": "Serverless_FaaS_Security",
       "title": "Serverless FaaS Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Serverless_FaaS_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Infrastructure, containers & cloud"
     },
     {
@@ -765,7 +765,7 @@
       "slug": "Software_Supply_Chain_Security",
       "title": "Software Supply Chain Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Software_Supply_Chain_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "CI/CD & supply chain"
     },
     {
@@ -779,7 +779,7 @@
       "slug": "Subdomain_Takeover_Prevention",
       "title": "Subdomain Takeover Prevention",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Subdomain_Takeover_Prevention_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Infrastructure, containers & cloud"
     },
     {
@@ -860,7 +860,7 @@
       "slug": "Verifying_Third_Party_Agent_Execution_Evidence",
       "title": "Verifying Third Party Agent Execution Evidence",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Verifying_Third_Party_Agent_Execution_Evidence_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "AI, LLM & agents"
     },
     {
@@ -881,7 +881,7 @@
       "slug": "Vulnerable_Dependency_Management",
       "title": "Vulnerable Dependency Management",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "CI/CD & supply chain"
     },
     {
@@ -965,7 +965,7 @@
       "slug": "Zero_Trust_Architecture",
       "title": "Zero Trust Architecture",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Zero_Trust_Architecture_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Infrastructure, containers & cloud"
     }
   ]
