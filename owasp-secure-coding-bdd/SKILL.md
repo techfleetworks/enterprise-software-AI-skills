@@ -90,6 +90,7 @@ section, a citation, an executable `@security` scenario, and an entry in this in
 
 
 
+
 ### Frontend & browser (16/16)
 
 | Cheat sheet | File | Status |
@@ -131,21 +132,21 @@ section, a citation, an executable `@security` scenario, and an entry in this in
 | [Database Security](references/cheatsheets/Database_Security.md) | `references/cheatsheets/Database_Security.md` | done |
 | [NoSQL Security](references/cheatsheets/NoSQL_Security.md) | `references/cheatsheets/NoSQL_Security.md` | done |
 
-### Backend: authentication & sessions (1/11)
+### Backend: authentication & sessions (11/11)
 
 | Cheat sheet | File | Status |
 |---|---|---|
-| Authentication | `references/cheatsheets/Authentication.md` | pending |
-| Authentication Patterns | `references/cheatsheets/Authentication_Patterns.md` | pending |
-| Multifactor Authentication | `references/cheatsheets/Multifactor_Authentication.md` | pending |
-| Passkey Security | `references/cheatsheets/Passkey_Security.md` | pending |
+| [Authentication](references/cheatsheets/Authentication.md) | `references/cheatsheets/Authentication.md` | done |
+| [Authentication Patterns](references/cheatsheets/Authentication_Patterns.md) | `references/cheatsheets/Authentication_Patterns.md` | done |
+| [Multifactor Authentication](references/cheatsheets/Multifactor_Authentication.md) | `references/cheatsheets/Multifactor_Authentication.md` | done |
+| [Passkey Security](references/cheatsheets/Passkey_Security.md) | `references/cheatsheets/Passkey_Security.md` | done |
 | [Password Storage](references/cheatsheets/Password_Storage.md) | `references/cheatsheets/Password_Storage.md` | done |
-| Forgot Password | `references/cheatsheets/Forgot_Password.md` | pending |
-| Credential Stuffing Prevention | `references/cheatsheets/Credential_Stuffing_Prevention.md` | pending |
-| Choosing and Using Security Questions | `references/cheatsheets/Choosing_and_Using_Security_Questions.md` | pending |
-| Session Management | `references/cheatsheets/Session_Management.md` | pending |
-| Email Validation and Verification | `references/cheatsheets/Email_Validation_and_Verification.md` | pending |
-| Bot Management and Anti-Automation | `references/cheatsheets/Bot_Management_and_Anti-Automation.md` | pending |
+| [Forgot Password](references/cheatsheets/Forgot_Password.md) | `references/cheatsheets/Forgot_Password.md` | done |
+| [Credential Stuffing Prevention](references/cheatsheets/Credential_Stuffing_Prevention.md) | `references/cheatsheets/Credential_Stuffing_Prevention.md` | done |
+| [Choosing and Using Security Questions](references/cheatsheets/Choosing_and_Using_Security_Questions.md) | `references/cheatsheets/Choosing_and_Using_Security_Questions.md` | done |
+| [Session Management](references/cheatsheets/Session_Management.md) | `references/cheatsheets/Session_Management.md` | done |
+| [Email Validation and Verification](references/cheatsheets/Email_Validation_and_Verification.md) | `references/cheatsheets/Email_Validation_and_Verification.md` | done |
+| [Bot Management and Anti-Automation](references/cheatsheets/Bot_Management_and_Anti-Automation.md) | `references/cheatsheets/Bot_Management_and_Anti-Automation.md` | done |
 
 ### Backend: authorization & access control (0/10)
 
@@ -342,7 +343,7 @@ Every `references/cheatsheets/<Slug>.md` follows the same shape, and the catalog
 |---|---|
 | The authoritative list of all 137 cheat sheets | `references/cheatsheets-manifest.json` |
 | One file per cheat sheet (the routing targets) | `references/cheatsheets/<Slug>.md` |
-| Example executable `@security` feature (merges into the adopter's shared index) | `assets/example/features/owasp-security.feature` |
+| Example executable `@security` features, one per stack layer (merge into the adopter's shared index) | `assets/example/features/` |
 | Enforcement gate for the selection flow (change-type to required scenario) | `scripts/check-security-coverage.mjs` |
 | The surface-to-scenario map the enforcement gate reads (tune per stack) | `assets/security-coverage.config.json` |
 | Completeness gate for the per-sheet catalog | `scripts/check-cheatsheet-catalog.mjs` |
