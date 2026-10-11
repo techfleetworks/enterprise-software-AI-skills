@@ -114,7 +114,7 @@
       "slug": "Bean_Validation",
       "title": "Bean Validation",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Bean_Validation_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Language & framework guides"
     },
     {
@@ -142,7 +142,7 @@
       "slug": "C-Based_Toolchain_Hardening",
       "title": "C-Based Toolchain Hardening",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/C-Based_Toolchain_Hardening_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Language & framework guides"
     },
     {
@@ -240,14 +240,14 @@
       "slug": "Django_REST_Framework",
       "title": "Django REST Framework",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Django_REST_Framework_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Language & framework guides"
     },
     {
       "slug": "Django_Security",
       "title": "Django Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Django_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Language & framework guides"
     },
     {
@@ -275,7 +275,7 @@
       "slug": "DotNet_Security",
       "title": "DotNet Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/DotNet_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Language & framework guides"
     },
     {
@@ -303,7 +303,7 @@
       "slug": "FastAPI_Security",
       "title": "FastAPI Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/FastAPI_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Language & framework guides"
     },
     {
@@ -387,8 +387,10 @@
       "slug": "Injection_Prevention_in_Java",
       "title": "Injection Prevention in Java",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_in_Java_Cheat_Sheet.html",
-      "done": false,
-      "category": "Language & framework guides"
+      "done": true,
+      "category": "Language & framework guides",
+      "deprecated": true,
+      "supersededBy": "Java_Security"
     },
     {
       "slug": "Input_Validation",
@@ -408,21 +410,21 @@
       "slug": "JAAS",
       "title": "JAAS",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/JAAS_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Language & framework guides"
     },
     {
       "slug": "Java_Security",
       "title": "Java Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Java_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Language & framework guides"
     },
     {
       "slug": "JavaScript_and_TypeScript_Security",
       "title": "JavaScript and TypeScript Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/JavaScript_and_TypeScript_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Language & framework guides"
     },
     {
@@ -450,7 +452,7 @@
       "slug": "Laravel",
       "title": "Laravel",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Laravel_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Language & framework guides"
     },
     {
@@ -555,7 +557,7 @@
       "slug": "Nextjs_Security",
       "title": "Nextjs Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Nextjs_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Language & framework guides"
     },
     {
@@ -569,7 +571,7 @@
       "slug": "Nodejs_Security",
       "title": "Nodejs Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Nodejs_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Language & framework guides"
     },
     {
@@ -618,7 +620,7 @@
       "slug": "PHP_Configuration",
       "title": "PHP Configuration",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/PHP_Configuration_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Language & framework guides"
     },
     {
@@ -674,7 +676,7 @@
       "slug": "Ruby_on_Rails",
       "title": "Ruby on Rails",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Ruby_on_Rails_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Language & framework guides"
     },
     {
@@ -786,7 +788,7 @@
       "slug": "Symfony",
       "title": "Symfony",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Symfony_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Language & framework guides"
     },
     {
