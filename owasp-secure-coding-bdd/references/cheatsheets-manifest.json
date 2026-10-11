@@ -205,7 +205,7 @@
       "slug": "Cryptographic_Storage",
       "title": "Cryptographic Storage",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Cryptography, secrets & transport"
     },
     {
@@ -359,7 +359,7 @@
       "slug": "HTTP_Strict_Transport_Security",
       "title": "HTTP Strict Transport Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Strict_Transport_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Cryptography, secrets & transport"
     },
     {
@@ -436,7 +436,7 @@
       "slug": "Key_Management",
       "title": "Key Management",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Cryptography, secrets & transport"
     },
     {
@@ -625,14 +625,14 @@
       "slug": "Pinning",
       "title": "Pinning",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Pinning_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Cryptography, secrets & transport"
     },
     {
       "slug": "Post_Quantum_Cryptography",
       "title": "Post Quantum Cryptography",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Post_Quantum_Cryptography_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Cryptography, secrets & transport"
     },
     {
@@ -688,7 +688,7 @@
       "slug": "Secrets_Management",
       "title": "Secrets Management",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Cryptography, secrets & transport"
     },
     {
@@ -814,8 +814,10 @@
       "slug": "TLS_Cipher_String",
       "title": "TLS Cipher String",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/TLS_Cipher_String_Cheat_Sheet.html",
-      "done": false,
-      "category": "Cryptography, secrets & transport"
+      "done": true,
+      "category": "Cryptography, secrets & transport",
+      "deprecated": true,
+      "supersededBy": "Transport_Layer_Security"
     },
     {
       "slug": "Transaction_Authorization",
@@ -828,14 +830,16 @@
       "slug": "Transport_Layer_Protection",
       "title": "Transport Layer Protection",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html",
-      "done": false,
-      "category": "Cryptography, secrets & transport"
+      "done": true,
+      "category": "Cryptography, secrets & transport",
+      "deprecated": true,
+      "supersededBy": "Transport_Layer_Security"
     },
     {
       "slug": "Transport_Layer_Security",
       "title": "Transport Layer Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Cryptography, secrets & transport"
     },
     {
@@ -849,7 +853,7 @@
       "slug": "User_Privacy_Protection",
       "title": "User Privacy Protection",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/User_Privacy_Protection_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Cryptography, secrets & transport"
     },
     {
