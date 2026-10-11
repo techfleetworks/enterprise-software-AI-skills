@@ -254,7 +254,7 @@
       "slug": "Docker_Security",
       "title": "Docker Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Infrastructure, containers & cloud"
     },
     {
@@ -373,7 +373,7 @@
       "slug": "Infrastructure_as_Code_Security",
       "title": "Infrastructure as Code Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Infrastructure_as_Code_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Infrastructure, containers & cloud"
     },
     {
@@ -443,7 +443,7 @@
       "slug": "Kubernetes_Security",
       "title": "Kubernetes Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Kubernetes_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Infrastructure, containers & cloud"
     },
     {
@@ -534,7 +534,7 @@
       "slug": "Multi_Tenant_Security",
       "title": "Multi Tenant Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Multi_Tenant_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Infrastructure, containers & cloud"
     },
     {
@@ -548,7 +548,7 @@
       "slug": "Network_Segmentation",
       "title": "Network Segmentation",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Network_Segmentation_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Infrastructure, containers & cloud"
     },
     {
@@ -562,7 +562,7 @@
       "slug": "NodeJS_Docker",
       "title": "NodeJS Docker",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/NodeJS_Docker_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Infrastructure, containers & cloud"
     },
     {
@@ -702,7 +702,7 @@
       "slug": "Secure_Cloud_Architecture",
       "title": "Secure Cloud Architecture",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Cloud_Architecture_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Infrastructure, containers & cloud"
     },
     {
@@ -751,7 +751,7 @@
       "slug": "Serverless_FaaS_Security",
       "title": "Serverless FaaS Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Serverless_FaaS_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Infrastructure, containers & cloud"
     },
     {
@@ -779,7 +779,7 @@
       "slug": "Subdomain_Takeover_Prevention",
       "title": "Subdomain Takeover Prevention",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Subdomain_Takeover_Prevention_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Infrastructure, containers & cloud"
     },
     {
@@ -965,7 +965,7 @@
       "slug": "Zero_Trust_Architecture",
       "title": "Zero Trust Architecture",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Zero_Trust_Architecture_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Infrastructure, containers & cloud"
     }
   ]

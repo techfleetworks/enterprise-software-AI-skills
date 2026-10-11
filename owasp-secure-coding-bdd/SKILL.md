@@ -207,20 +207,20 @@ section, a citation, an executable `@security` scenario, and an entry in this in
 | [Post Quantum Cryptography](references/cheatsheets/Post_Quantum_Cryptography.md) | `references/cheatsheets/Post_Quantum_Cryptography.md` | done |
 | [User Privacy Protection](references/cheatsheets/User_Privacy_Protection.md) | `references/cheatsheets/User_Privacy_Protection.md` | done |
 
-### Infrastructure, containers & cloud (0/10)
+### Infrastructure, containers & cloud (10/10)
 
 | Cheat sheet | File | Status |
 |---|---|---|
-| Docker Security | `references/cheatsheets/Docker_Security.md` | pending |
-| NodeJS Docker | `references/cheatsheets/NodeJS_Docker.md` | pending |
-| Kubernetes Security | `references/cheatsheets/Kubernetes_Security.md` | pending |
-| Infrastructure as Code Security | `references/cheatsheets/Infrastructure_as_Code_Security.md` | pending |
-| Secure Cloud Architecture | `references/cheatsheets/Secure_Cloud_Architecture.md` | pending |
-| Network Segmentation | `references/cheatsheets/Network_Segmentation.md` | pending |
-| Serverless FaaS Security | `references/cheatsheets/Serverless_FaaS_Security.md` | pending |
-| Zero Trust Architecture | `references/cheatsheets/Zero_Trust_Architecture.md` | pending |
-| Subdomain Takeover Prevention | `references/cheatsheets/Subdomain_Takeover_Prevention.md` | pending |
-| Multi Tenant Security | `references/cheatsheets/Multi_Tenant_Security.md` | pending |
+| [Docker Security](references/cheatsheets/Docker_Security.md) | `references/cheatsheets/Docker_Security.md` | done |
+| [NodeJS Docker](references/cheatsheets/NodeJS_Docker.md) | `references/cheatsheets/NodeJS_Docker.md` | done |
+| [Kubernetes Security](references/cheatsheets/Kubernetes_Security.md) | `references/cheatsheets/Kubernetes_Security.md` | done |
+| [Infrastructure as Code Security](references/cheatsheets/Infrastructure_as_Code_Security.md) | `references/cheatsheets/Infrastructure_as_Code_Security.md` | done |
+| [Secure Cloud Architecture](references/cheatsheets/Secure_Cloud_Architecture.md) | `references/cheatsheets/Secure_Cloud_Architecture.md` | done |
+| [Network Segmentation](references/cheatsheets/Network_Segmentation.md) | `references/cheatsheets/Network_Segmentation.md` | done |
+| [Serverless FaaS Security](references/cheatsheets/Serverless_FaaS_Security.md) | `references/cheatsheets/Serverless_FaaS_Security.md` | done |
+| [Zero Trust Architecture](references/cheatsheets/Zero_Trust_Architecture.md) | `references/cheatsheets/Zero_Trust_Architecture.md` | done |
+| [Subdomain Takeover Prevention](references/cheatsheets/Subdomain_Takeover_Prevention.md) | `references/cheatsheets/Subdomain_Takeover_Prevention.md` | done |
+| [Multi Tenant Security](references/cheatsheets/Multi_Tenant_Security.md) | `references/cheatsheets/Multi_Tenant_Security.md` | done |
 
 ### CI/CD & supply chain (0/6)
 
