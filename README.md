@@ -517,6 +517,13 @@ self-contained skill folder.
 [MIT](LICENSE) © [Tech Fleet](https://techfleet.org). Use, fork, adapt, and redistribute freely
 with attribution.
 
+**One exception:** the `third_party/owasp/` directory holds OWASP content (the Cheat Sheet Series and the
+Top 10 for LLM Applications), which OWASP publishes under **CC-BY-SA-4.0**, not MIT. It is fetched from
+source on demand by `npm run vendor:owasp` and kept separate as an aggregation under its own license; it is
+not committed. If you redistribute that text you must follow CC-BY-SA-4.0 (attribution and ShareAlike). The
+OWASP skill's own files describe the controls in their own words and quote short, attributed excerpts, which
+is compatible with this repo's MIT license. See `third_party/owasp/NOTICE.md`.
+
 ---
 
 ## Acknowledgements

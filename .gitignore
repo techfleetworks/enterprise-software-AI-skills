@@ -4,3 +4,11 @@ node_modules/
 # OS / editor noise
 .DS_Store
 Thumbs.db
+
+# Vendored OWASP source text (CC-BY-SA-4.0), fetched on demand by `npm run vendor:owasp`.
+# Not committed: it is kept out of this MIT repo and pulled from the upstream source instead.
+# third_party/owasp/NOTICE.md is committed (attribution); the fetched text is not.
+third_party/owasp/cheatsheets-src/
+third_party/owasp/llm-top10-src/
+third_party/owasp/LICENSE-CheatSheetSeries.md
+third_party/owasp/LICENSE-LLM-Top10.md
