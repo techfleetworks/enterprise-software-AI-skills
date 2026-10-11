@@ -219,7 +219,7 @@
       "slug": "Denial_of_Service",
       "title": "Denial of Service",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Denial_of_Service_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: handling, output & resources"
     },
     {
@@ -296,7 +296,7 @@
       "slug": "Error_Handling",
       "title": "Error Handling",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: handling, output & resources"
     },
     {
@@ -310,7 +310,7 @@
       "slug": "File_Upload",
       "title": "File Upload",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: handling, output & resources"
     },
     {
@@ -478,14 +478,14 @@
       "slug": "Logging",
       "title": "Logging",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: handling, output & resources"
     },
     {
       "slug": "Logging_Vocabulary",
       "title": "Logging Vocabulary",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Vocabulary_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: handling, output & resources"
     },
     {
@@ -800,7 +800,7 @@
       "slug": "Third_Party_Payment_Gateway_Integration",
       "title": "Third Party Payment Gateway Integration",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Third_Party_Payment_Gateway_Integration_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: handling, output & resources"
     },
     {
@@ -842,7 +842,7 @@
       "slug": "Unvalidated_Redirects_and_Forwards",
       "title": "Unvalidated Redirects and Forwards",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: handling, output & resources"
     },
     {
@@ -884,7 +884,7 @@
       "slug": "Web_Cache_Security",
       "title": "Web Cache Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Web_Cache_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: handling, output & resources"
     },
     {

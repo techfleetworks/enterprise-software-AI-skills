@@ -88,10 +88,6 @@ scenario; `pending` sheets are being migrated from the interim cluster reference
 `check-cheatsheet-catalog.mjs` gate keeps this honest: every `done` sheet must have its file, every required
 section, a citation, an executable `@security` scenario, and an entry in this index.
 
-
-
-
-
 ### Frontend & browser (16/16)
 
 | Cheat sheet | File | Status |
@@ -164,18 +160,18 @@ section, a citation, an executable `@security` scenario, and an entry in this in
 | [Transaction Authorization](references/cheatsheets/Transaction_Authorization.md) | `references/cheatsheets/Transaction_Authorization.md` | done |
 | [Business Logic Security](references/cheatsheets/Business_Logic_Security.md) | `references/cheatsheets/Business_Logic_Security.md` | done |
 
-### Backend: handling, output & resources (0/8)
+### Backend: handling, output & resources (8/8)
 
 | Cheat sheet | File | Status |
 |---|---|---|
-| File Upload | `references/cheatsheets/File_Upload.md` | pending |
-| Error Handling | `references/cheatsheets/Error_Handling.md` | pending |
-| Logging | `references/cheatsheets/Logging.md` | pending |
-| Logging Vocabulary | `references/cheatsheets/Logging_Vocabulary.md` | pending |
-| Denial of Service | `references/cheatsheets/Denial_of_Service.md` | pending |
-| Unvalidated Redirects and Forwards | `references/cheatsheets/Unvalidated_Redirects_and_Forwards.md` | pending |
-| Web Cache Security | `references/cheatsheets/Web_Cache_Security.md` | pending |
-| Third Party Payment Gateway Integration | `references/cheatsheets/Third_Party_Payment_Gateway_Integration.md` | pending |
+| [File Upload](references/cheatsheets/File_Upload.md) | `references/cheatsheets/File_Upload.md` | done |
+| [Error Handling](references/cheatsheets/Error_Handling.md) | `references/cheatsheets/Error_Handling.md` | done |
+| [Logging](references/cheatsheets/Logging.md) | `references/cheatsheets/Logging.md` | done |
+| [Logging Vocabulary](references/cheatsheets/Logging_Vocabulary.md) | `references/cheatsheets/Logging_Vocabulary.md` | done |
+| [Denial of Service](references/cheatsheets/Denial_of_Service.md) | `references/cheatsheets/Denial_of_Service.md` | done |
+| [Unvalidated Redirects and Forwards](references/cheatsheets/Unvalidated_Redirects_and_Forwards.md) | `references/cheatsheets/Unvalidated_Redirects_and_Forwards.md` | done |
+| [Web Cache Security](references/cheatsheets/Web_Cache_Security.md) | `references/cheatsheets/Web_Cache_Security.md` | done |
+| [Third Party Payment Gateway Integration](references/cheatsheets/Third_Party_Payment_Gateway_Integration.md) | `references/cheatsheets/Third_Party_Payment_Gateway_Integration.md` | done |
 
 ### API & services (0/14)
 
