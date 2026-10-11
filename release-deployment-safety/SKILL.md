@@ -36,6 +36,7 @@ During any rollout, **two versions of your code run simultaneously** (old instan
 
 - New code must read data written by old code, and old code must tolerate data written by new code.
 - Never deploy a schema change and the code that requires it in the same release — expand first, deploy code, then contract later. See `references/zero-downtime-db-migrations.md`.
+- **Mechanical gate:** run `scripts/check-migration-safety.mjs <migrations-dir>` in CI. It fails the build on the unsafe patterns this skill forbids — direct column/table rename, `DROP COLUMN`/`DROP TABLE`/`TRUNCATE`, `NOT NULL` with no default, in-place type change, a bare `SET NOT NULL`, a `CHECK`/`FOREIGN KEY` added without `NOT VALID`, and a non-`CONCURRENTLY` index build — so expand/contract can't be skipped by accident. A deliberate, backed-up, announced contraction is suppressed only with an inline `-- migration-safety:ignore <reason>` on that statement (an unexplained ignore does not count).
 - Message queues, caches, and API contracts must be forward- and backward-compatible across one version step.
 
 If a change *cannot* be made backward-compatible, it must be split into a sequence of releases that each are. This is non-negotiable and is the single most common thing teams get wrong.
@@ -125,3 +126,4 @@ If the release touches permissions, credentials, network rules, or deletes anyth
 | Zero-downtime & reversible DB schema/data migrations (expand/contract) | `references/zero-downtime-db-migrations.md` |
 | Rollback strategies, break-glass, safe-vs-unsafe reverts, DORA recovery time | `references/rollback-and-recovery.md` |
 | Build-once/promote pipelines, environment gates, GitOps, deployment records | `references/ci-cd-delivery-pipeline.md` |
+| Mechanical gate: unsafe-migration linter (expand/contract enforcement) | `scripts/check-migration-safety.mjs` |
