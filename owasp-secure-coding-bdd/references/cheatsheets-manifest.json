@@ -14,8 +14,10 @@
       "slug": "Access_Control",
       "title": "Access Control",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Access_Control_Cheat_Sheet.html",
-      "done": false,
-      "category": "Backend: authorization & access control"
+      "done": true,
+      "category": "Backend: authorization & access control",
+      "deprecated": true,
+      "supersededBy": "Authorization"
     },
     {
       "slug": "AI_Agent_Security",
@@ -63,42 +65,42 @@
       "slug": "Authorization",
       "title": "Authorization",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: authorization & access control"
     },
     {
       "slug": "Authorization_Decisions_And_Output_Handling",
       "title": "Authorization Decisions And Output Handling",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Decisions_And_Output_Handling_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: authorization & access control"
     },
     {
       "slug": "Authorization_Patterns",
       "title": "Authorization Patterns",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Patterns_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: authorization & access control"
     },
     {
       "slug": "Authorization_Policy_And_Data_Distribution",
       "title": "Authorization Policy And Data Distribution",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Policy_And_Data_Distribution_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: authorization & access control"
     },
     {
       "slug": "Authorization_Regression_Testing",
       "title": "Authorization Regression Testing",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Regression_Testing_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: authorization & access control"
     },
     {
       "slug": "Authorization_Testing_Automation",
       "title": "Authorization Testing Automation",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Testing_Automation_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: authorization & access control"
     },
     {
@@ -133,7 +135,7 @@
       "slug": "Business_Logic_Security",
       "title": "Business Logic Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Business_Logic_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: authorization & access control"
     },
     {
@@ -399,7 +401,7 @@
       "slug": "Insecure_Direct_Object_Reference_Prevention",
       "title": "Insecure Direct Object Reference Prevention",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Insecure_Direct_Object_Reference_Prevention_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: authorization & access control"
     },
     {
@@ -819,7 +821,7 @@
       "slug": "Transaction_Authorization",
       "title": "Transaction Authorization",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Transaction_Authorization_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: authorization & access control"
     },
     {

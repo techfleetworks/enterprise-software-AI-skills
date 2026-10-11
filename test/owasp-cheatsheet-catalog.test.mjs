@@ -7,7 +7,9 @@
 // file present but marked done:false all FAIL (exit 1); an empty/missing manifest fails closed (exit 2). The
 // stack-layer grouping is gated too: a correct multi-category grouping passes, while a wrong (done/total)
 // count, a sheet filed under the wrong category, a wrong done/pending Status cell, a category heading the
-// manifest lacks, and a manifest sheet with no category all FAIL.
+// manifest lacks, and a manifest sheet with no category all FAIL. Deprecated sheets (manifest deprecated +
+// supersededBy) are pointers: one that links its successor + cites a source PASSES without control sections or
+// an @security scenario, while one that omits the successor link or names a non-manifest successor FAILS.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
@@ -42,6 +44,11 @@ const SECTIONS = [
 ];
 const goodSheet = SECTIONS.join("\n") + "\n";
 
+// A valid deprecated-sheet pointer: says it is deprecated, links the successor per-sheet file, cites a source.
+// Deprecated sheets are NOT required to carry the control sections or an @security scenario.
+const deprecatedPointer = (succ) =>
+  `# Old (deprecated)\n\nThis sheet is deprecated. Use [successor](references/cheatsheets/${succ}.md).\n\n## Sources\n- OWASP Old Cheat Sheet (https://cheatsheetseries.owasp.org/cheatsheets/Old_Cheat_Sheet.html, retrieved 2026-10-11): deprecated. [documented]\n`;
+
 // Build a fixture skill dir. sheets = {slug: {done, category?, body?}}; indexSlugs = which slugs SKILL.md routes
 // to. Sheets get a default category "General" unless one is given, and the generated SKILL.md groups them under
 // "### <category> (done/total)" headings (the real catalog shape) so the grouping gate has an owner to check.
@@ -62,7 +69,7 @@ function fixture({ manifestSheets, files = {}, indexSlugs = null, skill = null }
   for (const [cat, arr] of groups) {
     const done = arr.filter((s) => s.done).length;
     index += `\n### ${cat} (${done}/${arr.length})\n\n| Cheat sheet | File | Status |\n|---|---|---|\n`;
-    for (const s of arr) if (routed.has(s.slug)) index += `| ${s.slug} | references/cheatsheets/${s.slug}.md | ${s.done ? "done" : "pending"} |\n`;
+    for (const s of arr) if (routed.has(s.slug)) index += `| ${s.slug} | references/cheatsheets/${s.slug}.md | ${s.deprecated ? "deprecated" : s.done ? "done" : "pending"} |\n`;
   }
   writeFileSync(join(dir, "SKILL.md"), skill != null ? skill : `# owasp\n\n## The cheat-sheet catalog\n${index}\n`);
   return dir;
@@ -233,6 +240,42 @@ test("FAIL: a manifest sheet missing its category (exit 1, fail closed)", () => 
   const r = run(dir);
   assert.equal(r.status, 1);
   assert.match(r.out, /has no "category"/);
+});
+
+test("PASS: a deprecated sheet is a pointer (no control sections / @security needed)", () => {
+  const dir = fixture({
+    manifestSheets: [
+      { slug: "Old", title: "Old", url: "u", done: true, deprecated: true, supersededBy: "New", category: "Auth" },
+      { slug: "New", title: "New", url: "u", done: true, category: "Auth" },
+    ],
+    files: { "Old.md": deprecatedPointer("New"), "New.md": goodSheet },
+  });
+  const r = run(dir);
+  assert.equal(r.status, 0, r.out);
+});
+
+test("FAIL: a deprecated sheet that does not link its successor (exit 1, discriminating)", () => {
+  const dir = fixture({
+    manifestSheets: [
+      { slug: "Old", title: "Old", url: "u", done: true, deprecated: true, supersededBy: "New", category: "Auth" },
+      { slug: "New", title: "New", url: "u", done: true, category: "Auth" },
+    ],
+    // pointer with no successor link
+    files: { "Old.md": "# Old (deprecated)\n\nThis sheet is deprecated.\n\n## Sources\n- OWASP (https://cheatsheetseries.owasp.org/cheatsheets/Old_Cheat_Sheet.html, retrieved 2026-10-11). [documented]\n", "New.md": goodSheet },
+  });
+  const r = run(dir);
+  assert.equal(r.status, 1);
+  assert.match(r.out, /deprecated but does not link its successor/);
+});
+
+test("FAIL: a deprecated sheet whose supersededBy is not a manifest slug (exit 1, discriminating)", () => {
+  const dir = fixture({
+    manifestSheets: [{ slug: "Old", title: "Old", url: "u", done: true, deprecated: true, supersededBy: "Ghost", category: "Auth" }],
+    files: { "Old.md": deprecatedPointer("Ghost") },
+  });
+  const r = run(dir);
+  assert.equal(r.status, 1);
+  assert.match(r.out, /supersededBy" is missing or not a manifest slug/);
 });
 
 test("FAIL CLOSED: empty manifest (exit 2)", () => {

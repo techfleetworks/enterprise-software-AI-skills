@@ -91,6 +91,7 @@ section, a citation, an executable `@security` scenario, and an entry in this in
 
 
 
+
 ### Frontend & browser (16/16)
 
 | Cheat sheet | File | Status |
@@ -148,20 +149,20 @@ section, a citation, an executable `@security` scenario, and an entry in this in
 | [Email Validation and Verification](references/cheatsheets/Email_Validation_and_Verification.md) | `references/cheatsheets/Email_Validation_and_Verification.md` | done |
 | [Bot Management and Anti-Automation](references/cheatsheets/Bot_Management_and_Anti-Automation.md) | `references/cheatsheets/Bot_Management_and_Anti-Automation.md` | done |
 
-### Backend: authorization & access control (0/10)
+### Backend: authorization & access control (10/10)
 
 | Cheat sheet | File | Status |
 |---|---|---|
-| Access Control | `references/cheatsheets/Access_Control.md` | pending |
-| Authorization | `references/cheatsheets/Authorization.md` | pending |
-| Authorization Decisions And Output Handling | `references/cheatsheets/Authorization_Decisions_And_Output_Handling.md` | pending |
-| Authorization Patterns | `references/cheatsheets/Authorization_Patterns.md` | pending |
-| Authorization Policy And Data Distribution | `references/cheatsheets/Authorization_Policy_And_Data_Distribution.md` | pending |
-| Authorization Regression Testing | `references/cheatsheets/Authorization_Regression_Testing.md` | pending |
-| Authorization Testing Automation | `references/cheatsheets/Authorization_Testing_Automation.md` | pending |
-| Insecure Direct Object Reference Prevention | `references/cheatsheets/Insecure_Direct_Object_Reference_Prevention.md` | pending |
-| Transaction Authorization | `references/cheatsheets/Transaction_Authorization.md` | pending |
-| Business Logic Security | `references/cheatsheets/Business_Logic_Security.md` | pending |
+| [Access Control](references/cheatsheets/Access_Control.md) | `references/cheatsheets/Access_Control.md` | deprecated |
+| [Authorization](references/cheatsheets/Authorization.md) | `references/cheatsheets/Authorization.md` | done |
+| [Authorization Decisions And Output Handling](references/cheatsheets/Authorization_Decisions_And_Output_Handling.md) | `references/cheatsheets/Authorization_Decisions_And_Output_Handling.md` | done |
+| [Authorization Patterns](references/cheatsheets/Authorization_Patterns.md) | `references/cheatsheets/Authorization_Patterns.md` | done |
+| [Authorization Policy And Data Distribution](references/cheatsheets/Authorization_Policy_And_Data_Distribution.md) | `references/cheatsheets/Authorization_Policy_And_Data_Distribution.md` | done |
+| [Authorization Regression Testing](references/cheatsheets/Authorization_Regression_Testing.md) | `references/cheatsheets/Authorization_Regression_Testing.md` | done |
+| [Authorization Testing Automation](references/cheatsheets/Authorization_Testing_Automation.md) | `references/cheatsheets/Authorization_Testing_Automation.md` | done |
+| [Insecure Direct Object Reference Prevention](references/cheatsheets/Insecure_Direct_Object_Reference_Prevention.md) | `references/cheatsheets/Insecure_Direct_Object_Reference_Prevention.md` | done |
+| [Transaction Authorization](references/cheatsheets/Transaction_Authorization.md) | `references/cheatsheets/Transaction_Authorization.md` | done |
+| [Business Logic Security](references/cheatsheets/Business_Logic_Security.md) | `references/cheatsheets/Business_Logic_Security.md` | done |
 
 ### Backend: handling, output & resources (0/8)
 
