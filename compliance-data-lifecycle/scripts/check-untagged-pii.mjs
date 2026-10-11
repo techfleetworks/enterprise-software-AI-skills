@@ -14,8 +14,10 @@
  * [{"field":"users.email","class":"restricted","basis":"...","retention":"..."}].
  * A field key is "table.column" or a bare "column". Recognized classes:
  *   public | internal | confidential | restricted | not-personal
- * A false positive (a name that looks like PII but isn't — e.g. `company_name`) is resolved the
- * honest way: DECLARE it in the map as `not-personal`. That records the decision instead of hiding it.
+ * A false positive (a name that looks like PII but isn't — e.g. a shared-inbox `support.email`) is
+ * resolved the honest way: DECLARE it as `not-personal`. That records the decision instead of hiding
+ * it — and a `not-personal` entry MUST be table-qualified (`support.email`, not a bare `email`) so an
+ * exemption can't blanket-clear a same-named real-PII column in another table.
  *
  * Exit 0 = every PII-looking column is classified. 1 = one or more undeclared. 2 = bad usage / IO.
  *
@@ -49,7 +51,14 @@ function declare(field, cls) {
   if (!cls || !CLASSES.has(String(cls).toLowerCase())) {
     die(`data map entry "${field}" has an invalid class "${cls}" (use: ${[...CLASSES].join(", ")})`);
   }
-  declared.set(String(field).toLowerCase(), String(cls).toLowerCase());
+  const key = String(field).toLowerCase();
+  // A bare (table-less) "not-personal" would exempt that column name in EVERY table — a blanket
+  // waiver that could silently clear real PII elsewhere. An exemption must name its exact column.
+  if (cls.toLowerCase() === "not-personal" && !key.includes(".")) {
+    die(`data map entry "${field}" is "not-personal" with a bare key — qualify it as table.column ` +
+      `(e.g. support.email) so the exemption can't blanket-clear a same-named PII column in another table`);
+  }
+  declared.set(key, cls.toLowerCase());
 }
 if (Array.isArray(rawMap)) {
   for (const e of rawMap) { if (!e || !e.field) die("array data map entries need a \"field\""); declare(e.field, e.class); }
@@ -60,7 +69,8 @@ if (Array.isArray(rawMap)) {
 // --- PII name heuristic (tunable; applied to the separator-normalized column name) ----------------
 const PII_INDICATORS = [
   /email/, /phone|mobile|telephone/, /\bssn\b|social security/, /passport/, /national id/, /tax id/,
-  /\bdob\b|date of birth|birth date|birthday/, /first name|last name|full name|surname|given name|maiden/,
+  /\bdob\b|date of birth|birth date|birthday/, /first name|last name|full name|fullname|surname|given name|maiden/,
+  /user ?name|nickname|display name|\bhandle\b/,
   /\baddress\b|street|postcode|post code|\bzip\b|zipcode/, /ip address/, /credit card|card number|\bcvv\b|\biban\b/,
   /latitude|longitude|\blat\b|\blng\b|coordinates/, /drivers licen[sc]e|driver licen[sc]e/,
   /\bgender\b|ethnicit|\brace\b|religion|biometric|\bhealth\b|medical/,
@@ -70,6 +80,13 @@ const looksLikePII = (name) => { const n = normalize(name); return PII_INDICATOR
 
 // --- collect columns from SQL (line-oriented) --------------------------------
 const CONSTRAINT = /^\s*(constraint|primary|foreign|unique|check|exclude|like|partition|index)\b/i;
+const KW = new Set(["constraint", "primary", "foreign", "unique", "check", "exclude", "column", "if"]);
+// Count parens with string literals neutralized, so a `DEFAULT ')'` can't drive the depth negative
+// and silently end a CREATE block early (which would skip every later column, incl. PII).
+const parenDelta = (s) => {
+  const t = s.replace(/'(?:[^']|'')*'/g, "''");
+  return (t.match(/\(/g) || []).length - (t.match(/\)/g) || []).length;
+};
 function collectColumns(sql, file) {
   const out = []; // {table, column, line}
   const lines = sql.split(/\r?\n/);
@@ -79,7 +96,8 @@ function collectColumns(sql, file) {
     const createM = raw.match(/create\s+table\s+(?:if\s+not\s+exists\s+)?"?([\w.]+)"?\s*\(/i);
     if (createM) {
       table = createM[1];
-      depth = (raw.match(/\(/g) || []).length - (raw.match(/\)/g) || []).length;
+      depth = parenDelta(raw);
+      if (depth <= 0) table = null; // single-line CREATE closes immediately (its inline cols are out of scope)
       continue;
     }
     if (table) {
@@ -87,12 +105,19 @@ function collectColumns(sql, file) {
         const colM = raw.match(/^\s*"?([A-Za-z_]\w*)"?\s+\S/);
         if (colM) out.push({ table, column: colM[1], line: i + 1 });
       }
-      depth += (raw.match(/\(/g) || []).length - (raw.match(/\)/g) || []).length;
+      depth += parenDelta(raw);
       if (depth <= 0) table = null; // left the CREATE TABLE block
       continue;
     }
-    const addM = raw.match(/\balter\s+table\s+"?([\w.]+)"?[\s\S]*?\badd\s+(?:column\s+)?"?([A-Za-z_]\w*)"?/i);
-    if (addM) out.push({ table: addM[1], column: addM[2], line: i + 1 });
+    // ALTER TABLE [ONLY] t ADD [COLUMN] [IF NOT EXISTS] name  — scan EVERY add on the line.
+    const alterM = raw.match(/\balter\s+table\s+(?:only\s+)?"?([\w.]+)"?/i);
+    if (alterM) {
+      const addRe = /\badd\s+(?:column\s+)?(?:if\s+not\s+exists\s+)?"?([A-Za-z_]\w*)"?/gi;
+      let a;
+      while ((a = addRe.exec(raw))) {
+        if (!KW.has(a[1].toLowerCase())) out.push({ table: alterM[1], column: a[1], line: i + 1 });
+      }
+    }
   }
   return out.map((c) => ({ ...c, file }));
 }

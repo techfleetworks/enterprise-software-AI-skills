@@ -64,6 +64,40 @@ test("a name that looks like PII but isn't is resolved by declaring it not-perso
   assert.equal(run(sql, { "support.email": "not-personal" }).status, 0);
 });
 
+// --- false-negative gaps closed (backfilled from the fresh-context review) ----
+test("FLAGS `ADD COLUMN IF NOT EXISTS <pii>` (idempotent-migration idiom, discriminating — #1)", () => {
+  const r = run("ALTER TABLE t ADD COLUMN IF NOT EXISTS email text;\n", {});
+  assert.equal(r.status, 1, r.out);
+  assert.match(r.out, /t\.email/);
+});
+test("FLAGS every column in a multi-ADD ALTER, not just the first (#4)", () => {
+  const r = run("ALTER TABLE t ADD COLUMN email text, ADD COLUMN ssn text;\n", { "t.email": "restricted" });
+  assert.equal(r.status, 1, r.out);
+  assert.match(r.out, /t\.ssn/);
+});
+test("FLAGS `username` (direct identifier) while leaving bare `name` unflagged by design (#3)", () => {
+  const r = run("CREATE TABLE t (\n  id bigint,\n  name text,\n  username text\n);\n", {});
+  assert.equal(r.status, 1, r.out);
+  assert.match(r.out, /t\.username/);
+  assert.doesNotMatch(r.out, /t\.name\b/);
+});
+test("attributes the table correctly for `ALTER TABLE ONLY schema.t` (#6)", () => {
+  const r = run("ALTER TABLE ONLY public.users ADD COLUMN email text;\n", {});
+  assert.equal(r.status, 1, r.out);
+  assert.match(r.out, /public\.users\.email/);
+  assert.doesNotMatch(r.out, /only\.email/i);
+});
+test("a stray `)` in a DEFAULT literal does not end the CREATE block early (#5)", () => {
+  const r = run("CREATE TABLE t (\n  note text DEFAULT ')',\n  email text\n);\n", {});
+  assert.equal(r.status, 1, r.out); // email must still be reached + flagged
+  assert.match(r.out, /t\.email/);
+});
+test("rejects a bare not-personal key so it can't blanket-exempt another table's PII (#2)", () => {
+  const sql = "CREATE TABLE users (\n  id bigint,\n  email text\n);\n";
+  const r = run(sql, { email: "not-personal" }); // bare not-personal → must be rejected (exit 2)
+  assert.equal(r.status, 2, r.out);
+});
+
 // --- fail closed -------------------------------------------------------------
 test("fails closed (exit 2) on an invalid class in the map", () => {
   assert.equal(run(USERS, { "users.email": "secret-sauce", "users.phone": "restricted" }).status, 2);

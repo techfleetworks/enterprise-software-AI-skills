@@ -35,9 +35,13 @@ Chosen option: "the untagged-PII gate." It reads column names from `CREATE TABLE
 `ADD COLUMN` (line-oriented), flags any whose name matches a tunable PII heuristic, and fails unless
 each is declared in a committed JSON data map with a recognized class
 (`public|internal|confidential|restricted|not-personal`). A name that looks like PII but isn't is
-declared `not-personal` — the decision is recorded, not suppressed. The gate deliberately checks
-*presence of a classification*, not the correctness of lawful-basis/retention (which need human
-judgment); it makes the omission impossible, not the judgment automatic.
+declared `not-personal` — the decision is recorded, not suppressed, and a `not-personal` entry must be
+table-qualified so an exemption can't blanket-clear a same-named PII column in another table. The gate
+deliberately checks *presence of a classification*, not the correctness of lawful-basis/retention
+(which need human judgment); it makes the omission impossible, not the judgment automatic. The
+extractor handles `ADD COLUMN [IF NOT EXISTS]`, multi-`ADD` ALTERs, `ALTER TABLE ONLY`, and neutralizes
+string literals when tracking `CREATE` block depth, so the common idempotent-migration idioms don't
+produce a silent miss.
 
 ### Consequences
 
@@ -48,10 +52,12 @@ judgment); it makes the omission impossible, not the judgment automatic.
 
 ### Confirmation
 
-`test/untagged-pii.test.mjs` (9 tests): a fully-classified schema passes (table-qualified and bare
+`test/untagged-pii.test.mjs` (15 tests): a fully-classified schema passes (table-qualified and bare
 keys); an undeclared `phone`/`ssn` fails with the field named; non-PII columns and `CONSTRAINT` lines
-are ignored; a false positive declared `not-personal` passes; an invalid class, a missing map, and a
-zero-scan each fail closed (exit 2). All run in CI via `npm test`.
+are ignored; a table-qualified `not-personal` passes while a bare `not-personal` is rejected; the
+false-negative idioms are covered — `ADD COLUMN IF NOT EXISTS`, multi-`ADD`, `username` (with bare
+`name` left unflagged by design), `ALTER TABLE ONLY`, and a stray `)` in a `DEFAULT` literal; an
+invalid class, a missing map, and a zero-scan each fail closed (exit 2). All run in CI via `npm test`.
 
 ## More Information
 
