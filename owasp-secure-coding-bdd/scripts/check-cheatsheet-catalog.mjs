@@ -5,11 +5,16 @@
 // references/cheatsheets/<Slug>.md. This gate keeps that catalog honest and lets it grow one cluster at a
 // time (a ratchet) without ever shipping an empty or orphaned file:
 //
-//   - references/cheatsheets-manifest.json is the authoritative list of all sheets (slug, title, url, done).
+//   - references/cheatsheets-manifest.json is the authoritative list of all sheets (slug, title, url, done,
+//     and a stack-layer category). It owns the category; SKILL.md's grouped index is a view of it.
 //   - For every manifest entry with "done": true, the file must exist, carry every required template
 //     section, cite at least one source URL, and be listed in SKILL.md's routing index.
 //   - Every .md actually in references/cheatsheets/ must correspond to a manifest entry (no orphans), and any
 //     file for a sheet must have done:true (a file present but marked not-done is a lie about status).
+//   - SKILL.md groups sheets by category under "### <category> (done/total)" headings; the grouping, the
+//     counts, which sheet sits under which heading, and each row's done/pending Status must match the
+//     manifest, and every sheet must have a category (so the grouped index cannot drift and no sheet slips in
+//     uncategorized).
 //   - It reports progress (done / total) so the migration toward all sheets is visible, and fails closed.
 //
 // Dependency-free. Exit 0 = pass, 1 = catalog violation, 2 = bad usage / unreadable / empty.
@@ -128,6 +133,59 @@ for (const s of sheets) {
 for (const slug of indexedSlugs) {
   if (!bySlug.has(slug)) violations.push(`SKILL.md routing index lists ${slug}, which has no manifest entry`);
 }
+
+// 4. Grouping consistency: the catalog groups sheets by stack-layer `category` under "### <category>
+// (done/total)" headings. That grouping, the counts, and which sheet sits under which heading are a derivable
+// view of the manifest (the single owner of `category`), so without a gate they drift as sheets are added or
+// flipped to done. Every sheet must carry a category (fail closed) so a new one cannot slip in uncategorized.
+const manifestGroups = new Map();
+for (const s of sheets) {
+  if (!s.slug) continue; // already reported above
+  if (!s.category) { violations.push(`${s.slug}: manifest entry has no "category" (every sheet must be grouped by stack layer)`); continue; }
+  let g = manifestGroups.get(s.category);
+  if (!g) { g = { total: 0, done: 0, slugs: new Set() }; manifestGroups.set(s.category, g); }
+  g.total++; if (s.done) g.done++; g.slugs.add(s.slug);
+}
+// Parse every "### <name> (<done>/<total>)" heading in SKILL.md and the sheet files listed beneath it (up to
+// the next ### or ## heading). Headings without a (n/n) count — e.g. the threat-model steps — are ignored.
+const skillGroups = new Map();
+for (const m of skillText.matchAll(/\n### (.+?) \((\d+)\/(\d+)\)[^\n]*\n/g)) {
+  const name = m[1].trim();
+  const blockStart = m.index + m[0].length;
+  const nextH3 = skillText.indexOf("\n### ", blockStart);
+  const nextH2 = skillText.indexOf("\n## ", blockStart);
+  let end = skillText.length;
+  if (nextH3 !== -1) end = Math.min(end, nextH3);
+  if (nextH2 !== -1) end = Math.min(end, nextH2);
+  const block = skillText.slice(blockStart, end);
+  // Parse each table row for its slug and (if present) its done/pending Status cell. Status is also derived
+  // from the manifest, so it is checked too: a row could otherwise show the wrong status with the count right.
+  const slugs = new Set();
+  const status = new Map();
+  for (const line of block.split("\n")) {
+    const sm = line.match(/references\/cheatsheets\/([A-Za-z0-9_.-]+)\.md/);
+    if (!sm) continue;
+    slugs.add(sm[1]);
+    const st = line.match(/\|\s*(done|pending)\s*\|/);
+    if (st) status.set(sm[1], st[1]);
+  }
+  skillGroups.set(name, { done: Number(m[2]), total: Number(m[3]), slugs, status });
+}
+for (const [cat, mg] of manifestGroups) {
+  const sg = skillGroups.get(cat);
+  if (!sg) { violations.push(`SKILL.md is missing the "### ${cat} (${mg.done}/${mg.total})" group heading`); continue; }
+  if (sg.done !== mg.done || sg.total !== mg.total) {
+    violations.push(`SKILL.md "### ${cat}" shows (${sg.done}/${sg.total}) but the manifest has ${mg.done}/${mg.total} for that category`);
+  }
+  for (const slug of mg.slugs) {
+    if (!sg.slugs.has(slug)) { violations.push(`${slug}: manifest category "${cat}" but not listed under that heading in SKILL.md`); continue; }
+    const want = bySlug.get(slug).done ? "done" : "pending";
+    const got = sg.status.get(slug);
+    if (got && got !== want) violations.push(`SKILL.md lists ${slug} as "${got}" but the manifest has it ${want}`);
+  }
+  for (const slug of sg.slugs) if (!mg.slugs.has(slug)) violations.push(`SKILL.md lists ${slug} under "${cat}", but the manifest assigns it a different category`);
+}
+for (const cat of skillGroups.keys()) if (!manifestGroups.has(cat)) violations.push(`SKILL.md has a "### ${cat}" group with no matching manifest category`);
 
 const total = sheets.length;
 if (violations.length) {

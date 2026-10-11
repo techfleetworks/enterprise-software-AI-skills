@@ -4,7 +4,10 @@
 // skill dir (scripts/ + references/ + SKILL.md) and runs it there (the copy-into-fixture pattern from
 // check-test-patterns.md). Covered: a compliant catalog passes; a done sheet missing its file, a file missing
 // a required section, a Sources block with no URL, a done file not indexed in SKILL.md, an orphan file, and a
-// file present but marked done:false all FAIL (exit 1); an empty/missing manifest fails closed (exit 2).
+// file present but marked done:false all FAIL (exit 1); an empty/missing manifest fails closed (exit 2). The
+// stack-layer grouping is gated too: a correct multi-category grouping passes, while a wrong (done/total)
+// count, a sheet filed under the wrong category, a wrong done/pending Status cell, a category heading the
+// manifest lacks, and a manifest sheet with no category all FAIL.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
@@ -39,19 +42,29 @@ const SECTIONS = [
 ];
 const goodSheet = SECTIONS.join("\n") + "\n";
 
-// Build a fixture skill dir. sheets = {slug: {done, body?}}; indexSlugs = which slugs SKILL.md routes to.
+// Build a fixture skill dir. sheets = {slug: {done, category?, body?}}; indexSlugs = which slugs SKILL.md routes
+// to. Sheets get a default category "General" unless one is given, and the generated SKILL.md groups them under
+// "### <category> (done/total)" headings (the real catalog shape) so the grouping gate has an owner to check.
 function fixture({ manifestSheets, files = {}, indexSlugs = null, skill = null }) {
   const dir = mkdtempSync(join(tmpdir(), "owasp-cat-"));
   mkdirSync(join(dir, "scripts"), { recursive: true });
   mkdirSync(join(dir, "references", "cheatsheets"), { recursive: true });
   cpSync(REAL_GATE, join(dir, "scripts", "check-cheatsheet-catalog.mjs"));
-  if (manifestSheets !== undefined) {
-    writeFileSync(join(dir, "references", "cheatsheets-manifest.json"), JSON.stringify({ count: manifestSheets.length, sheets: manifestSheets }, null, 2));
+  const withCat = manifestSheets === undefined ? undefined : manifestSheets.map((s) => ({ ...s, category: s.category || "General" }));
+  if (withCat !== undefined) {
+    writeFileSync(join(dir, "references", "cheatsheets-manifest.json"), JSON.stringify({ count: withCat.length, sheets: withCat }, null, 2));
   }
   for (const [name, body] of Object.entries(files)) writeFileSync(join(dir, "references", "cheatsheets", name), body);
-  const routed = indexSlugs || (manifestSheets || []).map((s) => s.slug);
-  const index = routed.map((s) => `| ${s} | references/cheatsheets/${s}.md |`).join("\n");
-  writeFileSync(join(dir, "SKILL.md"), skill != null ? skill : `# owasp\n\n## Routing index\n${index}\n`);
+  const routed = new Set(indexSlugs || (withCat || []).map((s) => s.slug));
+  const groups = new Map();
+  for (const s of withCat || []) { if (!groups.has(s.category)) groups.set(s.category, []); groups.get(s.category).push(s); }
+  let index = "";
+  for (const [cat, arr] of groups) {
+    const done = arr.filter((s) => s.done).length;
+    index += `\n### ${cat} (${done}/${arr.length})\n\n| Cheat sheet | File | Status |\n|---|---|---|\n`;
+    for (const s of arr) if (routed.has(s.slug)) index += `| ${s.slug} | references/cheatsheets/${s.slug}.md | ${s.done ? "done" : "pending"} |\n`;
+  }
+  writeFileSync(join(dir, "SKILL.md"), skill != null ? skill : `# owasp\n\n## The cheat-sheet catalog\n${index}\n`);
   return dir;
 }
 
@@ -150,6 +163,76 @@ test("FAIL: a file present but manifest says done:false (exit 1, discriminating)
   const r = run(dir);
   assert.equal(r.status, 1);
   assert.match(r.out, /manifest says done:false/);
+});
+
+test("PASS: a correct multi-category grouping with matching counts", () => {
+  const dir = fixture({
+    manifestSheets: [
+      { slug: "Aaa", title: "A", url: "u", done: true, category: "Frontend" },
+      { slug: "Bbb", title: "B", url: "u", done: false, category: "Backend" },
+    ],
+    files: { "Aaa.md": goodSheet },
+  });
+  const r = run(dir);
+  assert.equal(r.status, 0, r.out);
+});
+
+test("FAIL: a group heading whose counts disagree with the manifest (exit 1, discriminating)", () => {
+  const dir = fixture({
+    manifestSheets: [{ slug: "Example", title: "E", url: "u", done: true, category: "Frontend" }],
+    files: { "Example.md": goodSheet },
+    skill: "# owasp\n\n## The cheat-sheet catalog\n\n### Frontend (0/1)\n\n| x | references/cheatsheets/Example.md |\n",
+  });
+  const r = run(dir);
+  assert.equal(r.status, 1);
+  assert.match(r.out, /shows \(0\/1\) but the manifest has 1\/1/);
+});
+
+test("FAIL: two sheets swapped between category headings (exit 1, discriminating)", () => {
+  // Each heading's counts match, but the sheets are filed under the wrong category — the membership check.
+  const dir = fixture({
+    manifestSheets: [
+      { slug: "Aaa", title: "A", url: "u", done: true, category: "Frontend" },
+      { slug: "Bbb", title: "B", url: "u", done: true, category: "Backend" },
+    ],
+    files: { "Aaa.md": goodSheet, "Bbb.md": goodSheet },
+    skill: "# owasp\n\n## The cheat-sheet catalog\n\n### Frontend (1/1)\n\n| x | references/cheatsheets/Bbb.md |\n\n### Backend (1/1)\n\n| x | references/cheatsheets/Aaa.md |\n",
+  });
+  const r = run(dir);
+  assert.equal(r.status, 1);
+  assert.match(r.out, /Aaa: manifest category "Frontend" but not listed under that heading/);
+});
+
+test("FAIL: a category heading the manifest does not have (exit 1, discriminating)", () => {
+  const dir = fixture({
+    manifestSheets: [{ slug: "Example", title: "E", url: "u", done: true, category: "Frontend" }],
+    files: { "Example.md": goodSheet },
+    skill: "# owasp\n\n## The cheat-sheet catalog\n\n### Frontend (1/1)\n\n| x | references/cheatsheets/Example.md |\n\n### Imaginary (0/0)\n\n(none)\n",
+  });
+  const r = run(dir);
+  assert.equal(r.status, 1);
+  assert.match(r.out, /"### Imaginary" group with no matching manifest category/);
+});
+
+test("FAIL: a row whose Status cell disagrees with the manifest done flag (exit 1, discriminating)", () => {
+  // Heading count is correct (1/1) and the sheet is listed, but its Status cell says pending while it is done.
+  const dir = fixture({
+    manifestSheets: [{ slug: "Example", title: "E", url: "u", done: true, category: "Frontend" }],
+    files: { "Example.md": goodSheet },
+    skill: "# owasp\n\n## The cheat-sheet catalog\n\n### Frontend (1/1)\n\n| Cheat sheet | File | Status |\n|---|---|---|\n| Example | references/cheatsheets/Example.md | pending |\n",
+  });
+  const r = run(dir);
+  assert.equal(r.status, 1);
+  assert.match(r.out, /lists Example as "pending" but the manifest has it done/);
+});
+
+test("FAIL: a manifest sheet missing its category (exit 1, fail closed)", () => {
+  const dir = fixture({ manifestSheets: [{ slug: "Example", title: "E", url: "u", done: true }], files: { "Example.md": goodSheet } });
+  // Rewrite the manifest with no category to prove the gate rejects an uncategorized sheet.
+  writeFileSync(join(dir, "references", "cheatsheets-manifest.json"), JSON.stringify({ count: 1, sheets: [{ slug: "Example", title: "E", url: "u", done: true }] }, null, 2));
+  const r = run(dir);
+  assert.equal(r.status, 1);
+  assert.match(r.out, /has no "category"/);
 });
 
 test("FAIL CLOSED: empty manifest (exit 2)", () => {

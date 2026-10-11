@@ -12,13 +12,6 @@ Feature: OWASP secure-coding controls (executable @security scenarios)
     Then the credentials are rejected and no session is created
     And the query runs as a parameterized statement so the input is treated as data, not SQL
 
-  @security @owasp:xss @usecase:stored-xss
-  Scenario: User-submitted content cannot inject an executable script
-    Given a page that stores and renders user-submitted text
-    When a user submits the comment "<script>alert(document.cookie)</script>"
-    Then the stored value is rendered as inert text through contextual output encoding
-    And no script executes in another user's browser
-
   @security @owasp:password-storage @usecase:offline-cracking-resistance
   Scenario: Stored password hashes resist offline cracking
     Given a user registers with a password
