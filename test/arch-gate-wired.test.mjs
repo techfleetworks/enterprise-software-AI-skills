@@ -34,6 +34,8 @@ const REQUIRED_INCLUDE = [
   "judge-arch/SKILL.md",
   "comprehensive-test-strategy/SKILL.md",
   "verifiable-quality-gates/SKILL.md",
+  "owasp-secure-coding-bdd/SKILL.md",
+  "owasp-secure-coding-bdd/references/cheatsheets/*.md",
   "docs/arch-reviews/README.md",
   "docs/audit/README.md",
 ];
