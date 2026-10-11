@@ -63,6 +63,31 @@ test("a targeted ignore=rule suppresses only that rule", () => {
   assert.equal(run("const o = { algorithms: ['none'] }; // owasp-lint:ignore=jwt-alg-none accepted risk, see ADR\n").status, 0);
 });
 
+// --- fixes from the fresh-context review -------------------------------------
+test("an ignore INSIDE a multi-line cookie call is honored (span-wide, #1 discriminating)", () => {
+  const code = "res.cookie('sid', v, {\n  httpOnly: true // owasp-lint:ignore reviewed exception, legacy flow\n});\n";
+  assert.equal(run(code).status, 0, run(code).out);
+});
+test("FLAGS a 2-arg res.cookie(name, val) with no options at all", () => {
+  assert.equal(run("res.cookie('sid', v);\n").status, 1);
+});
+test("does NOT over-blank a JS `#private` field — alg:none on the same line is still caught (#3)", () => {
+  const code = "class C {\n  #x = 1; const o = { algorithms: ['none'] };\n}\n";
+  const r = run(code, "js");
+  assert.equal(r.status, 1, r.out);
+  assert.match(r.out, /jwt-alg-none/);
+});
+test("still strips a Python `#` comment (alg:none in a .py comment is not flagged)", () => {
+  assert.equal(run("x = 1  # algorithms: ['none'] is wrong\n", "py").status, 0);
+});
+test("the shared-options-object idiom is a (documented) false positive, suppressible inline", () => {
+  // Honest: flags of a variable-passed opts object can't be seen textually → flagged, resolved by ignore.
+  const bad = "const opts = { httpOnly: true, secure: true, sameSite: 'lax' };\nres.cookie('sid', v, opts);\n";
+  assert.equal(run(bad).status, 1); // documented limitation
+  const ok = "const opts = { httpOnly: true, secure: true, sameSite: 'lax' };\nres.cookie('sid', v, opts); // owasp-lint:ignore flags via shared opts object\n";
+  assert.equal(run(ok).status, 0); // the sanctioned escape works
+});
+
 // --- fail closed / scope -----------------------------------------------------
 test("fails closed (exit 2) when no source files are found", () => {
   const dir = mkdtempSync(join(tmpdir(), "owasp-empty-"));

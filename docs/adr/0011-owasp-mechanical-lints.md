@@ -44,16 +44,17 @@ and a reviewed exception uses an inline `// owasp-lint:ignore <reason>` (reason 
 
 * Good, because the `alg:none` bypass and flagless cookies — both common, both severe — now fail CI instead of relying on a reviewer to spot them.
 * Good, because refusing to ship a regex SSRF lint keeps the gate credible: every finding it raises is a real defect, so the gate won't be disabled as noisy.
-* Bad (honest limit), because the cookie check is span/heuristic-based (not a parser): an unusual cookie-setting idiom or a flag set far from the call can over- or under-match; the inline ignore and the test fixtures bound this.
+* Bad (honest limit), because the cookie check is span/heuristic-based (not a parser): specifically, a shared cookie-options object passed by variable (`const opts = {...}; res.cookie(n, v, opts)`) is a false positive because the flags aren't textually in the call — resolve it with an inline `// owasp-lint:ignore <reason>`. And `jwt-alg-none` flags only a literal `none`; *forgetting to pin `algorithms` entirely* (the RS256→HS256 confusion exposure) is out of scope for a text lint and belongs in a `@security` scenario + library config.
 * Neutral, because it is a reference gate an adopting repo points at its source tree in CI, complementing (not replacing) the `@security` BDD suite.
 
 ### Confirmation
 
-`test/owasp-lints.test.mjs` (13 tests): `algorithms:['none']` / `"alg":"none"` fail while a pinned
+`test/owasp-lints.test.mjs` (18 tests): `algorithms:['none']` / `"alg":"none"` fail while a pinned
 `['HS256']` passes and an `alg:'none'` inside a comment does not; a flagful `res.cookie`/`Set-Cookie`
-passes while a missing-`Secure` cookie fails and names the missing flag; a reasoned ignore (bare and
-`=rule`) suppresses while a reason-less one does not; a zero-scan and a no-code-files path fail closed
-(exit 2). All run in CI via `npm test`.
+passes while a missing-`Secure` cookie and a 2-arg `res.cookie(n, v)` fail; an ignore anywhere in a
+multi-line call's span suppresses (reason required; reason-less does not); a JS `#private` field no
+longer over-blanks a same-line finding while a Python `#` comment is still stripped; a zero-scan and a
+no-code-files path fail closed (exit 2). All run in CI via `npm test`.
 
 ## More Information
 
