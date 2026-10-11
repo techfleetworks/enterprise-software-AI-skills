@@ -233,19 +233,19 @@ section, a citation, an executable `@security` scenario, and an entry in this in
 | [Software Supply Chain Security](references/cheatsheets/Software_Supply_Chain_Security.md) | `references/cheatsheets/Software_Supply_Chain_Security.md` | done |
 | [NPM Security](references/cheatsheets/NPM_Security.md) | `references/cheatsheets/NPM_Security.md` | done |
 
-### AI, LLM & agents (0/9)
+### AI, LLM & agents (9/9)
 
 | Cheat sheet | File | Status |
 |---|---|---|
-| AI Agent Security | `references/cheatsheets/AI_Agent_Security.md` | pending |
-| AI-Powered Advertising Systems Security | `references/cheatsheets/AI-Powered_Advertising_Systems_Security.md` | pending |
-| AML Sanctions AI Agent Payments | `references/cheatsheets/AML_Sanctions_AI_Agent_Payments.md` | pending |
-| LLM Prompt Injection Prevention | `references/cheatsheets/LLM_Prompt_Injection_Prevention.md` | pending |
-| MCP Security | `references/cheatsheets/MCP_Security.md` | pending |
-| RAG Security | `references/cheatsheets/RAG_Security.md` | pending |
-| Secure AI Model Ops | `references/cheatsheets/Secure_AI_Model_Ops.md` | pending |
-| Secure Coding with AI | `references/cheatsheets/Secure_Coding_with_AI.md` | pending |
-| Verifying Third Party Agent Execution Evidence | `references/cheatsheets/Verifying_Third_Party_Agent_Execution_Evidence.md` | pending |
+| [AI Agent Security](references/cheatsheets/AI_Agent_Security.md) | `references/cheatsheets/AI_Agent_Security.md` | done |
+| [AI-Powered Advertising Systems Security](references/cheatsheets/AI-Powered_Advertising_Systems_Security.md) | `references/cheatsheets/AI-Powered_Advertising_Systems_Security.md` | done |
+| [AML Sanctions AI Agent Payments](references/cheatsheets/AML_Sanctions_AI_Agent_Payments.md) | `references/cheatsheets/AML_Sanctions_AI_Agent_Payments.md` | done |
+| [LLM Prompt Injection Prevention](references/cheatsheets/LLM_Prompt_Injection_Prevention.md) | `references/cheatsheets/LLM_Prompt_Injection_Prevention.md` | done |
+| [MCP Security](references/cheatsheets/MCP_Security.md) | `references/cheatsheets/MCP_Security.md` | done |
+| [RAG Security](references/cheatsheets/RAG_Security.md) | `references/cheatsheets/RAG_Security.md` | done |
+| [Secure AI Model Ops](references/cheatsheets/Secure_AI_Model_Ops.md) | `references/cheatsheets/Secure_AI_Model_Ops.md` | done |
+| [Secure Coding with AI](references/cheatsheets/Secure_Coding_with_AI.md) | `references/cheatsheets/Secure_Coding_with_AI.md` | done |
+| [Verifying Third Party Agent Execution Evidence](references/cheatsheets/Verifying_Third_Party_Agent_Execution_Evidence.md) | `references/cheatsheets/Verifying_Third_Party_Agent_Execution_Evidence.md` | done |
 
 ### Language & framework guides (0/16)
 
