@@ -9,6 +9,10 @@
 //     and a stack-layer category). It owns the category; SKILL.md's grouped index is a view of it.
 //   - For every manifest entry with "done": true, the file must exist, carry every required template
 //     section, cite at least one source URL, and be listed in SKILL.md's routing index.
+//   - A sheet OWASP has deprecated (manifest "deprecated": true + "supersededBy": "<Slug>") is kept only as a
+//     routing pointer: its file must say it is deprecated, link the successor per-sheet file, and cite a source,
+//     but it is NOT required to carry the control sections or an @security scenario (there is no control to
+//     test); its SKILL.md Status is "deprecated".
 //   - Every .md actually in references/cheatsheets/ must correspond to a manifest entry (no orphans), and any
 //     file for a sheet must have done:true (a file present but marked not-done is a lie about status).
 //   - SKILL.md groups sheets by category under "### <category> (done/total)" headings; the grouping, the
@@ -92,6 +96,22 @@ for (const s of sheets) {
     violations.push(`${s.slug}: marked done but ${rel} is missing`);
     continue;
   }
+  // Deprecated sheets are retained only as routing pointers: OWASP removed the page, so there is no control
+  // prose or @security scenario to require (fabricating one would duplicate the successor's). Instead the file
+  // must say it is deprecated, link the successor per-sheet file, cite the source, and be indexed; the manifest
+  // must name a real successor in "supersededBy".
+  if (s.deprecated) {
+    if (!s.supersededBy || !bySlug.has(s.supersededBy)) {
+      violations.push(`${rel}: deprecated but "supersededBy" is missing or not a manifest slug`);
+    } else if (!body.includes(`references/cheatsheets/${s.supersededBy}.md`)) {
+      violations.push(`${rel}: deprecated but does not link its successor references/cheatsheets/${s.supersededBy}.md`);
+    }
+    if (!/deprecat/i.test(body)) violations.push(`${rel}: marked deprecated but the file does not say it is deprecated`);
+    const dSrc = body.indexOf("## Sources");
+    if (!/https?:\/\/\S+/.test(dSrc === -1 ? "" : body.slice(dSrc))) violations.push(`${rel}: Sources section has no citation URL`);
+    if (!skillText.includes(rel)) violations.push(`${rel}: not indexed in SKILL.md (add it to the routing index)`);
+    continue;
+  }
   for (const sec of REQUIRED_SECTIONS) {
     if (!body.includes(sec)) violations.push(`${rel}: missing required section "${sec}"`);
   }
@@ -166,7 +186,7 @@ for (const m of skillText.matchAll(/\n### (.+?) \((\d+)\/(\d+)\)[^\n]*\n/g)) {
     const sm = line.match(/references\/cheatsheets\/([A-Za-z0-9_.-]+)\.md/);
     if (!sm) continue;
     slugs.add(sm[1]);
-    const st = line.match(/\|\s*(done|pending)\s*\|/);
+    const st = line.match(/\|\s*(done|pending|deprecated)\s*\|/);
     if (st) status.set(sm[1], st[1]);
   }
   skillGroups.set(name, { done: Number(m[2]), total: Number(m[3]), slugs, status });
@@ -179,7 +199,8 @@ for (const [cat, mg] of manifestGroups) {
   }
   for (const slug of mg.slugs) {
     if (!sg.slugs.has(slug)) { violations.push(`${slug}: manifest category "${cat}" but not listed under that heading in SKILL.md`); continue; }
-    const want = bySlug.get(slug).done ? "done" : "pending";
+    const ds = bySlug.get(slug);
+    const want = ds.deprecated ? "deprecated" : (ds.done ? "done" : "pending");
     const got = sg.status.get(slug);
     if (got && got !== want) violations.push(`SKILL.md lists ${slug} as "${got}" but the manifest has it ${want}`);
   }
