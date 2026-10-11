@@ -37,3 +37,23 @@ jobs:
       # Dependency-free; exits non-zero on any violation, which fails the required check (ADR-0015).
       - name: Architecture gate
         run: npm run check:architecture
+
+  # The verbatim gate (ADR-0018) compares each own-words per-sheet file against the EXACT upstream OWASP text,
+  # which is CC-BY-SA-4.0 and therefore NOT committed (it is gitignored and fetched on demand). So this gate,
+  # unlike the dependency-free ones above, needs a network fetch first and runs in its own job on a single Node.
+  # Order matters: vendor the source, THEN run the gate. If the fetch is unavailable the vendored dir is absent
+  # or empty and the gate exits 2 (fail closed), failing this check rather than passing vacuously.
+  owasp-verbatim:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Vendor the upstream OWASP source (CC-BY-SA-4.0, gitignored)
+        run: npm run vendor:owasp
+      - name: Verbatim-overlap gate
+        run: npm run check:verbatim
