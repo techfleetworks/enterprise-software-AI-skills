@@ -44,7 +44,7 @@ Never auto-generate a rules file from the codebase or a prompt. Add one line at 
 
 ### 3. Wire it into the mechanical gate if it is checkable
 
-If the rule can be stated as "pattern X must not appear in glob Y," add it to the repo's architecture-gate config (`arch-gate.config.json`, run by `scripts/arch-gate.mjs`) so CI enforces it, not just prose. A rule that can be mechanical should be. That is the difference between "less likely" and "cannot merge." The book's point: a monitor or a doc is not a fitness function until it has an objective, pass-or-fail outcome (Ch 2), and fitness functions run in CI and the deployment pipeline so they execute on every change to the system (Ch 2).
+If the rule can be stated as "pattern X must not appear in glob Y," add it to the repo's architecture-gate config so CI enforces it, not just prose. The config is `arch-gate.config.json` at the repo root, read by `judge-arch/scripts/arch-gate.mjs`. In this repo it is wired live: `npm run check:architecture` runs the gate against the whole repo, and that command is a required, blocking CI step (ADR-0015). After you add a rule, run `npm run check:architecture` and confirm it reports the planted violation and then passes once the code is fixed. A rule that can be mechanical should be. That is the difference between "less likely" and "cannot merge." The book's point: a monitor or a doc is not a fitness function until it has an objective, pass-or-fail outcome (Ch 2), and fitness functions run in CI and the deployment pipeline so they execute on every change to the system (Ch 2).
 
 ### 4. Prove the rule holds (the test loop, do not skip)
 
@@ -62,7 +62,7 @@ Before finishing, scan the file you edited:
 
 ## Mechanical gate
 
-arch-encode does not ship its own gate; its product is a rule inside the repo's `arch-gate` (`scripts/arch-gate.mjs` reading `arch-gate.config.json`), which is the fitness function that fails CI when the banned pattern appears. A greppable rule is only finished when it lives there. A rule that is genuinely a judgment call (is this abstraction premature?) cannot be a gate rule; it stays in prose and is caught by a `judge-arch` review. Say which kind each rule is.
+arch-encode does not ship its own gate; its product is a rule inside the repo's `arch-gate` (`judge-arch/scripts/arch-gate.mjs` reading the root `arch-gate.config.json`, run by `npm run check:architecture`), which is the fitness function that fails CI when the banned pattern appears. A greppable rule is only finished when it lives there. A rule that is genuinely a judgment call (is this abstraction premature?) cannot be a gate rule; it stays in prose and is caught by a `judge-arch` review. Say which kind each rule is.
 
 ## Before you call it done
 
