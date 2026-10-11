@@ -88,145 +88,208 @@ scenario; `pending` sheets are being migrated from the interim cluster reference
 `check-cheatsheet-catalog.mjs` gate keeps this honest: every `done` sheet must have its file, every required
 section, a citation, an executable `@security` scenario, and an entry in this index.
 
-| # | Cheat sheet | File | Status |
-|---|---|---|---|
-| 1 | Abuse Case | `references/cheatsheets/Abuse_Case.md` | pending |
-| 2 | Access Control | `references/cheatsheets/Access_Control.md` | pending |
-| 3 | AI Agent Security | `references/cheatsheets/AI_Agent_Security.md` | pending |
-| 4 | AI-Powered Advertising Systems Security | `references/cheatsheets/AI-Powered_Advertising_Systems_Security.md` | pending |
-| 5 | AML Sanctions AI Agent Payments | `references/cheatsheets/AML_Sanctions_AI_Agent_Payments.md` | pending |
-| 6 | Attack Surface Analysis | `references/cheatsheets/Attack_Surface_Analysis.md` | pending |
-| 7 | Authentication | `references/cheatsheets/Authentication.md` | pending |
-| 8 | Authentication Patterns | `references/cheatsheets/Authentication_Patterns.md` | pending |
-| 9 | Authorization | `references/cheatsheets/Authorization.md` | pending |
-| 10 | Authorization Decisions And Output Handling | `references/cheatsheets/Authorization_Decisions_And_Output_Handling.md` | pending |
-| 11 | Authorization Patterns | `references/cheatsheets/Authorization_Patterns.md` | pending |
-| 12 | Authorization Policy And Data Distribution | `references/cheatsheets/Authorization_Policy_And_Data_Distribution.md` | pending |
-| 13 | Authorization Regression Testing | `references/cheatsheets/Authorization_Regression_Testing.md` | pending |
-| 14 | Authorization Testing Automation | `references/cheatsheets/Authorization_Testing_Automation.md` | pending |
-| 15 | Automotive Security | `references/cheatsheets/Automotive_Security.md` | pending |
-| 16 | Bean Validation | `references/cheatsheets/Bean_Validation.md` | pending |
-| 17 | Bot Management and Anti-Automation | `references/cheatsheets/Bot_Management_and_Anti-Automation.md` | pending |
-| 18 | Browser Extension Vulnerabilities | `references/cheatsheets/Browser_Extension_Vulnerabilities.md` | pending |
-| 19 | Business Logic Security | `references/cheatsheets/Business_Logic_Security.md` | pending |
-| 20 | C-Based Toolchain Hardening | `references/cheatsheets/C-Based_Toolchain_Hardening.md` | pending |
-| 21 | Choosing and Using Security Questions | `references/cheatsheets/Choosing_and_Using_Security_Questions.md` | pending |
-| 22 | CI CD Security | `references/cheatsheets/CI_CD_Security.md` | pending |
-| 23 | Clickjacking Defense | `references/cheatsheets/Clickjacking_Defense.md` | pending |
-| 24 | Content Security Policy | `references/cheatsheets/Content_Security_Policy.md` | pending |
-| 25 | Cookie Theft Mitigation | `references/cheatsheets/Cookie_Theft_Mitigation.md` | pending |
-| 26 | Credential Stuffing Prevention | `references/cheatsheets/Credential_Stuffing_Prevention.md` | pending |
-| 27 | [Cross Site Scripting Prevention](references/cheatsheets/Cross_Site_Scripting_Prevention.md) | `references/cheatsheets/Cross_Site_Scripting_Prevention.md` | done |
-| 28 | Cross-Site Request Forgery Prevention | `references/cheatsheets/Cross-Site_Request_Forgery_Prevention.md` | pending |
-| 29 | Cryptographic Storage | `references/cheatsheets/Cryptographic_Storage.md` | pending |
-| 30 | Database Security | `references/cheatsheets/Database_Security.md` | pending |
-| 31 | Denial of Service | `references/cheatsheets/Denial_of_Service.md` | pending |
-| 32 | Dependency Graph SBOM | `references/cheatsheets/Dependency_Graph_SBOM.md` | pending |
-| 33 | Deserialization | `references/cheatsheets/Deserialization.md` | pending |
-| 34 | Django REST Framework | `references/cheatsheets/Django_REST_Framework.md` | pending |
-| 35 | Django Security | `references/cheatsheets/Django_Security.md` | pending |
-| 36 | Docker Security | `references/cheatsheets/Docker_Security.md` | pending |
-| 37 | DOM based XSS Prevention | `references/cheatsheets/DOM_based_XSS_Prevention.md` | pending |
-| 38 | DOM Clobbering Prevention | `references/cheatsheets/DOM_Clobbering_Prevention.md` | pending |
-| 39 | DotNet Security | `references/cheatsheets/DotNet_Security.md` | pending |
-| 40 | Drone Security | `references/cheatsheets/Drone_Security.md` | pending |
-| 41 | Email Validation and Verification | `references/cheatsheets/Email_Validation_and_Verification.md` | pending |
-| 42 | Error Handling | `references/cheatsheets/Error_Handling.md` | pending |
-| 43 | FastAPI Security | `references/cheatsheets/FastAPI_Security.md` | pending |
-| 44 | File Upload | `references/cheatsheets/File_Upload.md` | pending |
-| 45 | Forgot Password | `references/cheatsheets/Forgot_Password.md` | pending |
-| 46 | GitHub Actions Security | `references/cheatsheets/GitHub_Actions_Security.md` | pending |
-| 47 | GraphQL | `references/cheatsheets/GraphQL.md` | pending |
-| 48 | gRPC Security | `references/cheatsheets/gRPC_Security.md` | pending |
-| 49 | HTML5 Security | `references/cheatsheets/HTML5_Security.md` | pending |
-| 50 | HTTP Headers | `references/cheatsheets/HTTP_Headers.md` | pending |
-| 51 | HTTP Strict Transport Security | `references/cheatsheets/HTTP_Strict_Transport_Security.md` | pending |
-| 52 | Identity Propagation Patterns | `references/cheatsheets/Identity_Propagation_Patterns.md` | pending |
-| 53 | Infrastructure as Code Security | `references/cheatsheets/Infrastructure_as_Code_Security.md` | pending |
-| 54 | Injection Prevention | `references/cheatsheets/Injection_Prevention.md` | pending |
-| 55 | Injection Prevention in Java | `references/cheatsheets/Injection_Prevention_in_Java.md` | pending |
-| 56 | Input Validation | `references/cheatsheets/Input_Validation.md` | pending |
-| 57 | Insecure Direct Object Reference Prevention | `references/cheatsheets/Insecure_Direct_Object_Reference_Prevention.md` | pending |
-| 58 | JAAS | `references/cheatsheets/JAAS.md` | pending |
-| 59 | Java Security | `references/cheatsheets/Java_Security.md` | pending |
-| 60 | JavaScript and TypeScript Security | `references/cheatsheets/JavaScript_and_TypeScript_Security.md` | pending |
-| 61 | JSON Web Token | `references/cheatsheets/JSON_Web_Token.md` | pending |
-| 62 | Key Management | `references/cheatsheets/Key_Management.md` | pending |
-| 63 | Kubernetes Security | `references/cheatsheets/Kubernetes_Security.md` | pending |
-| 64 | Laravel | `references/cheatsheets/Laravel.md` | pending |
-| 65 | LDAP Injection Prevention | `references/cheatsheets/LDAP_Injection_Prevention.md` | pending |
-| 66 | Legacy Application Management | `references/cheatsheets/Legacy_Application_Management.md` | pending |
-| 67 | LLM Prompt Injection Prevention | `references/cheatsheets/LLM_Prompt_Injection_Prevention.md` | pending |
-| 68 | Logging | `references/cheatsheets/Logging.md` | pending |
-| 69 | Logging Vocabulary | `references/cheatsheets/Logging_Vocabulary.md` | pending |
-| 70 | Mass Assignment | `references/cheatsheets/Mass_Assignment.md` | pending |
-| 71 | MCP Security | `references/cheatsheets/MCP_Security.md` | pending |
-| 72 | Micro Frontend Security | `references/cheatsheets/Micro_Frontend_Security.md` | pending |
-| 73 | Microservices based Security Arch Doc | `references/cheatsheets/Microservices_based_Security_Arch_Doc.md` | pending |
-| 74 | Microservices Security | `references/cheatsheets/Microservices_Security.md` | pending |
-| 75 | Mobile Application Security | `references/cheatsheets/Mobile_Application_Security.md` | pending |
-| 76 | Multi Tenant Security | `references/cheatsheets/Multi_Tenant_Security.md` | pending |
-| 77 | Multifactor Authentication | `references/cheatsheets/Multifactor_Authentication.md` | pending |
-| 78 | Network Segmentation | `references/cheatsheets/Network_Segmentation.md` | pending |
-| 79 | Nextjs Security | `references/cheatsheets/Nextjs_Security.md` | pending |
-| 80 | NodeJS Docker | `references/cheatsheets/NodeJS_Docker.md` | pending |
-| 81 | Nodejs Security | `references/cheatsheets/Nodejs_Security.md` | pending |
-| 82 | NoSQL Security | `references/cheatsheets/NoSQL_Security.md` | pending |
-| 83 | NPM Security | `references/cheatsheets/NPM_Security.md` | pending |
-| 84 | OAuth2 | `references/cheatsheets/OAuth2.md` | pending |
-| 85 | OS Command Injection Defense | `references/cheatsheets/OS_Command_Injection_Defense.md` | pending |
-| 86 | Passkey Security | `references/cheatsheets/Passkey_Security.md` | pending |
-| 87 | [Password Storage](references/cheatsheets/Password_Storage.md) | `references/cheatsheets/Password_Storage.md` | done |
-| 88 | PHP Configuration | `references/cheatsheets/PHP_Configuration.md` | pending |
-| 89 | Pinning | `references/cheatsheets/Pinning.md` | pending |
-| 90 | Post Quantum Cryptography | `references/cheatsheets/Post_Quantum_Cryptography.md` | pending |
-| 91 | Prototype Pollution Prevention | `references/cheatsheets/Prototype_Pollution_Prevention.md` | pending |
-| 92 | Query Parameterization | `references/cheatsheets/Query_Parameterization.md` | pending |
-| 93 | RAG Security | `references/cheatsheets/RAG_Security.md` | pending |
-| 94 | REST Assessment | `references/cheatsheets/REST_Assessment.md` | pending |
-| 95 | REST Security | `references/cheatsheets/REST_Security.md` | pending |
-| 96 | Ruby on Rails | `references/cheatsheets/Ruby_on_Rails.md` | pending |
-| 97 | SAML Security | `references/cheatsheets/SAML_Security.md` | pending |
-| 98 | Secrets Management | `references/cheatsheets/Secrets_Management.md` | pending |
-| 99 | Secure AI Model Ops | `references/cheatsheets/Secure_AI_Model_Ops.md` | pending |
-| 100 | Secure Cloud Architecture | `references/cheatsheets/Secure_Cloud_Architecture.md` | pending |
-| 101 | Secure Code Review | `references/cheatsheets/Secure_Code_Review.md` | pending |
-| 102 | Secure Coding with AI | `references/cheatsheets/Secure_Coding_with_AI.md` | pending |
-| 103 | Secure Product Design | `references/cheatsheets/Secure_Product_Design.md` | pending |
-| 104 | Security Terminology | `references/cheatsheets/Security_Terminology.md` | pending |
-| 105 | Server Side Request Forgery Prevention | `references/cheatsheets/Server_Side_Request_Forgery_Prevention.md` | pending |
-| 106 | Server Side Template Injection Prevention | `references/cheatsheets/Server_Side_Template_Injection_Prevention.md` | pending |
-| 107 | Serverless FaaS Security | `references/cheatsheets/Serverless_FaaS_Security.md` | pending |
-| 108 | Session Management | `references/cheatsheets/Session_Management.md` | pending |
-| 109 | Software Supply Chain Security | `references/cheatsheets/Software_Supply_Chain_Security.md` | pending |
-| 110 | [SQL Injection Prevention](references/cheatsheets/SQL_Injection_Prevention.md) | `references/cheatsheets/SQL_Injection_Prevention.md` | done |
-| 111 | Subdomain Takeover Prevention | `references/cheatsheets/Subdomain_Takeover_Prevention.md` | pending |
-| 112 | Symfony | `references/cheatsheets/Symfony.md` | pending |
-| 113 | Third Party Javascript Management | `references/cheatsheets/Third_Party_Javascript_Management.md` | pending |
-| 114 | Third Party Payment Gateway Integration | `references/cheatsheets/Third_Party_Payment_Gateway_Integration.md` | pending |
-| 115 | Threat Modeling | `references/cheatsheets/Threat_Modeling.md` | pending |
-| 116 | TLS Cipher String | `references/cheatsheets/TLS_Cipher_String.md` | pending |
-| 117 | Transaction Authorization | `references/cheatsheets/Transaction_Authorization.md` | pending |
-| 118 | Transport Layer Protection | `references/cheatsheets/Transport_Layer_Protection.md` | pending |
-| 119 | Transport Layer Security | `references/cheatsheets/Transport_Layer_Security.md` | pending |
-| 120 | Unvalidated Redirects and Forwards | `references/cheatsheets/Unvalidated_Redirects_and_Forwards.md` | pending |
-| 121 | User Privacy Protection | `references/cheatsheets/User_Privacy_Protection.md` | pending |
-| 122 | Verifying Third Party Agent Execution Evidence | `references/cheatsheets/Verifying_Third_Party_Agent_Execution_Evidence.md` | pending |
-| 123 | Virtual Patching | `references/cheatsheets/Virtual_Patching.md` | pending |
-| 124 | Vulnerability Disclosure | `references/cheatsheets/Vulnerability_Disclosure.md` | pending |
-| 125 | Vulnerable Dependency Management | `references/cheatsheets/Vulnerable_Dependency_Management.md` | pending |
-| 126 | Web Cache Security | `references/cheatsheets/Web_Cache_Security.md` | pending |
-| 127 | Web Frontend Security | `references/cheatsheets/Web_Frontend_Security.md` | pending |
-| 128 | Web Service Security | `references/cheatsheets/Web_Service_Security.md` | pending |
-| 129 | Webhook Security | `references/cheatsheets/Webhook_Security.md` | pending |
-| 130 | WebSocket Security | `references/cheatsheets/WebSocket_Security.md` | pending |
-| 131 | Workload Identity Federation | `references/cheatsheets/Workload_Identity_Federation.md` | pending |
-| 132 | XML External Entity Prevention | `references/cheatsheets/XML_External_Entity_Prevention.md` | pending |
-| 133 | XML Security | `references/cheatsheets/XML_Security.md` | pending |
-| 134 | XPath Injection Prevention | `references/cheatsheets/XPath_Injection_Prevention.md` | pending |
-| 135 | XS Leaks | `references/cheatsheets/XS_Leaks.md` | pending |
-| 136 | XSS Filter Evasion | `references/cheatsheets/XSS_Filter_Evasion.md` | pending |
-| 137 | Zero Trust Architecture | `references/cheatsheets/Zero_Trust_Architecture.md` | pending |
+
+### Frontend & browser (16/16)
+
+| Cheat sheet | File | Status |
+|---|---|---|
+| [Browser Extension Vulnerabilities](references/cheatsheets/Browser_Extension_Vulnerabilities.md) | `references/cheatsheets/Browser_Extension_Vulnerabilities.md` | done |
+| [Clickjacking Defense](references/cheatsheets/Clickjacking_Defense.md) | `references/cheatsheets/Clickjacking_Defense.md` | done |
+| [Content Security Policy](references/cheatsheets/Content_Security_Policy.md) | `references/cheatsheets/Content_Security_Policy.md` | done |
+| [Cookie Theft Mitigation](references/cheatsheets/Cookie_Theft_Mitigation.md) | `references/cheatsheets/Cookie_Theft_Mitigation.md` | done |
+| [Cross Site Scripting Prevention](references/cheatsheets/Cross_Site_Scripting_Prevention.md) | `references/cheatsheets/Cross_Site_Scripting_Prevention.md` | done |
+| [Cross-Site Request Forgery Prevention](references/cheatsheets/Cross-Site_Request_Forgery_Prevention.md) | `references/cheatsheets/Cross-Site_Request_Forgery_Prevention.md` | done |
+| [DOM Clobbering Prevention](references/cheatsheets/DOM_Clobbering_Prevention.md) | `references/cheatsheets/DOM_Clobbering_Prevention.md` | done |
+| [DOM based XSS Prevention](references/cheatsheets/DOM_based_XSS_Prevention.md) | `references/cheatsheets/DOM_based_XSS_Prevention.md` | done |
+| [HTML5 Security](references/cheatsheets/HTML5_Security.md) | `references/cheatsheets/HTML5_Security.md` | done |
+| [HTTP Headers](references/cheatsheets/HTTP_Headers.md) | `references/cheatsheets/HTTP_Headers.md` | done |
+| [Micro Frontend Security](references/cheatsheets/Micro_Frontend_Security.md) | `references/cheatsheets/Micro_Frontend_Security.md` | done |
+| [Prototype Pollution Prevention](references/cheatsheets/Prototype_Pollution_Prevention.md) | `references/cheatsheets/Prototype_Pollution_Prevention.md` | done |
+| [Third Party Javascript Management](references/cheatsheets/Third_Party_Javascript_Management.md) | `references/cheatsheets/Third_Party_Javascript_Management.md` | done |
+| [Web Frontend Security](references/cheatsheets/Web_Frontend_Security.md) | `references/cheatsheets/Web_Frontend_Security.md` | done |
+| [XS Leaks](references/cheatsheets/XS_Leaks.md) | `references/cheatsheets/XS_Leaks.md` | done |
+| [XSS Filter Evasion](references/cheatsheets/XSS_Filter_Evasion.md) | `references/cheatsheets/XSS_Filter_Evasion.md` | done |
+
+### Backend: input, injection & data stores (1/15)
+
+| Cheat sheet | File | Status |
+|---|---|---|
+| Injection Prevention | `references/cheatsheets/Injection_Prevention.md` | pending |
+| Input Validation | `references/cheatsheets/Input_Validation.md` | pending |
+| [SQL Injection Prevention](references/cheatsheets/SQL_Injection_Prevention.md) | `references/cheatsheets/SQL_Injection_Prevention.md` | done |
+| Query Parameterization | `references/cheatsheets/Query_Parameterization.md` | pending |
+| OS Command Injection Defense | `references/cheatsheets/OS_Command_Injection_Defense.md` | pending |
+| LDAP Injection Prevention | `references/cheatsheets/LDAP_Injection_Prevention.md` | pending |
+| XPath Injection Prevention | `references/cheatsheets/XPath_Injection_Prevention.md` | pending |
+| Server Side Template Injection Prevention | `references/cheatsheets/Server_Side_Template_Injection_Prevention.md` | pending |
+| Server Side Request Forgery Prevention | `references/cheatsheets/Server_Side_Request_Forgery_Prevention.md` | pending |
+| Deserialization | `references/cheatsheets/Deserialization.md` | pending |
+| XML External Entity Prevention | `references/cheatsheets/XML_External_Entity_Prevention.md` | pending |
+| XML Security | `references/cheatsheets/XML_Security.md` | pending |
+| Mass Assignment | `references/cheatsheets/Mass_Assignment.md` | pending |
+| Database Security | `references/cheatsheets/Database_Security.md` | pending |
+| NoSQL Security | `references/cheatsheets/NoSQL_Security.md` | pending |
+
+### Backend: authentication & sessions (1/11)
+
+| Cheat sheet | File | Status |
+|---|---|---|
+| Authentication | `references/cheatsheets/Authentication.md` | pending |
+| Authentication Patterns | `references/cheatsheets/Authentication_Patterns.md` | pending |
+| Multifactor Authentication | `references/cheatsheets/Multifactor_Authentication.md` | pending |
+| Passkey Security | `references/cheatsheets/Passkey_Security.md` | pending |
+| [Password Storage](references/cheatsheets/Password_Storage.md) | `references/cheatsheets/Password_Storage.md` | done |
+| Forgot Password | `references/cheatsheets/Forgot_Password.md` | pending |
+| Credential Stuffing Prevention | `references/cheatsheets/Credential_Stuffing_Prevention.md` | pending |
+| Choosing and Using Security Questions | `references/cheatsheets/Choosing_and_Using_Security_Questions.md` | pending |
+| Session Management | `references/cheatsheets/Session_Management.md` | pending |
+| Email Validation and Verification | `references/cheatsheets/Email_Validation_and_Verification.md` | pending |
+| Bot Management and Anti-Automation | `references/cheatsheets/Bot_Management_and_Anti-Automation.md` | pending |
+
+### Backend: authorization & access control (0/10)
+
+| Cheat sheet | File | Status |
+|---|---|---|
+| Access Control | `references/cheatsheets/Access_Control.md` | pending |
+| Authorization | `references/cheatsheets/Authorization.md` | pending |
+| Authorization Decisions And Output Handling | `references/cheatsheets/Authorization_Decisions_And_Output_Handling.md` | pending |
+| Authorization Patterns | `references/cheatsheets/Authorization_Patterns.md` | pending |
+| Authorization Policy And Data Distribution | `references/cheatsheets/Authorization_Policy_And_Data_Distribution.md` | pending |
+| Authorization Regression Testing | `references/cheatsheets/Authorization_Regression_Testing.md` | pending |
+| Authorization Testing Automation | `references/cheatsheets/Authorization_Testing_Automation.md` | pending |
+| Insecure Direct Object Reference Prevention | `references/cheatsheets/Insecure_Direct_Object_Reference_Prevention.md` | pending |
+| Transaction Authorization | `references/cheatsheets/Transaction_Authorization.md` | pending |
+| Business Logic Security | `references/cheatsheets/Business_Logic_Security.md` | pending |
+
+### Backend: handling, output & resources (0/8)
+
+| Cheat sheet | File | Status |
+|---|---|---|
+| File Upload | `references/cheatsheets/File_Upload.md` | pending |
+| Error Handling | `references/cheatsheets/Error_Handling.md` | pending |
+| Logging | `references/cheatsheets/Logging.md` | pending |
+| Logging Vocabulary | `references/cheatsheets/Logging_Vocabulary.md` | pending |
+| Denial of Service | `references/cheatsheets/Denial_of_Service.md` | pending |
+| Unvalidated Redirects and Forwards | `references/cheatsheets/Unvalidated_Redirects_and_Forwards.md` | pending |
+| Web Cache Security | `references/cheatsheets/Web_Cache_Security.md` | pending |
+| Third Party Payment Gateway Integration | `references/cheatsheets/Third_Party_Payment_Gateway_Integration.md` | pending |
+
+### API & services (0/14)
+
+| Cheat sheet | File | Status |
+|---|---|---|
+| GraphQL | `references/cheatsheets/GraphQL.md` | pending |
+| gRPC Security | `references/cheatsheets/gRPC_Security.md` | pending |
+| REST Assessment | `references/cheatsheets/REST_Assessment.md` | pending |
+| REST Security | `references/cheatsheets/REST_Security.md` | pending |
+| Web Service Security | `references/cheatsheets/Web_Service_Security.md` | pending |
+| Webhook Security | `references/cheatsheets/Webhook_Security.md` | pending |
+| WebSocket Security | `references/cheatsheets/WebSocket_Security.md` | pending |
+| Microservices Security | `references/cheatsheets/Microservices_Security.md` | pending |
+| Microservices based Security Arch Doc | `references/cheatsheets/Microservices_based_Security_Arch_Doc.md` | pending |
+| JSON Web Token | `references/cheatsheets/JSON_Web_Token.md` | pending |
+| OAuth2 | `references/cheatsheets/OAuth2.md` | pending |
+| SAML Security | `references/cheatsheets/SAML_Security.md` | pending |
+| Identity Propagation Patterns | `references/cheatsheets/Identity_Propagation_Patterns.md` | pending |
+| Workload Identity Federation | `references/cheatsheets/Workload_Identity_Federation.md` | pending |
+
+### Cryptography, secrets & transport (0/10)
+
+| Cheat sheet | File | Status |
+|---|---|---|
+| Cryptographic Storage | `references/cheatsheets/Cryptographic_Storage.md` | pending |
+| Key Management | `references/cheatsheets/Key_Management.md` | pending |
+| Secrets Management | `references/cheatsheets/Secrets_Management.md` | pending |
+| TLS Cipher String | `references/cheatsheets/TLS_Cipher_String.md` | pending |
+| Transport Layer Security | `references/cheatsheets/Transport_Layer_Security.md` | pending |
+| Transport Layer Protection | `references/cheatsheets/Transport_Layer_Protection.md` | pending |
+| HTTP Strict Transport Security | `references/cheatsheets/HTTP_Strict_Transport_Security.md` | pending |
+| Pinning | `references/cheatsheets/Pinning.md` | pending |
+| Post Quantum Cryptography | `references/cheatsheets/Post_Quantum_Cryptography.md` | pending |
+| User Privacy Protection | `references/cheatsheets/User_Privacy_Protection.md` | pending |
+
+### Infrastructure, containers & cloud (0/10)
+
+| Cheat sheet | File | Status |
+|---|---|---|
+| Docker Security | `references/cheatsheets/Docker_Security.md` | pending |
+| NodeJS Docker | `references/cheatsheets/NodeJS_Docker.md` | pending |
+| Kubernetes Security | `references/cheatsheets/Kubernetes_Security.md` | pending |
+| Infrastructure as Code Security | `references/cheatsheets/Infrastructure_as_Code_Security.md` | pending |
+| Secure Cloud Architecture | `references/cheatsheets/Secure_Cloud_Architecture.md` | pending |
+| Network Segmentation | `references/cheatsheets/Network_Segmentation.md` | pending |
+| Serverless FaaS Security | `references/cheatsheets/Serverless_FaaS_Security.md` | pending |
+| Zero Trust Architecture | `references/cheatsheets/Zero_Trust_Architecture.md` | pending |
+| Subdomain Takeover Prevention | `references/cheatsheets/Subdomain_Takeover_Prevention.md` | pending |
+| Multi Tenant Security | `references/cheatsheets/Multi_Tenant_Security.md` | pending |
+
+### CI/CD & supply chain (0/6)
+
+| Cheat sheet | File | Status |
+|---|---|---|
+| CI CD Security | `references/cheatsheets/CI_CD_Security.md` | pending |
+| GitHub Actions Security | `references/cheatsheets/GitHub_Actions_Security.md` | pending |
+| Dependency Graph SBOM | `references/cheatsheets/Dependency_Graph_SBOM.md` | pending |
+| Vulnerable Dependency Management | `references/cheatsheets/Vulnerable_Dependency_Management.md` | pending |
+| Software Supply Chain Security | `references/cheatsheets/Software_Supply_Chain_Security.md` | pending |
+| NPM Security | `references/cheatsheets/NPM_Security.md` | pending |
+
+### AI, LLM & agents (0/9)
+
+| Cheat sheet | File | Status |
+|---|---|---|
+| AI Agent Security | `references/cheatsheets/AI_Agent_Security.md` | pending |
+| AI-Powered Advertising Systems Security | `references/cheatsheets/AI-Powered_Advertising_Systems_Security.md` | pending |
+| AML Sanctions AI Agent Payments | `references/cheatsheets/AML_Sanctions_AI_Agent_Payments.md` | pending |
+| LLM Prompt Injection Prevention | `references/cheatsheets/LLM_Prompt_Injection_Prevention.md` | pending |
+| MCP Security | `references/cheatsheets/MCP_Security.md` | pending |
+| RAG Security | `references/cheatsheets/RAG_Security.md` | pending |
+| Secure AI Model Ops | `references/cheatsheets/Secure_AI_Model_Ops.md` | pending |
+| Secure Coding with AI | `references/cheatsheets/Secure_Coding_with_AI.md` | pending |
+| Verifying Third Party Agent Execution Evidence | `references/cheatsheets/Verifying_Third_Party_Agent_Execution_Evidence.md` | pending |
+
+### Language & framework guides (0/16)
+
+| Cheat sheet | File | Status |
+|---|---|---|
+| Bean Validation | `references/cheatsheets/Bean_Validation.md` | pending |
+| C-Based Toolchain Hardening | `references/cheatsheets/C-Based_Toolchain_Hardening.md` | pending |
+| Django REST Framework | `references/cheatsheets/Django_REST_Framework.md` | pending |
+| Django Security | `references/cheatsheets/Django_Security.md` | pending |
+| DotNet Security | `references/cheatsheets/DotNet_Security.md` | pending |
+| FastAPI Security | `references/cheatsheets/FastAPI_Security.md` | pending |
+| Injection Prevention in Java | `references/cheatsheets/Injection_Prevention_in_Java.md` | pending |
+| JAAS | `references/cheatsheets/JAAS.md` | pending |
+| Java Security | `references/cheatsheets/Java_Security.md` | pending |
+| JavaScript and TypeScript Security | `references/cheatsheets/JavaScript_and_TypeScript_Security.md` | pending |
+| Laravel | `references/cheatsheets/Laravel.md` | pending |
+| Nextjs Security | `references/cheatsheets/Nextjs_Security.md` | pending |
+| Nodejs Security | `references/cheatsheets/Nodejs_Security.md` | pending |
+| PHP Configuration | `references/cheatsheets/PHP_Configuration.md` | pending |
+| Ruby on Rails | `references/cheatsheets/Ruby_on_Rails.md` | pending |
+| Symfony | `references/cheatsheets/Symfony.md` | pending |
+
+### Mobile & embedded (0/3)
+
+| Cheat sheet | File | Status |
+|---|---|---|
+| Mobile Application Security | `references/cheatsheets/Mobile_Application_Security.md` | pending |
+| Automotive Security | `references/cheatsheets/Automotive_Security.md` | pending |
+| Drone Security | `references/cheatsheets/Drone_Security.md` | pending |
+
+### Security process & cross-cutting (0/9)
+
+| Cheat sheet | File | Status |
+|---|---|---|
+| Abuse Case | `references/cheatsheets/Abuse_Case.md` | pending |
+| Attack Surface Analysis | `references/cheatsheets/Attack_Surface_Analysis.md` | pending |
+| Threat Modeling | `references/cheatsheets/Threat_Modeling.md` | pending |
+| Secure Code Review | `references/cheatsheets/Secure_Code_Review.md` | pending |
+| Secure Product Design | `references/cheatsheets/Secure_Product_Design.md` | pending |
+| Security Terminology | `references/cheatsheets/Security_Terminology.md` | pending |
+| Vulnerability Disclosure | `references/cheatsheets/Vulnerability_Disclosure.md` | pending |
+| Virtual Patching | `references/cheatsheets/Virtual_Patching.md` | pending |
+| Legacy Application Management | `references/cheatsheets/Legacy_Application_Management.md` | pending |
 
 ## The per-sheet file template
 
