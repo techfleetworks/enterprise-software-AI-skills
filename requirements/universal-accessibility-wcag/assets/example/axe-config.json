@@ -1,0 +1,14 @@
+{
+  "baseUrl": "http://localhost:3000",
+  "pages": ["/", "/login", "/signup", "/checkout"],
+  "wcagTags": ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"],
+  "failOn": ["critical", "serious"],
+  "allowlist": [
+    {
+      "rule": "color-contrast",
+      "reason": "marketing hero uses brand palette; redesign scheduled",
+      "sc": "1.4.3",
+      "expires": "2026-12-31"
+    }
+  ]
+}
