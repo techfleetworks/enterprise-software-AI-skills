@@ -1,0 +1,6 @@
+[
+  { "field": "users.email", "class": "restricted", "basis": "contract", "retention": "account lifetime + 30d" },
+  { "field": "users.phone", "class": "restricted", "basis": "consent", "retention": "account lifetime + 30d" },
+  { "field": "users.full_name", "class": "restricted", "basis": "contract", "retention": "account lifetime + 30d" },
+  { "field": "support.email", "class": "not-personal", "basis": "n/a — shared inbox alias, not a person", "retention": "n/a" }
+]

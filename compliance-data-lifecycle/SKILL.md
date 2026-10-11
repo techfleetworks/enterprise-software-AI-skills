@@ -37,6 +37,11 @@ Read `references/data-classification-and-retention.md`. Before anything else, id
 - What's the **classification** (public / internal / confidential / restricted)?
 - Data classification drives every downstream control: encryption, access, logging,
   retention, and residency.
+- **Mechanical gate:** keep a committed **data map** (the inventory this step requires) and run
+  `scripts/check-untagged-pii.mjs --map <data-map.json> <schema-dir>` in CI. It fails the build when a
+  PII-looking column (`email`, `ssn`, `dob`, `phone`, …) exists in the schema without a classification
+  in the map — so "add a column, classify it later (never)" can't happen. A name that only looks like
+  PII is resolved by declaring it `not-personal`, which records the decision instead of hiding it.
 
 ### Step 2: If personal data is involved → apply privacy-by-design
 
@@ -154,3 +159,4 @@ before irreversible deletions.
 | Tamper-evident audit logging: what/how to log, retention, access | `references/audit-logging.md` |
 | Data classification, retention schedules, deletion/anonymization propagation | `references/data-classification-and-retention.md` |
 | Safe data migrations (integrity/audit), backups, restore testing, RTO/RPO, DR | `references/safe-data-migrations-and-dr.md` |
+| Mechanical gate: PII-column-without-classification linter (data-map enforcement) | `scripts/check-untagged-pii.mjs` |
