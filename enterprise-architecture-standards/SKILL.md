@@ -64,7 +64,7 @@ For anything that calls out of process, apply the resilience patterns (grounded 
 
 ### Step 6: Do not let "enterprise" become "over-engineered"
 
-The opposite failure of sloppiness is architecture astronautics: a message bus, a microservice, a plugin framework, or a distributed cache for a problem a single well-structured module and a database index would solve better and cheaper. Newman's own stance is to look "for a reason to be convinced to use microservices, rather than ... a reason not to." Always check: does this system's actual scale, team size, and change rate justify this complexity? State the justification. Simplicity that meets the real requirement is a core principle, not a shortcut.
+The opposite failure of sloppiness is architecture astronautics: a message bus, a microservice, a plugin framework, or a distributed cache for a problem a single well-structured module and a database index would solve better and cheaper. Newman's own stance is to require a positive reason to adopt microservices rather than treating them as the default. Always check: does this system's actual scale, team size, and change rate justify this complexity? State the justification. Simplicity that meets the real requirement is a core principle, not a shortcut.
 
 ## Mechanical gate
 
@@ -80,7 +80,7 @@ This skill is broad, so it does not ship one gate of its own. Its rules are enfo
 - [ ] A greppable rule was encoded into `arch-gate` via `arch-encode`; a judgment call was left for `judge-arch`.
 - [ ] BDD coverage and the OWASP pass were done on the same code.
 
-## Reference file index
+## Reference files
 
 | File | Covers |
 |---|---|

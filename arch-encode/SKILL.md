@@ -44,7 +44,7 @@ Never auto-generate a rules file from the codebase or a prompt. Add one line at 
 
 ### 3. Wire it into the mechanical gate if it is checkable
 
-If the rule can be stated as "pattern X must not appear in glob Y," add it to the repo's architecture-gate config (`arch-gate.config.json`, run by `scripts/arch-gate.mjs`) so CI enforces it, not just prose. A rule that can be mechanical should be. That is the difference between "less likely" and "cannot merge." The book's point: a monitor or a doc is not a fitness function until it has an objective, pass-or-fail outcome (Ch 2), and the deployment pipeline is where "the rules defined to protect architectural dimensions execute each time the system changes" (Ch 3).
+If the rule can be stated as "pattern X must not appear in glob Y," add it to the repo's architecture-gate config (`arch-gate.config.json`, run by `scripts/arch-gate.mjs`) so CI enforces it, not just prose. A rule that can be mechanical should be. That is the difference between "less likely" and "cannot merge." The book's point: a monitor or a doc is not a fitness function until it has an objective, pass-or-fail outcome (Ch 2), and fitness functions run in CI and the deployment pipeline so they execute on every change to the system (Ch 2).
 
 ### 4. Prove the rule holds (the test loop, do not skip)
 
@@ -99,5 +99,5 @@ It binds everyone because the rules live in committed files and gates, not memor
 
 ## Sources and attribution
 
-- Neal Ford, Rebecca Parsons, Patrick Kua, Pramod Sadalage, *Building Evolutionary Architectures*, 2nd ed., O'Reilly 2023 (ISBN 978-1-492-09754-9): the fitness-function concept ("an objective integrity assessment of some architectural characteristic(s)"), emergent fitness functions added on observed misbehavior, fitness functions living in the codebase, and the deployment pipeline as the enforcement surface (Ch 1-3). `[documented]`
+- Neal Ford, Rebecca Parsons, Patrick Kua, Pramod Sadalage, *Building Evolutionary Architectures*, 2nd ed., O'Reilly 2023 (ISBN 978-1-492-09754-9): the fitness-function concept ("an objective integrity assessment of some architectural characteristic(s)"), emergent fitness functions added on observed misbehavior, fitness functions living in the codebase, and fitness functions executing in CI and the deployment pipeline (Ch 1-2). `[documented]`
 - The rule-authoring guidance (the example beats the principle, negative and specific rules, placing a rule at the right altitude, and the revert then clear-context then re-run test loop) is adapted from the workshop "Who's Designing Your System? You, or Your Agent?", a certificates.dev / TechFleet workshop presented by Alex (<https://www.youtube.com/live/b-Pom28zv7M>). `[documented]`
