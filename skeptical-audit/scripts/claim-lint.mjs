@@ -20,13 +20,19 @@
 
 import { readFileSync } from "node:fs";
 
-const HEDGES = [
+const HEDGE_WORDS = [
   "essentially", "mostly", "pretty much", "more or less", "basically",
   "should be fine", "should work", "should be", "ought to", "probably",
   "likely", "i think", "i believe", "i assume", "presumably", "seems to",
   "seems like", "appears to", "as far as i can tell", "afaik", "i recall",
   "i'm fairly sure", "im fairly sure", "fairly confident", "in theory",
 ];
+// Match each hedge on WORD BOUNDARIES, not as a raw substring: a substring match flags "likely"
+// inside "unlikely" and "should be" inside "should become" — false positives that train people to
+// ignore the tool. \b anchors mean the hedge must stand as its own word(s). (Case-insensitive; the
+// phrases hold only letters/spaces/apostrophes, so \b around them behaves.)
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const HEDGES = HEDGE_WORDS.map((h) => ({ word: h, re: new RegExp(`\\b${escapeRe(h)}\\b`, "i") }));
 
 // Assertion shapes that demand evidence. Word-boundary-ish, case-insensitive.
 const CLAIM_PATTERNS = [
@@ -69,12 +75,11 @@ lines.forEach((raw, i) => {
   if (inFence || line === "") return;
   if (line.startsWith(">") || line.startsWith("|") || line.startsWith("#")) return; // quotes/tables/headings
 
-  const lower = line.toLowerCase();
   const hasState = STATE.test(line);
 
   for (const h of HEDGES) {
-    if (lower.includes(h)) {
-      findings.push({ n: i + 1, kind: "HEDGE", hit: h, line: raw.trim() });
+    if (h.re.test(line)) {
+      findings.push({ n: i + 1, kind: "HEDGE", hit: h.word, line: raw.trim() });
     }
   }
   if (!hasState) {

@@ -49,6 +49,25 @@ test("evidence-tagged claim passes even with --strict (exit 0)", () => {
   assert.equal(run(TAGGED, ["--strict"]), 0);
 });
 
+// Hedge matching is word-boundary, not substring: these must NOT be flagged as hedges.
+// With --strict, a (false) hedge finding would exit 1; the correct behavior is exit 0.
+const FALSE_HEDGE_UNLIKELY = "# Note\n\nA regression here is unlikely to recur after the backfill.\n"; // not "likely"
+const FALSE_HEDGE_BECOME = "# Note\n\nThe rollout should become smoother once caches warm.\n"; // not "should be"
+// A genuine standalone hedge MUST still be caught (proves the boundary fix didn't neuter detection).
+const REAL_HEDGE = "# Note\n\nThe migration is likely to succeed on the first attempt.\n";
+
+test("does NOT flag 'likely' inside 'unlikely' (word-boundary, discriminating)", () => {
+  assert.equal(run(FALSE_HEDGE_UNLIKELY, ["--strict"]), 0);
+});
+
+test("does NOT flag 'should be' inside 'should become' (word-boundary, discriminating)", () => {
+  assert.equal(run(FALSE_HEDGE_BECOME, ["--strict"]), 0);
+});
+
+test("still flags a genuine standalone hedge ('likely') with --strict (exit 1)", () => {
+  assert.equal(run(REAL_HEDGE, ["--strict"]), 1);
+});
+
 test("missing file fails closed (exit 2)", () => {
   try {
     execFileSync(process.execPath, [CHECK], { stdio: "pipe" });

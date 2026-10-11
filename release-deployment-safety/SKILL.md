@@ -114,7 +114,7 @@ If the release touches permissions, credentials, network rules, or deletes anyth
 - Deploy dozens to thousands of times a day *because* each deploy is small, flagged, canaried, and reversible — not despite it.
 - Separate deploy from release so a bad feature is a flag flip, not an incident.
 - Treat database migrations as the highest-risk operation and always make them backward-compatible.
-- Measure deploys with DORA metrics: deployment frequency, lead time for changes, change failure rate, and mean time to restore. Optimizing these four is the operational definition of "elite."
+- Measure deploys with the four DORA metrics: deployment frequency, lead time for changes, change failure rate, and **failed deployment recovery time** (older DORA material: "time to restore service"; *not* the same as a broad, all-incident "MTTR"). Optimizing these four is the operational definition of "elite."
 
 ## Reference files
 
@@ -123,5 +123,5 @@ If the release touches permissions, credentials, network rules, or deletes anyth
 | Choosing/configuring blue-green, canary, rolling, progressive delivery, GitOps | `references/deployment-strategies.md` |
 | Feature flags: patterns, targeting, kill switches, flag hygiene/cleanup | `references/feature-flags.md` |
 | Zero-downtime & reversible DB schema/data migrations (expand/contract) | `references/zero-downtime-db-migrations.md` |
-| Rollback strategies, break-glass, safe-vs-unsafe reverts, DORA MTTR | `references/rollback-and-recovery.md` |
+| Rollback strategies, break-glass, safe-vs-unsafe reverts, DORA recovery time | `references/rollback-and-recovery.md` |
 | Build-once/promote pipelines, environment gates, GitOps, deployment records | `references/ci-cd-delivery-pipeline.md` |
