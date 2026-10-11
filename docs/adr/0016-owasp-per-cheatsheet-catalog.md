@@ -53,6 +53,12 @@ scenarios also live in assets/example/features/owasp-security.feature, validated
 bdd-comprehensive-testing's official-parser gate. The skill comes off the evidence allowlist and its SKILL.md
 plus the per-sheet files join the house-style no-em-dash ratchet.
 
+> Addendum (2026-10-11): as of Wave 3, the example `@security` scenarios no longer live in a single
+> `assets/example/features/owasp-security.feature`. That seed file is removed and the scenarios are split into
+> one feature file per stack layer under `assets/example/features/` (for example `frontend.feature`,
+> `backend-input.feature`, `auth-sessions.feature`). The authoritative pointer is the SKILL.md Reference-files
+> row; the rest of this record stands as the point-in-time foundation decision.
+
 ### Consequences
 
 * Good, because the skill routes to any single cheat sheet, and the stale 120 count is replaced by the real

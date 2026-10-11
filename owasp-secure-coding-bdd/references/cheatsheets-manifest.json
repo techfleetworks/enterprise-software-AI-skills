@@ -49,14 +49,14 @@
       "slug": "Authentication",
       "title": "Authentication",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: authentication & sessions"
     },
     {
       "slug": "Authentication_Patterns",
       "title": "Authentication Patterns",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Patterns_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: authentication & sessions"
     },
     {
@@ -119,7 +119,7 @@
       "slug": "Bot_Management_and_Anti-Automation",
       "title": "Bot Management and Anti-Automation",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Bot_Management_and_Anti-Automation_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: authentication & sessions"
     },
     {
@@ -147,7 +147,7 @@
       "slug": "Choosing_and_Using_Security_Questions",
       "title": "Choosing and Using Security Questions",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Choosing_and_Using_Security_Questions_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: authentication & sessions"
     },
     {
@@ -182,7 +182,7 @@
       "slug": "Credential_Stuffing_Prevention",
       "title": "Credential Stuffing Prevention",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Credential_Stuffing_Prevention_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: authentication & sessions"
     },
     {
@@ -287,7 +287,7 @@
       "slug": "Email_Validation_and_Verification",
       "title": "Email Validation and Verification",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Email_Validation_and_Verification_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: authentication & sessions"
     },
     {
@@ -315,7 +315,7 @@
       "slug": "Forgot_Password",
       "title": "Forgot Password",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: authentication & sessions"
     },
     {
@@ -539,7 +539,7 @@
       "slug": "Multifactor_Authentication",
       "title": "Multifactor Authentication",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Multifactor_Authentication_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: authentication & sessions"
     },
     {
@@ -602,7 +602,7 @@
       "slug": "Passkey_Security",
       "title": "Passkey Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Passkey_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: authentication & sessions"
     },
     {
@@ -756,7 +756,7 @@
       "slug": "Session_Management",
       "title": "Session Management",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Backend: authentication & sessions"
     },
     {
