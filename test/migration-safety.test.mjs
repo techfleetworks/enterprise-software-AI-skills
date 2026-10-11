@@ -28,6 +28,15 @@ test("PASSES a safe expand migration (nullable add + CONCURRENTLY index)", () =>
 test("PASSES NOT NULL WHEN a DEFAULT is given (the `unless` clause, discriminating)", () => {
   assert.equal(run("ALTER TABLE users ADD COLUMN active boolean NOT NULL DEFAULT true;\n").status, 0);
 });
+test("PASSES the skill's own 3-step NOT NULL: step 1 (CHECK … NOT VALID) is not flagged (F1)", () => {
+  assert.equal(run("ALTER TABLE users ADD CONSTRAINT users_tier_nn CHECK (tier IS NOT NULL) NOT VALID;\n").status, 0);
+});
+test("PASSES a CHECK/FK added NOT VALID (the fk-check `unless`, discriminating)", () => {
+  assert.equal(run("ALTER TABLE orders ADD CONSTRAINT fk_cust FOREIGN KEY (cust_id) REFERENCES customers (id) NOT VALID;\n").status, 0);
+});
+test("does NOT flag ADD COLUMN named `type` as a type change (F4, no false positive)", () => {
+  assert.equal(run("ALTER TABLE events ADD COLUMN type text;\n").status, 0);
+});
 
 // --- each unsafe pattern FAILS (discriminating, one per rule) -----------------
 const UNSAFE = {
@@ -39,6 +48,7 @@ const UNSAFE = {
   "set-not-null-direct": "ALTER TABLE users ALTER COLUMN email SET NOT NULL;",
   "alter-column-type": "ALTER TABLE users ALTER COLUMN age TYPE bigint;",
   "index-not-concurrent": "CREATE INDEX idx_users_email ON users (email);",
+  "fk-check-not-valid": "ALTER TABLE orders ADD CONSTRAINT fk_cust FOREIGN KEY (cust_id) REFERENCES customers (id);",
 };
 for (const [rule, sql] of Object.entries(UNSAFE)) {
   test(`FLAGS ${rule} (exit 1, discriminating)`, () => {
@@ -60,6 +70,21 @@ test("a targeted ignore=rule WITH a reason suppresses only that rule (exit 0)", 
 test("a bare ignore with NO reason does NOT suppress (exit 1, discriminating)", () => {
   const sql = "-- migration-safety:ignore\nDROP TABLE legacy_sessions;\n";
   assert.equal(run(sql).status, 1, "an unexplained ignore must not suppress");
+});
+test("a too-short (1-char) reason does NOT suppress (F6 — guards the length check)", () => {
+  const sql = "-- migration-safety:ignore x\nDROP TABLE legacy_sessions;\n";
+  assert.equal(run(sql).status, 1, "a 1-char reason is not a real reason");
+});
+test("a TRAILING ignore on the statement's own line binds to THAT statement (F5)", () => {
+  // After the splitter fix, the trailing comment waives the DROP it follows, not the next statement.
+  assert.equal(run("DROP TABLE a; -- migration-safety:ignore cleanup, backed up and announced\n").status, 0);
+});
+test("a trailing ignore on statement A does NOT leak to statement B (F5, discriminating)", () => {
+  const sql = "DROP TABLE a; -- migration-safety:ignore waive A, backed up\nDROP TABLE b;\n";
+  const r = run(sql);
+  assert.equal(r.status, 1, "B must still be flagged");
+  assert.match(r.out, /drop-table/);
+  assert.doesNotMatch(r.out, /:1\b/); // A (line 1) is suppressed; only B remains
 });
 
 // --- no false positive on commented-out SQL ----------------------------------

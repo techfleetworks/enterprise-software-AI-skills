@@ -5,17 +5,24 @@
  * The structural half of release-deployment-safety's expand/contract rule: it fails (exit 1) when a
  * migration contains a change that breaks a running old instance or takes a blocking lock, so the
  * "never release a breaking schema change in one step" rule can't be skipped by accident. Each rule
- * maps 1:1 to a "Rules for specific changes" / "Never" item in
- * references/zero-downtime-db-migrations.md. Dependency-free (Node built-ins), vendor-neutral.
+ * enforces a lock-taking / break-old-instance item from the "Rules for specific changes" / "Never"
+ * list in references/zero-downtime-db-migrations.md. Dependency-free (Node built-ins), vendor-neutral.
  *
  *   node check-migration-safety.mjs <file-or-dir>...   # scan .sql files (dirs scanned recursively)
  *
  * Suppressing a deliberate, reviewed exception (e.g. a contract-phase DROP that is backed up and
- * announced): put an inline comment IN THE SAME STATEMENT —
+ * announced): put an inline comment ON OR BEFORE the statement (within the same statement — i.e. after
+ * the previous `;`; a trailing comment after the statement's own `;` binds to the NEXT statement) —
  *   -- migration-safety:ignore <reason>              (suppress every rule for that statement)
  *   -- migration-safety:ignore=drop-table <reason>   (suppress one rule for that statement)
  * The reason is REQUIRED; a bare `ignore` with no reason does NOT suppress (an unexplained waiver is
  * not a waiver — mirrors the arch-gate waiver discipline).
+ *
+ * Scope / limitations (honest): this is a regex/statement linter, not a SQL parser. It does NOT
+ * detect a one-shot `UPDATE` backfill (no row-count signal in the text). A `;` inside a string
+ * literal or a `$$ … $$` function body can mis-split, and a forbidden keyword inside such a span can
+ * over-flag — but the direction is ALWAYS over-flag (a real top-level unsafe statement is never
+ * hidden); use the inline ignore for those. A dialect/format quirk can likewise over- or under-match.
  *
  * Exit 0 = clean. 1 = one or more unsuppressed unsafe patterns. 2 = bad usage / unreadable input.
  */
@@ -49,12 +56,17 @@ const RULES = [
     why: "stop writing, stop reading, deploy, THEN drop in a later release (confirm nothing reads it first)." },
   { name: "rename-column", re: /\bRENAME\s+(COLUMN|TO)\b/i,
     why: "a direct rename breaks running old code instantly. Add new → dual-write → backfill → switch → drop old." },
-  { name: "add-not-null-no-default", re: /\bADD\s+(COLUMN\s+)?[^;]*\bNOT\s+NULL\b/i, unless: /\b(DEFAULT|GENERATED)\b/i,
+  // `(?!CONSTRAINT\b)` so this fires only on ADD COLUMN … NOT NULL, not on ADD CONSTRAINT … CHECK
+  // (col IS NOT NULL) — the latter is the skill's own safe 3-step and is handled by fk-check-not-valid.
+  { name: "add-not-null-no-default", re: /\bADD\s+(COLUMN\s+)?(?!CONSTRAINT\b)[^;]*\bNOT\s+NULL\b/i, unless: /\b(DEFAULT|GENERATED|NOT\s+VALID)\b/i,
     why: "NOT NULL without a DEFAULT on a populated table fails/locks. Add it nullable or with a default, then tighten." },
   { name: "set-not-null-direct", re: /\bSET\s+NOT\s+NULL\b/i,
-    why: "a bare SET NOT NULL scans the whole table under lock. Use the 3-step CHECK … NOT VALID → VALIDATE → SET NOT NULL." },
-  { name: "alter-column-type", re: /\bALTER\s+(COLUMN\s+)?[^;]*\b(SET\s+DATA\s+TYPE|TYPE)\b/i,
+    why: "a bare SET NOT NULL scans the whole table under lock. Use the 3-step CHECK … NOT VALID → VALIDATE → SET NOT NULL — and because the final SET NOT NULL is textually identical, suppress it with an inline ignore noting the prior validated CHECK." },
+  // Require ALTER COLUMN <name> TYPE adjacency so a column literally named "type" isn't mistaken for a type change.
+  { name: "alter-column-type", re: /\bALTER\s+COLUMN\s+\S+\s+(SET\s+DATA\s+)?TYPE\b/i,
     why: "an in-place type change rewrites + locks the table and breaks old code. Add a new column → backfill → switch → drop." },
+  { name: "fk-check-not-valid", re: /\bADD\s+(CONSTRAINT\s+\S+\s+)?(CHECK|FOREIGN\s+KEY)\b/i, unless: /\bNOT\s+VALID\b/i,
+    why: "adding a CHECK or FOREIGN KEY validates existing rows under lock. Add it NOT VALID, then VALIDATE CONSTRAINT in a separate step (Postgres)." },
   { name: "index-not-concurrent", re: /\bCREATE\s+(UNIQUE\s+)?INDEX\b/i, unless: /\bCONCURRENTLY\b/i,
     why: "a non-CONCURRENT index build takes an ACCESS EXCLUSIVE lock that blocks writes. Use CREATE INDEX CONCURRENTLY (Postgres). (For a brand-new table this is safe — suppress with a reason.)" },
 ];
@@ -78,15 +90,21 @@ function ignores(rawStmt) {
   return out;
 }
 
-// Split a file into statements on ';', tracking the 1-based line where each begins.
+// Split a file into statements on ';', tracking the 1-based line where each begins. A ';' extends its
+// statement to the END OF ITS LINE, so a trailing `-- …` comment on the same line (incl. a trailing
+// `-- migration-safety:ignore`) binds to the statement it follows, not to the next one.
 function statements(text) {
   const out = [];
   let start = 0, line = 1, startLine = 1;
   for (let i = 0; i < text.length; i++) {
-    if (text[i] === "\n") line++;
+    if (text[i] === "\n") { line++; continue; }
     if (text[i] === ";") {
-      out.push({ raw: text.slice(start, i + 1), line: startLine });
-      start = i + 1; startLine = line;
+      let j = i + 1;
+      while (j < text.length && text[j] !== "\n") j++; // absorb the rest of this line (trailing comment)
+      out.push({ raw: text.slice(start, j), line: startLine });
+      if (j < text.length) { line++; start = j + 1; startLine = line; } // skip the newline; next stmt is on the next line
+      else start = j; // EOF, no trailing newline
+      i = j; // resume after the newline (the loop's i++ moves to j+1)
     }
   }
   if (start < text.length && text.slice(start).trim()) out.push({ raw: text.slice(start), line: startLine });

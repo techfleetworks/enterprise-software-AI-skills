@@ -18,7 +18,9 @@ enforced, not advisory, with a discriminating test so the gate can't rot.
 
 ## Decision Drivers
 
-* Enforce the skill's own "Rules for specific changes" / "Never" list, 1:1, at merge time.
+* Enforce the mechanically-detectable, lock-taking / break-old-instance subset of the skill's
+  "Rules for specific changes" / "Never" list at merge time (a one-shot `UPDATE` backfill has no
+  text signal and stays out of scope — tracked, not claimed).
 * Dependency-free and vendor-neutral (it ships and is copied with the skill).
 * Allow a *deliberate*, reviewed exception without weakening the default (fail-closed) posture.
 * A false-red trains people to disable the gate, so minimize false positives and make the one
@@ -36,7 +38,8 @@ Chosen option: "a bespoke linter in the skill." `arch-gate`'s forbidden-regex en
 the two rules that need an *absence* condition — `NOT NULL` is safe **with** a `DEFAULT`, and
 `CREATE INDEX` is safe **with** `CONCURRENTLY` — so a plain pattern engine would false-positive on
 the safe forms. The gate splits each file into statements, strips comments, and applies a rule table
-where each rule may carry an `unless` clause. A deliberate exception is suppressed only by an inline
+where each rule may carry an `unless` clause (e.g. a CHECK/FOREIGN KEY added `NOT VALID`, or a column
+`NOT NULL` with a `DEFAULT`, is safe and passes). A deliberate exception is suppressed only by an inline
 `-- migration-safety:ignore <reason>` (or `=rule`) on the statement; a bare `ignore` with no reason
 does **not** suppress — an unexplained waiver is not a waiver, mirroring the `arch-gate` waiver
 discipline.
@@ -51,10 +54,12 @@ discipline.
 
 ### Confirmation
 
-`test/migration-safety.test.mjs` (15 tests): a safe expand migration and `NOT NULL DEFAULT` pass;
-each of the eight unsafe patterns fails with its rule named; a reasoned ignore (bare and `=rule`)
-suppresses while a reason-less ignore does not; a commented-out `DROP` is not flagged; an empty
-directory fails closed (exit 2). All run in CI via `npm test`.
+`test/migration-safety.test.mjs` (22 tests): a safe expand migration, `NOT NULL DEFAULT`, a
+`CHECK … NOT VALID`, a `FOREIGN KEY … NOT VALID`, and a column named `type` all pass; each of the
+nine unsafe patterns fails with its rule named; a reasoned ignore (bare and `=rule`) suppresses while
+a reason-less or 1-char-reason ignore does not; a trailing ignore binds to its own statement and does
+not leak to the next; a commented-out `DROP` is not flagged; an empty directory fails closed (exit 2).
+All run in CI via `npm test`.
 
 ## More Information
 
