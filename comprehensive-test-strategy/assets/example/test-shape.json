@@ -1,0 +1,12 @@
+{
+  "layers": {
+    "unit": ["*.unit.*", "/unit/", "/test/unit/"],
+    "integration": ["*.integration.*", "/integration/", "/it/"],
+    "e2e": ["*.e2e.*", "/e2e/", "/acceptance/"]
+  },
+  "minShare": { "unit": 0.6 },
+  "maxShare": { "e2e": 0.15 },
+  "requirePyramid": true,
+  "maxUnclassifiedShare": 0.2,
+  "maxTotalSeconds": { "e2e": 600 }
+}
