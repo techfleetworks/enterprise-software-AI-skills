@@ -75,6 +75,13 @@ test("fails closed (exit 2) on an empty results array (nothing scanned)", () => 
 test("fails closed (exit 2) on an unknown failOn impact", () => {
   assert.equal(run({ url: "/", violations: [] }, { failOn: ["catastrophic"] }).status, 2);
 });
+test("fails closed (exit 2) on a violation with a missing/unrecognized impact (no fail-open, discriminating)", () => {
+  assert.equal(run({ url: "/", violations: [{ id: "image-alt", nodes: [{}] }] }).status, 2); // no impact field
+  assert.equal(run({ url: "/", violations: [{ id: "x", impact: null, nodes: [{}] }] }).status, 2);
+});
+test("fails closed (exit 2) when failOn is an empty array (no vacuous green)", () => {
+  assert.equal(run({ url: "/", violations: [v("image-alt", "critical")] }, { failOn: [] }).status, 2);
+});
 test("fails closed (exit 2) when the results file is missing", () => {
   const dir = mkdtempSync(join(tmpdir(), "axe-nr-"));
   const cp = join(dir, "c.json");

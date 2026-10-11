@@ -47,7 +47,7 @@ try {
   die("Playwright + @axe-core/playwright are required. Install: npm i -D playwright @axe-core/playwright");
 }
 
-const tags = cfg.wcagTags || ["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"];
+const tags = cfg.wcagTags || ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 const browser = await chromium.launch();
 const results = [];
 try {

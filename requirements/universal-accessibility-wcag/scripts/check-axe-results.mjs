@@ -43,6 +43,7 @@ try { cfg = JSON.parse(readFileSync(resolve(configPath), "utf8")); }
 catch (e) { die(`config is not valid JSON (${e.message})`); }
 const failOn = new Set((cfg.failOn || ["critical", "serious"]).map((s) => String(s).toLowerCase()));
 for (const f of failOn) if (!IMPACTS.has(f)) die(`config failOn has an unknown impact "${f}" (use: ${[...IMPACTS].join(", ")})`);
+if (failOn.size === 0) die(`config failOn is empty — the gate would pass everything; set at least one of ${[...IMPACTS].join(", ")}`);
 
 // --- validate allowlist (shrink-only waiver discipline: rule + reason + a real, unexpired expiry) ---
 const allow = new Map(); // rule id -> entry
@@ -74,6 +75,10 @@ for (const run of runs) {
   for (const v of run.violations) {
     totalViolations++;
     const impact = String(v.impact || "").toLowerCase();
+    // A violation with no / unrecognized impact can't be judged against the threshold. Fail CLOSED
+    // rather than silently treating it as "below threshold" (the one place this gate could pass a real
+    // violation) — every other bad-input path here dies too.
+    if (!IMPACTS.has(impact)) die(`violation "${v.id || "?"}" on ${where} has an unrecognized impact "${v.impact}" — cannot assess (fail closed)`);
     if (!failOn.has(impact)) continue;         // below the fail threshold
     if (suppressed(v.id)) continue;            // allowlisted, not expired
     const nodes = Array.isArray(v.nodes) ? v.nodes.length : 0;

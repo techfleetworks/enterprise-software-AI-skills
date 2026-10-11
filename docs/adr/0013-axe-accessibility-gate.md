@@ -51,12 +51,13 @@ writes the results array the verdict consumes. The verdict is the gate; the scaf
 
 ## Confirmation
 
-`test/axe-results.test.mjs` (13 tests): a clean run passes; a critical and a serious violation fail
+`test/axe-results.test.mjs` (15 tests): a clean run passes; a critical and a serious violation fail
 while a moderate passes under the default threshold; `failOn` is honored; a valid unexpired allowlist
 entry suppresses while an expired one does not and a reason-less or bad-`expires` entry fails closed; a
-multi-page array aggregates and one bad page fails; an empty results array, an unknown impact, and a
-missing file each fail closed (exit 2). All run in CI via `npm test`. (The `run-axe.mjs` browser
-scaffold is deliberately not tested here — it needs Playwright + a running app.)
+multi-page array aggregates and one bad page fails; an empty results array, an unknown impact, a
+violation with a **missing/unrecognized impact**, an **empty `failOn`**, and a missing file each fail
+**closed** (exit 2) — the gate has no fail-open path. All run in CI via `npm test`. (The `run-axe.mjs`
+browser scaffold is deliberately not tested here — it needs Playwright + a running app.)
 
 ## More Information
 
