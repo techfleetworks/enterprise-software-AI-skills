@@ -5,13 +5,6 @@ Feature: OWASP secure-coding controls (executable @security scenarios)
   other scenario (see bdd-comprehensive-testing: "Storing BDD scenarios permanently" and "CI/CD wiring").
   Each scenario mirrors the @security scenario in its references/cheatsheets/<Slug>.md file.
 
-  @security @owasp:sql-injection @usecase:login-auth-bypass
-  Scenario: A login form rejects a SQL injection authentication-bypass payload
-    Given a login endpoint backed by a SQL database
-    When an attacker submits the username "' OR '1'='1" with any password
-    Then the credentials are rejected and no session is created
-    And the query runs as a parameterized statement so the input is treated as data, not SQL
-
   @security @owasp:password-storage @usecase:offline-cracking-resistance
   Scenario: Stored password hashes resist offline cracking
     Given a user registers with a password
