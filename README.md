@@ -1,34 +1,46 @@
-# Engineering Standards — Portable Agent Skills
+# Engineering Standards: Portable Agent Skills
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 ![Skills](https://img.shields.io/badge/skills-16-blue.svg)
 ![Vendor-neutral](https://img.shields.io/badge/vendor-neutral-informational.svg)
 
-Created and maintained by **[Tech Fleet](https://techfleet.org)**.
+Made and kept up by **[Tech Fleet](https://techfleet.org)**.
 
-A set of sixteen model-agnostic **skills**: condensed, actionable engineering
-standards that an AI coding agent — or a person — can load as context. Each one
-encodes the judgment a senior engineer applies to a change (how to secure it,
-how to test it, how to release it, why it was decided that way) so that *every*
-change can meet the same bar, not just the ones a specialist happens to review.
+This repo holds 16 **skills**. A skill is a short, expert checklist. An AI coding
+tool, or a person, reads it while doing the work. Each skill holds the know-how a
+good senior engineer uses on a change: how to make it safe, how to test it, how
+to ship it, and why a choice was made. With these skills, every change can meet
+the same bar. Not just the changes an expert happens to look at.
 
-They come in two groups: **thirteen engineering-standards** skills at the top level
-(security, BDD, test strategy, architecture, release, SRE, compliance, ADRs, plus architectural
-review, rule-encoding, verifiable quality gates, skeptical self-audit, and design-pattern
-selection) and three
-**[requirements](requirements/)** skills that make what you build work for
-*everyone* — every browser and device, every ability, and anyone regardless of
-context or expertise.
+The 16 skills come in two groups:
 
-The content is deliberately **vendor-neutral** — no reference to any specific
-model, assistant, or tool — so it works with any LLM or agent framework, and
-reads perfectly well as plain engineering documentation for a human.
+- **13 engineering skills** at the top level. They cover security, testing,
+  architecture, releases, running in production, data rules, decision records,
+  code review, rule-writing, provable checks, honest self-review, and picking a
+  design pattern.
+- **3 requirements skills** in the [`requirements/`](requirements/) folder. They
+  make what you build work for everyone: every browser and device, every ability,
+  and anyone no matter their background.
 
-> **New to this?** Think of a skill as a short, expert checklist your AI coding
-> assistant reads automatically when it's relevant — "you're touching auth, so
-> here's how to not get owned." You don't have to remember to ask; the skill's
-> description tells the tool when to pull it in.
+The skills never name a specific AI model, company, or product. So they work with
+any AI tool. They also read fine as plain notes for a person.
+
+> **New here?** Think of a skill as a short checklist your AI coding tool reads on
+> its own when it fits the task. For example: "You are changing the login code, so
+> here is how to keep it safe." You do not have to remember to ask for it. Each
+> skill says when it should load.
+
+### A few words used here
+
+- **Agent / AI coding tool:** an AI assistant that writes code for you.
+- **LLM:** the AI model behind the tool.
+- **BDD:** a way to write tests as plain sentences.
+- **ADR:** a short note that records why a decision was made.
+- **SRE:** the work of keeping a system healthy in production.
+- **CI:** the automatic checks that run when you push code.
+- **PR:** a pull request, the way you propose a change.
+- **Gate:** a check that must pass before a change can merge.
 
 ---
 
@@ -36,10 +48,11 @@ reads perfectly well as plain engineering documentation for a human.
 
 - [Why this exists](#why-this-exists)
 - [The skills](#the-skills)
-- [Requirements skills (universal quality)](#requirements-skills-universal-quality)
+- [Requirements skills (works for everyone)](#requirements-skills-works-for-everyone)
 - [What is a "skill"?](#what-is-a-skill)
 - [Install and use](#install-and-use)
-- [Always-on: fire every skill on every task](#always-on-fire-every-skill-on-every-task)
+- [Always-on: run every skill on every task](#always-on-run-every-skill-on-every-task)
+- [Adopt the architecture gate, step by step](#adopt-the-architecture-gate-step-by-step)
 - [How the skills fit together](#how-the-skills-fit-together)
 - [Design principles](#design-principles)
 - [Contributing](#contributing)
@@ -51,274 +64,268 @@ reads perfectly well as plain engineering documentation for a human.
 
 ## Why this exists
 
-Most of what separates production-grade software from a working prototype is
-**judgment that lives in people's heads**: the security engineer who knows the
-lockout check has to run before the delete, the SRE who insists on an SLO before
-launch, the architect who writes down *why* Postgres and not DynamoDB. That
-knowledge is unevenly distributed, easy to forget under deadline pressure, and
-almost never applied consistently to every change.
+The thing that makes software production-ready is often **knowledge stuck in
+people's heads**. The security engineer knows the lockout check must run before
+the delete. The SRE wants a reliability target set before launch. The architect
+knows why they picked one database over another. Not everyone has this knowledge.
+It is easy to forget when a deadline is close. And it is almost never used on
+every single change.
 
-These skills move that judgment out of people's heads and into loadable context.
-An agent (or a person) working on a feature pulls in the relevant standard and
-applies it *as part of doing the work* — threat-modeling the input, writing the
-test pyramid, recording the decision, planning the zero-downtime migration —
-instead of hoping a reviewer catches what was missed.
+These skills take that knowledge and put it where the tool can read it. When
+someone, or an AI tool, works on a feature, it pulls in the right skill and uses
+it while doing the work. It checks the input for threats, writes the tests,
+records the decision, and plans a safe database change. You do not have to hope a
+reviewer catches the gap later.
 
-Two audiences get value from the same files:
+Two kinds of people get value from the same files:
 
-- **Engineers and agent users** get a drop-in standard that holds the line on
-  security, testing, architecture, release safety, and operability.
-- **Learners** get a concrete, readable picture of what disciplined,
-  senior-level engineering actually looks like in practice — the checklists, the
-  trade-offs, the "don't ship it until…" bars.
+- **Engineers and AI-tool users** get a ready-made standard for security,
+  testing, architecture, safe releases, and running the system.
+- **Learners** get a clear, real picture of what careful, senior-level work looks
+  like: the checklists, the trade-offs, and the "do not ship until..." rules.
 
 ---
 
 ## The skills
 
-Each folder is one self-contained skill. The **Triggers on** column is the gist
-of the skill's `description` — the text agent tooling uses to decide when to
-load it automatically.
+Each folder is one skill that stands on its own. The **When it kicks in** column
+is a short version of the skill's `description`. That text is what the AI tool
+uses to decide when to load the skill on its own.
 
-| Skill | What it enforces | Triggers on | Reference depth |
+| Skill | What it does | When it kicks in | Extra files |
 |---|---|---|---|
-| [`enterprise-architecture-standards`](enterprise-architecture-standards/) | System & data architecture, microservices, resilience, scalability | Designing/architecting/refactoring a service, schema, API, or system | 9 refs |
-| [`pattern-selector`](pattern-selector/) | Selecting the design pattern that fits the forces — or deliberately none — with pros/cons, security + operational trade-offs, and a verification | Designing/adding/refactoring any feature, class, module, or data flow; "which pattern / best way to structure" | 5 refs · 1 script |
-| [`architectural-decision-records`](architectural-decision-records/) | Capturing the *why* of significant decisions as MADR / Nygard ADRs | Any architecturally-significant choice: datastore, framework, contract, auth model | 5 refs · 2 scripts |
-| [`owasp-secure-coding-bdd`](owasp-secure-coding-bdd/) | OWASP threat-modeling turned into `@security` BDD scenarios | Auth, input, sessions, files, APIs, permissions, dependencies, AI/LLM code | 15 refs |
-| [`bdd-comprehensive-testing`](bdd-comprehensive-testing/) | Every use case × audience as legal, tagged, logged Gherkin, gated on every push | Any behavior change: build/add/implement/fix/change/push — even without "tests/BDD/CI" | 4 refs · 5 scripts |
-| [`comprehensive-test-strategy`](comprehensive-test-strategy/) | The full test pyramid beyond behavioral BDD | Any code others depend on: unit/integration/e2e, contract, load, chaos, coverage gates | 5 refs |
-| [`release-deployment-safety`](release-deployment-safety/) | Shipping at scale without outages | Deploy, release, roll out, migration, cutover, hotfix, rollback, feature flag | 5 refs |
-| [`sre-operational-readiness`](sre-operational-readiness/) | Google-style SRE: is it safe to run in production? | SLOs, monitoring, alerting, on-call, incidents, runbooks, "how do we know it broke?" | 5 refs |
-| [`compliance-data-lifecycle`](compliance-data-lifecycle/) | Privacy, audit, retention, and safe data migrations / DR | PII, GDPR/CCPA, SOC2/ISO, audit logs, retention, backups, RTO/RPO | 5 refs |
-| [`judge-arch`](judge-arch/) | Reviewing a change against the four questions and blocking drift mechanically | Before "done"/PR: reviewing a diff, branch, or area for architectural drift | 4 refs · 1 script |
-| [`arch-encode`](arch-encode/) | Turning a caught mistake into a specific, tested, enforced rule | After catching drift; "add a rule so this never happens again" | 2 refs |
-| [`verifiable-quality-gates`](verifiable-quality-gates/) | Proving every automated check can actually detect — coverage + mutation gates, prove-at-the-owning-layer | Adding/reviewing a CI check, guard, or fitness function; a green build you don't fully trust; making gates self-proving | 3 refs · 2 scripts |
-| [`skeptical-audit`](skeptical-audit/) | Backing every factual claim with reproducible, sourced evidence before it ships — an evidence state, a re-runnable source, a named limitation | Any conclusion of fact: audits, reviews, status ("is it done/working/safe?"), "I verified X", counts, metrics, comparisons | 1 ref · 1 script |
+| [`enterprise-architecture-standards`](enterprise-architecture-standards/) | Designs the system and its data with real trade-offs: structure, resilience, and scale. | You design, build, or rework a service, database, API, or system. | 9 refs |
+| [`pattern-selector`](pattern-selector/) | Picks the design pattern that fits, or none, with the pros, cons, and trade-offs. | You design or rework any feature, class, module, or data flow; "which pattern?" | 5 refs, 1 script |
+| [`architectural-decision-records`](architectural-decision-records/) | Writes down why a big choice was made. | You make an important choice: database, framework, contract, or login model. | 5 refs, 2 scripts |
+| [`owasp-secure-coding-bdd`](owasp-secure-coding-bdd/) | Turns OWASP threat-modeling into runnable `@security` tests. | You touch login, input, sessions, files, APIs, permissions, dependencies, or AI code. | 15 refs |
+| [`bdd-comprehensive-testing`](bdd-comprehensive-testing/) | Writes every use case and audience as plain-sentence tests, checked on every push. | Any behavior change: build, add, fix, or push. | 4 refs, 5 scripts |
+| [`comprehensive-test-strategy`](comprehensive-test-strategy/) | Covers the rest of testing beyond BDD. | Any code others rely on: unit, integration, end-to-end, contract, load, chaos. | 5 refs |
+| [`release-deployment-safety`](release-deployment-safety/) | Ships at scale with no outage. | Deploy, release, roll out, migrate, cut over, hotfix, roll back, or feature flag. | 5 refs |
+| [`sre-operational-readiness`](sre-operational-readiness/) | Checks if it is safe to run in production. | Reliability targets, monitoring, alerts, on-call, incidents, runbooks. | 5 refs |
+| [`compliance-data-lifecycle`](compliance-data-lifecycle/) | Handles private and regulated data safely. | PII, GDPR/CCPA, SOC2/ISO, audit logs, retention, backups, recovery. | 5 refs |
+| [`judge-arch`](judge-arch/) | Reviews a change against four questions and blocks drift. | Before "done" or a PR: reviewing a diff, branch, or area. | 4 refs, 1 script |
+| [`arch-encode`](arch-encode/) | Turns a caught mistake into a tested, enforced rule. | After catching drift; "add a rule so this never happens again." | 2 refs |
+| [`verifiable-quality-gates`](verifiable-quality-gates/) | Proves each automated check can really catch a problem. | Adding or reviewing a CI check or guard; a green build you do not trust. | 3 refs, 2 scripts |
+| [`skeptical-audit`](skeptical-audit/) | Backs every claim of fact with proof you can re-run. | Any claim of fact: audits, reviews, status, counts, "I checked X." | 1 ref, 1 script |
 
-### What each one actually makes you do
+### What each skill makes you do
 
-**`enterprise-architecture-standards`** — Applies the architecture, database,
-integration, resilience, and performance standards you'd expect from a senior
-team at a large company. Picks an architecture style deliberately, designs the
-schema for real trade-offs, chooses sync vs async on purpose, and builds in
-timeouts, retries, and backpressure rather than bolting them on later.
+**`enterprise-architecture-standards`** uses the architecture, database, and
+performance standards you would expect from a senior team at a big company. It
+picks a structure on purpose, designs the database around real trade-offs,
+chooses sync or async for a reason, and builds in timeouts, retries, and limits
+from the start instead of adding them later.
 
-**`pattern-selector`** — On every feature, names the problem as *forces*, checks
-whether a pattern is even warranted (the default is often "no pattern"), then picks
-the GoF or enterprise pattern that fits — stating its pros/cons, the failure/rot it
-prevents, its security and operational trade-offs, the simpler alternative rejected,
-and the pattern-specific test that proves it was applied right. Covers the 23 GoF plus
-the enterprise/PoEAA/DDD/DI/functional/security layer, an anti-pattern catalog for when
-the job is to *remove* structure, and ships a catalog-completeness gate so every entry
-stays fully templated and sourced.
+**`pattern-selector`** starts each feature by naming the problem as a set of
+forces. Then it checks if a pattern is even needed. Often the answer is no
+pattern. If one fits, it picks the right one and states the pros, the cons, the
+problem it prevents, the safety and running trade-offs, the simpler option it
+turned down, and a test that proves it was used right. It covers the 23 classic
+patterns plus enterprise, DDD, and security ones. It also lists anti-patterns for
+when the job is to remove structure. A built-in check keeps every entry complete
+and sourced.
 
-**`architectural-decision-records`** — Treats a decision as unfinished until its
-*why* is written down. Produces a numbered ADR (MADR by default, Nygard for the
-small ones) in the same PR as the code, naming the options you *didn't* pick and
-the consequences you're accepting. Ships with scripts to scaffold and validate
-records.
+**`architectural-decision-records`** treats a decision as unfinished until the why
+is written down. It makes a numbered record (an ADR) in the same PR as the code.
+The record names the options you did not pick and the downsides you accept. It
+comes with scripts to create and check records.
 
-**`owasp-secure-coding-bdd`** — Runs a threat-modeling pass against the full
-OWASP Cheat Sheet Series (bundled locally — no web lookup), applies the matching
-secure-coding measures, and writes the result as executable `@security` Gherkin
-scenarios. Always runs the lockout / accidental-deletion safety check before any
-permission, access, or deletion change.
+**`owasp-secure-coding-bdd`** runs a threat-modeling pass against the full OWASP
+Cheat Sheet Series, kept on disk with no web lookup. It applies the matching
+safe-coding steps and writes them as runnable `@security` tests. It always runs
+the lockout and accidental-delete safety check before any permission, access, or
+delete change.
 
-**`bdd-comprehensive-testing`** — Turns a change into the *complete* set of
-behavioral scenarios: every use case (happy + every non-happy path) crossed with
-every audience — asking you when the audiences aren't certain, never guessing —
-written out as legal Gherkin (the official parser is the judge), categorized on a
-shared taxonomy, stored in a committed datastore with an append-only coverage log,
-and gated on every push so illegal or incomplete coverage can't merge.
+**`bdd-comprehensive-testing`** turns a change into the full set of behavior
+tests: every use case (the happy path and every unhappy path), crossed with every
+audience. It asks you when the audience is not clear, and never guesses. The tests
+are written as valid Gherkin, a plain-sentence test format, and the official
+parser checks them. They are sorted on a shared list, saved in the repo with an
+add-only log, and checked on every push, so missing or broken coverage cannot
+merge.
 
-**`comprehensive-test-strategy`** — Owns the ~70% of testing that behavioral BDD
-doesn't: the unit/integration/e2e pyramid, consumer-driven contract tests
-between services, load and chaos testing, property-based tests, and
-coverage/mutation quality gates — plus how to keep flaky tests from rotting the
-suite.
+**`comprehensive-test-strategy`** owns the testing that behavioral BDD does not:
+unit, integration, and end-to-end tests, contract tests between services, load
+and chaos tests, property-based tests, and coverage and mutation checks. It also
+shows how to keep flaky tests from rotting the suite.
 
-**`release-deployment-safety`** — Turns "we merged it" into "it's safely live":
-zero-downtime deploys, canary / blue-green / rolling rollout, feature flags,
-instant rollback, and backward-compatible (expand/contract) database migrations
-so a deploy never takes the system down.
+**`release-deployment-safety`** turns "we merged it" into "it is safely live."
+Zero-downtime deploys, canary, blue-green, and rolling rollouts, feature flags,
+instant rollback, and database changes that stay backward-compatible so a deploy
+never takes the system down.
 
-**`sre-operational-readiness`** — Answers "is this safe to run?" *before* launch:
-SLIs/SLOs and error budgets, the four golden signals, symptom-based alerts that
-don't page on noise, incident response, blameless postmortems, runbooks, and a
-production-readiness review.
+**`sre-operational-readiness`** answers "is this safe to run?" before launch:
+reliability targets and error budgets, the four golden signals, alerts that page
+on real problems and not noise, incident response, blame-free postmortems,
+runbooks, and a production-readiness review.
 
-**`compliance-data-lifecycle`** — Handles personal and regulated data
-responsibly: data classification, retention and deletion, tamper-evident audit
-logging, GDPR/CCPA data-subject rights, plus the mechanics of safe schema/data
-migrations, backups, and disaster recovery (RTO/RPO).
+**`compliance-data-lifecycle`** handles personal and regulated data with care:
+data classification, retention and deletion, audit logs you cannot tamper with,
+GDPR/CCPA user rights, plus safe database changes, backups, and disaster recovery.
 
-**`judge-arch`** — Reads a change the way a skeptical senior architect would, in
-a *fresh context*, against four questions — is it in the right place, who owns
-this data, what does it now depend on, what happens when it breaks — and reports
-findings (not fixes), or PASS. Ships a dependency-free mechanical gate
-(`arch-gate.mjs`) so the checkable rules *block a merge* instead of merely being
-suggested. This is the review-and-enforce layer that makes the other skills'
-standards actually hold.
+**`judge-arch`** reads a change the way a careful senior architect would, with
+fresh eyes, against four questions. Is it in the right place? Who owns this data?
+What does it now depend on? What happens when it breaks? It reports what it finds,
+not fixes, or says PASS. It ships a small, dependency-free gate
+(`arch-gate.mjs`) so the checkable rules block a merge instead of being just
+advice. This is the layer that makes the other skills' standards actually stick.
 
-**`arch-encode`** — Turns a caught mistake into a durable rule: a specific
-negative code example placed where the code lives, wired into the mechanical gate
-when it's checkable, then *proven* to hold by reverting, clearing context, and
-re-running the task. Keeps rule files lean and non-contradictory.
+**`arch-encode`** turns a caught mistake into a lasting rule: a clear "do not do
+this" code example placed where the code lives, wired into the gate when it can be
+checked, then proven to work by undoing the fix, clearing context, and running the
+task again. It keeps rule files short and free of conflicts.
 
-**`verifiable-quality-gates`** — Treats your automated checks as code that can
-silently stop detecting (a tightened regex, an inverted condition, a moved data
-source) and keep shipping green. Every check gets a committed test that runs the
-*real* check and **discriminates** — it fails when the check is replaced by a
-no-op — proven mechanically by a mutation gate, so a broken check can't ship
-green. Checks fail closed, and each invariant is proven at the layer that *owns*
-it rather than by a separate, unwired monitor. Ships dependency-free coverage and
-mutation-gate engines. This is the layer that keeps the *other* skills' gates
-honest.
+**`verifiable-quality-gates`** treats your automated checks as code that can
+quietly stop working and still show green. A tightened pattern, a flipped
+condition, or a moved file can break a check without anyone noticing. So each
+check gets a saved test that runs the real check and fails when the check is
+swapped for a do-nothing version. A mutation check proves this by machine. Checks
+fail closed, and each rule is proven at the layer that owns it, not by a separate
+monitor. It ships dependency-free coverage and mutation engines. This is the layer
+that keeps the other skills' checks honest.
 
-**`skeptical-audit`** — Treats your first conclusion as a guess until a
-measurement says otherwise. Before any claim of fact ships — "it works," "tests
-pass," "it's unused," "it's safe," "I verified X" — it attaches three things: an
-evidence state (`observed` / `inferred` / `documented` / `reported` /
-`not-assessed`), a source another person can re-run, and a named limitation (what
-was *not* checked). It keeps conformance separate from adequacy, bans hedge-words
-standing in for a check, and delivers an evidence ledger instead of reassurance —
-an honest "3 observed, 2 not-assessed" over a confident "all good." Ships a
-dependency-free `claim-lint` smoke-alarm for hedge-words and untagged claims. This
-is the layer that keeps every *other* skill's findings honest.
+**`skeptical-audit`** treats your first answer as a guess until a measurement
+proves it. Before any claim of fact ships, such as "it works," "tests pass," "it
+is unused," "it is safe," or "I checked X," it attaches three things: an evidence
+state (observed, inferred, documented, reported, or not-assessed), a source
+someone else can re-run, and a named limit (what was not checked). It keeps "does
+it follow the rule?" separate from "is the rule enough?", bans vague words used in
+place of a real check, and gives an evidence list instead of comfort. An honest
+"3 observed, 2 not-assessed" beats a confident "all good." It ships a
+dependency-free `claim-lint` that flags vague words and untagged claims. This is
+the layer that keeps every other skill's findings honest.
 
 ---
 
-## Requirements skills (universal quality)
+## Requirements skills (works for everyone)
 
-The seven skills above make software **correct**. These three, grouped under
-[`requirements/`](requirements/), make it **usable by everyone** — every browser
-and device, every ability, and anyone regardless of context, literacy, or
-expertise. Where the engineering skills ask "is this built, secured, tested, and
-operable correctly?", these ask "can anyone actually *use* what we built?"
+The 13 skills above make software **correct**. These 3, grouped under
+[`requirements/`](requirements/), make it **usable by everyone**: every browser
+and device, every ability, and anyone no matter their situation, reading level, or
+skill. The engineering skills ask "is this built, secured, tested, and run
+correctly?" These ask "can anyone actually use what we built?"
 
-| Skill | What it enforces | Triggers on |
+| Skill | What it does | When it kicks in |
 |---|---|---|
-| [`universal-browser-device-support`](requirements/universal-browser-device-support/) | Bug-free rendering and behavior across every supported browser engine and device | Any HTML/CSS/JS/UI change, responsive layout, "broken in Safari," mobile/touch, polyfills |
-| [`universal-accessibility-wcag`](requirements/universal-accessibility-wcag/) | WCAG 2.2 AA conformance so keyboard, screen-reader, and magnifier users aren't locked out | Forms, images, color/contrast, focus, keyboard, ARIA, screen readers, "a11y" |
-| [`usability-ux-universal-design`](requirements/usability-ux-universal-design/) | User-friendly, intuitive design for the widest range of people and situations | New UI/flows, navigation, onboarding, empty/error states, microcopy, "is this confusing?" |
+| [`universal-browser-device-support`](requirements/universal-browser-device-support/) | Works and looks right on every supported browser and device. | Any HTML/CSS/JS/UI change, responsive layout, "broken in Safari," mobile, touch. |
+| [`universal-accessibility-wcag`](requirements/universal-accessibility-wcag/) | Meets WCAG 2.2 AA so keyboard, screen-reader, and magnifier users are not shut out. | Forms, images, color and contrast, focus, keyboard, ARIA, screen readers. |
+| [`usability-ux-universal-design`](requirements/usability-ux-universal-design/) | Clear, simple design for the widest range of people. | New UI or flows, navigation, onboarding, empty and error states, wording. |
 
-They layer, and are best applied in order on any UI change: **compatible** (it
-renders and works wherever the user is) → **accessible** (it's possible to use
-with any ability — the non-negotiable, often legally-required floor) → **usable**
-(it's effortless and approachable for anyone on top of that). See the
-[requirements README](requirements/README.md) for how they fit together.
+Use them in order on any UI change. First **works everywhere**: it loads and runs
+wherever the user is. Then **accessible**: anyone with any ability can use it,
+which is the floor the law often requires. Then **usable**: it is easy for anyone
+on top of that. See the [requirements README](requirements/README.md) for how they
+fit together.
 
 ---
 
 ## What is a "skill"?
 
-A skill is a folder built around a single `SKILL.md` file, with optional
-supporting material the agent reads only when it needs the detail:
+A skill is a folder built around one `SKILL.md` file. It can have extra files the
+tool reads only when it needs the detail:
 
 ```
 <skill-name>/
-  SKILL.md          # YAML frontmatter (name + description) + Markdown instructions
-  references/*.md   # deep-dive material, read on demand ("progressive disclosure")
+  SKILL.md          # a short header (name + description) plus Markdown instructions
+  references/*.md   # deep-dive material, read only when needed
   scripts/*         # optional helper scripts the skill can run
   assets/*          # optional drop-in files (templates, snippets)
 ```
 
-`SKILL.md` is a tiny YAML front-matter header followed by plain Markdown:
+`SKILL.md` starts with a short header, written in YAML, then plain Markdown:
 
 ```yaml
 ---
 name: architectural-decision-records
-description: "When to use this skill — the text used for automatic triggering"
+description: "When to use this skill. This text is what triggers it."
 ---
 # ...instructions in Markdown...
 ```
 
 Two ideas make this work:
 
-- **The `description` is a router.** Agent tooling reads it to decide whether the
-  skill is relevant to the task at hand, so it's written as *when to use this*,
-  not *what this is*.
-- **Progressive disclosure.** `SKILL.md` stays short and scannable; the heavy
-  detail lives in `references/*.md` and is loaded only when the task actually
-  needs it. That keeps the agent's context lean.
+- **The `description` is a switch.** The AI tool reads it to decide if the skill
+  fits the task. So it is written as *when to use this*, not *what this is*.
+- **Load detail only when needed.** `SKILL.md` stays short and easy to scan. The
+  heavy detail sits in `references/*.md` and loads only when the task needs it.
+  This keeps the tool's context small.
 
-This is intentionally the lowest common denominator: any tool that supports the
-SKILL.md convention reads it natively, and any model that doesn't can still
-consume the file as ordinary Markdown. Nothing here is tied to one vendor.
+This is, on purpose, the simplest shared format. Any tool that knows the SKILL.md
+format reads it directly. Any model that does not can still read the file as plain
+Markdown. Nothing here is tied to one company.
 
 ---
 
 ## Install and use
 
-### SKILL.md-aware agents (e.g. Claude Code)
+### AI tools that know SKILL.md (like Claude Code)
 
-Drop each `<skill-name>/` folder into a skills directory. The agent auto-loads a
-skill when its `description` matches the task.
+Put each `<skill-name>/` folder in a skills folder. The tool loads a skill on its
+own when its `description` fits the task.
 
-- **Personal (all your projects):** copy folders into `~/.claude/skills/`.
-- **Project (shared with the repo):** copy them into `.claude/skills/` and commit.
-- **As a plugin / bundle:** vendor this whole repo and point your skills path at it.
+- **For all your projects:** copy folders into `~/.claude/skills/`.
+- **For one repo, shared with the team:** copy them into `.claude/skills/` and commit.
+- **As a bundle:** copy this whole repo and point your skills path at it.
 
 ```bash
-# personal install of one skill
+# install one skill for all your projects
 git clone https://github.com/techfleetworks/enterprise-software-AI-skills
 cp -r enterprise-software-AI-skills/architectural-decision-records ~/.claude/skills/
 ```
 
-### Rules-based tools (Cursor, Copilot, Windsurf, …)
+### Rule-based tools (Cursor, Copilot, Windsurf)
 
-Point your project rules at the relevant `SKILL.md`, or copy its body into your
-rules file. Attach the `references/*.md` files on demand when you're working in
-that area.
+Point your project rules at the right `SKILL.md`, or paste its body into your rules
+file. Add the `references/*.md` files when you work in that area.
 
-### Any other model / custom agent / RAG
+### Any other model, custom tool, or RAG
 
-Treat `SKILL.md` as a system-prompt fragment or a retrieval document. Use the
-frontmatter `description` to decide relevance, then feed the Markdown body (and
-any referenced file) as context. Because everything is plain Markdown, it drops
-straight into a vector store or a prompt without conversion.
+Use `SKILL.md` as a system-prompt piece or a lookup document. (RAG means a setup
+where the tool looks up documents to help answer.) Read the `description` to check
+if it fits, then feed the Markdown body, and any linked file, as context. It is
+all plain Markdown, so it drops into a vector store or a prompt with no conversion.
 
 ---
 
-## Always-on: fire every skill on every task
+## Always-on: run every skill on every task
 
-By default a skill loads only when the task matches its `description` — which leaves
-coverage to discretion and skips the review and verification skills exactly when a
-change is rushed. The [`always-on/`](always-on/) folder makes **every skill in this
-repo always-on**: considered on every task, for the main agent *and* every spawned
-subagent, injected by the harness rather than left to the model to remember.
+By default a skill loads only when the task matches its `description`. That leaves
+coverage up to chance, and it can skip the review and check skills right when a
+change is rushed. The [`always-on/`](always-on/) folder makes **every skill in
+this repo always-on**: considered on every task, for the main tool and every
+helper it spawns, added by the system instead of left to the model to remember.
 
-It works through hooks, because Claude Code has no frontmatter or settings flag that
-forces a skill to load — a `SessionStart` hook injects the directive into the main
-agent and a `SubagentStart` hook injects it into every subagent. The directive names
-the skills and makes applying the relevant ones mandatory; it does **not** inline the
-full skill bodies (their descriptions are already always in context). A lighter,
-discretion-based alternative is to append the directive to `CLAUDE.md`.
+It works through hooks, because Claude Code has no setting that forces a skill to
+load. A `SessionStart` hook adds the rule to the main tool, and a `SubagentStart`
+hook adds it to every helper. The rule names the skills and makes using the right
+ones required. It does not paste in the full skill text, since their descriptions
+are already always in context. A lighter option is to add the rule to `CLAUDE.md`.
 
-Personal install (all your projects), after cloning:
+For all your projects, after cloning:
 
 ```bash
 cp always-on/enterprise-skills-always-on.md ~/.claude/enterprise-skills-always-on.md
 # then merge the hooks block from always-on/settings.snippet.json into ~/.claude/settings.json
 ```
 
-Full instructions — personal vs project, the CLAUDE.md alternative, requirements,
-and how to narrow or turn it off — are in the [`always-on/` README](always-on/).
+Full steps, including personal vs project setup, the CLAUDE.md option, and how to
+narrow it or turn it off, are in the [`always-on/` README](always-on/).
 
 ---
 
-## Adopt the architecture gate — step by step
+## Adopt the architecture gate, step by step
 
-The `judge-arch` and `arch-encode` skills come with a **mechanical gate** so your standards are
-*enforced*, not merely suggested. Here is how a team adopts them in a repo — about ten minutes,
-and your existing code does **not** have to be clean first.
+The `judge-arch` and `arch-encode` skills come with a **gate** so your standards
+are enforced, not just suggested. Here is how a team turns it on in a repo. It
+takes about ten minutes, and your current code does **not** have to be clean first.
 
-> On a **React + Supabase** codebase, skip the hand-configuration: use the ready
-> [`react-supabase` preset](judge-arch/assets/presets/react-supabase/) — it's steps 2–3 done for you.
+> On a **React + Supabase** codebase, skip the by-hand setup. Use the ready
+> [`react-supabase` preset](judge-arch/assets/presets/react-supabase/). It does
+> steps 2 and 3 for you.
 
-**1 · Get the skills into the repo.** Clone this repo (or vendor it as a plugin), then copy the two
-governance skills into your repo's committed skills directory so every teammate's agent loads them:
+**1. Get the skills into the repo.** Clone this repo, or copy it in as a bundle.
+Then copy the two review skills into your repo's committed skills folder so every
+teammate's tool loads them:
 
 ```bash
 git clone https://github.com/techfleetworks/enterprise-software-AI-skills
@@ -327,99 +334,103 @@ cp -r enterprise-software-AI-skills/arch-encode  .claude/skills/
 git add .claude/skills && git commit -m "Add architecture review + gate skills"
 ```
 
-**2 · Turn on the always-on rules.** Copy the vendor-neutral baseline into your repo's `AGENTS.md`
-(create it if absent), drop the scoped rules into the folders they govern, and seed a `decisions.md`
-you fill with pointers to your *own* good code:
+**2. Turn on the always-on rules.** Copy the vendor-neutral baseline into your
+repo's `AGENTS.md`, make one if you do not have it, drop the scoped rules into the
+folders they cover, and start a `decisions.md` that you fill with pointers to your
+*own* good code:
 
 ```bash
 cp enterprise-software-AI-skills/judge-arch/assets/AGENTS.baseline.md      AGENTS.md
 cp enterprise-software-AI-skills/judge-arch/assets/decisions.template.md   decisions.md
-# scoped rules, e.g.: src/components/AGENTS.md, src/services/AGENTS.md, supabase/functions/AGENTS.md
+# scoped rules, for example: src/components/AGENTS.md, src/services/AGENTS.md, supabase/functions/AGENTS.md
 ```
 
-**3 · Install the mechanical gate.** The scanner is dependency-free (no `npm install`):
+**3. Install the gate.** The scanner needs no `npm install`:
 
 ```bash
 cp enterprise-software-AI-skills/judge-arch/scripts/arch-gate.mjs                 scripts/arch-gate.mjs
 cp enterprise-software-AI-skills/judge-arch/assets/arch-gate.config.example.json  arch-gate.config.json
-# edit arch-gate.config.json so its globs + forbidden patterns match your layers
+# edit arch-gate.config.json so its globs and forbidden patterns match your layers
 ```
 
-**4 · Baseline your existing debt (so the gate is green on day one).** Generate a waiver file that
-grandfathers every *current* violation. The gate then blocks **new** violations while your backlog
-is enumerated and dated — a ratchet that only tightens:
+**4. Record your current debt, so the gate is green on day one.** Make a waiver
+file that grandfathers every current problem. The gate then blocks **new**
+problems while your backlog is listed and dated. It only gets stricter over time:
 
 ```bash
 node scripts/arch-gate.mjs --baseline > arch-gate.waivers.json
 ```
 
-**5 · Wire it into CI and your hooks.**
+**5. Wire it into CI and your hooks.**
 
 ```jsonc
-// package.json  →  scripts
-"check:architecture":     "node scripts/arch-gate.mjs --changed",  // the PR ratchet
-"check:architecture:all": "node scripts/arch-gate.mjs"             // full drift scan
+// package.json  ->  scripts
+"check:architecture":     "node scripts/arch-gate.mjs --changed",  // checks changed files on a PR
+"check:architecture:all": "node scripts/arch-gate.mjs"             // scans everything
 ```
 ```bash
 cp enterprise-software-AI-skills/judge-arch/assets/arch-gate.workflow.yml  .github/workflows/arch-gate.yml
 # and add `npm run check:architecture` to your pre-push hook
 ```
 
-From now on, **nothing is "done" until `check:architecture` exits 0 and a `judge-arch` review is
-clean or explicitly waived.** The only bypass is a dated, attributed waiver — never a self-declared
-"it's trivial." When you catch a *new* bad pattern, use `arch-encode` to turn it into a rule + gate
-check so it can't come back.
+From now on, **nothing is "done" until `check:architecture` exits 0 and a
+`judge-arch` review is clean or waived on purpose.** The only way around it is a
+dated, signed waiver. Never a self-declared "it is trivial." When you catch a
+**new** bad pattern, use `arch-encode` to turn it into a rule and a gate check so
+it cannot come back.
 
 ### Where each file goes, and what to change
 
-Everything here is either the **shared standard** (use unchanged) or a **template** you copy into
-your repo and fill in with your own specifics. The full per-file map is in
-[`judge-arch/references/adoption.md`](judge-arch/references/adoption.md); the essentials:
+Everything here is either the **shared standard**, which you use as-is, or a
+**template** you copy into your repo and fill in. The full file-by-file map is in
+[`judge-arch/references/adoption.md`](judge-arch/references/adoption.md). The main
+ones:
 
 | From the clone | Copy to your repo as | Edit after copying? |
 |---|---|---|
-| `judge-arch/`, `arch-encode/` (whole folders) | `.claude/skills/…` (committed) or `~/.claude/skills/…` | **No** — the shared skill/engine |
-| `judge-arch/scripts/arch-gate.mjs` | `scripts/arch-gate.mjs` | **No** — the engine; your config drives it |
-| `judge-arch/assets/AGENTS.baseline.md` | `AGENTS.md` | **Yes** — add your specifics below the divider line |
-| `judge-arch/assets/decisions.template.md` *(or a preset's `decisions.md`)* | `decisions.md` | **Yes** — fill ✅/❌ with pointers to your own code |
-| a preset's `arch-gate.config.json` *(or `assets/arch-gate.config.example.json`)* | `arch-gate.config.json` | **Yes** — set globs + client path to your folders |
-| a preset's `scoped/*.AGENTS.md` | the folder each governs (e.g. `src/components/AGENTS.md`) | Usually **No** |
-| `judge-arch/assets/arch-gate.workflow.yml` | `.github/workflows/arch-gate.yml` | Minor — your Node version |
-| *(generated, not copied)* | `arch-gate.waivers.json` | `node scripts/arch-gate.mjs --baseline` |
+| `judge-arch/`, `arch-encode/` (whole folders) | `.claude/skills/...` (committed) or `~/.claude/skills/...` | **No.** The shared skill and engine. |
+| `judge-arch/scripts/arch-gate.mjs` | `scripts/arch-gate.mjs` | **No.** The engine; your config drives it. |
+| `judge-arch/assets/AGENTS.baseline.md` | `AGENTS.md` | **Yes.** Add your specifics below the divider line. |
+| `judge-arch/assets/decisions.template.md` (or a preset's `decisions.md`) | `decisions.md` | **Yes.** Fill the good/bad lists with pointers to your own code. |
+| a preset's `arch-gate.config.json` (or `assets/arch-gate.config.example.json`) | `arch-gate.config.json` | **Yes.** Set globs and client path to your folders. |
+| a preset's `scoped/*.AGENTS.md` | the folder each one covers (for example `src/components/AGENTS.md`) | Usually **No**. |
+| `judge-arch/assets/arch-gate.workflow.yml` | `.github/workflows/arch-gate.yml` | Minor. Your Node version. |
+| (generated, not copied) | `arch-gate.waivers.json` | `node scripts/arch-gate.mjs --baseline` |
 
-**`AGENTS.md`, `decisions.md`, and `arch-gate.config.json` are templates** — `AGENTS.baseline.md`,
-`decisions.template.md`, and the preset config are the blanks in this repo; every team copies them
-and points them at *their own* code. Only the skill folders and the gate engine are used unchanged.
+**`AGENTS.md`, `decisions.md`, and `arch-gate.config.json` are templates.** The
+files `AGENTS.baseline.md`, `decisions.template.md`, and the preset config are the
+blanks in this repo. Every team copies them and points them at *their own* code.
+Only the skill folders and the gate engine are used as-is.
 
 ---
 
 ## How the skills fit together
 
-No skill stands alone. A single feature usually pulls in several, and they
-reference each other on purpose — architecture decides the shape, ADRs record
-*why*, security and testing prove it, release and SRE get it safely live and
-keep it healthy, and compliance governs the data underneath.
+No skill works alone. One feature usually pulls in several, and they point to each
+other on purpose. Architecture sets the shape. ADRs record why. Security and
+testing prove it. Release and SRE get it live safely and keep it healthy.
+Compliance governs the data under it.
 
 ```mermaid
 flowchart TD
-    ARCH[enterprise-architecture-standards<br/>the *what* and *how*]
-    ADR[architectural-decision-records<br/>the *why*]
+    ARCH[enterprise-architecture-standards<br/>the shape]
+    ADR[architectural-decision-records<br/>the why]
     SEC[owasp-secure-coding-bdd<br/>security]
-    BDD[bdd-comprehensive-testing<br/>behavioral scenarios]
+    BDD[bdd-comprehensive-testing<br/>behavior tests]
     TEST[comprehensive-test-strategy<br/>proof it works]
     REL[release-deployment-safety<br/>ship it safely]
     SRE[sre-operational-readiness<br/>keep it healthy]
     COMP[compliance-data-lifecycle<br/>govern the data]
 
-    ARCH -->|significant choices recorded as| ADR
-    ARCH -->|threat-modeled by| SEC
+    ARCH -->|big choices recorded as| ADR
+    ARCH -->|checked for threats by| SEC
     ARCH -->|verified by| TEST
-    SEC -->|expressed as @security scenarios in| BDD
+    SEC -->|written as @security scenarios in| BDD
     BDD -->|companion to| TEST
     BDD -->|gates the| REL
     TEST -->|gates the| REL
-    REL -->|canary signals watched by| SRE
-    COMP -->|constrains schema & migrations in| REL
+    REL -->|rollout signals watched by| SRE
+    COMP -->|constrains schema and migrations in| REL
     COMP -.->|controls checked by| SEC
     ADR -.->|links to tests, security, runbooks| SRE
 
@@ -427,51 +438,50 @@ flowchart TD
     ENC[arch-encode<br/>make the rule stick]
     ARCH -->|every change reviewed by| JUDGE
     SEC -->|every change reviewed by| JUDGE
-    JUDGE -->|confirmed violations become rules via| ENC
+    JUDGE -->|real problems become rules via| ENC
     ENC -->|enforced on every future change, feeding back into| ARCH
 ```
 
-The `architectural-decision-records` skill is the connective tissue: its records
-point at the tests that confirm a decision, the security scenarios it implies,
-and the operational plan it constrains.
+The `architectural-decision-records` skill ties it together. Its records point to
+the tests that confirm a choice, the security scenarios it needs, and the
+operations plan it shapes.
 
 ---
 
 ## Design principles
 
-- **Vendor-neutral.** No model, company, or product names in skill content, so a
-  skill works with any LLM or agent framework — and reads fine to a human.
-- **Actionable over exhaustive.** Skills are condensed *working standards*, not
-  textbooks. `SKILL.md` stays scannable; depth goes in `references/`.
-- **Progressive disclosure.** Load the short instructions first; pull heavy
+- **No vendor names.** No model, company, or product names in skill content. So a
+  skill works with any AI tool, and reads fine to a person.
+- **Useful over complete.** Skills are short working standards, not textbooks.
+  `SKILL.md` stays easy to scan. Depth goes in `references/`.
+- **Load detail only when needed.** Read the short instructions first. Pull heavy
   reference material only when the task needs it.
-- **Standards are non-optional, applied quietly.** The skills hold a firm bar
-  ("not done until it's tested / secured / recorded"), but by *doing* the work as
-  part of the task — not by lecturing the user about process.
-- **Right-sized.** A three-line Nygard ADR for a small decision; the full test
-  pyramid only for code others depend on. The skills tell you when *less* is
-  correct, too.
+- **Standards are required, but applied quietly.** The skills hold a firm bar
+  ("not done until it is tested, secured, and recorded"). They do it by doing the
+  work as part of the task, not by lecturing you about process.
+- **Right-sized.** A three-line ADR for a small choice. The full test pyramid only
+  for code others rely on. The skills also tell you when less is correct.
 
 ---
 
 ## Contributing
 
-Contributions and forks are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for
-the full guide. In short:
+Contributions and forks are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the
+full guide. In short:
 
-1. Keep it **vendor-neutral** (no model/company/product names).
-2. Follow the **format**: `SKILL.md` with valid YAML frontmatter (quote any
-   `description` containing a `:`), depth in `references/`, kebab-case folder name
-   matching the frontmatter `name`.
-3. Open a PR describing what the skill helps an agent do and *when it should
-   trigger* — the `description` is what tools use for automatic selection.
+1. Keep it **vendor-neutral**: no model, company, or product names.
+2. Follow the **format**: `SKILL.md` with valid YAML frontmatter (put quotes
+   around any `description` that has a `:`), depth in `references/`, and a
+   kebab-case folder name that matches the frontmatter `name`.
+3. Open a PR that says what the skill helps a tool do and **when it should load**.
+   The `description` is what tools use to pick it.
 
-Adding a new skill is as small as one file:
+Adding a new skill can be as small as one file:
 
 ```yaml
 ---
 name: your-skill-name
-description: "When to use this skill — used for automatic triggering"
+description: "When to use this skill. This text is what triggers it."
 ---
 # Instructions in Markdown...
 ```
@@ -484,58 +494,59 @@ description: "When to use this skill — used for automatic triggering"
 .
 ├── enterprise-architecture-standards/
 ├── architectural-decision-records/
-├── judge-arch/                            # review a change + the mechanical gate that blocks drift
+├── judge-arch/                            # review a change + the gate that blocks drift
 ├── arch-encode/                           # turn a caught mistake into an enforced, tested rule
-├── verifiable-quality-gates/              # prove every automated check can actually detect (coverage + mutation gates)
-├── skeptical-audit/                       # back every factual claim with reproducible, sourced evidence before it ships
+├── verifiable-quality-gates/              # prove every automated check can really catch a problem
+├── skeptical-audit/                       # back every claim with proof you can re-run
 ├── owasp-secure-coding-bdd/
-├── bdd-comprehensive-testing/               # every use case × audience as legal, tagged, logged Gherkin, gated on every push
+├── bdd-comprehensive-testing/             # every use case and audience as tagged, logged Gherkin
 ├── comprehensive-test-strategy/
 ├── release-deployment-safety/
 ├── sre-operational-readiness/
 ├── compliance-data-lifecycle/
-├── requirements/                          # universal-quality skills (grouped)
+├── requirements/                          # the works-for-everyone skills (grouped)
 │   ├── universal-browser-device-support/
 │   ├── universal-accessibility-wcag/
 │   ├── usability-ux-universal-design/
 │   └── README.md
-├── always-on/                              # make every skill fire on every task (SessionStart + SubagentStart hooks)
+├── always-on/                             # make every skill run on every task (SessionStart + SubagentStart hooks)
 ├── CONTRIBUTING.md
 ├── LICENSE
 └── README.md
 ```
 
-Every skill folder follows the same `SKILL.md` + `references/` (+ optional
-`scripts/`, `assets/`) shape described above. The three universal-quality skills
-are grouped one level down under `requirements/`; each is still its own
-self-contained skill folder.
+Every skill folder follows the same shape: a `SKILL.md` file plus `references/`,
+and optional `scripts/` and `assets/`. The three works-for-everyone skills sit one
+level down under `requirements/`, and each is still its own self-contained folder.
 
 ---
 
 ## License
 
-[MIT](LICENSE) © [Tech Fleet](https://techfleet.org). Use, fork, adapt, and redistribute freely
-with attribution.
+[MIT](LICENSE) © [Tech Fleet](https://techfleet.org). Use, fork, change, and share
+freely with attribution.
 
-**One exception:** the `owasp-secure-coding-bdd/vendor/` directory holds OWASP content (the Cheat Sheet Series
-and the Top 10 for LLM Applications), which OWASP publishes under **CC-BY-SA-4.0**, not MIT. It is fetched from
-source on demand by `npm run vendor:owasp` and kept separate as an aggregation under its own license; it is
-not committed. If you redistribute that text you must follow CC-BY-SA-4.0 (attribution and ShareAlike). The
-OWASP skill's own files describe the controls in their own words and quote short, attributed excerpts, which
-is compatible with this repo's MIT license. See `owasp-secure-coding-bdd/vendor/NOTICE.md`.
+**One exception:** the `owasp-secure-coding-bdd/vendor/` folder holds OWASP content
+(the Cheat Sheet Series and the Top 10 for LLM Applications). OWASP publishes it
+under **CC-BY-SA-4.0**, not MIT. It is fetched from source on demand by
+`npm run vendor:owasp` and kept separate under its own license. It is not
+committed. If you share that text, you must follow CC-BY-SA-4.0: give attribution
+and share alike. The OWASP skill's own files describe the controls in their own
+words and quote only short, credited bits, which fits this repo's MIT license. See
+`owasp-secure-coding-bdd/vendor/NOTICE.md`.
 
 ---
 
 ## Acknowledgements
 
 The `architectural-decision-records` skill adapts the ADR practice and templates
-from the ADR community ([adr.github.io](https://adr.github.io/)), Michael
-Nygard's original ADR concept ("Documenting Architecture Decisions", 2011), and
-the MADR project ([adr.github.io/madr](https://adr.github.io/madr/)).
+from the ADR community ([adr.github.io](https://adr.github.io/)), Michael Nygard's
+original ADR idea ("Documenting Architecture Decisions", 2011), and the MADR
+project ([adr.github.io/madr](https://adr.github.io/madr/)).
 
 The `owasp-secure-coding-bdd` skill is grounded in the
 [OWASP Cheat Sheet Series](https://cheatsheetseries.owasp.org/), © the OWASP
 Foundation.
 
-The `judge-arch` and `arch-encode` skills are adapted from the workshop
-**"Who's Designing Your System? You, or Your Agent?"** — a certificates.dev workshop
+The `judge-arch` and `arch-encode` skills are adapted from the certificates.dev
+workshop "Who's Designing Your System? You, or Your Agent?"
