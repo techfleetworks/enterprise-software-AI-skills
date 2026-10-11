@@ -9,7 +9,7 @@ See <https://adr.github.io/> for background.
 ## Conventions
 
 - **Filename**: `NNNN-kebab-case-title.md`, e.g. `0007-use-postgres-for-billing.md`.
-- **Numbering**: zero-padded, sequential, never reused — even for superseded records.
+- **Numbering**: zero-padded, sequential, never reused, even for superseded records.
 - **Format**: [MADR](https://adr.github.io/madr/) by default; the lighter Nygard format
   is fine for small-but-real decisions.
 - **Status**: `proposed` → `accepted` → (`deprecated` | `superseded by ADR-NNNN`).
