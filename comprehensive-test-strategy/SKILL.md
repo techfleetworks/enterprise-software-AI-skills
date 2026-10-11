@@ -86,6 +86,7 @@ Read `references/quality-gates-and-flaky-tests.md`. Configure CI to:
   math, invariants) to find edge cases you wouldn't hand-pick.
 - **Quarantine and fix flaky tests** — a flaky suite that people re-run until green is
   worse than no suite, because it trains the team to ignore failures.
+- **Enforce the pyramid shape mechanically:** run `scripts/check-test-shape.mjs --report <junit.xml> --config <test-shape.json>` in CI. It classifies each test into a layer and fails when the suite drifts off the pyramid — unit base below its floor, e2e share above its cap, the `unit ≥ integration ≥ e2e` order inverted, or a layer's runtime over budget — so the ice-cream cone can't creep in unnoticed.
 
 ### Step 6: Schedule exploratory testing (the human layer)
 
@@ -140,3 +141,4 @@ publishes a readable report; the build fails on real failures and blocks merge.
 | Coverage + mutation + property-based testing, flaky-test management, CI gates | `references/quality-gates-and-flaky-tests.md` |
 | Test code quality: DAMP vs DRY, Rule of Three, one-behavior-per-test, deleting redundant tests | `references/test-code-quality.md` |
 | Exploratory / manual testing, destructive mindset, findings → automated regressions | `references/exploratory-testing.md` |
+| Mechanical gate: test-pyramid-shape enforcement from a JUnit report | `scripts/check-test-shape.mjs` |
