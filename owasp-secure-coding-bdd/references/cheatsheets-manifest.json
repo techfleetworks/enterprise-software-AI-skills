@@ -7,7 +7,7 @@
       "slug": "Abuse_Case",
       "title": "Abuse Case",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Security process & cross-cutting"
     },
     {
@@ -44,7 +44,7 @@
       "slug": "Attack_Surface_Analysis",
       "title": "Attack Surface Analysis",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Security process & cross-cutting"
     },
     {
@@ -466,7 +466,7 @@
       "slug": "Legacy_Application_Management",
       "title": "Legacy Application Management",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Legacy_Application_Management_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Security process & cross-cutting"
     },
     {
@@ -711,7 +711,7 @@
       "slug": "Secure_Code_Review",
       "title": "Secure Code Review",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Code_Review_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Security process & cross-cutting"
     },
     {
@@ -725,14 +725,14 @@
       "slug": "Secure_Product_Design",
       "title": "Secure Product Design",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Security process & cross-cutting"
     },
     {
       "slug": "Security_Terminology",
       "title": "Security Terminology",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Security_Terminology_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Security process & cross-cutting"
     },
     {
@@ -809,7 +809,7 @@
       "slug": "Threat_Modeling",
       "title": "Threat Modeling",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Threat_Modeling_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Security process & cross-cutting"
     },
     {
@@ -869,14 +869,14 @@
       "slug": "Virtual_Patching",
       "title": "Virtual Patching",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Virtual_Patching_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Security process & cross-cutting"
     },
     {
       "slug": "Vulnerability_Disclosure",
       "title": "Vulnerability Disclosure",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerability_Disclosure_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Security process & cross-cutting"
     },
     {

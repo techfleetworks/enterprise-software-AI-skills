@@ -276,19 +276,19 @@ section, a citation, an executable `@security` scenario, and an entry in this in
 | [Automotive Security](references/cheatsheets/Automotive_Security.md) | `references/cheatsheets/Automotive_Security.md` | done |
 | [Drone Security](references/cheatsheets/Drone_Security.md) | `references/cheatsheets/Drone_Security.md` | done |
 
-### Security process & cross-cutting (0/9)
+### Security process & cross-cutting (9/9)
 
 | Cheat sheet | File | Status |
 |---|---|---|
-| Abuse Case | `references/cheatsheets/Abuse_Case.md` | pending |
-| Attack Surface Analysis | `references/cheatsheets/Attack_Surface_Analysis.md` | pending |
-| Threat Modeling | `references/cheatsheets/Threat_Modeling.md` | pending |
-| Secure Code Review | `references/cheatsheets/Secure_Code_Review.md` | pending |
-| Secure Product Design | `references/cheatsheets/Secure_Product_Design.md` | pending |
-| Security Terminology | `references/cheatsheets/Security_Terminology.md` | pending |
-| Vulnerability Disclosure | `references/cheatsheets/Vulnerability_Disclosure.md` | pending |
-| Virtual Patching | `references/cheatsheets/Virtual_Patching.md` | pending |
-| Legacy Application Management | `references/cheatsheets/Legacy_Application_Management.md` | pending |
+| [Abuse Case](references/cheatsheets/Abuse_Case.md) | `references/cheatsheets/Abuse_Case.md` | done |
+| [Attack Surface Analysis](references/cheatsheets/Attack_Surface_Analysis.md) | `references/cheatsheets/Attack_Surface_Analysis.md` | done |
+| [Threat Modeling](references/cheatsheets/Threat_Modeling.md) | `references/cheatsheets/Threat_Modeling.md` | done |
+| [Secure Code Review](references/cheatsheets/Secure_Code_Review.md) | `references/cheatsheets/Secure_Code_Review.md` | done |
+| [Secure Product Design](references/cheatsheets/Secure_Product_Design.md) | `references/cheatsheets/Secure_Product_Design.md` | done |
+| [Security Terminology](references/cheatsheets/Security_Terminology.md) | `references/cheatsheets/Security_Terminology.md` | done |
+| [Vulnerability Disclosure](references/cheatsheets/Vulnerability_Disclosure.md) | `references/cheatsheets/Vulnerability_Disclosure.md` | done |
+| [Virtual Patching](references/cheatsheets/Virtual_Patching.md) | `references/cheatsheets/Virtual_Patching.md` | done |
+| [Legacy Application Management](references/cheatsheets/Legacy_Application_Management.md) | `references/cheatsheets/Legacy_Application_Management.md` | done |
 
 ## The per-sheet file template
 
