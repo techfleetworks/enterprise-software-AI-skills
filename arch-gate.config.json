@@ -17,6 +17,8 @@
         "sre-operational-readiness/SKILL.md",
         "compliance-data-lifecycle/SKILL.md",
         "requirements/universal-accessibility-wcag/SKILL.md",
+        "requirements/universal-browser-device-support/SKILL.md",
+        "requirements/usability-ux-universal-design/SKILL.md",
         "owasp-secure-coding-bdd/SKILL.md",
         "owasp-secure-coding-bdd/references/cheatsheets/*.md",
         "docs/arch-reviews/README.md",
