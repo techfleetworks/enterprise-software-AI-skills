@@ -1,4 +1,4 @@
-// Discriminating tests for requirements/universal-browser-device-support/scripts/check-no-ua-sniffing.mjs.
+// Discriminating tests for .claude/skills/universal-browser-device-support/scripts/check-no-ua-sniffing.mjs.
 // UA sniffing (navigator.userAgent reads, brand-string tests) must FAIL; feature detection PASSES;
 // a reasoned inline ignore suppresses, a reason-less one does not; zero source files fails closed.
 import { test } from "node:test";
@@ -10,7 +10,7 @@ import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const CHECK = resolve(REPO, "requirements/universal-browser-device-support/scripts/check-no-ua-sniffing.mjs");
+const CHECK = resolve(REPO, ".claude/skills/universal-browser-device-support/scripts/check-no-ua-sniffing.mjs");
 
 function run(src, ext = "js") {
   const dir = mkdtempSync(join(tmpdir(), "ua-"));

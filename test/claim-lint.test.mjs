@@ -1,7 +1,7 @@
-// Discriminating tests for skeptical-audit/scripts/claim-lint.mjs
+// Discriminating tests for .claude/skills/skeptical-audit/scripts/claim-lint.mjs
 //
 // These spawn the REAL script against controlled fixtures and assert its exit code, per
-// verifiable-quality-gates/references/check-test-patterns.md. The load-bearing case is S4:
+// .claude/skills/verifiable-quality-gates/references/check-test-patterns.md. The load-bearing case is S4:
 // without --strict, findings must WARN (exit 0); with --strict, findings must BLOCK (exit 1).
 // Against the old `process.exit(strict ? 1 : 1)` bug the "warn-only" assertion fails — that is
 // what makes this test discriminate.
@@ -14,7 +14,7 @@ import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const CHECK = resolve(REPO, "skeptical-audit/scripts/claim-lint.mjs");
+const CHECK = resolve(REPO, ".claude/skills/skeptical-audit/scripts/claim-lint.mjs");
 
 function run(fixtureText, args = []) {
   const dir = mkdtempSync(join(tmpdir(), "claim-lint-"));

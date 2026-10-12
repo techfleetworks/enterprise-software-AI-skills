@@ -44,8 +44,8 @@ Run the installer in its default (dry-run) mode and read the plan: what repo and
 `settings.json` it will change, and whether this is a first install or a reconcile.
 
 ```bash
-node bootstrap/scripts/esk-init.mjs            # plan only, writes nothing
-node bootstrap/scripts/esk-init.mjs --personal # plan for an all-projects (~/.claude) install
+node .claude/skills/bootstrap/scripts/esk-init.mjs            # plan only, writes nothing
+node .claude/skills/bootstrap/scripts/esk-init.mjs --personal # plan for an all-projects (~/.claude) install
 ```
 
 ### Step 3: Ask only what must never be guessed
@@ -62,7 +62,7 @@ hook additively (it never overwrites other hooks or keys), validates the JSON it
 hook at this repo so a future `git pull` updates the directive automatically.
 
 ```bash
-node bootstrap/scripts/esk-init.mjs --yes
+node .claude/skills/bootstrap/scripts/esk-init.mjs --yes
 ```
 
 If the post-write validation or the canary fails, the installer restores `settings.json` from the backup
@@ -88,8 +88,8 @@ the reconcile; it re-points the hook and bumps the version marker, through the s
 and verify steps.
 
 ```bash
-node bootstrap/scripts/esk-init.mjs --check    # drift gate: exit non-zero if not installed or behind
-node bootstrap/scripts/esk-init.mjs --yes      # reconcile to the current version
+node .claude/skills/bootstrap/scripts/esk-init.mjs --check    # drift gate: exit non-zero if not installed or behind
+node .claude/skills/bootstrap/scripts/esk-init.mjs --yes      # reconcile to the current version
 ```
 
 ## Mechanical gate

@@ -1,4 +1,4 @@
-// Discriminating tests for comprehensive-test-strategy/scripts/check-test-shape.mjs.
+// Discriminating tests for .claude/skills/comprehensive-test-strategy/scripts/check-test-shape.mjs.
 // A pyramid-shaped suite PASSES; an inverted / top-heavy / under-based / over-unclassified one FAILS.
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -9,7 +9,7 @@ import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const CHECK = resolve(REPO, "comprehensive-test-strategy/scripts/check-test-shape.mjs");
+const CHECK = resolve(REPO, ".claude/skills/comprehensive-test-strategy/scripts/check-test-shape.mjs");
 
 const DIRS = { unit: "tests/unit/t", integration: "tests/integration/t", e2e: "tests/e2e/t", other: "tests/other/t" };
 function junit(spec) {

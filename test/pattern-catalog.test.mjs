@@ -1,4 +1,4 @@
-// Discriminating tests for pattern-selector/scripts/check-catalog-completeness.mjs.
+// Discriminating tests for .claude/skills/pattern-selector/scripts/check-catalog-completeness.mjs.
 // A fully-templated + cited entry passes; dropping any required field or the citation fails; bad input
 // fails closed.
 import { test } from "node:test";
@@ -10,7 +10,7 @@ import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const CHECK = resolve(REPO, "pattern-selector/scripts/check-catalog-completeness.mjs");
+const CHECK = resolve(REPO, ".claude/skills/pattern-selector/scripts/check-catalog-completeness.mjs");
 
 // All required fields for one entry. Omit one by deleting its key.
 function entryFields() {
@@ -120,8 +120,8 @@ test("fails closed (exit 2) with no arguments", () => {
 // Fitness function: the repo's OWN shipped catalogs must stay complete + cited on every PR.
 test("the shipped catalogs (GoF + enterprise) are complete and cited", () => {
   const catalogs = [
-    resolve(REPO, "pattern-selector/references/design-patterns-catalog.md"),
-    resolve(REPO, "pattern-selector/references/enterprise-patterns.md"),
+    resolve(REPO, ".claude/skills/pattern-selector/references/design-patterns-catalog.md"),
+    resolve(REPO, ".claude/skills/pattern-selector/references/enterprise-patterns.md"),
   ];
   const r = spawnSync(process.execPath, [CHECK, ...catalogs], { encoding: "utf8" });
   assert.equal(r.status, 0, (r.stdout || "") + (r.stderr || ""));

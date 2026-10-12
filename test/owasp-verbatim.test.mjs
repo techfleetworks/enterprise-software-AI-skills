@@ -1,4 +1,4 @@
-// Discriminating tests for owasp-secure-coding-bdd/scripts/check-verbatim.mjs (ADR-0018).
+// Discriminating tests for .claude/skills/owasp-secure-coding-bdd/scripts/check-verbatim.mjs (ADR-0018).
 //
 // The gate resolves its paths from its own file location, so each test copies the REAL gate into a throwaway
 // skill dir (scripts/ + references/ + vendor/) and runs it there (the copy-into-fixture pattern from
@@ -21,7 +21,7 @@ import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const REAL_GATE = resolve(REPO, "owasp-secure-coding-bdd/scripts/check-verbatim.mjs");
+const REAL_GATE = resolve(REPO, ".claude/skills/owasp-secure-coding-bdd/scripts/check-verbatim.mjs");
 
 // A distinct, order-known word sequence so a test can share an EXACT number of consecutive words with a
 // per-sheet file and nothing else overlaps.

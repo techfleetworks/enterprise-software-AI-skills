@@ -20,7 +20,7 @@ const die = (m) => { console.error(`[check-skill-evidence-contract] FAIL — ${m
 const args = process.argv.slice(2);
 const root = resolve(args.find((a) => !a.startsWith("--")) ?? ".");
 const ai = args.indexOf("--allowlist");
-const allowlistPath = resolve(ai >= 0 ? args[ai + 1] : join(root, "skeptical-audit/scripts/skill-evidence-allowlist.json"));
+const allowlistPath = resolve(ai >= 0 ? args[ai + 1] : join(root, ".claude/skills/skeptical-audit/scripts/skill-evidence-allowlist.json"));
 
 const IGNORE = new Set(["node_modules", ".git", "dist", "build"]);
 function findSkills(dir) {

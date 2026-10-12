@@ -1,4 +1,4 @@
-// Discriminating tests for compliance-data-lifecycle/scripts/check-retention-basis.mjs.
+// Discriminating tests for .claude/skills/compliance-data-lifecycle/scripts/check-retention-basis.mjs.
 // Every personal-data entry must carry a non-placeholder basis AND retention; not-personal is exempt;
 // a terse class-only personal entry fails; bad input fails closed.
 import { test } from "node:test";
@@ -10,7 +10,7 @@ import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const CHECK = resolve(REPO, "compliance-data-lifecycle/scripts/check-retention-basis.mjs");
+const CHECK = resolve(REPO, ".claude/skills/compliance-data-lifecycle/scripts/check-retention-basis.mjs");
 
 function run(map) {
   const dir = mkdtempSync(join(tmpdir(), "ret-"));

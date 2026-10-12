@@ -1,4 +1,4 @@
-// Discriminating tests for owasp-secure-coding-bdd/scripts/check-owasp-lints.mjs.
+// Discriminating tests for .claude/skills/owasp-secure-coding-bdd/scripts/check-owasp-lints.mjs.
 // jwt-alg-none and cookie-insecure must FAIL on the vulnerable form and PASS on the hardened form.
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -9,7 +9,7 @@ import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const CHECK = resolve(REPO, "owasp-secure-coding-bdd/scripts/check-owasp-lints.mjs");
+const CHECK = resolve(REPO, ".claude/skills/owasp-secure-coding-bdd/scripts/check-owasp-lints.mjs");
 
 function run(code, ext = "js") {
   const dir = mkdtempSync(join(tmpdir(), "owasp-"));

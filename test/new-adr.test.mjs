@@ -1,4 +1,4 @@
-// Discriminating tests for architectural-decision-records/scripts/new_adr.sh — the slug fallback and
+// Discriminating tests for .claude/skills/architectural-decision-records/scripts/new_adr.sh — the slug fallback and
 // the id-allocation lock added in the Phase-2 content-correctness change.
 //
 // new_adr.sh is bash; CI (ubuntu) always has bash. Locally (e.g. Windows without Git-Bash on PATH)
@@ -12,7 +12,7 @@ import { basename, join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const NEW_ADR = resolve(REPO, "architectural-decision-records/scripts/new_adr.sh");
+const NEW_ADR = resolve(REPO, ".claude/skills/architectural-decision-records/scripts/new_adr.sh");
 // Probe that bash can actually RUN this script at its (possibly Windows) path, not merely that a
 // `bash` exists: a WSL bash on a Windows PATH can't resolve "C:\...\new_adr.sh" and would make the
 // tests fail red (exit 127) instead of skipping — the same false-red this commit removes elsewhere.

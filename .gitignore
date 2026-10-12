@@ -7,11 +7,11 @@ Thumbs.db
 
 # Vendored OWASP source text (CC-BY-SA-4.0), fetched on demand by `npm run vendor:owasp`.
 # Not committed: it is kept out of this MIT repo and pulled from the upstream source instead.
-# owasp-secure-coding-bdd/vendor/NOTICE.md is committed (attribution); the fetched text is not.
-owasp-secure-coding-bdd/vendor/cheatsheets-src/
-owasp-secure-coding-bdd/vendor/llm-top10-src/
-owasp-secure-coding-bdd/vendor/LICENSE-CheatSheetSeries.md
-owasp-secure-coding-bdd/vendor/LICENSE-LLM-Top10.md
+# .claude/skills/owasp-secure-coding-bdd/vendor/NOTICE.md is committed (attribution); the fetched text is not.
+.claude/skills/owasp-secure-coding-bdd/vendor/cheatsheets-src/
+.claude/skills/owasp-secure-coding-bdd/vendor/llm-top10-src/
+.claude/skills/owasp-secure-coding-bdd/vendor/LICENSE-CheatSheetSeries.md
+.claude/skills/owasp-secure-coding-bdd/vendor/LICENSE-LLM-Top10.md
 
 # Per-machine bootstrap install artifacts (the committed .claude/settings.json IS tracked; these are not).
 # The marker, the settings backup, and the install log are specific to one machine's install.

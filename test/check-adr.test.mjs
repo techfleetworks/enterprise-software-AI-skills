@@ -1,4 +1,4 @@
-// Discriminating tests for architectural-decision-records/scripts/check_adr.sh — specifically the
+// Discriminating tests for .claude/skills/architectural-decision-records/scripts/check_adr.sh — specifically the
 // placeholder detection fixed in the content-correctness change: it must now catch <…> template
 // placeholders and stop false-positiving on command args / fenced JSON.
 //
@@ -13,7 +13,7 @@ import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const CHECK = resolve(REPO, "architectural-decision-records/scripts/check_adr.sh");
+const CHECK = resolve(REPO, ".claude/skills/architectural-decision-records/scripts/check_adr.sh");
 // Probe that the `bash` on PATH can actually REACH this script at its (possibly Windows) path, not
 // merely that a `bash` exists: a WSL bash on a Windows PATH can't resolve "C:\...\check_adr.sh" and
 // would make these tests fail red (exit 127) instead of skipping, the same false-red new-adr.test.mjs

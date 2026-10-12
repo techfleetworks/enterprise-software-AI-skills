@@ -1,4 +1,4 @@
-// Discriminating tests for bootstrap/scripts/esk-init.mjs — the always-on installer.
+// Discriminating tests for .claude/skills/bootstrap/scripts/esk-init.mjs — the always-on installer.
 // It must: plan without writing; install both hooks + marker; be idempotent; merge additively
 // (preserve other settings); detect version drift; back up and RESTORE on a failed canary; and fail
 // closed on a bad target. The real repo is used as --repo for the happy path; a fake repo with a
@@ -12,7 +12,7 @@ import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const ESK = resolve(REPO, "bootstrap/scripts/esk-init.mjs");
+const ESK = resolve(REPO, ".claude/skills/bootstrap/scripts/esk-init.mjs");
 const VERSION = JSON.parse(readFileSync(join(REPO, "package.json"), "utf8")).version;
 
 function run(extra, { repo = REPO } = {}) {

@@ -60,9 +60,9 @@ consistent.
    behavior per test / AAA, deleting redundant tests (G9).
 4. New `references/exploratory-testing.md` — scheduled exploration, destructive mindset, findings →
    automated regressions (G4).
-5. `comprehensive-test-strategy/SKILL.md` — a step for exploratory testing, the push-down rule in the
+5. `.claude/skills/comprehensive-test-strategy/SKILL.md` — a step for exploratory testing, the push-down rule in the
    core principle, and the staged-by-speed-and-scope note (G11); update the reference table.
-6. `bdd-comprehensive-testing/SKILL.md` — add the reconciliation note ("run each scenario at the
+6. `.claude/skills/bdd-comprehensive-testing/SKILL.md` — add the reconciliation note ("run each scenario at the
    lowest layer that proves the behavior — subcutaneously where possible"), so the alignment with the
    pyramid is mutual, not one-sided.
 

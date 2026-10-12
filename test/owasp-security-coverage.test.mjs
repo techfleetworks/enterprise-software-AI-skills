@@ -1,4 +1,4 @@
-// Discriminating tests for owasp-secure-coding-bdd/scripts/check-security-coverage.mjs — the change-type ->
+// Discriminating tests for .claude/skills/owasp-secure-coding-bdd/scripts/check-security-coverage.mjs — the change-type ->
 // required-@security-scenario enforcement gate. Each test writes a throwaway "changed" file plus a features
 // dir and runs the REAL gate against the REAL shipped config. Covered: a triggered surface with its scenario
 // passes; without it fails (discriminating); a non-security change passes; a valid waiver suppresses; an
@@ -13,8 +13,8 @@ import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const GATE = resolve(REPO, "owasp-secure-coding-bdd/scripts/check-security-coverage.mjs");
-const REAL_CONFIG = resolve(REPO, "owasp-secure-coding-bdd/assets/security-coverage.config.json");
+const GATE = resolve(REPO, ".claude/skills/owasp-secure-coding-bdd/scripts/check-security-coverage.mjs");
+const REAL_CONFIG = resolve(REPO, ".claude/skills/owasp-secure-coding-bdd/assets/security-coverage.config.json");
 
 const SQL_CODE = "const rows = db.query('SELECT id FROM users WHERE name = ' + name);\n";
 const SAFE_CODE = "export const add = (a, b) => a + b;\n";

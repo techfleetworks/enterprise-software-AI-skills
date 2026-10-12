@@ -10,10 +10,10 @@ built-in Explore and Plan agents that do not read this file, after a one-time wo
 These layers deliver the **directive text** on pull; they do not install the skills themselves, and they do
 not reach every session. A session rooted **above or outside** this repo (for example a parent folder that
 holds several repos) does not auto-load this file, and no committed file can reach another machine's
-`~/.claude`, so broader coverage needs the one-time installer in `bootstrap/`. See `always-on/README.md`
+`~/.claude`, so broader coverage needs the one-time installer in `.claude/skills/bootstrap/`. See `always-on/README.md`
 for the coverage map and its limits.
 
-See `always-on/README.md` for how the two layers work and their limits, and `bootstrap/SKILL.md` to install
+See `always-on/README.md` for how the two layers work and their limits, and `.claude/skills/bootstrap/SKILL.md` to install
 the always-on hook into another project or machine.
 
 @always-on/enterprise-skills-always-on.md

@@ -10,8 +10,8 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const GHERKIN_GATE = resolve(REPO, "bdd-comprehensive-testing/scripts/check-gherkin-valid.mjs");
-const FEATURES_DIR = resolve(REPO, "owasp-secure-coding-bdd/assets/example/features");
+const GHERKIN_GATE = resolve(REPO, ".claude/skills/bdd-comprehensive-testing/scripts/check-gherkin-valid.mjs");
+const FEATURES_DIR = resolve(REPO, ".claude/skills/owasp-secure-coding-bdd/assets/example/features");
 
 test("the OWASP @security feature parses cleanly under the official gherkin gate", () => {
   const r = spawnSync(process.execPath, [GHERKIN_GATE, FEATURES_DIR], { encoding: "utf8" });

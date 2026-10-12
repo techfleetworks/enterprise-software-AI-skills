@@ -34,7 +34,7 @@ Every factual claim you output carries an **evidence state** (`proven` / `observ
 `documented` / `reported` / `not-assessed`), a **re-runnable source**, and a **named limitation**. Run
 the disconfirming-case-first pass, attach the evidence ledger, and never report work "done / secure /
 tested / safe / fixed / passes / complete" without it. The canonical contract is
-`skeptical-audit/references/evidence-discipline.md`. How this directive reaches a session depends on where
+`.claude/skills/skeptical-audit/references/evidence-discipline.md`. How this directive reaches a session depends on where
 the session runs, and no single path covers all of them: a session working inside this repo gets it from the
 committed `CLAUDE.md` import (main agent and most subagents, no approval) and from the committed
 `.claude/settings.json` hook (every subagent, including Explore and Plan, after a one-time trust step); a
