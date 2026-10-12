@@ -1,10 +1,11 @@
 # The 23 Gang-of-Four design patterns, a decision catalog
 
-This is a catalog to **decide from, not a mandate to apply**. For most problems the right entry is the
-one you *don't* use: the default is often **"no pattern" (YAGNI)**, a pattern applied without its
-problem adds indirection, classes, and cognitive load, which is itself one of the top causes of the rot
-this library fights. Read an entry to decide whether its *forces* are actually present in your code, and
-read the `Avoid when` and `Misuse` lines as hard as the `Pros`.
+This is a catalog to **decide from, not a mandate to apply**. Weigh the forces the system will face over its
+lifetime: a pattern applied without its problem adds indirection, classes, and cognitive load, which is itself
+one of the top causes of the rot this library fights, and under-building a system whose growth you can already
+see is the opposite failure. Pick none when the forces are small and will stay small, and block only
+speculative structure. Read an entry to decide whether its *forces* are actually present, or certain and
+imminent, in your code, and read the `Avoid when` and `Misuse` lines as hard as the `Pros`.
 
 Sourcing (no Wikipedia, per the skill's rule): **intents are from GoF 1994** (Gamma, Helm, Johnson,
 Vlissides, *Design Patterns: Elements of Reusable Object-Oriented Software*, Addison-Wesley 1994,

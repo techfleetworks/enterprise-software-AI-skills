@@ -70,8 +70,8 @@ trade-offs, not just folklore benefits:
   smells when misapplied. `[documented]`
 
 So the YAGNI gate is not a style preference, it's supported by the evidence. A pattern applied without its
-problem adds indirection, classes, and cognitive load: the opposite of robustness. The skill's default
-answer is often **"no pattern."**
+problem adds indirection, classes, and cognitive load: the opposite of robustness. No pattern is a valid and
+common outcome when the forces are small and will stay small.
 
 ## 6. Patterns ≠ guarantees (the load-bearing limit)
 

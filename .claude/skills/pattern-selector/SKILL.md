@@ -7,43 +7,63 @@ description: Use when you design, add, or change any feature, class, module, ser
 
 ## Why this exists
 
-People name a pattern before they name the problem. They say "let's use a Factory here" and reach for a
-pattern far too often. Both habits cost you.
+Two mistakes cost you, and they pull in opposite directions. One is naming a pattern before naming the
+problem, reaching for a Factory far too often; a pattern used without its problem is pure cost, extra
+indirection that makes code rot. The other, the one teams pay for over years, is under-building: shipping the
+simplest thing that fits only this sprint, then paying far more to retrofit structure into a system that has
+already grown, spread across more consumers, and gained a team and an audit trail.
 
-A pattern used without its problem is pure cost. It adds indirection, extra classes, and more to read, with
-no payoff. Too much structure is one of the main ways code rots. A pattern missed where its problem is real
-leaves duplicate code and tangled parts that are hard to change.
+Enterprise systems are built for where they are going, not only where they are today. The forces that justify
+structure include the ones the system will face for certain: scale, more consumers, team and ownership
+boundaries, change frequency, compliance, and the cost of changing a running system later. So this skill
+weighs the system's lifetime, not just the current diff. Under-building a system whose growth you can already
+see is as real a failure as over-abstracting one that will stay small.
 
-This skill makes pattern choice a real decision on every feature. Name the forces. Check whether a pattern
-is even needed. Pick the one that fits, or pick none. Then write down why, including the failure it
-prevents, its security and run cost, the simpler option you passed up, and how you will check it.
+This skill makes pattern choice a real decision on every feature. Name the forces, the present ones and the
+ones that are certain and imminent. Check whether a pattern is needed, and whether NOT building it now will
+cost more later. Pick the one that fits, combine a few, or pick none. Then write down why, including the
+failure it prevents, its security and run cost, the simpler option you passed up, the cost of adding it
+later, and how you will check it.
 
 ## The main idea (read this first)
 
-A pattern removes one specific kind of failure or rot. The wrong pattern adds rot. A pattern does not make
-code "impossible to fail."
+A pattern removes one specific kind of failure or rot. The wrong pattern adds rot, and so does the missing
+one: the structure a growing system should have had but did not. A pattern does not make code "impossible to
+fail."
 
 The strong guarantees in this library come from types, database constraints, tests, and gates. A pattern
-makes the code the right shape. Those other things make it provably correct. So this skill always does two
-things at once. It recommends a pattern (or says to use none), and it names the real guarantee and where it
-lives. The most common right answer to "which pattern?" is "none. A plain function or class is correct
-here."
+makes the code the right shape for the forces it will face over its lifetime. Those other things make it
+provably correct. So this skill always does two things at once. It recommends a pattern (or says to use
+none), and it names the real guarantee and where it lives.
+
+The default is not "the simplest thing that fits right now," and it is not "reach for a pattern." It is the
+structure that fits the forces this system will actually face, chosen on purpose. "No pattern, a plain
+function is correct here" is a valid and common answer when the forces are genuinely small and will stay
+small. It is the wrong answer when you can already see the scale, the second consumer, the team boundary, or
+the compliance duty coming. The record has to say which case you are in.
 
 ## How to choose (run these steps every time)
 
 Read `references/choosing-a-pattern.md`. The steps are:
 
-1. Name the problem as forces, not as a pattern. What changes? What has to stay the same? What is copied?
-   What is tied together that should not be?
+1. Name the problem as forces, not as a pattern, and include the forces of the system's lifetime, not only
+   this change. What changes now, and what is certain to change (scale, new consumers, new rules)? What has
+   to stay the same? What is copied? What is tied together that should not be? Who else will own or call
+   this, and what do compliance, audit, and operability require of it? A force you can already see coming
+   counts; a force you are inventing to feel thorough does not.
 2. Run the gate in two parts, in order.
    a. Is the current code using an anti-pattern (God Object, anemic domain model, big ball of mud,
       premature abstraction, Singleton as global state)? If no, go to part b. If yes, scope the work to
       remove it, and still do part b. See `references/anti-patterns-and-smells.md`.
-   b. Does this code need a pattern? A pattern earns its place only when a named force calls for it and no
-      plain function, class, or language feature already solves it. If yes, pick a pattern and scope it. If
-      no, and part a found an anti-pattern, just remove the anti-pattern and make the result scalable and
-      performant, then move on. If no, and there was no anti-pattern, write "no pattern, because ..." and
-      stop.
+   b. Does this code need a pattern? A pattern earns its place when a named force calls for it, present or
+      certain and imminent given the system's scale, roadmap, team, or compliance reality, and no plain
+      function, class, or language feature already solves it. YAGNI blocks SPECULATIVE structure (a factory
+      for one use, an interface with one implementation and no second consumer in sight), not deliberate
+      design for growth you can already see; so weigh the cost of adding it now against the cost of
+      retrofitting it into a running system later. If a pattern is earned, pick it and scope it. If not, and
+      part a found an anti-pattern, remove the anti-pattern and make the result scalable and performant. If
+      not, and there was no anti-pattern, write "no pattern, because the forces are small and will stay
+      small" and stop.
 3. Match the symptoms to candidate patterns using the table in the catalog and the chooser.
 4. Score each candidate on five things, not just how clean it looks: does it fit the forces; what does it
    cost in classes and reading; does it open a security hole (global state, unsafe deserialize, a new trust
@@ -63,6 +83,8 @@ inferred, documented, reported, not-assessed.
 ```
 Problem / forces:           what changes, what must stay the same, what is copied or tied together
 Forces evidence:            [state] about the current code, e.g. [observed: two pricing rules at pricing.ts:40-88]
+Lifetime forces:            the certain-and-imminent forces weighed (scale, consumers, team, compliance), with timing
+Cost of deferring:          what retrofitting this structure into a running system later would cost, vs now
 Candidates considered:      the patterns the forces point to, plus the no-pattern option
 Decision:                   the pattern(s) you chose, or "no pattern, because ..."
 Pros / cons accepted:       the real benefit, and the cost you are taking on
@@ -126,7 +148,10 @@ greppable ("data access only through a Repository in `domain/`"), turn it into a
 ## Before you call it done
 
 - [ ] You stated the problem as forces. You did not open by naming a pattern.
-- [ ] You checked whether a pattern was needed. "No pattern" or "remove this anti-pattern" was a real option.
+- [ ] You weighed the forces over the system's lifetime (scale, consumers, team, compliance), not only this
+      change, and the record names the cost of deferring the structure.
+- [ ] You checked whether a pattern was needed. "No pattern" means the forces are small and will stay small,
+      not just small today; "remove this anti-pattern" was also a real option.
 - [ ] You wrote a pattern-decision record (the evidence ledger) with every field, including the security
       trade-off, the operational cost, the adopt-safely path, and the six-state evidence markers.
 - [ ] You named the failure the pattern prevents, and you named the real guarantee (a type, DB constraint,
@@ -165,9 +190,10 @@ the right pattern" is stated, as a bare claim.
 | "Pattern X prevents failure F" | F is a concrete, named decay (data sprawl, null-deref, shared state, SSRF) | a type, test, or gate makes F impossible or catches it on every PR |
 | "The catalog entry is sound" | every template field is present | `check-catalog-completeness.mjs` passes with its citation (a required CI check, with a discriminating test) |
 
-**Definition of done:** a pattern-decision record (the evidence ledger) exists with forces and forces
-evidence, the decision, pros and cons, the failure prevented, the security and operational trade-offs, the
-simpler alternative, the adopt-safely path, the verify step, and the verification status. The real
+**Definition of done:** a pattern-decision record (the evidence ledger) exists with forces (present and
+certain-and-imminent) and forces evidence, the lifetime forces and the cost of deferring the structure, the
+decision, pros and cons, the failure prevented, the security and operational trade-offs, the simpler
+alternative, the adopt-safely path, the verify step, and the verification status. The real
 guarantee is routed to a type, constraint, test, or gate, not claimed of the pattern. An ADR exists if the
 choice is large. Every catalog fact is cited to a primary source, and `check-catalog-completeness.mjs` is
 green. A greppable choice is not fully resolved until its rule lives in arch-gate, where it becomes proven.
