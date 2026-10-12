@@ -1,0 +1,46 @@
+{
+  "_comment": "STARTING routing map for an application repo. check-change-routing.mjs fires a rule when the change's added/changed files match its 'when' globs, then requires each 'requires' artifact to be part of the SAME change (or a valid waiver). It checks PRESENCE and ROUTING only; 'ownerGate' names the gate that checks the artifact's CORRECTNESS, which you wire separately. Tune every glob to your stack and delete what does not apply. '**' spans directories; '*' and '?' do not cross '/'. A rule keyed on 'added' needs --added-list passed (CI computes it from git diff --diff-filter=A).",
+  "rules": [
+    {
+      "id": "schema-change-needs-adr-and-safety",
+      "description": "A database schema change is a decision and a deployment risk. Record the why (ADR) and prove the migration is safe (migration-safety).",
+      "when": { "changed": ["**/migrations/**", "db/migrations/*.sql", "prisma/schema.prisma"] },
+      "requires": [
+        { "artifact": "adr", "changed": ["docs/adr/*.md", "docs/decisions/*.md"], "ownerGate": "architectural-decision-records", "hint": "record why the schema changed" },
+        { "artifact": "migration-safety-record", "changed": ["**/migrations/**"], "ownerGate": "release-deployment-safety (check-migration-safety)", "hint": "the migration file carrying expand-and-contract, concurrent indexes, and a safe NOT NULL path" }
+      ]
+    },
+    {
+      "id": "auth-change-needs-security-scenario",
+      "description": "A change to authentication, sessions, or access control must ship a @security scenario that tests the control (owasp-secure-coding-bdd).",
+      "when": { "changed": ["**/auth/**", "**/*session*", "**/*login*", "**/middleware/*authz*", "**/*permission*"] },
+      "requires": [
+        { "artifact": "security-scenario", "changed": ["**/*.feature"], "ownerGate": "owasp-secure-coding-bdd (check-security-coverage)", "hint": "add a @security Given/When/Then that exercises the auth control" }
+      ]
+    },
+    {
+      "id": "ui-change-needs-a11y-verdict",
+      "description": "A user-facing UI change must carry an accessibility verdict (universal-accessibility-wcag).",
+      "when": { "changed": ["**/*.tsx", "**/*.jsx", "**/*.vue", "src/components/**", "app/**/*.tsx"] },
+      "requires": [
+        { "artifact": "a11y-verdict", "changed": ["**/*.axe.json", "**/a11y/**", "**/accessibility/**"], "ownerGate": "universal-accessibility-wcag (check-axe-results, check-a11y-checklist)", "hint": "attach the axe run output or the manual checklist verdict for the changed surface" }
+      ]
+    },
+    {
+      "id": "source-change-needs-test",
+      "description": "Production source should not change without a test moving with it (comprehensive-test-strategy).",
+      "when": { "changed": ["src/**/*.ts", "src/**/*.js", "lib/**/*.ts", "app/**/*.ts"] },
+      "requires": [
+        { "artifact": "test", "changed": ["**/*.test.ts", "**/*.test.js", "**/*.spec.ts", "test/**", "tests/**", "**/__tests__/**"], "ownerGate": "comprehensive-test-strategy", "hint": "add or update the test that covers the changed behavior" }
+      ]
+    }
+  ],
+  "waivers": [
+    {
+      "rule": "source-change-needs-test",
+      "reason": "EXAMPLE ONLY: a pure rename with no behavior change; delete this entry. A real waiver names a real reason, an approver, and an expiry so it cannot linger.",
+      "approvedBy": "example-reviewer",
+      "expires": "2000-01-01"
+    }
+  ]
+}

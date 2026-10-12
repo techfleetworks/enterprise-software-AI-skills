@@ -1,0 +1,45 @@
+# Change-type -> required-artifact routing gate (ADR-0031). On a pull request, compute the files the PR adds
+# and changes versus the base branch, then require each kind of change to ship its discipline's artifact
+# (a new skill -> an ADR, a new gate script -> a discriminating test). Runs only on pull_request, where a base
+# ref exists to diff against. Dependency-free; a routing gap exits non-zero and fails this check. Add `routing`
+# to the branch-protection required checks to make a gap block merge (tracked with the mandatory-review workflow).
+name: routing
+
+on:
+  pull_request:
+
+# Least-privilege: the gate only needs to read the checkout.
+permissions:
+  contents: read
+
+jobs:
+  routing:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history so the merge-base with the target branch is available to diff against.
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Compute changed and added files versus the base
+        id: diff
+        # base_ref via env, not inline ${{ }}, so a branch name can never be interpolated into the script.
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          git fetch --no-tags origin "$BASE_REF"
+          base=$(git merge-base HEAD "origin/$BASE_REF")
+          changed=$(git diff --name-only --diff-filter=ACMR "$base" HEAD | paste -sd, -)
+          added=$(git diff --name-only --diff-filter=A "$base" HEAD | paste -sd, -)
+          echo "changed=$changed" >> "$GITHUB_OUTPUT"
+          echo "added=$added" >> "$GITHUB_OUTPUT"
+      - name: Change-type routing gate
+        # The file lists are built from PR filenames (untrusted). Pass them through env and reference them
+        # quoted so a crafted filename cannot be interpolated into the run script (GitHub script-injection
+        # class). The gate only regex-tests the strings; it never shells out.
+        env:
+          CHANGED: ${{ steps.diff.outputs.changed }}
+          ADDED: ${{ steps.diff.outputs.added }}
+        run: node .claude/skills/judge-arch/scripts/check-change-routing.mjs --changed-list "$CHANGED" --added-list "$ADDED"
