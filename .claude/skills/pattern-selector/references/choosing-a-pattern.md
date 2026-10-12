@@ -1,8 +1,10 @@
 # Choosing a Pattern, the decision engine
 
 This is the deterministic flow the skill runs on every feature. It turns a vague "which pattern?" into a
-recorded decision. The governing bias, stated up front and enforced at step 2: **most problems need no
-pattern, and a pattern without its problem is rot.** Sources for the lens: GoF 1994 ch. 1
+recorded decision. The governing bias, stated up front and enforced at step 2: **weigh the forces the system will
+face over its lifetime, not just this sprint. A pattern without its problem is rot, and so is the structure a
+growing system should have had but did not. Pick none only when the forces are genuinely small and will stay
+small; block only speculative structure.** Sources for the lens: GoF 1994 ch. 1
 (<https://refactoring.guru/design-patterns>), Fowler *PoEAA* (<https://martinfowler.com/eaaCatalog/>).
 
 ## Step 0, Is there even a design problem here?
@@ -11,15 +13,22 @@ If the change is a one-line fix, a config tweak, or a straight-line function wit
 
 ## Step 1, Name the problem as forces, not a pattern
 
-Write the forces down before any pattern name is allowed in the conversation:
+Write the forces down before any pattern name is allowed in the conversation. Include both the forces you
+have now and the ones the system will face for certain, because enterprise code is built for its lifetime,
+not just this sprint:
 
 - **What varies** (and along how many axes)?, *encapsulate what varies.*
 - **What must stay stable** while that varies?
 - **What is duplicated** across callers or will be?
 - **What is coupled** that shouldn't be (concrete class, transport, storage, vendor)?
 - **What must several callers keep consistent** (one fact, many writers)?
+- **What is certain and imminent** on the roadmap: more scale, a second or third consumer, a team or
+  ownership boundary, an audit or compliance duty, a swap of a vendor or store? A force you can already see
+  coming is a real force; one you are inventing to feel thorough is not.
+- **What would it cost to retrofit** the structure into a running system later, versus building it now?
 
-If you cannot name a force, there is no pattern decision, there is just code to write.
+If you cannot name a force, present or certain and imminent, there is no pattern decision, there is just code
+to write.
 
 ## Step 2 (the most important step): anti-pattern check, then pattern-need check
 
@@ -36,18 +45,24 @@ used as global state. See `anti-patterns-and-smells.md`.
 
 ### 2b. Does this code need a pattern?
 
-A pattern earns its place only when a named force calls for it and no plain function, class, or language
-feature already solves it. A first-class function is a Strategy. A `map` of constructors is a Factory. A
-sum type with `match` is a Visitor or State. A DI container is Singleton done right. Prefer the language
-feature.
+A pattern earns its place when a named force calls for it, present or certain and imminent given the system's
+scale, roadmap, team, or compliance reality, and no plain function, class, or language feature already solves
+it. A first-class function is a Strategy. A `map` of constructors is a Factory. A sum type with `match` is a
+Visitor or State. A DI container is Singleton done right. Prefer the language feature.
 
-- **Yes:** pick a pattern and scope it. Go to Step 3.
+YAGNI blocks SPECULATIVE structure only: a factory for one use, an interface with one implementation and no
+second consumer in sight, a layer added for a future nobody can name. It does not block deliberate design for
+growth you can already see. So weigh the cost of adding the structure now against the cost of retrofitting it
+into a running system later; when a force is certain and imminent, building it in is correct, not premature.
+
+- **Yes (a present or certain-and-imminent force):** pick a pattern and scope it. Go to Step 3.
 - **No, and 2a found an anti-pattern:** remove the anti-pattern and make the result scalable and
   performant. Add no new pattern. Record the decision and move on to the next piece.
-- **No, and there was no anti-pattern:** there is no pattern decision here. Write "no pattern, because ..."
-  and stop.
+- **No, and there was no anti-pattern:** there is no pattern decision here. Write "no pattern, because the
+  forces are small and will stay small" and stop.
 
-A pattern only earns its place past this gate.
+A pattern only earns its place past this gate, and "no pattern" earns its place only when the forces really
+are small and will stay small, not merely small today.
 
 ## Step 3, Map symptoms → candidate patterns
 
