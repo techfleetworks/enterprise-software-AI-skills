@@ -263,7 +263,10 @@ The skills live in this repo under [`.claude/skills/`](.claude/skills/), so you 
 
 - **Work in this repo:** clone it and open a session here. Claude Code auto-discovers the
   skills from `.claude/skills/`, with no install step.
-- **For all your projects:** copy a skill folder into `~/.claude/skills/`.
+- **For all your projects, in one command:** run
+  `node .claude/skills/bootstrap/scripts/esk-init.mjs --personal --yes --skills` to mirror every skill into
+  `~/.claude/skills/` and turn the always-on hook on, kept current by re-running after a pull. Or copy a
+  single skill folder into `~/.claude/skills/` by hand.
 - **For one of your own repos, shared with the team:** copy the folder into that repo's
   `.claude/skills/` and commit it.
 

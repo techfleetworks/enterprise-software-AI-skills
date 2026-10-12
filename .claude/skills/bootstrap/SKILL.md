@@ -24,6 +24,18 @@ Two honest limits sit under this: the very first install cannot be automatic (th
 announce it), so first contact is a deliberate command; and the installer can confirm the hook command
 emits the directive, but only you opening a fresh session proves the harness fires it.
 
+### Two things it can install
+
+By default the installer wires only the **always-on hook** (the directive). Pass `--skills` and it also
+**mirrors the repo's `.claude/skills/` into `~/.claude/skills/`**, so the skills load from any folder on the
+machine, not only from a session rooted in this repo. That is the global, any-folder install, and a
+`git pull` alone cannot do it because git cannot write another machine's `~/.claude`. The mirror is a clean
+per-skill copy (written to a temp, then swapped in by moving the existing copy aside so a failed swap rolls
+back to it; only a hard process kill mid-swap needs a re-run to heal) that records what it installed, so a
+later reconcile removes a skill you dropped from the repo but never touches a skill you installed yourself.
+If the repo's skills cannot be read (a dehydrated OneDrive folder, a locked ACL), it fails closed rather than
+mistaking that for an empty repo. `--check` then also flags a mirrored skill that is missing or behind.
+
 ## The workflow
 
 ### Step 1: Isolate before a full install
@@ -62,7 +74,8 @@ hook additively (it never overwrites other hooks or keys), validates the JSON it
 hook at this repo so a future `git pull` updates the directive automatically.
 
 ```bash
-node .claude/skills/bootstrap/scripts/esk-init.mjs --yes
+node .claude/skills/bootstrap/scripts/esk-init.mjs --yes                      # the hook, for this repo
+node .claude/skills/bootstrap/scripts/esk-init.mjs --personal --yes --skills  # global: hook + skills in ~/.claude (any folder)
 ```
 
 If the post-write validation or the canary fails, the installer restores `settings.json` from the backup
@@ -88,15 +101,17 @@ the reconcile; it re-points the hook and bumps the version marker, through the s
 and verify steps.
 
 ```bash
-node .claude/skills/bootstrap/scripts/esk-init.mjs --check    # drift gate: exit non-zero if not installed or behind
-node .claude/skills/bootstrap/scripts/esk-init.mjs --yes      # reconcile to the current version
+node .claude/skills/bootstrap/scripts/esk-init.mjs --check                     # drift gate: not installed or behind
+node .claude/skills/bootstrap/scripts/esk-init.mjs --yes                       # reconcile the hook
+node .claude/skills/bootstrap/scripts/esk-init.mjs --personal --yes --skills   # reconcile the global hook + skills
 ```
 
 ## Mechanical gate
 
 `scripts/esk-init.mjs --check` is the drift gate. It exits non-zero when the always-on hook is missing,
 not pointing at this repo, the `settings.json` is invalid, the marker is absent, or the installed version
-is behind the repo version, and it exits 0 only when the hook is installed, current, and emitting. Wire it
+is behind the repo version (and, when skills were mirrored with `--skills`, a mirrored skill is missing or
+behind), and it exits 0 only when the hook is installed, current, and emitting. Wire it
 into CI so a teammate who has drifted or fallen behind is caught, not assumed current. The installer is
 safe by default (it never writes without `--yes`), backs up before writing, and restores on failure. Its
 discriminating test is `test/esk-init.test.mjs`.
