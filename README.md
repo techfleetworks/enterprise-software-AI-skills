@@ -308,14 +308,12 @@ missing, and if the rule file ever goes missing it says so loudly instead of tur
 enforcement off in silence.
 
 The easiest way to set this up, and to keep it current, is the bootstrap below, which
-does it for you with a backup and a check. To do it by hand for all your projects,
-after cloning:
-
-```bash
-cp always-on/enterprise-skills-always-on.md ~/.claude/enterprise-skills-always-on.md
-cp always-on/emit-directive.mjs ~/.claude/emit-directive.mjs
-# then merge the hooks block from always-on/settings.snippet.json into ~/.claude/settings.json
-```
+does it for you with a backup and a check. **Do not `cp` the directive or emitter into
+`~/.claude`:** a copy freezes, and a later `git pull` updates the repo, not the copy (the
+staleness trap this whole system exists to prevent). To wire it by hand instead, add a hook to
+`~/.claude/settings.json` whose command runs this clone's own `always-on/emit-directive.mjs`
+by absolute path (a reference, never a copy), so the pull is the update. See
+[`always-on/settings.snippet.json`](always-on/settings.snippet.json) for the exact block.
 
 Full steps, including personal vs project setup, the Windows fallback, the
 confirm-it-works check, the CLAUDE.md option, and how to narrow it or turn it off, are
@@ -326,16 +324,16 @@ in the [`always-on/` README](always-on/).
 ## Set it up and keep it current: the bootstrap
 
 Having the skills in a repo does nothing until they are actually loaded. This repo makes
-that automatic for anyone who works in it, and keeps it current on **every pull**, with two
-committed, repo-relative layers. The root cause of a stale setup is copying the directive
+the **directive** automatic for anyone who works in it, and keeps it current on **every pull**,
+with two committed, repo-relative layers. The root cause of a stale setup is copying the directive
 into `~/.claude`, where a pull never reaches it; both layers below instead point at the
 repo's own files, so the pull is the update.
 
 - **Layer 1, zero setup, no approval: the committed [`CLAUDE.md`](CLAUDE.md).** Claude Code
-  loads a project `CLAUDE.md` into every session as context, and a relative import loads
-  with no prompt. `CLAUDE.md` imports the directive, so anyone who works in the repo gets
-  the current skills automatically, on every pull. It reaches the main agent and most
-  subagents.
+  loads a project `CLAUDE.md` from the working directory and its parents, and a relative
+  import loads with no prompt. `CLAUDE.md` imports the directive, so a session rooted in the
+  repo gets the current directive automatically, on every pull. It reaches the main agent and
+  most subagents, but not a session rooted above or outside the repo.
 - **Layer 2, stronger, one approval: the committed [`.claude/settings.json`](.claude/settings.json)
   hook.** It injects the same directive into every subagent, including the built-in Explore
   and Plan agents that skip `CLAUDE.md`. Claude Code asks each person once to trust the
@@ -402,7 +400,13 @@ flowchart TD
 ```
 
 > Scope note: the two committed layers (CLAUDE.md + the hook) and the installer today own the
-> always-on directive lifecycle (load, install, verify, reconcile, drift). The broader artifact
+> always-on **directive** lifecycle (load, install, verify, reconcile, drift). They carry the
+> directive text, not the skill files: Claude Code discovers skills from `~/.claude/skills`, a
+> project's `.claude/skills`, or a plugin, not from this repo's root layout, so a pull does not
+> by itself make the skills loadable (a per-machine install does). Coverage is also not
+> universal: a session rooted outside the repo relies on the per-machine hook, and a cloud
+> session does not read `~/.claude` at all. The coverage map is in the
+> [`always-on/` README](always-on/#what-each-path-actually-covers). The broader artifact
 > scaffolding (asking for audiences and SLOs, baselining existing debt, turning on the other
 > gates) is the next phase and plugs into the same plan, consent, backup, verify, and record
 > framework.

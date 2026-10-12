@@ -61,11 +61,18 @@ if (missing) {
   );
 }
 if (text.length > MAX) {
+  // Claude never sees a hook's stderr when it exits 0, so a stderr-only warning is invisible to the agent.
+  // Prepend a short in-context NOTICE (sized so the notice plus the clipped directive stay within MAX) and
+  // keep the stderr line for human logs.
+  const truncNotice =
+    `NOTICE: the enterprise always-on directive was TRUNCATED to fit the ${MAX}-character hook limit, ` +
+    `so some skills or rules below may be cut off. Shorten the directive, then re-check. ---\n`;
   process.stderr.write(
     `[enterprise-skills] WARNING: the directive is ${text.length} characters, over the ${MAX}-character ` +
-    `hook limit; keep it short so it is not truncated. Emitting the first ${MAX} characters.\n`,
+    `hook limit; keep it short so it is not truncated. Emitting a truncation NOTICE plus the first ` +
+    `${MAX - truncNotice.length} characters.\n`,
   );
-  text = text.slice(0, MAX);
+  text = truncNotice + text.slice(0, MAX - truncNotice.length);
 }
 
 process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: event, additionalContext: text } }));

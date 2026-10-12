@@ -18,3 +18,6 @@ owasp-secure-coding-bdd/vendor/LICENSE-LLM-Top10.md
 .claude/.esk-installed
 .claude/*.esk.bak
 .claude/ESK-INSTALL-LOG.md
+
+# App-managed worktree metadata (not part of the repo).
+.claude/worktrees/

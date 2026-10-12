@@ -34,7 +34,10 @@ Every factual claim you output carries an **evidence state** (`proven` / `observ
 `documented` / `reported` / `not-assessed`), a **re-runnable source**, and a **named limitation**. Run
 the disconfirming-case-first pass, attach the evidence ledger, and never report work "done / secure /
 tested / safe / fixed / passes / complete" without it. The canonical contract is
-`skeptical-audit/references/evidence-discipline.md`. This directive loads on every session two ways, so it
-survives a pull with no setup: the committed `CLAUDE.md` imports this file (it loads for the main agent and
-most subagents, with no approval), and the always-on hook (`emit-directive.mjs`) injects it into every
-subagent, including the built-in Explore and Plan agents. See `always-on/README.md`.
+`skeptical-audit/references/evidence-discipline.md`. How this directive reaches a session depends on where
+the session runs, and no single path covers all of them: a session working inside this repo gets it from the
+committed `CLAUDE.md` import (main agent and most subagents, no approval) and from the committed
+`.claude/settings.json` hook (every subagent, including Explore and Plan, after a one-time trust step); a
+local session rooted outside the repo gets it only from the per-machine user-level hook, if one is installed,
+and cloud sessions follow their own rules again (see the map). Loaded is not the same as obeyed: the gates,
+not this text, prove a skill was applied. See `always-on/README.md` for the full coverage map and its limits.
