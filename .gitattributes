@@ -1,2 +1,5 @@
 * text=auto
 *.mjs text
+# Shell scripts must check out with LF even on Windows, or the bash that runs them
+# (CI and the ADR/ruleset gate tests) fails on CR bytes (`$'\r': command not found`).
+*.sh text eol=lf
