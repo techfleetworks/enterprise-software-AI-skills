@@ -15,6 +15,7 @@
         "verifiable-quality-gates/SKILL.md",
         "release-deployment-safety/SKILL.md",
         "sre-operational-readiness/SKILL.md",
+        "compliance-data-lifecycle/SKILL.md",
         "owasp-secure-coding-bdd/SKILL.md",
         "owasp-secure-coding-bdd/references/cheatsheets/*.md",
         "docs/arch-reviews/README.md",
