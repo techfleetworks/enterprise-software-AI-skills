@@ -82,6 +82,13 @@ and historical ADRs. The true end-to-end proof, that a fresh session discovers t
 `.claude/skills/` with no `~/.claude` install, is a stated human step (open a fresh clone and ask an agent to
 invoke a skill), the same division of proof used for the always-on hook canary.
 
+Addendum (post-merge): one self-locating script was not fully covered by "needed no change." The bootstrap
+installer resolved its repo root by a hardcoded directory depth (`resolve(here, "..", "..")`), a self-relative
+assumption this move invalidated, so the documented default command failed to find the repo until it was
+corrected (branch `fix/esk-init-reporoot`) with a walk-up resolver and tests that run the documented
+invocation with no `--repo`. The lesson: a self-relative path can still carry a layout assumption, and only a
+test of the real documented command catches it.
+
 ## More Information
 
 Follows ADR-0026 and ADR-0027 (the always-on directive coverage). The per-machine global install (mirror

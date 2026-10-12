@@ -44,7 +44,22 @@ const args = process.argv.slice(2);
 const flag = (n) => args.includes(n);
 const opt = (n) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : undefined; };
 
-const repoRoot = resolve(opt("--repo") || resolve(here, "..", ".."));
+// Resolve the repo root by walking up from this script to the dir that holds the always-on files, so it
+// works wherever the bootstrap skill sits (the repo root, or nested under .claude/skills/). A hardcoded
+// number of "../" segments breaks the moment the skill is moved; this does not. --repo overrides it.
+function findRepoRoot(start) {
+  let dir = start;
+  for (let i = 0; i < 12; i++) {
+    // Require BOTH always-on files, the same pair the emitter guard below checks, so the walk never stops at
+    // a dir that holds only one of them and then fails closed a level too low.
+    if (existsSync(join(dir, "always-on", "emit-directive.mjs")) && existsSync(join(dir, "always-on", "enterprise-skills-always-on.md"))) return dir;
+    const up = dirname(dir);
+    if (up === dir) break;
+    dir = up;
+  }
+  return start;
+}
+const repoRoot = resolve(opt("--repo") || findRepoRoot(here));
 const emitter = join(repoRoot, "always-on", "emit-directive.mjs");
 const directive = join(repoRoot, "always-on", "enterprise-skills-always-on.md");
 if (!existsSync(emitter) || !existsSync(directive)) {
