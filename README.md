@@ -51,6 +51,7 @@ any AI tool. They also read fine as plain notes for a person.
 - [What is a "skill"?](#what-is-a-skill)
 - [Install and use](#install-and-use)
 - [Always-on: run every skill on every task](#always-on-run-every-skill-on-every-task)
+- [How a skill gets chosen and enforced](#how-a-skill-gets-chosen-and-enforced)
 - [Set it up and keep it current: the bootstrap](#set-it-up-and-keep-it-current-the-bootstrap)
 - [Adopt the architecture gate, step by step](#adopt-the-architecture-gate-step-by-step)
 - [How the skills fit together](#how-the-skills-fit-together)
@@ -320,6 +321,46 @@ by absolute path (a reference, never a copy), so the pull is the update. See
 Full steps, including personal vs project setup, the Windows fallback, the
 confirm-it-works check, the CLAUDE.md option, and how to narrow it or turn it off, are
 in the [`always-on/` README](always-on/).
+
+---
+
+## How a skill gets chosen and enforced
+
+Two things decide whether a skill actually shapes a change: it has to be **chosen**, and the change has to be
+**enforced** at the end. Selection is automatic: the `description` is the trigger, and the always-on layer
+makes the relevant skills required instead of leaving them to chance. Enforcement is at the outcome: a
+fresh-context review plus required CI checks, so a change that skipped a discipline cannot merge. This is the
+difference between a skill that was *loaded* and one that was *obeyed*.
+
+```mermaid
+flowchart TD
+    subgraph SEL["Chosen: automatic"]
+      S1["Session starts. The harness puts every skill's name and<br/>description (the catalog) into context."] --> S2["Always-on: the committed CLAUDE.md import and the hook inject the<br/>directive into the main agent and every subagent, so the relevant<br/>skills are REQUIRED, not left to chance."]
+      S2 --> S3["A task arrives: build, fix, review, deploy, and so on."]
+      S3 --> S4["The model matches the task to the descriptions and loads the<br/>matching SKILL.md. Heavy references load only when needed."]
+      S4 --> S5["Do the work applying the skill: threat-model, write the tests,<br/>record the ADR, pick the pattern, plan the safe migration."]
+    end
+
+    subgraph ENF["Enforced: at the outcome, not on trust"]
+      S5 --> E1["Before done or a PR: judge-arch reviews the change in fresh<br/>context against the four questions; findings resolved or waived."]
+      E1 --> E2{"Required CI checks: the test job<br/>(gate-script tests + check:architecture) and routing"}
+      E2 -- "a discipline's artifact is missing:<br/>no ADR for a new skill, no test for a new gate,<br/>no @security scenario for an auth change" --> E3["Blocked. The change cannot merge."]
+      E2 -- "every routed artifact present and the review is clean" --> E4["Merges."]
+    end
+
+    style E3 fill:#ffe6e6
+    style E4 fill:#e6ffe6
+```
+
+The selection half is the same mechanism any SKILL.md tool uses; the always-on layer and the enforcement half
+are what this repo adds, so the right skill is not just available but required and then checked. The
+`routing` check (change-type to required-artifact) is what turns "you should have recorded the decision" into
+"this will not merge without the ADR."
+
+The always-on requirement covers sessions working in this repo. A session rooted outside the repo, or a cloud
+session, needs the one-time installer; the [`always-on/` README](always-on/) has the full per-session
+coverage map. The harness injecting the skill catalog (the first box) is the one part that happens in every
+session.
 
 ---
 
@@ -596,7 +637,7 @@ description: "When to use this skill. This text is what triggers it."
 .
 ├── .claude/
 │   ├── settings.json                  # committed always-on hook (SessionStart + SubagentStart)
-│   └── skills/                        # all 17 skills live here, so a clone auto-discovers them
+│   └── skills/                        # the 16 skills plus the bootstrap installer, so a clone auto-discovers them
 │       ├── enterprise-architecture-standards/
 │       ├── architectural-decision-records/
 │       ├── judge-arch/                # review a change + the gate that blocks drift
