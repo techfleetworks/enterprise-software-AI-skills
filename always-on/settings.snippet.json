@@ -1,14 +1,17 @@
 {
-  "//": "Always-on enterprise skills. Merge the \"hooks\" block below into your settings.json (do not replace the whole file). SessionStart injects the directive into the main agent; SubagentStart injects it into every spawned subagent. Both are run by the harness, so the directive does not depend on model discretion. Requires Node.js on PATH and the companion file enterprise-skills-always-on.md at the path referenced below. For a personal, all-projects install, copy enterprise-skills-always-on.md to ~/.claude/ and use the paths as written. For a project install, commit it in the repo and point both commands at its path (e.g. \"$CLAUDE_PROJECT_DIR/.claude/enterprise-skills-always-on.md\").",
+  "//": "Always-on enterprise skills hook. Merge the \"hooks\" block below into your settings.json (merge, do not replace the whole file). SessionStart injects the directive into the main agent; SubagentStart injects it into every spawned subagent. Both run emit-directive.mjs in EXEC form (\"command\":\"node\" + \"args\"), which uses NO shell, so the hook does not silently fail when bash is missing or broken. Place emit-directive.mjs and enterprise-skills-always-on.md together (the emitter reads the directive as its own sibling), e.g. both in .claude/ for a project install or both in ~/.claude/ for a personal install.",
+  "//requires": "Node.js on PATH, and a Claude Code version that supports exec-form hook \"args\" (if yours does not, the command will not run; use the confirm-it-works check and the PowerShell fallback below). Check: `node --version` and `claude --version`.",
+  "//personal": "For a personal (all-projects) install there is no project-dir placeholder, so use an ABSOLUTE path to the emitter in args[0], e.g. \"C:/Users/you/.claude/emit-directive.mjs\" or \"/home/you/.claude/emit-directive.mjs\". For a project install, keep \"${CLAUDE_PROJECT_DIR}/.claude/emit-directive.mjs\" (Claude Code substitutes ${CLAUDE_PROJECT_DIR} itself).",
+  "//windows-fallback": "If exec form does not run on your machine (Windows setups are the usual culprit), replace an entry with the PowerShell shell form (shell and args cannot be combined): { \"type\": \"command\", \"shell\": \"powershell\", \"timeout\": 10, \"command\": \"node \\\"${CLAUDE_PROJECT_DIR}/.claude/emit-directive.mjs\\\" SessionStart\" }. Then confirm a fresh session actually receives the directive (see always-on/README.md, 'Confirm it works').",
   "hooks": {
     "SessionStart": [
       {
         "hooks": [
           {
             "type": "command",
-            "shell": "bash",
-            "command": "node -e 'process.stdout.write(require(\"fs\").readFileSync(process.argv[1],\"utf8\"))' \"$HOME/.claude/enterprise-skills-always-on.md\"",
-            "timeout": 15,
+            "command": "node",
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/emit-directive.mjs", "SessionStart"],
+            "timeout": 10,
             "statusMessage": "Loading enterprise always-on skills directive"
           }
         ]
@@ -19,9 +22,9 @@
         "hooks": [
           {
             "type": "command",
-            "shell": "bash",
-            "command": "node -e 'const fs=require(\"fs\");process.stdout.write(JSON.stringify({hookSpecificOutput:{hookEventName:\"SubagentStart\",additionalContext:fs.readFileSync(process.argv[1],\"utf8\")}}))' \"$HOME/.claude/enterprise-skills-always-on.md\"",
-            "timeout": 15,
+            "command": "node",
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/emit-directive.mjs", "SubagentStart"],
+            "timeout": 10,
             "statusMessage": "Loading enterprise always-on skills directive"
           }
         ]
