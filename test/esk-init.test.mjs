@@ -40,6 +40,35 @@ test("default mode is a dry run: prints a plan and writes nothing", () => {
   assert.match(r.out, /dry run/i);
 });
 
+test("resolves the repo root from its own location with no --repo (default invocation, discriminating)", () => {
+  // Run the REAL installer with NO --repo, in plan mode, so it must find the repo by walking up from its own
+  // path. The documented one-line command relies on this; a hardcoded "../.." broke it when the skill moved
+  // under .claude/skills/, and no test caught it because every other test passes --repo explicitly.
+  const dir = mkdtempSync(join(tmpdir(), "esk-defrepo-"));
+  const settings = join(dir, ".claude", "settings.json");
+  const r = spawnSync(process.execPath, [ESK, "--settings", settings], { encoding: "utf8" });
+  const out = (r.stdout || "") + (r.stderr || "");
+  assert.doesNotMatch(out, /could not find the always-on files/, "default repoRoot resolution must find the repo");
+  assert.equal(r.status, 0, out);
+  assert.match(out, /plan/i);
+});
+
+test("the documented install runs end-to-end with NO --repo (self-locating), hermetically (structural)", () => {
+  // The exact shape of the documented global command, minus --personal so the settings target stays in a
+  // temp dir. No --repo: the installer must locate its OWN repo. This proves the documented one-liner
+  // actually works end-to-end, so a future move or refactor that breaks it fails CI, not a user's machine.
+  const dir = mkdtempSync(join(tmpdir(), "esk-doc-"));
+  const settings = join(dir, ".claude", "settings.json");
+  const tgt = join(dir, "home", "skills");
+  const r = spawnSync(process.execPath, [ESK, "--settings", settings, "--skills", "--skills-target", tgt, "--yes"], { encoding: "utf8" });
+  const out = (r.stdout || "") + (r.stderr || "");
+  assert.equal(r.status, 0, out);
+  assert.doesNotMatch(out, /could not find the always-on files/);
+  assert.ok(existsSync(join(tgt, "judge-arch", "SKILL.md")), "the real repo's skills must be mirrored via the self-located root");
+  const m = JSON.parse(readFileSync(join(dir, ".claude", ".esk-installed"), "utf8"));
+  assert.ok(m.skills && m.skills.names.includes("judge-arch"), "marker records the mirrored skills");
+});
+
 // --- apply installs both hooks + marker --------------------------------------
 test("--yes installs both SessionStart and SubagentStart hooks and the marker", () => {
   const r = run(["--yes"]);
