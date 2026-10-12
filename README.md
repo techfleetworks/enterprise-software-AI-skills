@@ -325,30 +325,29 @@ in the [`always-on/` README](always-on/).
 
 ## Set it up and keep it current: the bootstrap
 
-Having the skills in a repo does nothing until the always-on hook is turned on and
-actually firing. The [`bootstrap`](bootstrap/) skill does that for you, proves it
-works, and keeps it current after an update. This matters when more than one person
-uses the repo: when anyone pulls a new version, their machine needs to pick up the
-latest skills without a fragile manual ritual.
+Having the skills in a repo does nothing until they are actually loaded. This repo makes
+that automatic for anyone who works in it, and keeps it current on **every pull**, with two
+committed, repo-relative layers. The root cause of a stale setup is copying the directive
+into `~/.claude`, where a pull never reaches it; both layers below instead point at the
+repo's own files, so the pull is the update.
 
-Two ideas make that safe:
+- **Layer 1, zero setup, no approval: the committed [`CLAUDE.md`](CLAUDE.md).** Claude Code
+  loads a project `CLAUDE.md` into every session as context, and a relative import loads
+  with no prompt. `CLAUDE.md` imports the directive, so anyone who works in the repo gets
+  the current skills automatically, on every pull. It reaches the main agent and most
+  subagents.
+- **Layer 2, stronger, one approval: the committed [`.claude/settings.json`](.claude/settings.json)
+  hook.** It injects the same directive into every subagent, including the built-in Explore
+  and Plan agents that skip `CLAUDE.md`. Claude Code asks each person once to trust the
+  project hooks (a security prompt, not staleness); after that, content updates apply on pull.
 
-- **The hook points at the repo, not at copies.** So when you `git pull` a new
-  version, your next session already runs the latest rule. No re-copying, nothing to
-  go stale.
-- **The installer reconciles, it does not just sit there.** The marker records a
-  version. On a later session the hook adds a one-line "an update is available, run
-  the bootstrap" note when you are behind, and the reconcile re-points the hook and
-  bumps the marker, through the same plan, consent, and backup steps as a first
-  install. `esk-init --check` is a CI drift gate that fails if someone is missing or
-  behind.
-
-It is safe by default: the installer never writes without `--yes`, backs up
-`settings.json` first, validates what it wrote, and restores from the backup if
-anything fails, so a failed install never leaves the repo half-configured. One thing
-it cannot prove on its own is that a brand-new session really receives the rule, so it
-finishes by asking you to open a fresh session and confirm. That honesty is the point:
-a check that cannot see the end result says so.
+To use the skills in **another project or machine**, the [`bootstrap`](bootstrap/) skill's
+installer references this repo (never copies), is safe by default (it never writes without
+`--yes`, backs up first, validates, and restores on failure), records a version marker, and
+`esk-init --check` is a CI drift gate that fails if someone is missing or behind. It verifies
+honestly: it confirms the hook command emits the directive, and leaves the one true
+end-to-end proof (open a fresh session and quote the directive) as a stated step, because a
+script cannot watch the harness fire the hook.
 
 ```bash
 node bootstrap/scripts/esk-init.mjs            # plan only, writes nothing
@@ -356,72 +355,57 @@ node bootstrap/scripts/esk-init.mjs --yes      # install or reconcile (backs up 
 node bootstrap/scripts/esk-init.mjs --check    # CI drift gate: fails if not installed or behind
 ```
 
-Here is the whole sequence, from first install through staying current after a pull:
+Here is the whole picture, from working in the repo to installing elsewhere and staying current:
 
 ```mermaid
 flowchart TD
-    START1["FIRST TIME here (no hook installed yet):<br/>you run the bootstrap on purpose, from this one-liner or by invoking<br/>the skill. Nothing can auto-run before the first install."] --> F1
+    subgraph INREPO["Working IN this repo: current on every pull, no install step"]
+      P1["You git pull the repo"] --> P2["The repo ships two committed, repo-relative pieces,<br/>so the pull itself is the update (no copy to go stale)"]
+      P2 --> L1["Layer 1 - CLAUDE.md imports the directive.<br/>Claude Code loads a project CLAUDE.md every session as context,<br/>and a RELATIVE import loads with NO approval prompt.<br/>Zero setup. Reaches the main agent and most subagents."]
+      P2 --> L2["Layer 2 - .claude/settings.json runs emit-directive.mjs and<br/>injects the same directive into EVERY subagent, including the<br/>built-in Explore and Plan agents. One-time trust-the-hook<br/>approval per person; after that, content updates apply on pull."]
+      L1 --> CUR["Your next session loads the CURRENT directive automatically.<br/>Nothing per-machine, nothing copied, nothing to fall behind."]
+      L2 --> CUR
+    end
 
-    START2["EVERY LATER session: the installed hook emits the rule (cheap) and<br/>reads two small version files. If the installed version is behind the<br/>repo, it adds ONE line: an update is available, run the bootstrap.<br/>It never writes or scaffolds on its own."] --> VQ{"Installed version behind<br/>the repo version?"}
-    VQ -- "No" --> OK["Up to date. The rule is already injected every session. Nothing to do."]
-    VQ -- "Yes, e.g. after a git pull" --> U1
+    subgraph ELSEWHERE["Installing into ANOTHER project or machine: the bootstrap"]
+      START2["A later session where the hook is installed: it emits the directive<br/>and, if the installed version is behind the repo, adds one line:<br/>an update is available, run the bootstrap. It never writes on its own."] --> VQ{"Installed version<br/>behind the repo?"}
+      VQ -- "No" --> OK["Up to date. Nothing to do."]
+      VQ -- "Yes, after a pull" --> U1
 
-    subgraph FRESH["First install - full setup"]
-      F1{"Unsaved changes, or on main / a shared branch?<br/>(this path writes several files)"}
-      F1 -- "Yes" --> F1a["Stop. Offer a separate work folder and branch first,<br/>so it never writes over unsaved work."]
+      B0["First time: run the bootstrap on purpose<br/>(README one-liner or invoke the skill)."] --> F1
+      F1{"Unsaved changes, or on main / a shared branch?"}
+      F1 -- "Yes" --> F1a["Stop. Offer a separate work folder and branch first."]
       F1a --> F2
-      F1 -- "No" --> F2["Look around the repo: stack, package manager, framework,<br/>database, CI, and any hook already set up."]
-      F2 --> F3{"Anything still just a guess?<br/>(a fact needs 2+ agreeing clues)"}
-      F3 -- "Yes" --> F3a["Do not act on a guess. Probe harder, or ask. Then look again."]
-      F3a --> F2
-      F3 -- "No" --> F4["Ask only what must never be guessed: users, uptime and speed targets,<br/>the kind of data stored, browsers and devices. No answer leaves a<br/>clear you decide this note, not a guess."]
-      F4 --> F5["Show the WHOLE plan (add / change / skip + checks to turn on),<br/>then ask permission."]
-      F5 --> F6{"Did you say go ahead?"}
-      F6 -- "No" --> F6a["Stop. Nothing is written."]
-      F6 -- "Yes" --> F7["Add only what is missing: never overwrite, BACK UP before any change,<br/>skip what exists; install the hook POINTED AT THIS REPO so future git<br/>pulls apply automatically. Log each step to ESK-INSTALL-LOG.md."]
+      F1 -- "No" --> F2["Detect the repo + target settings. Never guess:<br/>anything unconfirmed is checked harder or asked, not assumed."]
+      F2 --> F5["Show the WHOLE plan (create / merge / skip), then ask permission."]
+      F5 --> F6{"Go ahead?"}
+      F6 -- "No" --> F6a["Stop. Nothing written."]
+      F6 -- "Yes" --> K["Install the hook POINTED AT THE REPO (reference, never copy),<br/>so a future git pull updates it. Merge into settings.json additively,<br/>back up first, log each step."]
+
+      U1["Reconcile after a pull: re-point the hook at the repo, refresh the<br/>wiring, ask any NEW must-not-guess input. Same consent + backup."] --> K
+
+      K --> V["Verify: run the hook command as configured and confirm it EMITS<br/>the directive and the settings entry is well-formed.<br/>(The hook canary cannot prove the harness fires it.)"]
+      V --> VOK{"Valid + emits?"}
+      VOK -- "No" --> VR["RESTORE from backup, do NOT write the marker."]
+      VOK -- "Yes" --> M["Write the version marker + report. Then the only true proof:<br/>open a FRESH session and ask it to quote the directive;<br/>have it spawn a subagent and do the same."]
+      M --> CHK["CI runs esk-init --check: fails if the hook is missing, drifted,<br/>or the installed version fell behind the repo."]
     end
-
-    subgraph UPD["After a git pull - reconcile (light, no repo-tree writes)"]
-      U1["See what changed: new version, new skills, any NEW input the update needs."]
-      U1 --> U2{"Does the update need a new answer from you?"}
-      U2 -- "Yes" --> U2a["Ask only the new must-not-guess item(s)."]
-      U2a --> U3
-      U2 -- "No" --> U3["Show the small re-sync plan (which settings entry and marker change).<br/>BACK UP settings.json. Then ask permission."]
-      U3 --> U4{"Did you say go ahead?"}
-      U4 -- "No" --> U4a["Stop. Nothing is written."]
-      U4 -- "Yes" --> U5["Re-point the hook at this repo and refresh the rule wiring.<br/>The repo tree is untouched, so no worktree is needed."]
-    end
-
-    F7 --> V1
-    U5 --> V1
-
-    subgraph VERIFY["Verify and record - both paths end here"]
-      V1["Make today's build pass without hiding anything: existing style and<br/>structure problems become a dated, owned to-do list. SECURITY problems<br/>are NEVER put on that list; they are reported loudly and must be fixed."]
-      V1 --> V2["Prove it works: run each check and confirm it runs and will block a bad<br/>change; run the hook command as configured and confirm it EMITS the rule<br/>and the settings entry is well-formed."]
-      V2 --> V3{"All checks pass and the hook emits correctly?"}
-      V3 -- "No" --> V3a["RESTORE every changed file from its backup, then stop loudly.<br/>Do NOT write the marker."]
-      V3 -- "Yes" --> V4["Write the marker (repo version + date), the report, and a short summary.<br/>If any security findings are open, say so loudly: installed WITH N to fix."]
-    end
-
-    V4 --> CONFIRM["Recommended, and the only true proof: open a FRESH session and ask it to<br/>quote the first line of the rule, and have it spawn a subagent and do the same."]
-    CONFIRM --> CI["From then on, CI runs the drift check: it fails if a piece is missing,<br/>drifted, the version fell behind, or a temporary exception expired."]
 
     style F1a fill:#ffe6e6
-    style F3a fill:#ffe6e6
     style F6a fill:#ffe6e6
-    style U4a fill:#ffe6e6
-    style V3a fill:#ffe6e6
+    style VR fill:#ffe6e6
+    style CUR fill:#e6ffe6
     style OK fill:#e6ffe6
-    style V4 fill:#e6ffe6
-    style U1 fill:#e6f0ff
-    style U5 fill:#e6f0ff
-    style CONFIRM fill:#fff4d6
+    style M fill:#e6ffe6
+    style L1 fill:#e6f0ff
+    style L2 fill:#e6f0ff
 ```
 
-> Scope note: today the installer owns the always-on hook lifecycle (install, verify,
-> reconcile, drift). The broader artifact scaffolding in the diagram (asking for
-> audiences and SLOs, baselining existing debt, turning on the other gates) is the next
-> phase and plugs into the same plan, consent, backup, verify, and record framework.
+> Scope note: the two committed layers (CLAUDE.md + the hook) and the installer today own the
+> always-on directive lifecycle (load, install, verify, reconcile, drift). The broader artifact
+> scaffolding (asking for audiences and SLOs, baselining existing debt, turning on the other
+> gates) is the next phase and plugs into the same plan, consent, backup, verify, and record
+> framework.
 
 ---
 
