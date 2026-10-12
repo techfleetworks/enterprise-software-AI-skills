@@ -107,7 +107,7 @@
       "slug": "Automotive_Security",
       "title": "Automotive Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Automotive_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Mobile & embedded"
     },
     {
@@ -282,7 +282,7 @@
       "slug": "Drone_Security",
       "title": "Drone Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Drone_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Mobile & embedded"
     },
     {
@@ -529,7 +529,7 @@
       "slug": "Mobile_Application_Security",
       "title": "Mobile Application Security",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Mobile_Application_Security_Cheat_Sheet.html",
-      "done": false,
+      "done": true,
       "category": "Mobile & embedded"
     },
     {
