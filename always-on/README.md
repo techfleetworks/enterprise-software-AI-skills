@@ -76,8 +76,8 @@ is exactly the drift the version marker and `esk-init --check` exist to catch). 
 below instead point at the repo's own files, so a pull is the update.
 
 **Layer 1, zero setup, no approval: the committed [`CLAUDE.md`](../CLAUDE.md).** Claude Code
-loads a project `CLAUDE.md` into every session as context, and a relative import loads with
-no prompt. The committed `CLAUDE.md` imports `@always-on/enterprise-skills-always-on.md`, so
+loads a project `CLAUDE.md` from the working directory and its parents, and a relative import
+loads with no prompt. The committed `CLAUDE.md` imports `@always-on/enterprise-skills-always-on.md`, so
 anyone who works in the repo gets the current directive automatically, on every pull, with
 no install step and no approval. It reaches the main agent and most subagents (the built-in
 Explore and Plan agents skip project instructions, which is what Layer 2 covers).
@@ -86,15 +86,59 @@ Explore and Plan agents skip project instructions, which is what Layer 2 covers)
 hook.** It runs `emit-directive.mjs` in exec form via `${CLAUDE_PROJECT_DIR}` and injects the
 same directive into every subagent, including Explore and Plan. Claude Code asks each person
 once to trust the project's hooks (a security prompt, not staleness); after that, content
-updates apply automatically on pull, and only a change to the hook *command* re-prompts.
+updates apply automatically on pull. Claude Code keys the trust to the repo root and stores it
+once; the docs do not document a re-prompt when the hook command or script later changes, so
+treat the trust as a single per-repo step.
 
 The two overlap on the main agent (it sees the directive from both). That is intentional
 defense in depth: if one path is unavailable in a given session, the other still carries it.
 
-## Use the skills in another project or machine
+### What each path actually covers
 
-Run the installer, which references this repo (never copies), so pulling this repo updates
-the directive for that project too:
+No single path covers every session. The map below is **documented** from the Claude Code docs (sources
+listed under the table), not verified by launching each session type; the cloud rows in particular are from
+the docs, not from a live cloud probe:
+
+| Session | CLAUDE.md import | Committed hook | User-level hook | Net |
+|---|---|---|---|---|
+| Local, rooted in the repo | yes, no approval | yes, after one trust step | yes, if installed | fully covered |
+| Local, rooted above or outside the repo | no (loads only when a repo file is opened) | no | yes, if installed | user-level hook only |
+| Cloud, single repo | yes (in the clone) | yes (in the clone) | no (cloud ignores `~/.claude`) | committed layers only |
+| Cloud, multiple repos or no repo | no | no | no | rely on skills enabled on claude.ai / server-managed settings |
+
+Two honest limits follow. First, a machine that never opened the project and approved its hook, and a cloud
+multi-repo session, are reached by nothing the repo commits. Second, both layers make the directive
+**loaded**, not **obeyed**: that a skill was actually applied is proven by the outcome gates
+(migration-safety, untagged-PII, the a11y checklist, the evidence contract, and the rest), not by the
+directive being present.
+
+**Source and evidence state.** The in-repo and outside-repo rows are documented at the Claude Code memory
+and hooks docs; the cloud rows at the cloud-environments doc, which states that a single-repo cloud session
+loads the repo's `.claude/settings.json` hooks and its `CLAUDE.md` but not your local `~/.claude`, and that a
+multi-repo cloud session loads no repo hooks. These are **documented** (some via a summarizing fetch), not
+verified by launching a cloud session.
+
+- <https://code.claude.com/docs/en/memory>
+- <https://code.claude.com/docs/en/hooks>
+- <https://code.claude.com/docs/en/settings>
+- <https://code.claude.com/docs/en/cloud-environments>
+- <https://code.claude.com/docs/en/permissions>
+
+### The directive is not the skills
+
+These layers deliver the **directive text**, the reminder that names the skills. They do **not** make the
+skill files discoverable. Claude Code discovers skills from `~/.claude/skills`, a project's `.claude/skills`
+(walking up to the repo root), an `--add-dir` directory, enterprise settings, or a plugin, never from an
+arbitrary repo-root folder. This repo currently stores its skills at the root, so they load only where they
+have been installed into `~/.claude/skills` (the per-machine step the `bootstrap` installer performs).
+Relocating them under `.claude/skills/` so a pull makes them load with no install is tracked as its own
+change.
+
+## Turn the directive on in another project or machine
+
+Run the installer, which references this repo (never copies), so pulling this repo updates the
+always-on directive hook for that project too. It wires the directive hook, not the skill files;
+those still need to be in a discovery location such as `~/.claude/skills`:
 
 ```bash
 node bootstrap/scripts/esk-init.mjs            # plan only

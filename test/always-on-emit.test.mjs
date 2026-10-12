@@ -70,6 +70,19 @@ test("ANSI escape and control characters are stripped from the injected text (di
   assert.doesNotMatch(out, /\u001B/);
 });
 
+// --- over-limit directive: truncated, but visibly so (not silently clipped) ---
+test("an over-limit directive is truncated with a visible in-context NOTICE, not silently (discriminating)", () => {
+  const dir = mkdtempSync(join(tmpdir(), "emit-trunc-"));
+  const f = join(dir, "big.md");
+  writeFileSync(f, "A".repeat(15000)); // over the 10,000-character hook cap
+  const r = run(["SessionStart", f]);
+  assert.equal(r.status, 0, r.err);
+  const h = ctx(r.out);
+  assert.match(h.additionalContext, /TRUNCATED/, "truncation must be visible to the agent, not only on stderr");
+  assert.ok(h.additionalContext.length <= 10000, `must stay within the cap, got ${h.additionalContext.length}`);
+  assert.match(r.err, /over the 10000-character/, "still warns on stderr for human logs");
+});
+
 // --- missing directive: loud, not silent (the whole point) -------------------
 test("a missing directive warns on stderr, injects a fallback NOTICE, and exits 0 (discriminating)", () => {
   const r = run(["SessionStart", join(tmpdir(), "does-not-exist-esk.md")]);

@@ -85,3 +85,8 @@ Dogfood: after a reconcile, a fresh subagent probe reported the current 16-skill
 Builds on ADR-0024 (hardened emitter) and ADR-0025 (installer). CLAUDE.md import behavior per the Claude
 Code memory docs (<https://code.claude.com/docs/en/memory>): project `CLAUDE.md` loads every session, and
 relative `@path` imports expand at launch with no approval. See `always-on/README.md` and `CLAUDE.md`.
+
+Amended by [ADR-0027](0027-correct-always-on-coverage-claims.md): its coverage wording here ("current on
+every pull," "two ways") is corrected there to the documented per-session map, and the "only a command change
+re-prompts" note is withdrawn. The decision (two committed layers) stands; only the reach claimed for it is
+refined.
