@@ -38,10 +38,18 @@ async function main() {
   else console.error("WARNING: could not fetch the CheatSheetSeries LICENSE; do not redistribute without it.");
 
   // 2. One source markdown file per cheat sheet, by the manifest's slugs.
+  // WEBSITE_ONLY: do NOT fetch the GitHub raw .md for these; source them from the rendered website instead.
+  // XSS Filter Evasion is a catalog of XSS payloads that heuristic antivirus engines flag as malicious HTML (a
+  // false positive), so saving its raw file locally trips the scanner. Its per-sheet guidance is written from
+  // the rendered page (https://cheatsheetseries.owasp.org/cheatsheets/XSS_Filter_Evasion_Cheat_Sheet.html) in
+  // concept, without reproducing the payloads.
+  const WEBSITE_ONLY = new Set(["XSS_Filter_Evasion"]);
   const manifest = JSON.parse(fs.readFileSync(MANIFEST, "utf8"));
   let ok = 0;
   const missed = [];
+  const websiteOnly = [];
   for (const s of manifest.sheets) {
+    if (WEBSITE_ONLY.has(s.slug)) { websiteOnly.push(s.slug); continue; }
     const name = `${s.slug}_Cheat_Sheet.md`;
     const md = await get(`${CS_RAW}/cheatsheets/${name}`);
     if (md == null) { missed.push(s.slug); continue; }
@@ -49,6 +57,7 @@ async function main() {
     ok++;
   }
   console.log(`CheatSheetSeries: vendored ${ok}/${manifest.sheets.length} sheets into ${path.relative(SKILL_DIR, CS_OUT)}`);
+  if (websiteOnly.length) console.log(`  (sourced from the website, not vendored: ${websiteOnly.join(", ")}; see the comment in this tool)`);
   if (missed.length) console.error(`  (${missed.length} slug(s) had no upstream match, check names: ${missed.slice(0, 10).join(", ")}${missed.length > 10 ? " ..." : ""})`);
 
   // 3. The LLM / GenAI project's top-level docs (its full Top 10 content is also published at genai.owasp.org).
