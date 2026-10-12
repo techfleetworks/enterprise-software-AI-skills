@@ -268,13 +268,13 @@ section, a citation, an executable `@security` scenario, and an entry in this in
 | [Ruby on Rails](references/cheatsheets/Ruby_on_Rails.md) | `references/cheatsheets/Ruby_on_Rails.md` | done |
 | [Symfony](references/cheatsheets/Symfony.md) | `references/cheatsheets/Symfony.md` | done |
 
-### Mobile & embedded (0/3)
+### Mobile & embedded (3/3)
 
 | Cheat sheet | File | Status |
 |---|---|---|
-| Mobile Application Security | `references/cheatsheets/Mobile_Application_Security.md` | pending |
-| Automotive Security | `references/cheatsheets/Automotive_Security.md` | pending |
-| Drone Security | `references/cheatsheets/Drone_Security.md` | pending |
+| [Mobile Application Security](references/cheatsheets/Mobile_Application_Security.md) | `references/cheatsheets/Mobile_Application_Security.md` | done |
+| [Automotive Security](references/cheatsheets/Automotive_Security.md) | `references/cheatsheets/Automotive_Security.md` | done |
+| [Drone Security](references/cheatsheets/Drone_Security.md) | `references/cheatsheets/Drone_Security.md` | done |
 
 ### Security process & cross-cutting (0/9)
 
