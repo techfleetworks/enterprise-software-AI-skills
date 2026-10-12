@@ -29,7 +29,7 @@ and what evidence backed each verdict.
 Every entry has a field for the mechanical `arch-gate` result. Before the gate was wired to this repo,
 entries recorded that there was no root gate config to run, so the field read as not applicable. As of
 ADR-0015 that is no longer true. The gate now runs against this repo on every change through
-`npm run check:architecture`, which executes `judge-arch/scripts/arch-gate.mjs` against the root
+`npm run check:architecture`, which executes `.claude/skills/judge-arch/scripts/arch-gate.mjs` against the root
 `arch-gate.config.json`, and it is a required, blocking CI step. From ADR-0015 forward, record the real
 result (pass, or the violations found), not a not-applicable note. Older entries are left as they were
 written, because the log is append-only.
@@ -37,7 +37,7 @@ written, because the log is append-only.
 ## Evidence discipline
 
 Every verdict in this log is a factual claim, so it follows the repo's evidence discipline (canonical
-contract: [`skeptical-audit/references/evidence-discipline.md`](../../skeptical-audit/references/evidence-discipline.md)).
+contract: [`.claude/skills/skeptical-audit/references/evidence-discipline.md`](../../.claude/skills/skeptical-audit/references/evidence-discipline.md)).
 Two rules matter most here:
 
 - **A `cleared` cell must be `observed`, never `inferred`.** The source is something you ran and saw this
@@ -54,6 +54,6 @@ non-vacuous by `test/arch-gate-wired.test.mjs`, and a given run's clean result i
 
 ## How a review gets here
 
-`judge-arch` appends the entry as the last step of a review (see `judge-arch/SKILL.md`, "Storing reviews
+`judge-arch` appends the entry as the last step of a review (see `.claude/skills/judge-arch/SKILL.md`, "Storing reviews
 permanently"). The `check-arch-review-coverage` gate reads this log to confirm a change was reviewed
 across every changed file and every question before it can be called done.

@@ -3,7 +3,7 @@
 This folder holds one-off audits and gap analyses: a skill or practice in this repo measured against an
 authoritative outside source, with every claim carrying an evidence state and a re-runnable source (a
 `file:line` or a grep), per the repo's evidence discipline (canonical contract:
-[`skeptical-audit/references/evidence-discipline.md`](../../skeptical-audit/references/evidence-discipline.md)).
+[`.claude/skills/skeptical-audit/references/evidence-discipline.md`](../../.claude/skills/skeptical-audit/references/evidence-discipline.md)).
 
 Use the state vocabulary from that contract: `proven` (a committed discriminating gate keeps it true),
 `observed` (you ran it and saw the result this session), `inferred` (a named deduction from observed

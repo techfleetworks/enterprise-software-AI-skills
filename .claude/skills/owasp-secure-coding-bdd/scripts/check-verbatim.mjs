@@ -2,7 +2,7 @@
 // check-verbatim.mjs — the license-hygiene gate for the per-cheat-sheet OWASP files.
 //
 // The OWASP Cheat Sheet Series is licensed CC-BY-SA-4.0; this repo's own files are MIT (ADR-0017). The skill
-// vendors the exact upstream text into owasp-secure-coding-bdd/vendor/cheatsheets-src/ (gitignored, fetched by
+// vendors the exact upstream text into .claude/skills/owasp-secure-coding-bdd/vendor/cheatsheets-src/ (gitignored, fetched by
 // `npm run vendor:owasp`) and writes OWN-WORDS per-sheet files under references/cheatsheets/. Short shared runs
 // (header names, directive strings, code) are expected and fine; a LONG shared prose run means CC-BY-SA text
 // was pasted verbatim into an MIT file, which breaks ShareAlike. During Wave 1, 10 files carried such runs.

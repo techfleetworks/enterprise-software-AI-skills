@@ -1,4 +1,4 @@
-// Discriminating tests for requirements/universal-accessibility-wcag/scripts/check-axe-results.mjs
+// Discriminating tests for .claude/skills/universal-accessibility-wcag/scripts/check-axe-results.mjs
 // (the VERDICT half of the accessibility gate — the browser runner run-axe.mjs is a documented
 // scaffold, not tested here). A clean run passes; a high-impact violation fails; the allowlist
 // suppresses only with a reason + a live expiry; bad input fails closed.
@@ -11,7 +11,7 @@ import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const CHECK = resolve(REPO, "requirements/universal-accessibility-wcag/scripts/check-axe-results.mjs");
+const CHECK = resolve(REPO, ".claude/skills/universal-accessibility-wcag/scripts/check-axe-results.mjs");
 
 function run(results, config = {}) {
   const dir = mkdtempSync(join(tmpdir(), "axe-"));

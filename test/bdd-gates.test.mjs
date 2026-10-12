@@ -11,7 +11,7 @@ import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const S = (name) => resolve(REPO, "bdd-comprehensive-testing/scripts", name);
+const S = (name) => resolve(REPO, ".claude/skills/bdd-comprehensive-testing/scripts", name);
 
 const VALID = `Feature: Widget
 

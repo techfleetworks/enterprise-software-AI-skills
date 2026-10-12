@@ -1,4 +1,4 @@
-// Discriminating tests for skeptical-audit/scripts/check-skill-evidence-contract.mjs
+// Discriminating tests for .claude/skills/skeptical-audit/scripts/check-skill-evidence-contract.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
@@ -8,12 +8,12 @@ import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const CHECK = resolve(REPO, "skeptical-audit/scripts/check-skill-evidence-contract.mjs");
+const CHECK = resolve(REPO, ".claude/skills/skeptical-audit/scripts/check-skill-evidence-contract.mjs");
 
 const COMPLIANT = `# A skill
 
 ## Evidence & skeptical assessment (required)
-See skeptical-audit/references/evidence-discipline.md for the contract.
+See .claude/skills/skeptical-audit/references/evidence-discipline.md for the contract.
 
 Definition of done: the evidence ledger is attached.
 `;
@@ -70,7 +70,7 @@ test("the REAL repo passes with the compliant skills NOT grandfathered", () => {
   const out = (r.stdout || "") + (r.stderr || "");
   assert.equal(r.status, 0, out);
   assert.match(out, /[1-9]\d* compliant/); // compliant skills are counted as compliant, not allowlisted
-  const allow = JSON.parse(readFileSync(resolve(REPO, "skeptical-audit/scripts/skill-evidence-allowlist.json"), "utf8"));
+  const allow = JSON.parse(readFileSync(resolve(REPO, ".claude/skills/skeptical-audit/scripts/skill-evidence-allowlist.json"), "utf8"));
   assert.ok(!allow.includes("bdd-comprehensive-testing") && !allow.includes("skeptical-audit"),
     "compliant baseline skills must never be on the allowlist (shrink-only)");
 });

@@ -15,8 +15,8 @@ import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const HAS = resolve(REPO, "verifiable-quality-gates/scripts/check-has-test.mjs");
-const DISC = resolve(REPO, "verifiable-quality-gates/scripts/verify-check-discrimination.mjs");
+const HAS = resolve(REPO, ".claude/skills/verifiable-quality-gates/scripts/check-has-test.mjs");
+const DISC = resolve(REPO, ".claude/skills/verifiable-quality-gates/scripts/verify-check-discrimination.mjs");
 
 // A real check: exits 1 when its target file contains "VIOLATION", else 0.
 const CHECK_SRC = `#!/usr/bin/env node

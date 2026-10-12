@@ -10,8 +10,8 @@ import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const COV = resolve(REPO, "judge-arch/scripts/check-arch-review-coverage.mjs");
-const DISC = resolve(REPO, "judge-arch/scripts/check-arch-rules-discriminate.mjs");
+const COV = resolve(REPO, ".claude/skills/judge-arch/scripts/check-arch-review-coverage.mjs");
+const DISC = resolve(REPO, ".claude/skills/judge-arch/scripts/check-arch-rules-discriminate.mjs");
 const QS = ["boundary", "ownership", "dependency", "error-handling"];
 
 function fullMatrix() {

@@ -1,4 +1,4 @@
-// Discriminating tests for judge-arch/scripts/arch-gate.mjs
+// Discriminating tests for .claude/skills/judge-arch/scripts/arch-gate.mjs
 //
 // Each test builds a throwaway fixture directory (its own config, waivers, and source files) and
 // runs the REAL gate with cwd set there, per check-test-patterns.md. Covered:
@@ -15,7 +15,7 @@ import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const CHECK = resolve(REPO, "judge-arch/scripts/arch-gate.mjs");
+const CHECK = resolve(REPO, ".claude/skills/judge-arch/scripts/arch-gate.mjs");
 
 // Create a fixture dir; `files` maps relative name -> contents (config/waivers written as JSON).
 function fixture({ config, waivers, files = {} }) {

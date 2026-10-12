@@ -1,4 +1,4 @@
-// Discriminating tests for release-deployment-safety/scripts/check-migration-safety.mjs.
+// Discriminating tests for .claude/skills/release-deployment-safety/scripts/check-migration-safety.mjs.
 // Each unsafe pattern must FAIL the gate; its expand/contract-safe equivalent must PASS; and the
 // inline ignore directive must suppress ONLY with a reason.
 import { test } from "node:test";
@@ -10,7 +10,7 @@ import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const CHECK = resolve(REPO, "release-deployment-safety/scripts/check-migration-safety.mjs");
+const CHECK = resolve(REPO, ".claude/skills/release-deployment-safety/scripts/check-migration-safety.mjs");
 
 function run(sql) {
   const dir = mkdtempSync(join(tmpdir(), "mig-"));

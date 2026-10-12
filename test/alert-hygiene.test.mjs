@@ -1,4 +1,4 @@
-// Discriminating tests for sre-operational-readiness/scripts/check-alert-hygiene.mjs.
+// Discriminating tests for .claude/skills/sre-operational-readiness/scripts/check-alert-hygiene.mjs.
 // Each rule must FAIL a violating alert and PASS its fixed equivalent; the inline ignore must
 // suppress ONLY with a reason; a `- record:` block must not fold into an alert; zero alerts fails closed.
 import { test } from "node:test";
@@ -10,7 +10,7 @@ import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const CHECK = resolve(REPO, "sre-operational-readiness/scripts/check-alert-hygiene.mjs");
+const CHECK = resolve(REPO, ".claude/skills/sre-operational-readiness/scripts/check-alert-hygiene.mjs");
 
 function run(yaml) {
   const dir = mkdtempSync(join(tmpdir(), "alert-"));

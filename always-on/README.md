@@ -141,14 +141,14 @@ always-on directive hook for that project too. It wires the directive hook, not 
 those still need to be in a discovery location such as `~/.claude/skills`:
 
 ```bash
-node bootstrap/scripts/esk-init.mjs            # plan only
-node bootstrap/scripts/esk-init.mjs --yes      # install or reconcile (backs up first)
+node .claude/skills/bootstrap/scripts/esk-init.mjs            # plan only
+node .claude/skills/bootstrap/scripts/esk-init.mjs --yes      # install or reconcile (backs up first)
 ```
 
 For the zero-approval Layer 1 in another project, add one line to that project's own
 `CLAUDE.md` importing the directive by a relative path to your clone, for example
 `@../enterprise-software-AI-skills/always-on/enterprise-skills-always-on.md`. See
-[`bootstrap/SKILL.md`](../bootstrap/SKILL.md).
+[`.claude/skills/bootstrap/SKILL.md`](../.claude/skills/bootstrap/SKILL.md).
 
 ## Confirm it works (recommended, especially on Windows)
 

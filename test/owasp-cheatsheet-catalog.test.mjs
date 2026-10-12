@@ -1,4 +1,4 @@
-// Discriminating tests for owasp-secure-coding-bdd/scripts/check-cheatsheet-catalog.mjs.
+// Discriminating tests for .claude/skills/owasp-secure-coding-bdd/scripts/check-cheatsheet-catalog.mjs.
 //
 // The gate resolves its paths from its own file location, so each test copies the REAL gate into a throwaway
 // skill dir (scripts/ + references/ + SKILL.md) and runs it there (the copy-into-fixture pattern from
@@ -19,7 +19,7 @@ import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const REAL_GATE = resolve(REPO, "owasp-secure-coding-bdd/scripts/check-cheatsheet-catalog.mjs");
+const REAL_GATE = resolve(REPO, ".claude/skills/owasp-secure-coding-bdd/scripts/check-cheatsheet-catalog.mjs");
 
 const SECTIONS = [
   "# Title",

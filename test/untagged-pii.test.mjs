@@ -1,4 +1,4 @@
-// Discriminating tests for compliance-data-lifecycle/scripts/check-untagged-pii.mjs.
+// Discriminating tests for .claude/skills/compliance-data-lifecycle/scripts/check-untagged-pii.mjs.
 // A PII-looking column must be classified in the data map; an undeclared one fails; a false positive
 // is resolved by declaring it "not-personal"; non-PII columns are ignored; bad input fails closed.
 import { test } from "node:test";
@@ -10,7 +10,7 @@ import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const CHECK = resolve(REPO, "compliance-data-lifecycle/scripts/check-untagged-pii.mjs");
+const CHECK = resolve(REPO, ".claude/skills/compliance-data-lifecycle/scripts/check-untagged-pii.mjs");
 
 function run(sql, map) {
   const dir = mkdtempSync(join(tmpdir(), "pii-"));

@@ -13,15 +13,14 @@ good senior engineer uses on a change: how to make it safe, how to test it, how
 to ship it, and why a choice was made. With these skills, every change can meet
 the same bar. Not just the changes an expert happens to look at.
 
-The 16 skills come in two groups:
+The 16 skills come in two groups, all under [`.claude/skills/`](.claude/skills/) so a clone
+loads them automatically:
 
-- **13 engineering skills** at the top level. They cover security, testing,
-  architecture, releases, running in production, data rules, decision records,
-  code review, rule-writing, provable checks, honest self-review, and picking a
-  design pattern.
-- **3 requirements skills** in the [`requirements/`](requirements/) folder. They
-  make what you build work for everyone: every browser and device, every ability,
-  and anyone no matter their background.
+- **13 engineering skills.** They cover security, testing, architecture, releases,
+  running in production, data rules, decision records, code review, rule-writing,
+  provable checks, honest self-review, and picking a design pattern.
+- **3 requirements skills.** They make what you build work for everyone: every
+  browser and device, every ability, and anyone no matter their background.
 
 The skills never name a specific AI model, company, or product. So they work with
 any AI tool. They also read fine as plain notes for a person.
@@ -95,19 +94,19 @@ uses to decide when to load the skill on its own.
 
 | Skill | What it does | When it kicks in | Extra files |
 |---|---|---|---|
-| [`enterprise-architecture-standards`](enterprise-architecture-standards/) | Designs the system and its data with real trade-offs: structure, resilience, and scale. | You design, build, or rework a service, database, API, or system. | 9 refs |
-| [`pattern-selector`](pattern-selector/) | Picks the design pattern that fits, or none, with the pros, cons, and trade-offs. | You design or rework any feature, class, module, or data flow; "which pattern?" | 5 refs, 1 script |
-| [`architectural-decision-records`](architectural-decision-records/) | Writes down why a big choice was made. | You make an important choice: database, framework, contract, or login model. | 5 refs, 2 scripts |
-| [`owasp-secure-coding-bdd`](owasp-secure-coding-bdd/) | Turns OWASP threat-modeling into runnable `@security` tests. | You touch login, input, sessions, files, APIs, permissions, dependencies, or AI code. | 15 refs |
-| [`bdd-comprehensive-testing`](bdd-comprehensive-testing/) | Writes every use case and audience as plain-sentence tests, checked on every push. | Any behavior change: build, add, fix, or push. | 4 refs, 5 scripts |
-| [`comprehensive-test-strategy`](comprehensive-test-strategy/) | Covers the rest of testing beyond BDD. | Any code others rely on: unit, integration, end-to-end, contract, load, chaos. | 5 refs |
-| [`release-deployment-safety`](release-deployment-safety/) | Ships at scale with no outage. | Deploy, release, roll out, migrate, cut over, hotfix, roll back, or feature flag. | 5 refs |
-| [`sre-operational-readiness`](sre-operational-readiness/) | Checks if it is safe to run in production. | Reliability targets, monitoring, alerts, on-call, incidents, runbooks. | 5 refs |
-| [`compliance-data-lifecycle`](compliance-data-lifecycle/) | Handles private and regulated data safely. | PII, GDPR/CCPA, SOC2/ISO, audit logs, retention, backups, recovery. | 5 refs |
-| [`judge-arch`](judge-arch/) | Reviews a change against four questions and blocks drift. | Before "done" or a PR: reviewing a diff, branch, or area. | 4 refs, 1 script |
-| [`arch-encode`](arch-encode/) | Turns a caught mistake into a tested, enforced rule. | After catching drift; "add a rule so this never happens again." | 2 refs |
-| [`verifiable-quality-gates`](verifiable-quality-gates/) | Proves each automated check can really catch a problem. | Adding or reviewing a CI check or guard; a green build you do not trust. | 3 refs, 2 scripts |
-| [`skeptical-audit`](skeptical-audit/) | Backs every claim of fact with proof you can re-run. | Any claim of fact: audits, reviews, status, counts, "I checked X." | 1 ref, 1 script |
+| [`enterprise-architecture-standards`](.claude/skills/enterprise-architecture-standards/) | Designs the system and its data with real trade-offs: structure, resilience, and scale. | You design, build, or rework a service, database, API, or system. | 9 refs |
+| [`pattern-selector`](.claude/skills/pattern-selector/) | Picks the design pattern that fits, or none, with the pros, cons, and trade-offs. | You design or rework any feature, class, module, or data flow; "which pattern?" | 5 refs, 1 script |
+| [`architectural-decision-records`](.claude/skills/architectural-decision-records/) | Writes down why a big choice was made. | You make an important choice: database, framework, contract, or login model. | 5 refs, 2 scripts |
+| [`owasp-secure-coding-bdd`](.claude/skills/owasp-secure-coding-bdd/) | Turns OWASP threat-modeling into runnable `@security` tests. | You touch login, input, sessions, files, APIs, permissions, dependencies, or AI code. | 15 refs |
+| [`bdd-comprehensive-testing`](.claude/skills/bdd-comprehensive-testing/) | Writes every use case and audience as plain-sentence tests, checked on every push. | Any behavior change: build, add, fix, or push. | 4 refs, 5 scripts |
+| [`comprehensive-test-strategy`](.claude/skills/comprehensive-test-strategy/) | Covers the rest of testing beyond BDD. | Any code others rely on: unit, integration, end-to-end, contract, load, chaos. | 5 refs |
+| [`release-deployment-safety`](.claude/skills/release-deployment-safety/) | Ships at scale with no outage. | Deploy, release, roll out, migrate, cut over, hotfix, roll back, or feature flag. | 5 refs |
+| [`sre-operational-readiness`](.claude/skills/sre-operational-readiness/) | Checks if it is safe to run in production. | Reliability targets, monitoring, alerts, on-call, incidents, runbooks. | 5 refs |
+| [`compliance-data-lifecycle`](.claude/skills/compliance-data-lifecycle/) | Handles private and regulated data safely. | PII, GDPR/CCPA, SOC2/ISO, audit logs, retention, backups, recovery. | 5 refs |
+| [`judge-arch`](.claude/skills/judge-arch/) | Reviews a change against four questions and blocks drift. | Before "done" or a PR: reviewing a diff, branch, or area. | 4 refs, 1 script |
+| [`arch-encode`](.claude/skills/arch-encode/) | Turns a caught mistake into a tested, enforced rule. | After catching drift; "add a rule so this never happens again." | 2 refs |
+| [`verifiable-quality-gates`](.claude/skills/verifiable-quality-gates/) | Proves each automated check can really catch a problem. | Adding or reviewing a CI check or guard; a green build you do not trust. | 3 refs, 2 scripts |
+| [`skeptical-audit`](.claude/skills/skeptical-audit/) | Backs every claim of fact with proof you can re-run. | Any claim of fact: audits, reviews, status, counts, "I checked X." | 1 ref, 1 script |
 
 ### What each skill makes you do
 
@@ -200,23 +199,22 @@ the layer that keeps every other skill's findings honest.
 
 ## Requirements skills (works for everyone)
 
-The 13 skills above make software **correct**. These 3, grouped under
-[`requirements/`](requirements/), make it **usable by everyone**: every browser
-and device, every ability, and anyone no matter their situation, reading level, or
-skill. The engineering skills ask "is this built, secured, tested, and run
-correctly?" These ask "can anyone actually use what we built?"
+The 13 skills above make software **correct**. These 3 make it **usable by
+everyone**: every browser and device, every ability, and anyone no matter their
+situation, reading level, or skill. The engineering skills ask "is this built,
+secured, tested, and run correctly?" These ask "can anyone actually use what we
+built?"
 
 | Skill | What it does | When it kicks in |
 |---|---|---|
-| [`universal-browser-device-support`](requirements/universal-browser-device-support/) | Works and looks right on every supported browser and device. | Any HTML/CSS/JS/UI change, responsive layout, "broken in Safari," mobile, touch. |
-| [`universal-accessibility-wcag`](requirements/universal-accessibility-wcag/) | Meets WCAG 2.2 AA so keyboard, screen-reader, and magnifier users are not shut out. | Forms, images, color and contrast, focus, keyboard, ARIA, screen readers. |
-| [`usability-ux-universal-design`](requirements/usability-ux-universal-design/) | Clear, simple design for the widest range of people. | New UI or flows, navigation, onboarding, empty and error states, wording. |
+| [`universal-browser-device-support`](.claude/skills/universal-browser-device-support/) | Works and looks right on every supported browser and device. | Any HTML/CSS/JS/UI change, responsive layout, "broken in Safari," mobile, touch. |
+| [`universal-accessibility-wcag`](.claude/skills/universal-accessibility-wcag/) | Meets WCAG 2.2 AA so keyboard, screen-reader, and magnifier users are not shut out. | Forms, images, color and contrast, focus, keyboard, ARIA, screen readers. |
+| [`usability-ux-universal-design`](.claude/skills/usability-ux-universal-design/) | Clear, simple design for the widest range of people. | New UI or flows, navigation, onboarding, empty and error states, wording. |
 
 Use them in order on any UI change. First **works everywhere**: it loads and runs
 wherever the user is. Then **accessible**: anyone with any ability can use it,
 which is the floor the law often requires. Then **usable**: it is easy for anyone
-on top of that. See the [requirements README](requirements/README.md) for how they
-fit together.
+on top of that.
 
 ---
 
@@ -261,17 +259,18 @@ Markdown. Nothing here is tied to one company.
 
 ### AI tools that know SKILL.md (like Claude Code)
 
-Put each `<skill-name>/` folder in a skills folder. The tool loads a skill on its
-own when its `description` fits the task.
+The skills live in this repo under [`.claude/skills/`](.claude/skills/), so you have options:
 
-- **For all your projects:** copy folders into `~/.claude/skills/`.
-- **For one repo, shared with the team:** copy them into `.claude/skills/` and commit.
-- **As a bundle:** copy this whole repo and point your skills path at it.
+- **Work in this repo:** clone it and open a session here. Claude Code auto-discovers the
+  skills from `.claude/skills/`, with no install step.
+- **For all your projects:** copy a skill folder into `~/.claude/skills/`.
+- **For one of your own repos, shared with the team:** copy the folder into that repo's
+  `.claude/skills/` and commit it.
 
 ```bash
-# install one skill for all your projects
+# clone, then use the skills right here (auto-discovered), or copy one out for all your projects
 git clone https://github.com/techfleetworks/enterprise-software-AI-skills
-cp -r enterprise-software-AI-skills/architectural-decision-records ~/.claude/skills/
+cp -r enterprise-software-AI-skills/.claude/skills/architectural-decision-records ~/.claude/skills/
 ```
 
 ### Rule-based tools (Cursor, Copilot, Windsurf)
@@ -339,7 +338,7 @@ repo's own files, so the pull is the update.
   and Plan agents that skip `CLAUDE.md`. Claude Code asks each person once to trust the
   project hooks (a security prompt, not staleness); after that, content updates apply on pull.
 
-To use the skills in **another project or machine**, the [`bootstrap`](bootstrap/) skill's
+To use the skills in **another project or machine**, the [`bootstrap`](.claude/skills/bootstrap/) skill's
 installer references this repo (never copies), is safe by default (it never writes without
 `--yes`, backs up first, validates, and restores on failure), records a version marker, and
 `esk-init --check` is a CI drift gate that fails if someone is missing or behind. It verifies
@@ -348,9 +347,9 @@ end-to-end proof (open a fresh session and quote the directive) as a stated step
 script cannot watch the harness fire the hook.
 
 ```bash
-node bootstrap/scripts/esk-init.mjs            # plan only, writes nothing
-node bootstrap/scripts/esk-init.mjs --yes      # install or reconcile (backs up first)
-node bootstrap/scripts/esk-init.mjs --check    # CI drift gate: fails if not installed or behind
+node .claude/skills/bootstrap/scripts/esk-init.mjs            # plan only, writes nothing
+node .claude/skills/bootstrap/scripts/esk-init.mjs --yes      # install or reconcile (backs up first)
+node .claude/skills/bootstrap/scripts/esk-init.mjs --check    # CI drift gate: fails if not installed or behind
 ```
 
 Here is the whole picture, from working in the repo to installing elsewhere and staying current:
@@ -420,7 +419,7 @@ are enforced, not just suggested. Here is how a team turns it on in a repo. It
 takes about ten minutes, and your current code does **not** have to be clean first.
 
 > On a **React + Supabase** codebase, skip the by-hand setup. Use the ready
-> [`react-supabase` preset](judge-arch/assets/presets/react-supabase/). It does
+> [`react-supabase` preset](.claude/skills/judge-arch/assets/presets/react-supabase/). It does
 > steps 2 and 3 for you.
 
 **1. Get the skills into the repo.** Clone this repo, or copy it in as a bundle.
@@ -429,8 +428,8 @@ teammate's tool loads them:
 
 ```bash
 git clone https://github.com/techfleetworks/enterprise-software-AI-skills
-cp -r enterprise-software-AI-skills/judge-arch   .claude/skills/
-cp -r enterprise-software-AI-skills/arch-encode  .claude/skills/
+cp -r enterprise-software-AI-skills/.claude/skills/judge-arch   .claude/skills/
+cp -r enterprise-software-AI-skills/.claude/skills/arch-encode  .claude/skills/
 git add .claude/skills && git commit -m "Add architecture review + gate skills"
 ```
 
@@ -440,16 +439,16 @@ folders they cover, and start a `decisions.md` that you fill with pointers to yo
 *own* good code:
 
 ```bash
-cp enterprise-software-AI-skills/judge-arch/assets/AGENTS.baseline.md      AGENTS.md
-cp enterprise-software-AI-skills/judge-arch/assets/decisions.template.md   decisions.md
+cp enterprise-software-AI-skills/.claude/skills/judge-arch/assets/AGENTS.baseline.md      AGENTS.md
+cp enterprise-software-AI-skills/.claude/skills/judge-arch/assets/decisions.template.md   decisions.md
 # scoped rules, for example: src/components/AGENTS.md, src/services/AGENTS.md, supabase/functions/AGENTS.md
 ```
 
 **3. Install the gate.** The scanner needs no `npm install`:
 
 ```bash
-cp enterprise-software-AI-skills/judge-arch/scripts/arch-gate.mjs                 scripts/arch-gate.mjs
-cp enterprise-software-AI-skills/judge-arch/assets/arch-gate.config.example.json  arch-gate.config.json
+cp enterprise-software-AI-skills/.claude/skills/judge-arch/scripts/arch-gate.mjs                 scripts/arch-gate.mjs
+cp enterprise-software-AI-skills/.claude/skills/judge-arch/assets/arch-gate.config.example.json  arch-gate.config.json
 # edit arch-gate.config.json so its globs and forbidden patterns match your layers
 ```
 
@@ -469,7 +468,7 @@ node scripts/arch-gate.mjs --baseline > arch-gate.waivers.json
 "check:architecture:all": "node scripts/arch-gate.mjs"             // scans everything
 ```
 ```bash
-cp enterprise-software-AI-skills/judge-arch/assets/arch-gate.workflow.yml  .github/workflows/arch-gate.yml
+cp enterprise-software-AI-skills/.claude/skills/judge-arch/assets/arch-gate.workflow.yml  .github/workflows/arch-gate.yml
 # and add `npm run check:architecture` to your pre-push hook
 ```
 
@@ -483,18 +482,18 @@ it cannot come back.
 
 Everything here is either the **shared standard**, which you use as-is, or a
 **template** you copy into your repo and fill in. The full file-by-file map is in
-[`judge-arch/references/adoption.md`](judge-arch/references/adoption.md). The main
+[`.claude/skills/judge-arch/references/adoption.md`](.claude/skills/judge-arch/references/adoption.md). The main
 ones:
 
 | From the clone | Copy to your repo as | Edit after copying? |
 |---|---|---|
-| `judge-arch/`, `arch-encode/` (whole folders) | `.claude/skills/...` (committed) or `~/.claude/skills/...` | **No.** The shared skill and engine. |
-| `judge-arch/scripts/arch-gate.mjs` | `scripts/arch-gate.mjs` | **No.** The engine; your config drives it. |
-| `judge-arch/assets/AGENTS.baseline.md` | `AGENTS.md` | **Yes.** Add your specifics below the divider line. |
-| `judge-arch/assets/decisions.template.md` (or a preset's `decisions.md`) | `decisions.md` | **Yes.** Fill the good/bad lists with pointers to your own code. |
+| `.claude/skills/judge-arch/`, `.claude/skills/arch-encode/` (whole folders) | `.claude/skills/...` (committed) or `~/.claude/skills/...` | **No.** The shared skill and engine. |
+| `.claude/skills/judge-arch/scripts/arch-gate.mjs` | `scripts/arch-gate.mjs` | **No.** The engine; your config drives it. |
+| `.claude/skills/judge-arch/assets/AGENTS.baseline.md` | `AGENTS.md` | **Yes.** Add your specifics below the divider line. |
+| `.claude/skills/judge-arch/assets/decisions.template.md` (or a preset's `decisions.md`) | `decisions.md` | **Yes.** Fill the good/bad lists with pointers to your own code. |
 | a preset's `arch-gate.config.json` (or `assets/arch-gate.config.example.json`) | `arch-gate.config.json` | **Yes.** Set globs and client path to your folders. |
 | a preset's `scoped/*.AGENTS.md` | the folder each one covers (for example `src/components/AGENTS.md`) | Usually **No**. |
-| `judge-arch/assets/arch-gate.workflow.yml` | `.github/workflows/arch-gate.yml` | Minor. Your Node version. |
+| `.claude/skills/judge-arch/assets/arch-gate.workflow.yml` | `.github/workflows/arch-gate.yml` | Minor. Your Node version. |
 | (generated, not copied) | `arch-gate.waivers.json` | `node scripts/arch-gate.mjs --baseline` |
 
 **`AGENTS.md`, `decisions.md`, and `arch-gate.config.json` are templates.** The
@@ -592,32 +591,41 @@ description: "When to use this skill. This text is what triggers it."
 
 ```
 .
-├── enterprise-architecture-standards/
-├── architectural-decision-records/
-├── judge-arch/                            # review a change + the gate that blocks drift
-├── arch-encode/                           # turn a caught mistake into an enforced, tested rule
-├── verifiable-quality-gates/              # prove every automated check can really catch a problem
-├── skeptical-audit/                       # back every claim with proof you can re-run
-├── owasp-secure-coding-bdd/
-├── bdd-comprehensive-testing/             # every use case and audience as tagged, logged Gherkin
-├── comprehensive-test-strategy/
-├── release-deployment-safety/
-├── sre-operational-readiness/
-├── compliance-data-lifecycle/
-├── requirements/                          # the works-for-everyone skills (grouped)
-│   ├── universal-browser-device-support/
-│   ├── universal-accessibility-wcag/
-│   ├── usability-ux-universal-design/
-│   └── README.md
-├── always-on/                             # make every skill run on every task (SessionStart + SubagentStart hooks)
+├── .claude/
+│   ├── settings.json                  # committed always-on hook (SessionStart + SubagentStart)
+│   └── skills/                        # all 17 skills live here, so a clone auto-discovers them
+│       ├── enterprise-architecture-standards/
+│       ├── architectural-decision-records/
+│       ├── judge-arch/                # review a change + the gate that blocks drift
+│       ├── arch-encode/               # turn a caught mistake into an enforced, tested rule
+│       ├── verifiable-quality-gates/  # prove every automated check can really catch a problem
+│       ├── skeptical-audit/           # back every claim with proof you can re-run
+│       ├── pattern-selector/
+│       ├── owasp-secure-coding-bdd/
+│       ├── bdd-comprehensive-testing/ # every use case and audience as tagged, logged Gherkin
+│       ├── comprehensive-test-strategy/
+│       ├── release-deployment-safety/
+│       ├── sre-operational-readiness/
+│       ├── compliance-data-lifecycle/
+│       ├── universal-browser-device-support/
+│       ├── universal-accessibility-wcag/
+│       ├── usability-ux-universal-design/
+│       └── bootstrap/                 # the installer skill (esk-init)
+├── always-on/                         # the directive + emitter the hooks inject
+├── docs/                              # ADRs, audits, and the append-only arch-review log
+├── test/                              # discriminating tests for every gate script
+├── arch-gate.config.json              # the repo's own architecture-gate rules
+├── CLAUDE.md                          # imports the always-on directive
+├── package.json
 ├── CONTRIBUTING.md
 ├── LICENSE
 └── README.md
 ```
 
 Every skill folder follows the same shape: a `SKILL.md` file plus `references/`,
-and optional `scripts/` and `assets/`. The three works-for-everyone skills sit one
-level down under `requirements/`, and each is still its own self-contained folder.
+and optional `scripts/` and `assets/`. All of them live under `.claude/skills/`, so
+Claude Code discovers them automatically when you work in the repo, and each is still
+its own self-contained folder.
 
 ---
 
@@ -626,14 +634,14 @@ level down under `requirements/`, and each is still its own self-contained folde
 [MIT](LICENSE) © [Tech Fleet](https://techfleet.org). Use, fork, change, and share
 freely with attribution.
 
-**One exception:** the `owasp-secure-coding-bdd/vendor/` folder holds OWASP content
+**One exception:** the `.claude/skills/owasp-secure-coding-bdd/vendor/` folder holds OWASP content
 (the Cheat Sheet Series and the Top 10 for LLM Applications). OWASP publishes it
 under **CC-BY-SA-4.0**, not MIT. It is fetched from source on demand by
 `npm run vendor:owasp` and kept separate under its own license. It is not
 committed. If you share that text, you must follow CC-BY-SA-4.0: give attribution
 and share alike. The OWASP skill's own files describe the controls in their own
 words and quote only short, credited bits, which fits this repo's MIT license. See
-`owasp-secure-coding-bdd/vendor/NOTICE.md`.
+`.claude/skills/owasp-secure-coding-bdd/vendor/NOTICE.md`.
 
 ---
 

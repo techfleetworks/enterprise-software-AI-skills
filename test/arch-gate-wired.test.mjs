@@ -18,7 +18,7 @@ import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const GATE = resolve(REPO, "judge-arch/scripts/arch-gate.mjs");
+const GATE = resolve(REPO, ".claude/skills/judge-arch/scripts/arch-gate.mjs");
 const CONFIG = JSON.parse(readFileSync(resolve(REPO, "arch-gate.config.json"), "utf8"));
 
 // Paths this repo has ratcheted onto house-style-no-em-dash. Each MUST stay enforced. Dropping one (a
@@ -27,15 +27,15 @@ const CONFIG = JSON.parse(readFileSync(resolve(REPO, "arch-gate.config.json"), "
 // with the ratchet. This is a deliberate guard-the-config duplicate, not drift: the config says what to
 // enforce; this list says what must never silently leave enforcement.
 const REQUIRED_INCLUDE = [
-  "pattern-selector/**/*.md",
-  "arch-encode/**/*.md",
-  "architectural-decision-records/**/*.md",
-  "enterprise-architecture-standards/**/*.md",
-  "judge-arch/SKILL.md",
-  "comprehensive-test-strategy/SKILL.md",
-  "verifiable-quality-gates/SKILL.md",
-  "owasp-secure-coding-bdd/SKILL.md",
-  "owasp-secure-coding-bdd/references/cheatsheets/*.md",
+  ".claude/skills/pattern-selector/**/*.md",
+  ".claude/skills/arch-encode/**/*.md",
+  ".claude/skills/architectural-decision-records/**/*.md",
+  ".claude/skills/enterprise-architecture-standards/**/*.md",
+  ".claude/skills/judge-arch/SKILL.md",
+  ".claude/skills/comprehensive-test-strategy/SKILL.md",
+  ".claude/skills/verifiable-quality-gates/SKILL.md",
+  ".claude/skills/owasp-secure-coding-bdd/SKILL.md",
+  ".claude/skills/owasp-secure-coding-bdd/references/cheatsheets/*.md",
   "docs/arch-reviews/README.md",
   "docs/audit/README.md",
 ];
@@ -47,8 +47,8 @@ function runGate(cwd) {
   return { status: res.status, out: (res.stdout || "") + (res.stderr || "") };
 }
 
-// Turn an include glob into one concrete path under it: `pattern-selector/**/*.md` -> `pattern-selector/probe/probe.md`;
-// a literal path like `judge-arch/SKILL.md` stays itself.
+// Turn an include glob into one concrete path under it: `.claude/skills/pattern-selector/**/*.md` -> `.claude/skills/pattern-selector/probe/probe.md`;
+// a literal path like `.claude/skills/judge-arch/SKILL.md` stays itself.
 function concretePath(glob) {
   return glob.split("/").map((seg) => (seg === "**" ? "probe" : seg.includes("*") ? seg.replace(/\*/g, "probe") : seg)).join("/");
 }

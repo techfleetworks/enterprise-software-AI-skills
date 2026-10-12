@@ -1,4 +1,4 @@
-// Discriminating tests for requirements/universal-accessibility-wcag/scripts/check-a11y-checklist.mjs.
+// Discriminating tests for .claude/skills/universal-accessibility-wcag/scripts/check-a11y-checklist.mjs.
 // Every combined-checklist criterion must have a valid verdict; automated-only closure is rejected for
 // manual/both criteria; manual passes need reviewer+date; not-applicable needs a reason; bad input fails closed.
 import { test } from "node:test";
@@ -10,8 +10,8 @@ import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const CHECK = resolve(REPO, "requirements/universal-accessibility-wcag/scripts/check-a11y-checklist.mjs");
-const ASSETS = resolve(REPO, "requirements/universal-accessibility-wcag/assets");
+const CHECK = resolve(REPO, ".claude/skills/universal-accessibility-wcag/scripts/check-a11y-checklist.mjs");
+const ASSETS = resolve(REPO, ".claude/skills/universal-accessibility-wcag/assets");
 
 // A tiny checklist fixture with one of each method.
 const CHECKLIST = { criteria: [

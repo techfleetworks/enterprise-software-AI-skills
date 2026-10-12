@@ -5,12 +5,12 @@
 // CC-BY-SA-4.0; this repo's own code is MIT. You may use and redistribute OWASP's text WITH attribution and
 // ShareAlike, but you may NOT relicense it as MIT by pasting it into our skill files. So the exact verbatim
 // text is not committed here. Instead, this tool fetches it from the official upstream repositories into
-// owasp-secure-coding-bdd/vendor/ (gitignored), which is a clean "aggregation": the CC-BY-SA text sits in its
+// .claude/skills/owasp-secure-coding-bdd/vendor/ (gitignored), which is a clean "aggregation": the CC-BY-SA text sits in its
 // own directory with its upstream LICENSE and our NOTICE, separate from the MIT-licensed skill files.
 //
-// Run: `npm run vendor:owasp` (or `node owasp-secure-coding-bdd/tools/vendor-owasp.mjs`). It is NOT a gate
+// Run: `npm run vendor:owasp` (or `node .claude/skills/owasp-secure-coding-bdd/tools/vendor-owasp.mjs`). It is NOT a gate
 // script (it lives in tools/, not scripts/) because it makes outbound calls on purpose. It only reads from the
-// network and writes under owasp-secure-coding-bdd/vendor/.
+// network and writes under .claude/skills/owasp-secure-coding-bdd/vendor/.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -60,7 +60,7 @@ async function main() {
   if (llmReadme) { fs.writeFileSync(path.join(llmOut, "README.md"), llmReadme); console.log("LLM Top 10: vendored README (full content: https://genai.owasp.org/llm-top-10/)"); }
   else console.error("WARNING: could not fetch the LLM Top 10 README; cite https://genai.owasp.org/llm-top-10/ directly.");
 
-  console.log("\nDone. owasp-secure-coding-bdd/vendor/ holds CC-BY-SA-4.0 content; see its NOTICE.md for attribution.");
+  console.log("\nDone. .claude/skills/owasp-secure-coding-bdd/vendor/ holds CC-BY-SA-4.0 content; see its NOTICE.md for attribution.");
 }
 
 main().catch((e) => { console.error("vendor-owasp failed:", e.message); process.exit(1); });
