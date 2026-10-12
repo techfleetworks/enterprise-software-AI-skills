@@ -29,6 +29,16 @@ relevant" as a deliberate, stated judgment for that task, never a silent default
 If a skill's full instructions are not already in context, invoke it before relying
 on it. Do not report work complete until the relevant skills above have been applied.
 
+## Before you open or update a pull request
+Run `judge-arch` in fresh context on the change (it dispatches the review to a subagent), resolve or
+explicitly waive every finding, and record the review in `docs/arch-reviews/log.jsonl`. The committed PR
+template and `CONTRIBUTING.md` carry the full checklist. The mechanical gates are required CI checks that
+block merge on their own: the gate-script tests and `check:architecture` (the `test` job). The `routing`
+check (change-type to required-artifact) blocks merge once the committed ruleset is applied with
+`scripts/apply-ruleset.sh`. A change that skips its discipline's artifact, or whose review was partial or
+unevidenced, cannot merge. These prove the review HAPPENED; they cannot prove the judgment was
+sound, which is why the fresh-context review is non-negotiable.
+
 ## Evidence is mandatory on every claim
 Every factual claim you output carries an **evidence state** (`proven` / `observed` / `inferred` /
 `documented` / `reported` / `not-assessed`), a **re-runnable source**, and a **named limitation**. Run
