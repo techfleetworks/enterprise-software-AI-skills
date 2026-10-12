@@ -30,7 +30,9 @@ you must choose, favor clarity over cleverness and forgiveness over efficiency.
 This is grounded in how people actually work, not taste. People use peripheral vision to get the gist of
 a screen and scan based on past expectations; they do not read, they skim. Working memory holds only a
 few items at once, so recognition beats recall. People cannot truly multitask, and attention is
-selective and short. Design that ignores these facts fails no matter how it looks.
+selective and short. Design that ignores these facts fails no matter how it looks. The full catalogue of
+these findings, all 100, each with its design takeaways, is in `references/weinschenk-100-things.md`;
+reach for it when a specific decision needs a research-backed principle.
 
 ## The workflow
 
@@ -162,6 +164,7 @@ What enforces this skill instead:
 | Plain-language content, labels, microcopy, empty/loading/success states, readability | `references/content-and-plain-language.md` |
 | Error prevention, forgiving recovery, reversibility, safe destructive actions | `references/error-prevention-and-recovery.md` |
 | Usability testing, task-based research, sample size, testing across the spectrum, iteration | `references/usability-testing-and-research.md` |
+| All 100 Weinschenk findings, each with its design takeaways (the research behind the heuristics) | `references/weinschenk-100-things.md` |
 
 ## Evidence & skeptical assessment (required)
 
