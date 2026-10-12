@@ -21,7 +21,8 @@
  *     {"hookSpecificOutput":{"hookEventName":"<event>","additionalContext":"<directive>"}}
  *
  * The directive path defaults to `enterprise-skills-always-on.md` next to this script; override it
- * with argv[3] or the ESK_DIRECTIVE env var (the installer writes the resolved absolute path).
+ * with argv[3] or the ESK_DIRECTIVE env var (for a non-sibling layout or a test; the installer relies
+ * on the sibling default and does not pass a path).
  */
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";

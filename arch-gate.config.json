@@ -24,7 +24,8 @@
         "docs/arch-reviews/README.md",
         "docs/audit/README.md",
         "always-on/README.md",
-        "always-on/enterprise-skills-always-on.md"
+        "always-on/enterprise-skills-always-on.md",
+        "bootstrap/SKILL.md"
       ],
       "forbid": ["\\u2014", "\\u2013"],
       "message": "House style: no em or en dashes in prose. Use a period, a comma, or parentheses. Add a skill's path here once it is rewritten clean."
