@@ -1,0 +1,22 @@
+{
+  "_comment": "Change-type -> required-artifact routing for THIS repo (a library of skills and gate scripts). check-change-routing.mjs fires a rule when the change's added/changed files match its 'when' globs, then requires each 'requires' artifact to be part of the SAME change (or a valid waiver). It checks PRESENCE only; 'ownerGate' names the gate that checks the artifact's CORRECTNESS. These two rules key on this repo's real change-types. For an app, copy assets/example/routing-rules.config.json, which adds schema/UI/auth/source rules, and tune the globs to your stack. '**' spans directories; '*' and '?' do not cross '/'.",
+  "rules": [
+    {
+      "id": "new-skill-needs-adr",
+      "description": "A new skill is a significant, lasting decision. Record why it exists in the same change (architectural-decision-records).",
+      "when": { "added": ["**/SKILL.md"] },
+      "requires": [
+        { "artifact": "adr", "changed": ["docs/adr/*.md"], "ownerGate": "architectural-decision-records (check-adr)", "hint": "add an ADR under docs/adr/ recording why this skill exists and what it owns" }
+      ]
+    },
+    {
+      "id": "new-gate-needs-test",
+      "description": "A new gate script is only trustworthy with a discriminating test that proves it detects. Ship the test in the same change (verifiable-quality-gates).",
+      "when": { "added": ["**/scripts/check-*.mjs"] },
+      "requires": [
+        { "artifact": "discriminating-test", "changed": ["test/**/*.test.mjs", "**/test/*.test.mjs"], "ownerGate": "verifiable-quality-gates (check-has-test, verify-check-discrimination)", "hint": "add a test under test/ that spawns the new gate and asserts its exit codes on clean and dirty inputs" }
+      ]
+    }
+  ],
+  "waivers": []
+}

@@ -377,8 +377,10 @@ and a bare "PASS" given only once every cell is `observed` clean and `check-arch
 It binds everyone because it lives in committed artifacts, not memory. **Agents** get it via the always-on
 hook (the directive is injected every session and subagent). **Humans and agents alike** are bound by the
 per-change **required** CI gates (`arch-gate` via `npm run check:architecture`, `check-arch-review-coverage`,
-and `check-arch-rules-discriminate`; the fourth, the evidence-contract gate, keeps this skill itself
-honest). A change that was not reviewed, or was reviewed partially or without evidence, cannot merge. **It
+and `check-arch-rules-discriminate`; the evidence-contract gate keeps this skill itself honest). Separately,
+`check-change-routing` (ADR-0031) runs on every PR via `routing.yml` and routes a change to the artifacts it
+must carry; adding `routing` to branch protection makes a routing gap block merge. A change that was not
+reviewed, or was reviewed partially or without evidence, cannot merge. **It
 survives any individual** because the review log, the gates, and `decisions.md` are all in git. The honest
 limit above stands: this makes *not looking* impossible, not *flawless perception* guaranteed. That is the
 achievable, enforceable half of "impossible to miss."
@@ -403,4 +405,5 @@ review log mirrors tamper-evident audit logging (`compliance-data-lifecycle`).
 - `scripts/arch-gate.mjs`: the dependency-free mechanical scanner (the enforcement half).
 - `scripts/check-arch-review-coverage.mjs`: the review-coverage gate (every changed file times every question, logged and evidenced).
 - `scripts/check-arch-rules-discriminate.mjs`: the mutation-test for the reviewer: planted violations the mechanical layer must flag.
+- `scripts/check-change-routing.mjs`: the change-type to required-artifact routing gate (ADR-0031). A change that touches a kind of surface must ship its discipline's artifact (a new skill an ADR, a new gate a test). Checks presence; `ownerGate` names who checks correctness. Config at `assets/routing-rules.config.json`, adopter starting map at `assets/example/routing-rules.config.json`; run on every PR by `.github/workflows/routing.yml`.
 - `assets/AGENTS.baseline.md`, `assets/decisions.template.md`, `assets/presets/`: starter rules per stack.
