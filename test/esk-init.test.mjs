@@ -6,7 +6,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, writeFileSync, mkdirSync, existsSync, readFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync, mkdirSync, existsSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -241,4 +241,143 @@ test("a failed canary on a NEW file removes the file it created (does not leave 
   assert.equal(r.status, 2, (r.stdout || "") + (r.stderr || ""));
   assert.equal(existsSync(settings), false, "a new settings.json created then failed must be removed, not left as a stray");
   assert.equal(existsSync(join(dir, ".claude", ".esk-installed")), false);
+});
+
+// === --skills: mirror the repo's skills into a discovery location (ADR-0029) ====================
+// Opt-in + --skills-target so these are hermetic (never touch a real ~/.claude/skills). A fake repo with a
+// controllable skill set drives the reconcile/removal/version cases; the real repo proves real content mirrors.
+function fakeRepo(skills, version = "1.0.0") {
+  const repo = mkdtempSync(join(tmpdir(), "esk-fakerepo-sk-"));
+  mkdirSync(join(repo, "always-on"), { recursive: true });
+  writeFileSync(join(repo, "always-on", "emit-directive.mjs"),
+    'process.stdout.write(JSON.stringify({hookSpecificOutput:{hookEventName:"SessionStart",additionalContext:"Enterprise engineering skills directive"}}));\n');
+  writeFileSync(join(repo, "always-on", "enterprise-skills-always-on.md"), "Enterprise engineering skills");
+  writeFileSync(join(repo, "package.json"), JSON.stringify({ version }));
+  for (const s of skills) {
+    const d = join(repo, ".claude", "skills", s);
+    mkdirSync(d, { recursive: true });
+    writeFileSync(join(d, "SKILL.md"), `---\nname: ${s}\ndescription: "fake ${s}"\n---\n# ${s}\n`);
+  }
+  return repo;
+}
+function skArea() {
+  const dir = mkdtempSync(join(tmpdir(), "esk-sk-"));
+  return { dir, settings: join(dir, ".claude", "settings.json"), marker: join(dir, ".claude", ".esk-installed"), tgt: join(dir, "home", "skills") };
+}
+function runSK(repo, tgt, settings, extra) {
+  const r = spawnSync(process.execPath, [ESK, "--repo", repo, "--settings", settings, "--skills", "--skills-target", tgt, ...extra], { encoding: "utf8" });
+  return { status: r.status, out: (r.stdout || "") + (r.stderr || "") };
+}
+
+test("a hook-only install (no --skills) records NO skills in the marker (opt-in, discriminating)", () => {
+  const r = run(["--yes"]);
+  assert.equal(JSON.parse(readFileSync(r.marker, "utf8")).skills, undefined, "skills must be opt-in");
+});
+
+test("--skills plan (no --yes) writes nothing to the skills target (safe by default)", () => {
+  const repo = fakeRepo(["alpha", "beta"]);
+  const a = skArea();
+  const r = runSK(repo, a.tgt, a.settings, []);
+  assert.equal(r.status, 0, r.out);
+  assert.equal(existsSync(a.tgt), false, "no skills may be written in plan mode");
+  assert.match(r.out, /mirror 2 skill/i);
+});
+
+test("--yes --skills mirrors every skill and records them in the marker", () => {
+  const repo = fakeRepo(["alpha", "beta"]);
+  const a = skArea();
+  assert.equal(runSK(repo, a.tgt, a.settings, ["--yes"]).status, 0);
+  assert.ok(existsSync(join(a.tgt, "alpha", "SKILL.md")), "alpha mirrored");
+  assert.ok(existsSync(join(a.tgt, "beta", "SKILL.md")), "beta mirrored");
+  const m = JSON.parse(readFileSync(a.marker, "utf8"));
+  assert.deepEqual([...m.skills.names].sort(), ["alpha", "beta"]);
+  assert.equal(m.skills.target, a.tgt);
+  assert.equal(existsSync(join(a.tgt, "alpha.esk-tmp")), false, "no temp residue after a successful mirror");
+});
+
+test("the REAL repo mirrors all 17 skills (happy path on real content)", () => {
+  const a = skArea();
+  assert.equal(runSK(REPO, a.tgt, a.settings, ["--yes"]).status, 0);
+  const dirs = readdirSync(a.tgt, { withFileTypes: true }).filter((e) => e.isDirectory() && !e.name.endsWith(".esk-tmp"));
+  assert.ok(dirs.length >= 17, `expected at least 17 skills mirrored, got ${dirs.length}`);
+  assert.ok(existsSync(join(a.tgt, "judge-arch", "SKILL.md")));
+});
+
+test("the clean copy skips heavy/ignored subdirs (vendor, node_modules) — discriminating", () => {
+  const repo = fakeRepo(["gamma"]);
+  const g = join(repo, ".claude", "skills", "gamma");
+  mkdirSync(join(g, "vendor"), { recursive: true }); writeFileSync(join(g, "vendor", "big.txt"), "CC-BY-SA text");
+  mkdirSync(join(g, "node_modules"), { recursive: true }); writeFileSync(join(g, "node_modules", "x.js"), "dep");
+  mkdirSync(join(g, "references"), { recursive: true }); writeFileSync(join(g, "references", "r.md"), "ref");
+  const a = skArea();
+  assert.equal(runSK(repo, a.tgt, a.settings, ["--yes"]).status, 0);
+  assert.ok(existsSync(join(a.tgt, "gamma", "SKILL.md")), "SKILL.md copied");
+  assert.ok(existsSync(join(a.tgt, "gamma", "references", "r.md")), "references copied");
+  assert.equal(existsSync(join(a.tgt, "gamma", "vendor")), false, "vendor must be skipped");
+  assert.equal(existsSync(join(a.tgt, "gamma", "node_modules")), false, "node_modules must be skipped");
+});
+
+test("a second --yes --skills is a no-op, and --check --skills passes after install", () => {
+  const repo = fakeRepo(["alpha"]);
+  const a = skArea();
+  assert.equal(runSK(repo, a.tgt, a.settings, ["--yes"]).status, 0);
+  assert.match(runSK(repo, a.tgt, a.settings, ["--yes"]).out, /nothing to change/i);
+  assert.equal(runSK(repo, a.tgt, a.settings, ["--check"]).status, 0);
+});
+
+test("--check --skills reports skills-not-mirrored as drift even when the hook is clean (discriminating)", () => {
+  const repo = fakeRepo(["alpha"]);
+  const a = skArea();
+  // install the hook ONLY (no --skills) so the hook is clean and the only possible drift is skills
+  assert.equal(spawnSync(process.execPath, [ESK, "--repo", repo, "--settings", a.settings, "--yes"], { encoding: "utf8" }).status, 0);
+  const r = runSK(repo, a.tgt, a.settings, ["--check"]);
+  assert.equal(r.status, 1, r.out);
+  assert.match(r.out, /were not mirrored/i, "must isolate skills drift, not just match the hook header");
+});
+
+test("reconcile REMOVES a skill dropped from the repo, but NEVER a foreign one (discriminating)", () => {
+  const repo = fakeRepo(["alpha", "beta"]);
+  const a = skArea();
+  assert.equal(runSK(repo, a.tgt, a.settings, ["--yes"]).status, 0);
+  mkdirSync(join(a.tgt, "foreign"), { recursive: true });
+  writeFileSync(join(a.tgt, "foreign", "SKILL.md"), "---\nname: foreign\n---\n");
+  rmSync(join(repo, ".claude", "skills", "beta"), { recursive: true, force: true });
+  writeFileSync(join(repo, "package.json"), JSON.stringify({ version: "1.0.1" }));
+  assert.equal(runSK(repo, a.tgt, a.settings, ["--yes"]).status, 0);
+  assert.ok(existsSync(join(a.tgt, "alpha", "SKILL.md")), "alpha (still in repo) kept");
+  assert.equal(existsSync(join(a.tgt, "beta")), false, "beta (dropped from repo, was ours) removed");
+  assert.ok(existsSync(join(a.tgt, "foreign", "SKILL.md")), "foreign (never ours) must be untouched");
+});
+
+test("a mirrored skill deleted from the target is drift and is restored on reconcile (discriminating)", () => {
+  const repo = fakeRepo(["alpha", "beta"]);
+  const a = skArea();
+  assert.equal(runSK(repo, a.tgt, a.settings, ["--yes"]).status, 0);
+  rmSync(join(a.tgt, "alpha"), { recursive: true, force: true });
+  assert.equal(runSK(repo, a.tgt, a.settings, ["--check"]).status, 1, "a missing mirrored skill is drift");
+  assert.equal(runSK(repo, a.tgt, a.settings, ["--yes"]).status, 0);
+  assert.ok(existsSync(join(a.tgt, "alpha", "SKILL.md")), "the missing skill is restored");
+});
+
+test("a repo version bump is skills drift, and a reconcile re-mirrors + bumps the record (discriminating)", () => {
+  const repo = fakeRepo(["alpha"], "1.0.0");
+  const a = skArea();
+  assert.equal(runSK(repo, a.tgt, a.settings, ["--yes"]).status, 0);
+  writeFileSync(join(repo, "package.json"), JSON.stringify({ version: "2.0.0" }));
+  assert.equal(runSK(repo, a.tgt, a.settings, ["--check"]).status, 1, "behind-version skills must read as drift");
+  assert.equal(runSK(repo, a.tgt, a.settings, ["--yes"]).status, 0);
+  assert.equal(JSON.parse(readFileSync(a.marker, "utf8")).skills.version, "2.0.0");
+});
+
+test("an unreadable skills source fails closed and does NOT wipe the mirror (V1, discriminating)", () => {
+  const repo = fakeRepo(["alpha", "beta"]);
+  const a = skArea();
+  assert.equal(runSK(repo, a.tgt, a.settings, ["--yes"]).status, 0);
+  // make the repo's skills dir unreadable: replace it with a FILE so readdirSync throws (portable across OSes)
+  rmSync(join(repo, ".claude", "skills"), { recursive: true, force: true });
+  writeFileSync(join(repo, ".claude", "skills"), "not a directory");
+  const r = runSK(repo, a.tgt, a.settings, ["--yes"]);
+  assert.notEqual(r.status, 0, "an unreadable source must fail closed, not exit 0");
+  assert.ok(existsSync(join(a.tgt, "alpha", "SKILL.md")), "alpha must NOT be wiped by a source read error");
+  assert.ok(existsSync(join(a.tgt, "beta", "SKILL.md")), "beta must NOT be wiped by a source read error");
 });

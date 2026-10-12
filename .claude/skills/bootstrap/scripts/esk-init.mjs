@@ -13,6 +13,7 @@
  *
  *   node esk-init.mjs                 # plan only (same as --dry-run): show what WOULD change
  *   node esk-init.mjs --yes           # apply: install or reconcile the hook (backs up first)
+ *   node esk-init.mjs --yes --skills  # also mirror the repo's skills into ~/.claude/skills (any folder)
  *   node esk-init.mjs --check         # drift gate for CI: exit non-zero if not installed/current
  *
  * Flags:
@@ -23,11 +24,13 @@
  *   --settings <path>     target this settings.json explicitly
  *   --repo <path>         the enterprise-skills repo root (default: resolved from this script)
  *   --shell powershell    write the Windows PowerShell shell-form hook instead of exec form
+ *   --skills              also mirror the repo's .claude/skills/ into a global discovery location
+ *   --skills-target <p>   mirror skills into <p> instead of ~/.claude/skills
  *
  * Exit: 0 = success / already current (or a clean plan). 1 = drift (for --check) or a problem the
  * user must act on. 2 = bad usage or an unreadable/unwritable target (fail closed).
  */
-import { readFileSync, writeFileSync, existsSync, copyFileSync, mkdirSync, unlinkSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, copyFileSync, mkdirSync, unlinkSync, readdirSync, rmSync, cpSync, renameSync } from "node:fs";
 import { dirname, resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
@@ -58,6 +61,62 @@ const settingsDir = dirname(settingsPath);
 const markerPath = join(settingsDir, ".esk-installed");
 const logPath = join(settingsDir, "ESK-INSTALL-LOG.md");
 const useShell = (opt("--shell") || "").toLowerCase() === "powershell";
+
+// --- skills mirror (opt-in): copy the repo's .claude/skills/<name>/ into a discovery location -----
+// The committed .claude/skills makes skills load for a session rooted IN this repo (ADR-0028), but a
+// git pull cannot reach another machine's ~/.claude. This phase mirrors them into ~/.claude/skills so
+// they load from ANY folder on the machine. It is opt-in (--skills) and targets ~/.claude/skills by
+// default; --skills-target overrides it (the tests point it at a temp dir so they never touch a real home).
+const withSkills = flag("--skills");
+const skillsTarget = resolve(opt("--skills-target") || join(homedir(), ".claude", "skills"));
+const repoSkillsDir = join(repoRoot, ".claude", "skills");
+const SKILL_MIRROR_SKIP = new Set(["vendor", "node_modules", ".git"]);
+if (withSkills && !existsSync(repoSkillsDir)) {
+  die(`--skills was requested but ${repoSkillsDir} does not exist; is this the enterprise-skills repo, and has it been pulled?`);
+}
+function sourceSkillNames() {
+  if (!existsSync(repoSkillsDir)) return [];
+  let entries;
+  // Do NOT swallow a read error here. If the dir exists but cannot be read (a locked ACL, a transient I/O
+  // error, a dehydrated OneDrive folder), returning [] would be read as "the repo has no skills" and a
+  // reconcile would then remove every mirrored skill. Fail closed instead.
+  try { entries = readdirSync(repoSkillsDir, { withFileTypes: true }); }
+  catch (e) { die(`cannot read the repo skills dir ${repoSkillsDir} (${e.message}); refusing to run so a read error is never mistaken for an empty repo and used to remove mirrored skills`); }
+  return entries.filter((e) => e.isDirectory() && existsSync(join(repoSkillsDir, e.name, "SKILL.md")))
+    .map((e) => e.name).sort();
+}
+// Plan skills changes against the marker's record of what WE installed, so a reconcile removes a skill we
+// dropped from the repo but NEVER touches a skill we did not install (a user's own, or another repo's).
+function planSkills(marker) {
+  if (!withSkills) return { mirror: [], remove: [], changed: false };
+  const src = sourceSkillNames();
+  const prev = marker && marker.skills && Array.isArray(marker.skills.names) ? marker.skills.names : [];
+  const remove = prev.filter((n) => !src.includes(n));
+  const behind = !marker || !marker.skills || marker.skills.version !== version || marker.skills.target !== skillsTarget;
+  const missing = src.filter((n) => !existsSync(join(skillsTarget, n, "SKILL.md")));
+  return { mirror: src, remove, missing, behind, changed: behind || remove.length > 0 || missing.length > 0 };
+}
+// Mirror one skill cleanly: remove the target copy, then copy the source minus heavy/ignored subdirs
+// (the gitignored OWASP vendor text, node_modules, .git). The repo is authoritative, so no per-skill
+// backup is needed; a failed copy is fixed by re-running. Foreign skills are never named here, so never touched.
+function mirrorOneSkill(name) {
+  const from = join(repoSkillsDir, name);
+  const to = join(skillsTarget, name);
+  const tmp = `${to}.esk-tmp`;
+  const old = `${to}.esk-old`;
+  // Copy into a temp, then swap by moving the existing skill ASIDE first (not deleting it), so a failed swap
+  // rolls back to it. The existing skill is dropped only after the new one is in place; a throw during the
+  // swap restores the old copy. The only case a re-run has to heal is a hard process kill in the brief rename
+  // window, because directory replacement is not crash-atomic on Windows.
+  rmSync(tmp, { recursive: true, force: true });
+  rmSync(old, { recursive: true, force: true });
+  cpSync(from, tmp, { recursive: true, filter: (s) => !s.split(/[\\/]/).some((seg) => SKILL_MIRROR_SKIP.has(seg)) });
+  const hadOld = existsSync(to);
+  if (hadOld) renameSync(to, old);
+  try { renameSync(tmp, to); }
+  catch (e) { if (hadOld) { try { renameSync(old, to); } catch { /* best-effort rollback */ } } throw e; }
+  rmSync(old, { recursive: true, force: true });
+}
 
 // --- the hook entry we manage ------------------------------------------------
 const EVENTS = ["SessionStart", "SubagentStart"];
@@ -166,6 +225,15 @@ function assess() {
   const marker = readMarker();
   if (!marker) problems.push("no .esk-installed marker");
   else if (marker.version !== version) problems.push(`installed version ${marker.version} is behind the repo version ${version}`);
+  if (withSkills || (marker && marker.skills)) {
+    if (!marker || !marker.skills) problems.push("skills were not mirrored (no skills record in the marker); run --yes --skills");
+    else {
+      const tgt = marker.skills.target || skillsTarget;
+      if (marker.skills.version !== version) problems.push(`mirrored skills (v${marker.skills.version}) are behind the repo version ${version}`);
+      const miss = sourceSkillNames().filter((n) => !existsSync(join(tgt, n, "SKILL.md")));
+      if (miss.length) problems.push(`skills missing from ${tgt}: ${miss.join(", ")}`);
+    }
+  }
   const c = canary();
   if (!c.ok) problems.push(`canary: ${c.why}`);
   return { obj, existed, marker, problems };
@@ -191,17 +259,23 @@ const before = readSettings();
 const marker = readMarker();
 const fresh = !marker;
 const { obj: planned, actions } = withHooks(before.obj);
-const nothingToDo = actions.length === 0 && marker && marker.version === version;
+const skillsPlan = planSkills(marker);
+const nothingToDo = actions.length === 0 && marker && marker.version === version && !skillsPlan.changed;
 
 console.log(`\nEnterprise skills always-on ${fresh ? "install" : "reconcile"} plan`);
 console.log(`  repo:      ${repoRoot} (version ${version})`);
 console.log(`  settings:  ${settingsPath}${before.existed ? "" : " (will be created)"}`);
 console.log(`  marker:    ${markerPath}${marker ? ` (installed version ${marker.version})` : " (none yet)"}`);
 console.log(`  hook form: ${useShell ? "PowerShell shell form" : "exec form (no shell)"}`);
+if (withSkills) console.log(`  skills:    mirror ${skillsPlan.mirror.length} skill(s) from .claude/skills -> ${skillsTarget}`);
 if (nothingToDo) { console.log(`  result:    already installed and current. Nothing to change.`); }
 else {
   console.log(`  changes:`);
   for (const a of actions) console.log(`    - ${a}`);
+  if (withSkills && skillsPlan.changed) {
+    console.log(`    - mirror ${skillsPlan.mirror.length} skill(s) into ${skillsTarget}`);
+    if (skillsPlan.remove.length) console.log(`    - remove ${skillsPlan.remove.length} skill(s) no longer in the repo (${skillsPlan.remove.join(", ")})`);
+  }
   if (fresh) console.log(`    - write the .esk-installed marker (version ${version})`);
   else if (!marker || marker.version !== version) console.log(`    - bump the marker to version ${version}`);
   console.log(`  safety:    back up settings.json first; validate JSON after writing; restore on any failure.`);
@@ -243,11 +317,30 @@ for (const event of EVENTS) {
 const c = canary();
 if (!c.ok) restore(`canary failed (${c.why})`);
 
+// Skills mirror (opt-in), after the hook is verified. The repo is authoritative and foreign skills are
+// never named, so no backup is needed; a failed copy is fixed by re-running --yes --skills.
+let skillsInstalled = null;
+if (withSkills) {
+  try {
+    if (!existsSync(skillsTarget)) mkdirSync(skillsTarget, { recursive: true });
+    for (const name of skillsPlan.mirror) mirrorOneSkill(name);
+    for (const name of skillsPlan.remove) {
+      if (!/^[^/\\]+$/.test(name) || name === "." || name === "..") continue; // only ever delete a plain child of the target
+      rmSync(join(skillsTarget, name), { recursive: true, force: true });
+    }
+  } catch (e) { die(`skills mirror failed (${e.message}); the hook is installed, re-run \`--yes --skills\` to finish`); }
+  const bad = skillsPlan.mirror.filter((n) => !existsSync(join(skillsTarget, n, "SKILL.md")));
+  if (bad.length) die(`skills mirror incomplete (no SKILL.md at the target for: ${bad.join(", ")}); re-run \`--yes --skills\``);
+  skillsInstalled = { target: skillsTarget, names: skillsPlan.mirror, version };
+}
+
 // Success: write the marker + the log.
 const stamp = new Date().toISOString();
-writeFileSync(markerPath, JSON.stringify({ version, installedAt: stamp, settings: settingsPath, repo: repoRoot, form: useShell ? "powershell" : "exec" }, null, 2) + "\n");
+writeFileSync(markerPath, JSON.stringify({ version, installedAt: stamp, settings: settingsPath, repo: repoRoot, form: useShell ? "powershell" : "exec", ...(skillsInstalled ? { skills: skillsInstalled } : {}) }, null, 2) + "\n");
 const logLine = `\n## ${stamp}: ${fresh ? "installed" : "reconciled"} always-on (v${version}, ${useShell ? "powershell" : "exec"} form)\n` +
-  actions.map((a) => `- ${a}`).join("\n") + `\n- backup: ${backup || "none (new file)"}\n- canary: emitter produced the directive\n`;
+  actions.map((a) => `- ${a}`).join("\n") +
+  (skillsInstalled ? `\n- mirrored ${skillsInstalled.names.length} skill(s) into ${skillsInstalled.target}` : "") +
+  `\n- backup: ${backup || "none (new file)"}\n- canary: emitter produced the directive\n`;
 try { writeFileSync(logPath, (existsSync(logPath) ? readFileSync(logPath, "utf8") : "# ESK install log\n") + logLine); }
 catch (e) { console.error(`[esk-init] note: could not write the install log ${logPath} (${e.message}); the install itself succeeded.`); }
 
