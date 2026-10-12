@@ -14,8 +14,12 @@ import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const CHECK = resolve(REPO, "architectural-decision-records/scripts/check_adr.sh");
-const bashOK = spawnSync("bash", ["--version"], { stdio: "ignore" }).status === 0;
-const opts = { skip: bashOK ? false : "bash not on PATH (CI runs this)" };
+// Probe that the `bash` on PATH can actually REACH this script at its (possibly Windows) path, not
+// merely that a `bash` exists: a WSL bash on a Windows PATH can't resolve "C:\...\check_adr.sh" and
+// would make these tests fail red (exit 127) instead of skipping, the same false-red new-adr.test.mjs
+// already guards against. If bash can't see the file, skip; CI (ubuntu, POSIX paths) runs it.
+const bashOK = spawnSync("bash", ["-c", 'test -f "$1"', "_", CHECK], { stdio: "ignore" }).status === 0;
+const opts = { skip: bashOK ? false : "bash cannot reach this script here (CI/ubuntu runs it)" };
 
 // A complete, valid ADR body. `<base>` is interpolated so the filename matches NNNN-kebab.md.
 const CTX = "This is a sufficiently long context section to pass the forty character minimum easily.";

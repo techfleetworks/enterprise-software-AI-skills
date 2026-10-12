@@ -1,7 +1,5 @@
 [
   "compliance-data-lifecycle",
-  "release-deployment-safety",
-  "sre-operational-readiness",
   "requirements/universal-accessibility-wcag",
   "requirements/universal-browser-device-support",
   "requirements/usability-ux-universal-design"
