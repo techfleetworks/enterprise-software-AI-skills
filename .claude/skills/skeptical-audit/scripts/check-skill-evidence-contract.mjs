@@ -22,7 +22,10 @@ const root = resolve(args.find((a) => !a.startsWith("--")) ?? ".");
 const ai = args.indexOf("--allowlist");
 const allowlistPath = resolve(ai >= 0 ? args[ai + 1] : join(root, ".claude/skills/skeptical-audit/scripts/skill-evidence-allowlist.json"));
 
-const IGNORE = new Set(["node_modules", ".git", "dist", "build"]);
+// `worktrees` excluded so a local scan does not descend into app-managed git worktrees under
+// .claude/worktrees/ (separate checkouts, not this repo's tree); without it a local run double-counts
+// skills from a sibling worktree and can go red while CI, which has no worktree, stays green.
+const IGNORE = new Set(["node_modules", ".git", "dist", "build", "worktrees"]);
 function findSkills(dir) {
   const out = [];
   let entries;
