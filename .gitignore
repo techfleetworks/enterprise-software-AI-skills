@@ -12,3 +12,9 @@ owasp-secure-coding-bdd/vendor/cheatsheets-src/
 owasp-secure-coding-bdd/vendor/llm-top10-src/
 owasp-secure-coding-bdd/vendor/LICENSE-CheatSheetSeries.md
 owasp-secure-coding-bdd/vendor/LICENSE-LLM-Top10.md
+
+# Per-machine bootstrap install artifacts (the committed .claude/settings.json IS tracked; these are not).
+# The marker, the settings backup, and the install log are specific to one machine's install.
+.claude/.esk-installed
+.claude/*.esk.bak
+.claude/ESK-INSTALL-LOG.md

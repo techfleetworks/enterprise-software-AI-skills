@@ -67,34 +67,44 @@ fresh session receives the directive.
 `args`. If yours does not, the command will not run; use the "Confirm it works" step
 and the PowerShell fallback. Check with `node --version` and `claude --version`.
 
-## Install, personal (all your projects)
+## How this repo stays always-on, and why a pull keeps everyone current
 
-1. Copy both files to your user config, side by side:
-   ```bash
-   cp always-on/enterprise-skills-always-on.md ~/.claude/enterprise-skills-always-on.md
-   cp always-on/emit-directive.mjs ~/.claude/emit-directive.mjs
-   ```
-2. Merge the `hooks` block from [`settings.snippet.json`](settings.snippet.json) into
-   `~/.claude/settings.json`. **Merge, do not overwrite.** A personal install has no
-   project-dir placeholder, so set `args[0]` to the **absolute path** of the emitter,
-   for example `"/home/you/.claude/emit-directive.mjs"` or
-   `"C:/Users/you/.claude/emit-directive.mjs"`.
-3. Start a new session. Hooks load at session start, so they take effect on the
-   **next** session, not the one you edited settings in.
+This repo turns itself on for anyone who works in it, with two committed layers that a
+`git pull` updates. **Never copy the directive into `~/.claude`.** A copy is the staleness
+trap: a pull updates the repo, not your copy, so the copy freezes at an old version (this
+is exactly the drift the version marker and `esk-init --check` exist to catch). Both layers
+below instead point at the repo's own files, so a pull is the update.
 
-## Install, project (shared with everyone on the repo)
+**Layer 1, zero setup, no approval: the committed [`CLAUDE.md`](../CLAUDE.md).** Claude Code
+loads a project `CLAUDE.md` into every session as context, and a relative import loads with
+no prompt. The committed `CLAUDE.md` imports `@always-on/enterprise-skills-always-on.md`, so
+anyone who works in the repo gets the current directive automatically, on every pull, with
+no install step and no approval. It reaches the main agent and most subagents (the built-in
+Explore and Plan agents skip project instructions, which is what Layer 2 covers).
 
-1. Commit both files in the repo, side by side, e.g. `.claude/enterprise-skills-always-on.md`
-   and `.claude/emit-directive.mjs`.
-2. Keep `args[0]` as `"${CLAUDE_PROJECT_DIR}/.claude/emit-directive.mjs"` (Claude Code
-   substitutes `${CLAUDE_PROJECT_DIR}` itself).
-3. Commit `.claude/settings.json`. Teammates get it on their next session.
+**Layer 2, stronger, one approval: the committed [`.claude/settings.json`](../.claude/settings.json)
+hook.** It runs `emit-directive.mjs` in exec form via `${CLAUDE_PROJECT_DIR}` and injects the
+same directive into every subagent, including Explore and Plan. Claude Code asks each person
+once to trust the project's hooks (a security prompt, not staleness); after that, content
+updates apply automatically on pull, and only a change to the hook *command* re-prompts.
 
-> A project `settings.json` hook runs on every teammate's machine. Keep the command to
-> the reviewed `node` + `emit-directive.mjs` form above, and review any change to it in PR.
+The two overlap on the main agent (it sees the directive from both). That is intentional
+defense in depth: if one path is unavailable in a given session, the other still carries it.
 
-Do not define the hook in both user and project settings, or the directive is injected
-twice.
+## Use the skills in another project or machine
+
+Run the installer, which references this repo (never copies), so pulling this repo updates
+the directive for that project too:
+
+```bash
+node bootstrap/scripts/esk-init.mjs            # plan only
+node bootstrap/scripts/esk-init.mjs --yes      # install or reconcile (backs up first)
+```
+
+For the zero-approval Layer 1 in another project, add one line to that project's own
+`CLAUDE.md` importing the directive by a relative path to your clone, for example
+`@../enterprise-software-AI-skills/always-on/enterprise-skills-always-on.md`. See
+[`bootstrap/SKILL.md`](../bootstrap/SKILL.md).
 
 ## Confirm it works (recommended, especially on Windows)
 
@@ -113,17 +123,22 @@ actually lands, then use the fallback:
 
 The `bootstrap` skill's installer automates this check and picks the working form for you.
 
-## Lighter alternative, CLAUDE.md / rules (no hook)
+## The CLAUDE.md layer in another project (no hook)
 
-If you would rather not run a hook, append the directive to your `CLAUDE.md` (or drop it
-in `.claude/rules/`). It loads at launch into the main agent and into most subagents
-(all except the built-in `Explore` and `Plan`). This is **advisory** context, so it
-depends on the model honoring it. The hook is the stronger, non-discretionary lever and
-also covers `Explore` and `Plan`.
+If you would rather not run a hook, import the directive from your project's `CLAUDE.md`.
+Claude Code loads a project `CLAUDE.md` every session and expands a relative `@path` import
+at launch, so the directive loads into the main agent and most subagents (all except the
+built-in `Explore` and `Plan`, which the hook covers). This is **advisory** context, so it
+depends on the model honoring it; the hook is the stronger, non-discretionary lever.
 
-```bash
-cat always-on/enterprise-skills-always-on.md >> CLAUDE.md
-```
+Add one line, on its own and not inside backticks or a code fence, to your project's
+`CLAUDE.md`, pointing at your clone of this repo (shown here inline):
+`@../enterprise-software-AI-skills/always-on/enterprise-skills-always-on.md`
+
+Do **not** `cat` the directive into your `CLAUDE.md`: a copy freezes, and a pull of this
+repo will not update it (the staleness trap). The relative import stays current because it
+reads the repo's own file. If your clone sits outside the project folder, Claude Code asks
+once to approve that external import; after that a pull keeps it current.
 
 ## Scope, turn it off or narrow it
 

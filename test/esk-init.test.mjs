@@ -146,6 +146,54 @@ test("two of our hooks is drift, and --yes collapses them to one (discriminating
   assert.equal(runOn(settings, ["--check"]).status, 0);
 });
 
+// --- upgrading a LEGACY copy-based install in place (no duplicate) ------------
+test("reconcile UPGRADES a legacy inline hook in place instead of adding a duplicate", () => {
+  const dir = mkdtempSync(join(tmpdir(), "esk-legacy-"));
+  const settings = join(dir, ".claude", "settings.json");
+  mkdirSync(dirname(settings), { recursive: true });
+  // the pre-#50 copy-based hook: reads $HOME/.claude/enterprise-skills-always-on.md via bash
+  const legacy = {
+    type: "command", shell: "bash", timeout: 15,
+    command: 'node -e \'process.stdout.write(require("fs").readFileSync(process.argv[1],"utf8"))\' "$HOME/.claude/enterprise-skills-always-on.md"',
+  };
+  writeFileSync(settings, JSON.stringify({ hooks: { SessionStart: [{ hooks: [legacy] }], SubagentStart: [{ hooks: [legacy] }] } }, null, 2));
+  assert.equal(runOn(settings, ["--check"]).status, 1, "a legacy install with no marker must read as drift");
+  assert.equal(runOn(settings, ["--yes"]).status, 0);
+  // exactly one of ours per event, now exec form pointing at emit-directive.mjs, no leftover inline hook
+  assert.equal(countOur(settings, "SessionStart"), 1);
+  const after = readJson(settings).hooks.SessionStart.flatMap((g) => g.hooks);
+  assert.ok(after.some((h) => (h.args || []).some((a) => String(a).includes("emit-directive.mjs"))), "must be the new exec-form hook");
+  assert.ok(!after.some((h) => String(h.command || "").includes("readFileSync")), "the legacy inline hook must be gone, not duplicated");
+  assert.equal(runOn(settings, ["--check"]).status, 0);
+});
+
+// --- do not de-portabilize an existing committed ${CLAUDE_PROJECT_DIR} hook ----
+test("reconcile leaves an existing portable ${CLAUDE_PROJECT_DIR} hook alone (no absolute-path rewrite)", () => {
+  const dir = mkdtempSync(join(tmpdir(), "esk-portable-"));
+  const settings = join(dir, ".claude", "settings.json");
+  mkdirSync(dirname(settings), { recursive: true });
+  const portable = (event) => ({ hooks: [{ type: "command", command: "node", args: ["${CLAUDE_PROJECT_DIR}/always-on/emit-directive.mjs", event], timeout: 10 }] });
+  writeFileSync(settings, JSON.stringify({ hooks: { SessionStart: [portable("SessionStart")], SubagentStart: [portable("SubagentStart")] } }, null, 2));
+  assert.equal(runOn(settings, ["--yes"]).status, 0);
+  const h = readJson(settings).hooks.SessionStart[0].hooks[0];
+  assert.ok(h.args.some((a) => String(a).includes("${CLAUDE_PROJECT_DIR}")), "must keep the portable form, not rewrite to an absolute path");
+  assert.equal(countOur(settings, "SessionStart"), 1, "no duplicate added");
+});
+
+// --- a foreign hook that only MENTIONS the directive filename is not ours ------
+test("a foreign hook that merely references the directive filename is NOT treated as ours", () => {
+  const dir = mkdtempSync(join(tmpdir(), "esk-foreign-"));
+  const settings = join(dir, ".claude", "settings.json");
+  mkdirSync(dirname(settings), { recursive: true });
+  // a custom hook that cats the directive for some other purpose (no inline node reader)
+  const foreign = { type: "command", command: 'cat always-on/enterprise-skills-always-on.md | wc -l' };
+  writeFileSync(settings, JSON.stringify({ hooks: { SessionStart: [{ hooks: [foreign] }] } }, null, 2));
+  assert.equal(runOn(settings, ["--yes"]).status, 0);
+  const cmds = readJson(settings).hooks.SessionStart.flatMap((g) => g.hooks).map((h) => h.command);
+  assert.ok(cmds.some((c) => String(c).includes("wc -l")), "the foreign hook must be preserved, not replaced");
+  assert.ok(ourHook(settings, "SessionStart"), "our hook must be added alongside it");
+});
+
 // --- a malformed non-array event value must not be silently dropped -----------
 test("fails closed (exit 2) on a malformed non-array hooks.SessionStart, instead of dropping it", () => {
   const dir = mkdtempSync(join(tmpdir(), "esk-malformed-"));

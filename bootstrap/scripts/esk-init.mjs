@@ -67,13 +67,21 @@ function hookEntry(event) {
   }
   return { type: "command", command: "node", args: [emitter, event], timeout: 10, statusMessage: "Loading enterprise always-on skills directive" };
 }
-// Recognize OUR hook (across versions / forms) by a reference to emit-directive.mjs.
+// Recognize OUR hook across versions and forms, including the LEGACY copy-based hook that ran
+// `node -e '...' "$HOME/.claude/enterprise-skills-always-on.md"`. Matching the legacy form too is what
+// lets a reconcile UPGRADE an old install in place (replace it) instead of adding a duplicate beside it.
+// The legacy branch requires the inline-reader shape (not the bare filename), so a foreign hook that
+// merely mentions the directive file for some other purpose is NOT mistaken for ours.
+const hookText = (h) => (Array.isArray(h.args) ? h.args.map(String).join(" ") : "") + " " + (typeof h.command === "string" ? h.command : "");
 const isOurs = (h) => {
   if (!h || typeof h !== "object") return false;
-  const inArgs = Array.isArray(h.args) && h.args.some((a) => String(a).includes("emit-directive.mjs"));
-  const inCmd = typeof h.command === "string" && h.command.includes("emit-directive.mjs");
-  return inArgs || inCmd;
+  const s = hookText(h);
+  if (s.includes("emit-directive.mjs")) return true;                                   // our emitter, any form
+  return s.includes("enterprise-skills-always-on.md") && /readFileSync|node\s+-e/.test(s); // legacy inline reader
 };
+// An existing entry that already references the repo via ${CLAUDE_PROJECT_DIR} + our emitter + this event
+// is the portable committed form; a reconcile must NOT rewrite it to a machine-absolute path.
+const isPortable = (h, event) => { const s = hookText(h); return s.includes("${CLAUDE_PROJECT_DIR}") && s.includes("emit-directive.mjs") && s.includes(event); };
 
 function readSettings() {
   if (!existsSync(settingsPath)) return { obj: {}, existed: false };
@@ -104,15 +112,21 @@ function withHooks(obj) {
       groups.push({ hooks: [desired] });
       actions.push(`add ${event} hook`);
     } else {
-      // Keep the first occurrence, set it to the desired entry; splice out any later duplicates.
       const [gi0, hi0] = locs[0];
-      const before = JSON.stringify(groups[gi0].hooks[hi0]);
-      groups[gi0].hooks[hi0] = desired;
-      for (let k = locs.length - 1; k >= 1; k--) { const [gi, hi] = locs[k]; groups[gi].hooks.splice(hi, 1); }
-      // Drop any group left with an empty hooks array by the removal.
-      next.hooks[event] = groups.filter((g) => !(g && Array.isArray(g.hooks) && g.hooks.length === 0));
-      if (locs.length > 1) actions.push(`collapse ${locs.length} duplicate ${event} hooks into one`);
-      else if (JSON.stringify(desired) !== before) actions.push(`update ${event} hook to the current emitter + form`);
+      const existing = groups[gi0].hooks[hi0];
+      // Leave an existing portable committed form alone: rewriting ${CLAUDE_PROJECT_DIR} to a machine
+      // absolute path would de-portabilize this repo's own committed hook for every other clone.
+      // (A deliberate form switch, e.g. --shell powershell, still rewrites.)
+      if (locs.length === 1 && !useShell && isPortable(existing, event)) {
+        // already current and portable; no change
+      } else {
+        const before = JSON.stringify(existing);
+        groups[gi0].hooks[hi0] = desired;
+        for (let k = locs.length - 1; k >= 1; k--) { const [gi, hi] = locs[k]; groups[gi].hooks.splice(hi, 1); }
+        next.hooks[event] = groups.filter((g) => !(g && Array.isArray(g.hooks) && g.hooks.length === 0));
+        if (locs.length > 1) actions.push(`collapse ${locs.length} duplicate ${event} hooks into one`);
+        else if (JSON.stringify(desired) !== before) actions.push(`update ${event} hook to the current emitter + form`);
+      }
     }
   }
   return { obj: next, actions };

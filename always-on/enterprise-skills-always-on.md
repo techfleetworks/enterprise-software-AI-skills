@@ -34,6 +34,7 @@ Every factual claim you output carries an **evidence state** (`proven` / `observ
 `documented` / `reported` / `not-assessed`), a **re-runnable source**, and a **named limitation**. Run
 the disconfirming-case-first pass, attach the evidence ledger, and never report work "done / secure /
 tested / safe / fixed / passes / complete" without it. The canonical contract is
-`skeptical-audit/references/evidence-discipline.md`. This directive is injected by the always-on hook
-(`emit-directive.mjs`, which reads this file as its own sibling), so it binds the main agent and every
-subagent as soon as the hook is installed.
+`skeptical-audit/references/evidence-discipline.md`. This directive loads on every session two ways, so it
+survives a pull with no setup: the committed `CLAUDE.md` imports this file (it loads for the main agent and
+most subagents, with no approval), and the always-on hook (`emit-directive.mjs`) injects it into every
+subagent, including the built-in Explore and Plan agents. See `always-on/README.md`.
