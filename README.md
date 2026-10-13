@@ -118,11 +118,11 @@ chooses sync or async for a reason, and builds in timeouts, retries, and limits
 from the start instead of adding them later.
 
 **`pattern-selector`** starts each feature by naming the problem as a set of
-forces. Then it checks if a pattern is even needed. Often the answer is no
-pattern. If one fits, it picks the right one and states the pros, the cons, the
+forces. Then it checks if a software pattern is even needed. Often the answer is no
+software pattern. If one fits, it picks the right one and states the pros, the cons, the
 problem it prevents, the safety and running trade-offs, the simpler option it
 turned down, and a test that proves it was used right. It covers the 23 classic
-patterns plus enterprise, DDD, and security ones. It also lists anti-patterns for
+software patterns plus enterprise, DDD, and security ones. It also lists anti-patterns for
 when the job is to remove structure. A built-in check keeps every entry complete
 and sourced.
 
