@@ -1,8 +1,8 @@
 # Change-type -> required-artifact routing gate (ADR-0031). On a pull request, compute the files the PR adds
 # and changes versus the base branch, then require each kind of change to ship its discipline's artifact
 # (a new skill -> an ADR, a new gate script -> a discriminating test). Runs only on pull_request, where a base
-# ref exists to diff against. Dependency-free; a routing gap exits non-zero and fails this check. Add `routing`
-# to the branch-protection required checks to make a gap block merge (tracked with the mandatory-review workflow).
+# ref exists to diff against. Dependency-free; a routing gap exits non-zero and fails this check, which is a
+# required status check in branch protection (ADR-0032), so a routing gap blocks merge for non-admins.
 name: routing
 
 on:

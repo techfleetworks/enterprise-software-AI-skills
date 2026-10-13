@@ -34,8 +34,9 @@ This repo holds its own changes to the standards it ships. Before you open or up
 CI runs the required checks `test (20)`, `test (24)` (the gate-script tests plus `check:architecture`), and
 `routing` (change-type to required-artifact: a new skill needs an ADR, a new gate needs a test). All three
 must be green to merge, and branch protection enforces it (`.github/rulesets/main-protection.json`, applied by
-`scripts/apply-ruleset.sh`). These prove a review happened and the artifacts exist; they cannot judge the
-quality of the thinking, which is why the fresh-context review is required, not optional.
+`scripts/apply-ruleset.sh`). These prove the routed artifacts exist and the repo passes its gates; they do
+not verify that a fresh-context review happened (no required check reads the review log) or judge the quality
+of the thinking. The review is required by this guide and the PR template, not by a gate, so run it.
 
 ## Adding a new skill
 

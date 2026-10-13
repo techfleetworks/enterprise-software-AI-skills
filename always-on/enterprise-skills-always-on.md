@@ -35,9 +35,10 @@ explicitly waive every finding, and record the review in `docs/arch-reviews/log.
 template and `CONTRIBUTING.md` carry the full checklist. The mechanical gates are required CI checks that
 block merge on their own: the gate-script tests and `check:architecture` (the `test` job). The `routing`
 check (change-type to required-artifact) blocks merge once the committed ruleset is applied with
-`scripts/apply-ruleset.sh`. A change that skips its discipline's artifact, or whose review was partial or
-unevidenced, cannot merge. These prove the review HAPPENED; they cannot prove the judgment was
-sound, which is why the fresh-context review is non-negotiable.
+`scripts/apply-ruleset.sh`. A change that skips a routed artifact cannot merge. These checks prove the
+routed artifact is present and the repo passes its gates; they do NOT verify that a fresh-context review
+happened (no required check reads the review log) or that the judgment was sound. The review is required by
+this directive and the PR checklist, not by a gate, so run it anyway: loaded is not the same as reviewed.
 
 ## Evidence is mandatory on every claim
 Every factual claim you output carries an **evidence state** (`proven` / `observed` / `inferred` /

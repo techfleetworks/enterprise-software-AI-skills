@@ -65,18 +65,20 @@ rule:
   brand-new untested check fails immediately - the corpus can't get *worse*.
 - Each allowlisted check is burned down one at a time: write its faithful, discriminating test,
   prove it with the mutation gate, then **remove** its name from the allowlist.
-- Enforce **shrink-only**: entries may be removed, never added. A code check on the allowlist file
-  itself (or a review rule) rejects any diff that adds a name. This makes the system tighten
-  **monotonically** - every merge leaves it the same or better, and "zero" is reached by attrition
-  without ever blocking work on unrelated changes.
+- Enforce **shrink-only**: once a check has a test, or its check is gone, it may not stay on the list -
+  `check-has-test` FAILS until the stale entry is removed (the same enforcement as the evidence-contract
+  gate). Adding a brand-new untested check is the list's purpose (the coverage gate still requires a test
+  for everything not on it), and a covered check can never be grandfathered back on, so the system tightens
+  **monotonically** - every merge leaves it the same or better, and "zero" is reached by attrition without
+  ever blocking work on unrelated changes.
 
 When the allowlist reaches empty, delete it (or keep it empty as a tripwire): every check now has a
 committed test that provably discriminates, enforced on every future change.
 
 ## Why this is foundational, not bureaucratic
 The combination - coverage gate + discrimination gate + prove-at-the-owning-layer + shrink-only
-ratchet - makes a specific bad outcome **structurally impossible**: a check cannot silently rot to
-a false green, because the moment its detection stops working, its committed test stops failing
+ratchet - makes a specific bad outcome **structurally impossible** for a check that has a test: a tested
+check cannot silently rot to a false green, because the moment its detection stops working, its committed test stops failing
 against the no-op mutant, and the discrimination gate goes red. That guarantee holds for every
 future change and every future author automatically, with no reliance on anyone remembering to
 re-verify. That is the difference between a convention (which is skipped exactly when under

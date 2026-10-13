@@ -89,8 +89,9 @@ plus recorded N/As - is the bar.
 ## Gaps are deliberate and visible, not silent
 
 Every empty cell carries a reason, and `check-bdd-coverage` fails closed when a declared audience has
-no scenario, when a feature has only happy-path scenarios, or when a changed behavior has no scenario
-at all (see `bdd-gates.md`). The matrix is not advice - it is mechanically enforced.
+no scenario or when a feature has only happy-path scenarios (whether a changed behavior has a scenario
+needs the PR diff and rests on the author and the PR checklist, not on this self-contained gate). See
+`bdd-gates.md`. The matrix is not advice - it is mechanically enforced where a gate can enforce it.
 
 ## Sources (retrieved 2026-10-10)
 

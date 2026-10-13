@@ -83,3 +83,14 @@ Evidence ledger:
 Builds on ADR-0031 (the routing gate) and ADR-0003 (the governance ruleset applied as code). The optional
 automated judge-arch CI job remains a possible later addition; it would not change the honest limit that a
 review's quality cannot be mechanically certified.
+
+## Addendum (2026-10-12, corrected by ADR-0036)
+
+The post-rewrite re-audit found this ADR's phrase "it forces the review to HAVE HAPPENED" overstated what is
+enforced. No required check reads `docs/arch-reviews/log.jsonl`, and required approvals are zero, so nothing
+mechanically verifies that a fresh-context `judge-arch` review was run or logged. What the required checks
+actually force is that the routed artifacts EXIST and the repo passes its gates (`test (20)` / `test (24)` and
+`routing`). The fresh-context review is REQUIRED by the always-on directive and the PR checklist, but it rests
+on the author, not on a gate. The directive and `CONTRIBUTING.md` are corrected to say exactly that in
+ADR-0036. `check-arch-review-coverage` exists and could be wired as a required check to make the review
+mechanically enforced; that is deferred to the techfleetnetwork CI/CD release.

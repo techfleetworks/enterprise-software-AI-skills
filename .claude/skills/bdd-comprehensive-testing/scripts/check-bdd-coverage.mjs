@@ -12,8 +12,9 @@
 //   5. the coverage log (features/bdd-coverage-log.md) is missing/empty, carries an unknown event,
 //      or - when BDD_LOG_BASE points at the previous version - was not a clean append (history edited).
 //
-// The "a changed behavior must have a scenario / a new log entry" rules are enforced in CI from the
-// PR diff (see references/bdd-gates.md); this gate proves the self-contained invariants above.
+// The "a changed behavior must have a scenario / a new log entry" rules need the PR diff; wire them as a
+// CI diff step if you want them mechanical, otherwise they rest on the author and the PR checklist. This
+// gate proves the self-contained invariants above.
 import { resolve, join } from "node:path";
 import { readFileSync } from "node:fs";
 import {
