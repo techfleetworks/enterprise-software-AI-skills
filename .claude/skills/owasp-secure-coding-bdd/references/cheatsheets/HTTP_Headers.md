@@ -64,7 +64,11 @@ they work as layers that shrink the attack surface.
   site does not need, for example `geolocation=(), camera=(), microphone=()`.
 - **`Access-Control-Allow-Origin`.** This CORS header relaxes the Same Origin Policy, so use it narrowly. Name
   specific origins (for example `https://yoursite.com`) rather than `*`, and never expose sensitive content on
-  a URL that returns `*`. A public API meant for any origin may legitimately need `*`.
+  a URL that returns `*`. A public API meant for any origin may legitimately need `*`. Allow-list known,
+  trusted origins explicitly; do not reflect the request's `Origin` header back unconditionally, which turns
+  the allow-list into "any origin." Only set `Access-Control-Allow-Credentials: true` alongside a specific
+  allow-listed origin, never alongside `*`: credentials plus a wildcard would let any site make
+  authenticated cross-origin requests.
 - **`X-Robots-Tag`.** Control how compliant crawlers index non-HTML resources such as PDFs and images. Use
   `noindex, nofollow` for private or sensitive content and `index, follow` for public content, with directives
   like `noarchive`, `nosnippet`, or `noimageindex` as needed. Only compliant crawlers obey it, and they must

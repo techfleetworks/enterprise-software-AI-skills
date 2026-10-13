@@ -1,0 +1,12 @@
+{
+  "_comment": "Extends check-reference-links.mjs built-in ignores (AGENTS.md, SECURITY.md, decisions.md, architecture.md, copilot-instructions.md, and the NNNN-*.md template placeholder). The names below are deliberate teaching examples in ADR and audit docs, an example command argument, a vendored (gitignored) attribution file, and the scoped per-directory AGENTS suffix. None is an in-tree reference file, so a mention of one is not a dangling link. Add a name here only when it is a filename that docs legitimately NAME without it being a reference file in this repo; for a one-off example on a single line, prefer an inline 'link-check:ignore' on that line instead.",
+  "ignoreBasenames": [
+    "0007-use-postgres-for-billing.md",
+    "0012-async-order-events-over-sync-calls.md",
+    "0007-database.md",
+    "0007-billing-service.md",
+    "your-draft.md",
+    "NOTICE.md",
+    ".AGENTS.md"
+  ]
+}

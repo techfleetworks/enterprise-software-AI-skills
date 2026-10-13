@@ -105,7 +105,7 @@ Cons: Cloning complex objects that have circular references can be very tricky; 
 Avoid when: Construction is cheap and well-defined, just build a new object.
 Failure/rot prevented: Costly re-initialization duplicated everywhere, and subclass-per-preset proliferation.
 Misuse: A shallow clone that silently shares mutable sub-objects, so mutating the copy corrupts the original (aliasing bug disguised as a copy).
-Security trade-off: Cloning via serialize/deserialize (a common shortcut) opens deserialization-of-untrusted-data and prototype-pollution risks, never clone attacker-controlled objects through `eval`/`JSON` merge into `{}` prototypes; threat-model through `owasp-secure-coding-bdd` (references/file-upload-ssrf-deserialization.md).
+Security trade-off: Cloning via serialize/deserialize (a common shortcut) opens deserialization-of-untrusted-data and prototype-pollution risks, never clone attacker-controlled objects through `eval`/`JSON` merge into `{}` prototypes; threat-model through `owasp-secure-coding-bdd` (references/cheatsheets/Deserialization.md and references/cheatsheets/Prototype_Pollution_Prevention.md).
 Operational cost: Hard-to-reproduce bugs when deep/shallow copy is wrong; add equality/aliasing assertions.
 Adopt safely: Behind a `clone()` on the existing type; new code otherwise.
 Modern alternative: Immutable data + structural sharing (`structuredClone`, spread with care, immutable libraries), copy-with-changes without a prototype registry.
@@ -293,7 +293,7 @@ Cons: More classes, so the code can become more complicated; the response from t
 Avoid when: Direct access is fine and no lazy-loading/access-control/remoting concern exists.
 Failure/rot prevented: Access-control, caching, or lazy-load logic smeared into callers or into the real object itself.
 Misuse: A proxy that silently diverges from the real object's contract (returns stale cache as fresh, swallows remote errors), breaking Liskov substitutability.
-Security trade-off: A **remote** proxy is a trust boundary and a classic SSRF surface, it turns a local call into an outbound request to an address that may be attacker-influenced; validate/allow-list the target, set timeouts, and treat the response as untrusted. A **protection** proxy *is* an access-control gate, so a bug in it is an authz bypass. Threat-model via `owasp-secure-coding-bdd` (references/file-upload-ssrf-deserialization.md).
+Security trade-off: A **remote** proxy is a trust boundary and a classic SSRF surface, it turns a local call into an outbound request to an address that may be attacker-influenced; validate/allow-list the target, set timeouts, and treat the response as untrusted. A **protection** proxy *is* an access-control gate, so a bug in it is an authz bypass. Threat-model via `owasp-secure-coding-bdd` (references/cheatsheets/Server_Side_Request_Forgery_Prevention.md).
 Operational cost: Adds latency and a new failure mode (the remote/cache layer); needs its own timeouts, retries, metrics, and alerts (`sre-operational-readiness`).
 Adopt safely: Behind the real object's interface, substitute the proxy for the subject; because it shares the interface it's reversible.
 Modern alternative: Language `Proxy`/interceptors, an HTTP client with built-in caching/auth middleware, or a DI decorator, often no bespoke class needed.
@@ -366,7 +366,7 @@ Cons: The class/object graph blows up as the grammar grows, for anything non-tri
 Avoid when: The grammar is non-trivial or will grow, reach for a parser generator/combinator library instead of hand-rolling expression classes.
 Failure/rot prevented: Ad-hoc, re-implemented string/expression parsing scattered across the code for the same little language.
 Misuse: Interpreter stretched to a real programming language or a fast-growing grammar, it becomes an unmaintainable class explosion.
-Security trade-off: An interpreter evaluates input as a language, it is a direct **injection** surface. Never `eval` untrusted input; constrain the grammar, bound recursion/time, and validate at the edge. Threat-model via `owasp-secure-coding-bdd` (references/injection-input-validation.md).
+Security trade-off: An interpreter evaluates input as a language, it is a direct **injection** surface. Never `eval` untrusted input; constrain the grammar, bound recursion/time, and validate at the edge. Threat-model via `owasp-secure-coding-bdd` (references/cheatsheets/Injection_Prevention.md).
 Operational cost: Recursive evaluation can be slow and stack-hungry; a malicious or huge expression is a DoS vector, bound depth, size, and evaluation time; add timeouts.
 Adopt safely: Behind an `evaluate(expr, context)` entry point; new code usually. If replacing ad-hoc parsing, strangle call sites onto the interpreter.
 Modern alternative: A parser-combinator or parser-generator library for the parse, and sum types + pattern-matching for evaluation, or a sandboxed expression library instead of hand-rolling.

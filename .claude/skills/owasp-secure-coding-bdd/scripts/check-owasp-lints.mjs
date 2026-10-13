@@ -8,16 +8,16 @@
  *   node check-owasp-lints.mjs <file-or-dir>...
  *
  * Rules (each traces to a skill reference):
- *   jwt-alg-none - a JWT algorithm literal of "none" (api-tokens-graphql-microservices.md:
- *                       "never accept whatever alg the token claims … the classic alg:none bypass").
+ *   jwt-alg-none - a JWT algorithm literal of "none" (references/cheatsheets/JSON_Web_Token.md:
+ *                       "Refuse unsecured tokens … rejects `alg` set to `none`").
  *   cookie-insecure - a cookie set without HttpOnly + Secure + SameSite all present in the call /
- *                       header (authentication-session.md: "Set cookies with HttpOnly, Secure, and
- *                       SameSite"). Checks `.cookie(...)` / `setCookie(...)` / `setHeader(...Set-Cookie...)`
+ *                       header (references/cheatsheets/Session_Management.md: use `HttpOnly`, `Secure`,
+ *                       and `SameSite`). Checks `.cookie(...)` / `setCookie(...)` / `setHeader(...Set-Cookie...)`
  *                       call spans and raw `Set-Cookie:` header string literals.
  *
  * SSRF is deliberately NOT a text lint here: the skill's own structural control is a network egress
- * proxy with no route to internal infra (file-upload-ssrf-deserialization.md) - "the network boundary
- * is what holds when a check is bypassed." A regex over outbound calls would be mostly false
+ * proxy with no route to internal infra (references/cheatsheets/Server_Side_Request_Forgery_Prevention.md) -
+ * the network layer is what holds when an application-layer check is bypassed. A regex over outbound calls would be mostly false
  * positives; SSRF is enforced by that egress architecture + a @security BDD scenario, not this gate.
  *
  * Suppress a reviewed exception with an inline `// owasp-lint:ignore[=rule] <reason>` (or `#` comment)

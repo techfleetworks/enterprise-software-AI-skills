@@ -83,10 +83,9 @@ becomes a new surface rule in the config, so the part that rests on judgment onl
 
 Each OWASP cheat sheet is its own reference file under `references/cheatsheets/<Slug>.md`, loaded on demand. The
 authoritative list is `references/cheatsheets-manifest.json` (137 sheets, from the OWASP sitemap, retrieved
-2026-10-10). Files marked `done` are written to the per-sheet template with a cited, executable `@security`
-scenario; `pending` sheets are being migrated from the interim cluster references listed further down. The
-`check-cheatsheet-catalog.mjs` gate keeps this honest: every `done` sheet must have its file, every required
-section, a citation, an executable `@security` scenario, and an entry in this index.
+2026-10-10). All 137 are written to the per-sheet template with a cited, executable `@security`
+scenario. The `check-cheatsheet-catalog.mjs` gate keeps this honest: every sheet must have its file, every
+required section, a citation, an executable `@security` scenario, and an entry in this index.
 
 ### Frontend & browser (16/16)
 
@@ -313,8 +312,8 @@ Every `references/cheatsheets/<Slug>.md` follows the same shape, and the catalog
   `@security` scenario in the feature index and no valid waiver. This is what makes the flow impossible to skip
   on a security-relevant change. Adopters run it on their changed files in CI.
 - `scripts/check-cheatsheet-catalog.mjs` (test: `test/owasp-cheatsheet-catalog.test.mjs`) fails closed unless
-  every `done` sheet has its file, all required sections, a citation URL, and an executable `@security` Gherkin
-  scenario, and is indexed above, with no orphan files. It reports progress toward all 137.
+  every sheet has its file, all required sections, a citation URL, and an executable `@security` Gherkin
+  scenario, and is indexed above, with no orphan files. It confirms all 137 are complete.
 - `scripts/check-owasp-lints.mjs` (test: `test/owasp-lints.test.mjs`) is the code-level secure-coding lint
   (JWT `alg:none`, insecure cookie flags).
 - The `@security` scenarios are validated as real runnable Gherkin by `bdd-comprehensive-testing`'s
@@ -340,23 +339,15 @@ Every `references/cheatsheets/<Slug>.md` follows the same shape, and the catalog
 |---|---|
 | The authoritative list of all 137 cheat sheets | `references/cheatsheets-manifest.json` |
 | One file per cheat sheet (the routing targets) | `references/cheatsheets/<Slug>.md` |
+| Standing cross-cutting companion (not an OWASP sheet): avoid self-lockout, accidental deletion, and broken access while hardening | `references/lockout-prevention-safe-changes.md` |
 | Example executable `@security` features, one per stack layer (merge into the adopter's shared index) | `assets/example/features/` |
 | Enforcement gate for the selection flow (change-type to required scenario) | `scripts/check-security-coverage.mjs` |
 | The surface-to-scenario map the enforcement gate reads (tune per stack) | `assets/security-coverage.config.json` |
 | Completeness gate for the per-sheet catalog | `scripts/check-cheatsheet-catalog.mjs` |
 | Code-level secure-coding lints | `scripts/check-owasp-lints.mjs` |
+| License-hygiene gate: each own-words sheet vs its vendored CC-BY-SA source | `scripts/check-verbatim.mjs` (`npm run check:verbatim`) |
 | Fetch the exact upstream OWASP text (CC-BY-SA, on demand) | `tools/vendor-owasp.mjs` (`npm run vendor:owasp`) |
 | The vendored exact text and its attribution | `vendor/NOTICE.md` |
-
-The following interim cluster references hold the deep phase-2 content and are being migrated into the per-sheet
-files, after which they will be removed: `references/access-control-authorization.md`,
-`references/ai-llm-agent-security.md`, `references/api-tokens-graphql-microservices.md`,
-`references/api-web-security-headers.md`, `references/authentication-session.md`,
-`references/cryptography-secrets.md`, `references/file-upload-ssrf-deserialization.md`,
-`references/injection-input-validation.md`, `references/language-framework-hardening.md`,
-`references/lockout-prevention-safe-changes.md`, `references/logging-error-handling-dos.md`,
-`references/platform-framework-specific.md`, `references/privacy-threat-modeling-business-logic.md`,
-`references/third-party-dependency-container.md`, and the flat `references/owasp-full-index.md`.
 
 ## Evidence & skeptical assessment (required)
 
@@ -386,7 +377,11 @@ half-written sheet merges) and by the shared feature index plus `bdd-comprehensi
 coverage gates (a security control with no runnable scenario does not merge). It survives any one person
 because everything is in git. The honest limit: the catalog gate proves a sheet is complete and its scenario
 is real Gherkin, and the BDD gates prove the scenario runs; none of them proves the control is the right one
-for the threat, which is why the attacker-view threat modeling and a `judge-arch` review sit alongside.
+for the threat, which is why the attacker-view threat modeling and a `judge-arch` review sit alongside. A
+second honest limit: each per-sheet file condenses a single OWASP cheat sheet, so it inherits that one
+source's coverage and currency. This matters most for the fast-moving AI and LLM sheets; for those, treat the
+condensed file as a routing entry point and read the live upstream sheet (and OWASP's separate AI/LLM project)
+before relying on it.
 
 ## Sources and attribution
 
