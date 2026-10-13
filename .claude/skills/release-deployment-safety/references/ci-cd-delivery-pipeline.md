@@ -43,7 +43,7 @@ essential for incident forensics ("what changed right before this broke?").
 ## Pipeline security (delegates to owasp-secure-coding-bdd)
 - Least-privilege runners; pin CI actions to SHAs; protect prod credentials from PR/fork
   contexts; sign artifacts; prefer OIDC over long-lived cloud keys. See that skill's
-  `third-party-dependency-container.md`.
+  `references/cheatsheets/CI_CD_Security.md` and `references/cheatsheets/GitHub_Actions_Security.md`.
 
 ## Minimal example (GitHub Actions delivery job, after tests pass)
 ```yaml

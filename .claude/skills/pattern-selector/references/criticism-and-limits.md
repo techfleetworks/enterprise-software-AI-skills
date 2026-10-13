@@ -40,17 +40,17 @@ Several catalogued patterns introduce a security liability by their very structu
 with the mitigation, and route the real control to `owasp-secure-coding-bdd`:
 
 - **Singleton / global mutable state** → shared state across requests/tenants (data bleed, race
-  conditions). Mitigation: DI-scoped instance; no mutable global. (→ `authentication-session.md`,
+  conditions). Mitigation: DI-scoped instance; no mutable global. (→ `references/cheatsheets/Session_Management.md`,
   concurrency.)
 - **Prototype / clone + Serialization** → deserializing untrusted data is an RCE/DoS class; deep-clone of
   attacker-influenced graphs. Mitigation: never deserialize untrusted input into live objects; allow-list
-  types. (→ `file-upload-ssrf-deserialization.md`.)
+  types. (→ `references/cheatsheets/Deserialization.md`.)
 - **Proxy / Gateway / Adapter to a remote** → a new **trust boundary** and an **SSRF** surface (the app now
   makes outbound requests, possibly to attacker-influenced URLs). Mitigation: egress allow-list / network
-  isolation, validate the target, verify webhook signatures. (→ `file-upload-ssrf-deserialization.md`,
-  `api-web-security-headers.md`.)
+  isolation, validate the target, verify webhook signatures. (→ `references/cheatsheets/Server_Side_Request_Forgery_Prevention.md`,
+  `references/cheatsheets/Webhook_Security.md`.)
 - **Interpreter** → an expression/DSL evaluator is an **injection** surface. Mitigation: a real parser with
-  a strict grammar; never `eval`; sandbox. (→ `injection-input-validation.md`.)
+  a strict grammar; never `eval`; sandbox. (→ `references/cheatsheets/Injection_Prevention.md`.)
 - **Flyweight / shared cache** → cross-tenant state leakage if intrinsic/extrinsic split is wrong.
   Mitigation: key by tenant; never share mutable per-user state.
 - **Observer / event bus** → an unsubscribed listener is a memory leak and an unexpected side-effect path;

@@ -58,7 +58,9 @@ no-code-files path fail closed (exit 2). All run in CI via `npm test`.
 
 ## More Information
 
-Rules trace to `owasp-secure-coding-bdd/references/api-tokens-graphql-microservices.md` (alg),
-`authentication-session.md` (cookies), and `file-upload-ssrf-deserialization.md` (SSRF = egress
-architecture). Third Phase-3 structural gate (after migration-safety ADR-0009 and untagged-PII
-ADR-0010); a test-shape gate and an axe gate follow.
+Rules trace to `owasp-secure-coding-bdd/references/cheatsheets/JSON_Web_Token.md` (alg),
+`references/cheatsheets/Session_Management.md` (cookies), and
+`references/cheatsheets/Server_Side_Request_Forgery_Prevention.md` (SSRF = egress architecture); these
+per-sheet files superseded the interim cluster references the rules originally cited (migrated and removed in
+ADR-0037). Third Phase-3 structural gate (after migration-safety ADR-0009 and untagged-PII ADR-0010); a
+test-shape gate and an axe gate follow.

@@ -55,7 +55,10 @@ Following the cheat sheet across its four stages and runtime:
 6. **Set the integration and hardening macros, and flag their removal.** Define the macros needed to integrate
    each platform and library securely. Treat undefining a security macro as a defect, for example
    `-U_FORTIFY_SOURCE` on Linux or `_CRT_SECURE_NO_WARNINGS`, `_SCL_SECURE_NO_WARNINGS`,
-   `_ATL_SECURE_NO_WARNINGS`, and `STRSAFE_NO_DEPRECATE` on Windows. Mind the caveats: `_GLIBCXX_DEBUG` has ABI
+   `_ATL_SECURE_NO_WARNINGS`, and `STRSAFE_NO_DEPRECATE` on Windows. On Linux, define `-D_FORTIFY_SOURCE=2`
+   for fortified libc calls, or `-D_FORTIFY_SOURCE=3` for stronger dynamic buffer checks where the toolchain
+   supports it (GCC 12+ or recent Clang with glibc 2.35+, backported to glibc 2.34 on RHEL 9 and derivatives);
+   otherwise level 3 silently falls back to level 2. Mind the caveats: `_GLIBCXX_DEBUG` has ABI
    conflicts with prebuilt libraries, SQLite secure-delete zeroization is required under FIPS 140-2, default file
    modes leave broad access, and temp tables can be forced into memory to keep plaintext off disk.
 7. **Turn on the compiler's warnings and static analysis.** GCC and Visual Studio catch mistakes early, such as an

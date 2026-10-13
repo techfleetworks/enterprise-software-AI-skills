@@ -19,7 +19,7 @@ Covers: REST/GraphQL/gRPC design standards, versioning, contract-first design, p
 - Run contract tests (e.g., Pact, or schema validation in CI) that verify the actual implementation matches the published contract, and that a provider's changes don't silently break a documented consumer expectation, wire this into the same CI/CD pipeline as the BDD suite from `bdd-comprehensive-testing`.
 
 ## GraphQL
-- See `owasp-secure-coding-bdd`'s `api-tokens-graphql-microservices.md` for GraphQL-specific security (depth/complexity limits, introspection, field-level authorization), apply those alongside the design guidance here.
+- See `owasp-secure-coding-bdd`'s `references/cheatsheets/GraphQL.md` for GraphQL-specific security (depth/complexity limits, introspection, field-level authorization), apply those alongside the design guidance here.
 - Design the schema around consumer needs (what shapes of data do clients actually need to query in one round trip) rather than mechanically mirroring the database schema, GraphQL's value is letting clients fetch precisely what they need, which requires actual schema design effort, not a 1:1 auto-generated mapping from tables.
 
 ## gRPC
