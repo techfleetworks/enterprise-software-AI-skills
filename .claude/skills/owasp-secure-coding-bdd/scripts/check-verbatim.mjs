@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// check-verbatim.mjs — the license-hygiene gate for the per-cheat-sheet OWASP files.
+// check-verbatim.mjs - the license-hygiene gate for the per-cheat-sheet OWASP files.
 //
 // The OWASP Cheat Sheet Series is licensed CC-BY-SA-4.0; this repo's own files are MIT (ADR-0017). The skill
 // vendors the exact upstream text into .claude/skills/owasp-secure-coding-bdd/vendor/cheatsheets-src/ (gitignored, fetched by
@@ -130,9 +130,9 @@ if (doneWithFile.length > 0 && checked === 0) {
 }
 
 if (flagged.length) {
-  console.error(`\ncheck-verbatim — ${flagged.length} file(s) contain a shared run of >= ${N} words copied from the CC-BY-SA source:\n`);
+  console.error(`\ncheck-verbatim - ${flagged.length} file(s) contain a shared run of >= ${N} words copied from the CC-BY-SA source:\n`);
   for (const fl of flagged) {
-    console.error(`  ✖ references/cheatsheets/${fl.slug}.md — ${fl.runs.length} run(s):`);
+    console.error(`  ✖ references/cheatsheets/${fl.slug}.md - ${fl.runs.length} run(s):`);
     for (const r of fl.runs) console.error(`      "${r}"`);
   }
   console.error(`\nReword these into your own words. Verbatim CC-BY-SA text may not live in the MIT per-sheet files (ADR-0018).\n`);
@@ -141,7 +141,7 @@ if (flagged.length) {
 
 const scope = category ? `category "${category}"` : "all categories";
 console.log(
-  `check-verbatim — PASS (${scope}). ${checked} done sheet(s) compared against the vendored source; ` +
+  `check-verbatim - PASS (${scope}). ${checked} done sheet(s) compared against the vendored source; ` +
     `0 shared runs of >= ${N} words.` +
     (skippedNoSource.length ? ` Skipped (no upstream source): ${skippedNoSource.join(", ")}.` : "")
 );

@@ -1,6 +1,6 @@
 # BDD coverage index
 
-Generated from the feature files by `bdd-index-generate.mjs` — do not edit by hand.
+Generated from the feature files by `bdd-index-generate.mjs` - do not edit by hand.
 
 | Feature | Scenario | Domain | Audience | Use case | Category | Quality | Severity | Status |
 |---|---|---|---|---|---|---|---|---|

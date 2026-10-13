@@ -1,15 +1,15 @@
 # Chaos Engineering & Resilience Testing
 
 Resilience you haven't tested is resilience you don't have. Chaos engineering is the
-practice of deliberately injecting failure to verify the system withstands it — turning
+practice of deliberately injecting failure to verify the system withstands it - turning
 "we think it's resilient" into evidence.
 
 ## The principles (Principles of Chaos)
-1. **Form a hypothesis** about steady-state behavior (a measurable "healthy" — e.g.
+1. **Form a hypothesis** about steady-state behavior (a measurable "healthy" - e.g.
    "checkout success rate stays > 99%").
 2. **Vary real-world events**: kill an instance, add network latency, drop a dependency,
    exhaust CPU/memory/disk, introduce clock skew, fail a zone.
-3. **Run in production-like conditions** (ideally production, carefully) — staging doesn't
+3. **Run in production-like conditions** (ideally production, carefully) - staging doesn't
    have real traffic patterns. Start in staging to build confidence.
 4. **Minimize blast radius**: start tiny (one instance, a small % of traffic), have an abort
    switch, and expand only as confidence grows.
@@ -26,7 +26,7 @@ practice of deliberately injecting failure to verify the system withstands it �
 - **Clock skew / expired certs** → validates time-sensitive and TLS handling.
 
 ## Verifying graceful degradation
-The goal isn't "nothing breaks" — it's "the *right* things degrade." When recommendations
+The goal isn't "nothing breaks" - it's "the *right* things degrade." When recommendations
 are down, the product page should still load without recommendations. When a non-critical
 write queue backs up, core reads should still serve. Define which features are essential vs.
 sheddable *before* the experiment.

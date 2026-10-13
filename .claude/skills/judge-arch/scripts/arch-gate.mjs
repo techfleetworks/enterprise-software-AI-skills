@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 /**
- * arch-gate.mjs — the deterministic architecture gate.
+ * arch-gate.mjs - the deterministic architecture gate.
  *
  * Fails (exit 1) when code violates the repo's structural rules. This is the MECHANICAL half of
- * the blocking architecture gate; the judge-arch skill is the review half. Zero dependencies —
+ * the blocking architecture gate; the judge-arch skill is the review half. Zero dependencies -
  * runs anywhere Node 18+ does, in CI and locally.
  *
  *   node scripts/arch-gate.mjs                 # scan everything the config targets
  *   node scripts/arch-gate.mjs --changed       # scan only files changed vs merge-base main (PR ratchet)
  *   node scripts/arch-gate.mjs --config path --waivers path
  *
- * Config:  arch-gate.config.json   — the rules (patterns forbidden in globs) + built-in toggles
- * Waivers: arch-gate.waivers.json  — explicit, auditable, expiring exceptions (the ONLY bypass)
+ * Config:  arch-gate.config.json - the rules (patterns forbidden in globs) + built-in toggles
+ * Waivers: arch-gate.waivers.json - explicit, auditable, expiring exceptions (the ONLY bypass)
  *
  * Design: on CI, run with --changed so the gate blocks NEW drift without demanding an upfront
  * cleanup of the whole legacy tree. Known pre-existing hotspots go in the waivers file (with a
@@ -51,7 +51,7 @@ const config = readJson(CONFIG_PATH);
 const waivers = readJson(WAIVERS_PATH, []);
 const ignoreDirs = new Set([...DEFAULT_IGNORE, ...(config.ignore || [])]);
 
-// Waivers are the ONLY bypass, so each must be explicit, attributed, and expiring — never forever.
+// Waivers are the ONLY bypass, so each must be explicit, attributed, and expiring - never forever.
 // Reject (exit 2, fail-closed) any waiver missing a required field or carrying an unparseable expiry.
 if (!Array.isArray(waivers)) {
   console.error(`arch-gate: ${path.basename(WAIVERS_PATH)} must be a JSON array of waivers.`);
@@ -127,12 +127,12 @@ function isWaived(ruleName, file) {
 }
 
 // Compile a forbid pattern, failing closed (exit 2) on a malformed regex instead of throwing an
-// uncaught stack trace — a bad rule should be a clear config error, not a crash.
+// uncaught stack trace - a bad rule should be a clear config error, not a crash.
 function compileForbid(pattern, ruleName, flags) {
   const f = (flags || 'g').includes('g') ? (flags || 'g') : (flags || '') + 'g';
   try { return new RegExp(pattern, f); }
   catch (e) {
-    console.error(`arch-gate: invalid 'forbid' pattern in rule "${ruleName}": ${pattern} — ${e.message}`);
+    console.error(`arch-gate: invalid 'forbid' pattern in rule "${ruleName}": ${pattern} - ${e.message}`);
     process.exit(2);
   }
 }
@@ -152,11 +152,11 @@ const BUILTIN_CHECKS = [
   // Each alternative is anchored and consumes deterministically (the block-comment sub-pattern is the
   // unrolled, linear-time form), so a non-empty body fails fast instead of catastrophically
   // backtracking. The prior nested-quantifier form was ReDoS-able (a ~400B catch hung the gate >5s).
-  ['emptyCatch', 'catch block does nothing (recover, retry, or report — pick one)',
+  ['emptyCatch', 'catch block does nothing (recover, retry, or report - pick one)',
     /catch\s*(\([^)]*\))?\s*\{(?:\s|\/\/[^\n]*|\/\*[^*]*\*+(?:[^/*][^*]*\*+)*\/)*\}/g],
   ['swallowReturn', 'catch swallows the error and returns null/false/undefined',
     /catch\s*(\([^)]*\))?\s*\{\s*return\s+(?:null|false|undefined)\s*;?\s*\}/g],
-  ['keepInSync', 'a "keep in sync" marker — two copies of one fact; give it one owner',
+  ['keepInSync', 'a "keep in sync" marker - two copies of one fact; give it one owner',
     /keep\s+(?:in|these\s+in|them\s+in|it\s+in)\s+sync/gi],
 ];
 
@@ -190,10 +190,10 @@ for (const file of files) {
   const runBuiltins = CODE_EXT.has(ext) && !ignoreDirs.has(file.split('/')[0]);
   if (!applicableRules.length && !runBuiltins) continue;
   let content;
-  // The file passed the stat filter, so a read failure here is a real problem, not a deleted file —
+  // The file passed the stat filter, so a read failure here is a real problem, not a deleted file -
   // report it loudly (don't swallow) so an un-scanned file can't ship with no diagnostic.
   try { content = fs.readFileSync(path.join(ROOT, file), 'utf8'); }
-  catch (e) { console.error(`arch-gate: WARNING — could not read ${file} (${e.message}); it was NOT scanned`); continue; }
+  catch (e) { console.error(`arch-gate: WARNING - could not read ${file} (${e.message}); it was NOT scanned`); continue; }
   for (const r of applicableRules) for (const re of r.forbid) record(r.name, file, content, re);
   if (runBuiltins) for (const [key, label, re] of BUILTIN_CHECKS) if (builtins[key]) record(label, file, content, re);
 }
@@ -206,14 +206,14 @@ const waived = violations.filter((v) => v.waived);
 if (BASELINE) {
   const seen = new Set();
   const out = [];
-  // A baseline grandfathers today's debt so the gate can go blocking for NEW code — but it is still
+  // A baseline grandfathers today's debt so the gate can go blocking for NEW code - but it is still
   // a waiver, so it must EXPIRE (the ratchet only tightens). Default to +90 days; edit before merge.
   const expires = new Date(Date.now() + 90 * 864e5).toISOString().slice(0, 10);
   for (const v of active) {
     const key = v.rule + ' ' + v.file;
     if (seen.has(key)) continue;
     seen.add(key);
-    out.push({ rule: v.rule, path: v.file, reason: 'baseline — pre-existing at gate adoption; scheduled for cleanup', approvedBy: 'baseline', expires });
+    out.push({ rule: v.rule, path: v.file, reason: 'baseline - pre-existing at gate adoption; scheduled for cleanup', approvedBy: 'baseline', expires });
   }
   console.error(`arch-gate --baseline: grandfathered ${out.length} pre-existing violation(s) across ${new Set(out.map((w) => w.path)).size} file(s).`);
   process.stdout.write(JSON.stringify(out, null, 2) + '\n');
@@ -223,13 +223,13 @@ if (BASELINE) {
 const byRule = new Map();
 for (const v of active) { if (!byRule.has(v.rule)) byRule.set(v.rule, []); byRule.get(v.rule).push(v); }
 
-console.log(`\narch-gate — scanned ${files.length} file(s)${CHANGED_ONLY ? ' (changed only)' : ''}\n`);
+console.log(`\narch-gate - scanned ${files.length} file(s)${CHANGED_ONLY ? ' (changed only)' : ''}\n`);
 if (!rules.length && !Object.values(builtins).some(Boolean)) {
-  console.log('arch-gate: no rules configured and all built-ins off — nothing to enforce.');
+  console.log('arch-gate: no rules configured and all built-ins off - nothing to enforce.');
   process.exit(0);
 }
 if (active.length === 0) {
-  console.log(`PASS — no architecture violations.${waived.length ? `  (${waived.length} waived)` : ''}\n`);
+  console.log(`PASS - no architecture violations.${waived.length ? `  (${waived.length} waived)` : ''}\n`);
   process.exit(0);
 }
 for (const [rule, list] of byRule) {
@@ -239,6 +239,6 @@ for (const [rule, list] of byRule) {
   if (list.length > 20) console.log(`    …and ${list.length - 20} more`);
   console.log('');
 }
-if (waived.length) console.log(`(${waived.length} waived violation(s) suppressed — see ${path.basename(WAIVERS_PATH)})\n`);
-console.error(`FAIL — ${active.length} architecture violation(s). Fix them, or add an explicit, expiring waiver.\n`);
+if (waived.length) console.log(`(${waived.length} waived violation(s) suppressed - see ${path.basename(WAIVERS_PATH)})\n`);
+console.error(`FAIL - ${active.length} architecture violation(s). Fix them, or add an explicit, expiring waiver.\n`);
 process.exit(1);

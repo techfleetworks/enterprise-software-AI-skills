@@ -1,8 +1,8 @@
 # Preset: React + Supabase
 
 A batteries-included starting point for the architecture gate on a React (Vite / CRA / Next) +
-Supabase app. It encodes the standard layering — **UI → data hooks → services → lib / integrations**,
-one Supabase client, edge functions composing a shared layer — so you get an enforceable gate in
+Supabase app. It encodes the standard layering - **UI → data hooks → services → lib / integrations**,
+one Supabase client, edge functions composing a shared layer - so you get an enforceable gate in
 minutes instead of writing rules from scratch.
 
 ## What's here
@@ -38,11 +38,11 @@ node scripts/arch-gate.mjs --baseline > arch-gate.waivers.json
 ```
 
 ## Tuning notes
-- The **one-client** rule excludes `src/integrations/supabase/client.ts` — change that to wherever
+- The **one-client** rule excludes `src/integrations/supabase/client.ts` - change that to wherever
   your canonical client lives.
-- The **domain-purity** rule excludes `src/lib/observability/**` and `src/lib/telemetry/**` — real
+- The **domain-purity** rule excludes `src/lib/observability/**` and `src/lib/telemetry/**` - real
   web adapters (web-vitals, etc.) legitimately touch `window`. Add your own adapter dirs there.
 - The **edge** rules assume shared helpers in `supabase/functions/_shared`. If yours are named
   differently, update the `message` fields to point at the right helpers.
 - Delete a rule you don't want, or move a genuinely-permanent exception into the waivers file with
-  a reason and an expiry — never by loosening a rule for everyone.
+  a reason and an expiry - never by loosening a rule for everyone.

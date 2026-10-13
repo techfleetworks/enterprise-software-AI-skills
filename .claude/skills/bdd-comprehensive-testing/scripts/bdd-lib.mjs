@@ -1,4 +1,4 @@
-// bdd-lib.mjs — shared helpers for the BDD gates.
+// bdd-lib.mjs - shared helpers for the BDD gates.
 //
 // The OFFICIAL @cucumber/gherkin parser is the oracle for "valid Gherkin": we never regex-parse
 // feature files. Everything downstream (tags, the datastore, coverage) is derived from the parser's
@@ -132,7 +132,7 @@ export function renderIndexMd(records) {
   return [
     "# BDD coverage index",
     "",
-    "Generated from the feature files by `bdd-index-generate.mjs` — do not edit by hand.",
+    "Generated from the feature files by `bdd-index-generate.mjs` - do not edit by hand.",
     "",
     "| Feature | Scenario | Domain | Audience | Use case | Category | Quality | Severity | Status |",
     "|---|---|---|---|---|---|---|---|---|",
@@ -143,7 +143,7 @@ export function renderIndexMd(records) {
 
 // Load optional repo config: features/bdd-config.json -> { audiences: [...] }.
 // Absent is fine (return {}); but a PRESENT-but-corrupt config must NOT silently disable the audience
-// gates — throw so the calling gate fails closed. (A malformed config that reads as "no config" would
+// gates - throw so the calling gate fails closed. (A malformed config that reads as "no config" would
 // turn off the declared-audience checks without anyone noticing.)
 export function loadConfig(featuresRoot) {
   const p = join(featuresRoot, "bdd-config.json");

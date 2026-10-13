@@ -6,7 +6,7 @@ across the matrix automatically, on every change.
 ## The layers of verification
 
 1. **Cross-engine end-to-end tests.** Run your critical-journey e2e suite against all
-   three engines — **Chromium, WebKit, and Firefox**. A modern e2e runner (e.g.
+   three engines - **Chromium, WebKit, and Firefox**. A modern e2e runner (e.g.
    Playwright) drives all three from one test codebase, including a real WebKit build
    (the closest you get to Safari without a Mac in CI).
 2. **Responsive / emulation tests.** Run key flows at the **smallest supported width**
@@ -24,7 +24,7 @@ across the matrix automatically, on every change.
 
 - **Lint the matrix.** `eslint-plugin-compat` (or similar) flags JS APIs unsupported by
   your `browserslist`; `stylelint` with a no-unsupported-features rule does the same for
-  CSS — catching incompatibilities before the code even runs.
+  CSS - catching incompatibilities before the code even runs.
 - **Ensure prefixing/transpilation** are wired to `browserslist` so builds target the
   matrix automatically.
 
@@ -32,9 +32,9 @@ across the matrix automatically, on every change.
 
 - The **cross-engine + responsive suite runs on every PR** (or as a required pre-merge
   check). A failure in *any* supported engine or viewport **fails the build and blocks
-  merge** — a WebKit-only break is a real break.
+  merge** - a WebKit-only break is a real break.
 - Run the **heavier real-device / full-visual-regression** lane on a schedule or as a
-  release gate if it's too slow for every PR — but never skip it before a release.
+  release gate if it's too slow for every PR - but never skip it before a release.
 - Keep the matrix in sync with `browserslist`: when the support floor changes, the test
   matrix changes with it.
 
@@ -42,7 +42,7 @@ across the matrix automatically, on every change.
 
 Automation can't judge everything. Before release, manually sanity-check the primary flow
 on: a **real iOS Safari device**, a **real Android Chrome device**, a **throttled
-low-end profile** (CPU 4–6×, slow 3G/4G), at **200% browser zoom**, and with
+low-end profile** (CPU 4-6×, slow 3G/4G), at **200% browser zoom**, and with
 **reduced-motion / dark mode** on. These catch the "technically renders but feels broken"
 class of issues emulators miss.
 

@@ -9,20 +9,20 @@ strollers, luggage, carts, and tired legs).
 
 A durable checklist for "does this work for everyone?":
 
-1. **Equitable use** — useful to people with diverse abilities; the same (or equivalent)
+1. **Equitable use** - useful to people with diverse abilities; the same (or equivalent)
    experience for all, no stigmatizing "special" path. Avoid segregating some users into a
    worse flow.
-2. **Flexibility in use** — accommodates a range of preferences and abilities (multiple
+2. **Flexibility in use** - accommodates a range of preferences and abilities (multiple
    ways to do a task: keyboard *and* pointer, type *and* pick, light *and* dark).
-3. **Simple and intuitive use** — easy to understand regardless of experience, knowledge,
+3. **Simple and intuitive use** - easy to understand regardless of experience, knowledge,
    language skills, or current focus. Eliminate needless complexity; match expectations.
-4. **Perceptible information** — communicate effectively regardless of ambient conditions or
+4. **Perceptible information** - communicate effectively regardless of ambient conditions or
    sensory abilities: use redundant cues (text + icon + color), not a single channel.
-5. **Tolerance for error** — minimize hazards and the consequences of mistakes; make
+5. **Tolerance for error** - minimize hazards and the consequences of mistakes; make
    actions reversible, confirm the dangerous ones, guard against accidental activation.
-6. **Low physical effort** — usable efficiently and comfortably with minimum fatigue;
+6. **Low physical effort** - usable efficiently and comfortably with minimum fatigue;
    reduce clicks, typing, precise targeting, and repetition.
-7. **Size and space for approach and use** — appropriate target sizes, spacing, and reach
+7. **Size and space for approach and use** - appropriate target sizes, spacing, and reach
    regardless of body, device, or assistive tech.
 
 ## The inclusive-design mindset
@@ -37,11 +37,11 @@ A complementary, practical framing:
   captions, and large touch targets all began as accessibility solutions and became
   mainstream conveniences.
 - **Learn from diversity.** The people most affected by a problem are the best source of
-  insight — design *with* them, not just *for* them.
+  insight - design *with* them, not just *for* them.
 
 ## The persona spectrum: permanent, temporary, situational
 
-Any given ability sits on a spectrum, and constraints are often temporary or situational —
+Any given ability sits on a spectrum, and constraints are often temporary or situational -
 so a design that supports the "disabled" case supports a huge population:
 
 | Ability | Permanent | Temporary | Situational |
@@ -53,16 +53,16 @@ so a design that supports the "disabled" case supports a huge population:
 | **Cognition** | learning disability | concussion, exhaustion | distraction, stress, second language |
 
 Designing one-handed operation, captions, plain language, and forgiving inputs serves the
-permanent, temporary, *and* situational columns at once — a far larger audience than
+permanent, temporary, *and* situational columns at once - a far larger audience than
 "people with disabilities."
 
 ## Practical implications for what you build
 
 - Don't design for one idealized "average" user (fluent, expert, focused, on a fast laptop
-  with a mouse) — that user barely exists, and building for them excludes most people.
+  with a mouse) - that user barely exists, and building for them excludes most people.
 - Offer **more than one way** to accomplish key tasks.
 - Use **redundant cues** (never information by a single channel like color or sound alone).
 - Keep **effort low** (few steps, good defaults, minimal typing, generous targets).
 - Make everything **forgiving** (reversible, confirmable, hard to trigger by accident).
-- Assume **varied literacy, language, age, device, network, and attention** — and still
+- Assume **varied literacy, language, age, device, network, and attention** - and still
   make the core task obvious.

@@ -1,21 +1,21 @@
-# Architecture decisions — <repo name>
+# Architecture decisions - <repo name>
 
 The standing rules for how this codebase is structured. `judge-arch` reviews every change
 against this file; the mechanical `check:architecture` gate enforces the checkable subset.
 
-**Rules of this file:** only rules live here — no aspirations, no "we should probably." Every
+**Rules of this file:** only rules live here - no aspirations, no "we should probably." Every
 rule is specific, is phrased as a prohibition where it can be, and carries a ❌/✅ example drawn
 from *this* codebase. Grow it one caught mistake at a time (use the `arch-encode` skill); prune
 it when a rule goes stale or two rules fight. A short file of concrete rules beats a long vague
-one — it loads into every session, so keep it lean.
+one - it loads into every session, so keep it lean.
 
 ---
 
-## The standing lens — four questions for every change
-1. **Boundary placement** — is this in the right place? (business rules out of components/handlers)
-2. **Data ownership** — who else writes this data? (one owner; everyone else reads)
-3. **Dependency direction** — what does this now depend on? (no web/UI concerns in domain code)
-4. **Error handling** — what happens when this breaks? (every catch: recover, retry, or report)
+## The standing lens - four questions for every change
+1. **Boundary placement** - is this in the right place? (business rules out of components/handlers)
+2. **Data ownership** - who else writes this data? (one owner; everyone else reads)
+3. **Dependency direction** - what does this now depend on? (no web/UI concerns in domain code)
+4. **Error handling** - what happens when this breaks? (every catch: recover, retry, or report)
 
 ---
 

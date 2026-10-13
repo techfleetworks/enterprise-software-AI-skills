@@ -15,7 +15,7 @@ Beyond making a migration zero-downtime, make it **provably correct and recovera
   immediately before an irreversible transformation.
 - **Idempotent & resumable**: safe to re-run; checkpoints so an interrupted backfill
   resumes without double-processing (see release-deployment-safety backfill guidance).
-- **Audited**: log the migration as a change (what ran, when, by whom) — this doubles as
+- **Audited**: log the migration as a change (what ran, when, by whom) - this doubles as
   change-management evidence for `compliance-frameworks.md`.
 - **Dry-run** against production-like data and volumes first; a migration that's instant on
   1k rows can lock a table for minutes on 100M.
@@ -23,28 +23,28 @@ Beyond making a migration zero-downtime, make it **provably correct and recovera
 ## Backups
 - **Automated** on a schedule matched to your RPO (below).
 - **Encrypted** at rest and in transit; access-controlled (a backup is a full copy of your
-  most sensitive data — same classification as the source).
+  most sensitive data - same classification as the source).
 - **Geographically separated** from primary (a backup in the same failure domain isn't DR).
 - **Immutable / retention-locked** where ransomware resilience matters (can't be deleted by
   a compromised account).
-- **Restore-tested regularly** — an untested backup is a hope. Schedule restore drills and
+- **Restore-tested regularly** - an untested backup is a hope. Schedule restore drills and
   measure how long they actually take (feeds RTO).
 
 ## Disaster Recovery: RPO & RTO
-- **RPO (Recovery Point Objective)** — the maximum acceptable *data loss*, i.e. how far back
+- **RPO (Recovery Point Objective)** - the maximum acceptable *data loss*, i.e. how far back
   in time you'd fall to the last recoverable point. Drives backup/replication frequency
   (RPO of 5 min ⇒ near-continuous replication; RPO of 24h ⇒ daily backups).
-- **RTO (Recovery Time Objective)** — the maximum acceptable *downtime* to restore service.
+- **RTO (Recovery Time Objective)** - the maximum acceptable *downtime* to restore service.
   Drives your DR architecture (a cold backup restore might be hours; hot standby is
   minutes).
 - Set RPO/RTO **per system** based on business impact; don't over-engineer non-critical
   systems or under-engineer critical ones.
 
 ## DR strategies (cost vs. RTO/RPO trade-off)
-- **Backup & restore** — cheapest; highest RTO. Restore from backups into new infra.
-- **Pilot light** — core minimal version always running; scale up on disaster.
-- **Warm standby** — scaled-down full copy running; scale up and cut over.
-- **Hot standby / multi-region active-active** — near-zero RTO/RPO; most expensive.
+- **Backup & restore** - cheapest; highest RTO. Restore from backups into new infra.
+- **Pilot light** - core minimal version always running; scale up on disaster.
+- **Warm standby** - scaled-down full copy running; scale up and cut over.
+- **Hot standby / multi-region active-active** - near-zero RTO/RPO; most expensive.
 Pick per the system's RTO/RPO and budget.
 
 ## DR drills

@@ -3,25 +3,25 @@
 Prove the system meets its performance SLOs *before* users find out it doesn't.
 
 ## Types (each answers a different question)
-- **Load test** — "Does it meet SLOs at expected traffic?" Run at anticipated peak
+- **Load test** - "Does it meet SLOs at expected traffic?" Run at anticipated peak
   concurrency; assert latency (p95/p99) and throughput stay within target.
-- **Stress test** — "Where does it break, and does it break gracefully?" Ramp beyond
+- **Stress test** - "Where does it break, and does it break gracefully?" Ramp beyond
   expected load until failure; confirm it sheds load / returns errors cleanly rather than
   corrupting data or falling over.
-- **Soak (endurance) test** — "Does it degrade over time?" Sustained load for hours;
+- **Soak (endurance) test** - "Does it degrade over time?" Sustained load for hours;
   catches memory leaks, connection-pool exhaustion, disk fill, slow GC creep.
-- **Spike test** — "Does it survive a sudden surge?" Instant jump in traffic; validates
+- **Spike test** - "Does it survive a sudden surge?" Instant jump in traffic; validates
   autoscaling reaction time and backpressure.
-- **Capacity/scalability test** — establish per-unit capacity (req/s per instance) to feed
+- **Capacity/scalability test** - establish per-unit capacity (req/s per instance) to feed
   capacity planning.
 
 ## Method
 1. Define the **performance SLOs** first (from `sre-operational-readiness`): target p99
    latency, throughput, error rate at a given concurrency.
-2. Use **production-like** environment and data volumes — testing against a tiny dataset
+2. Use **production-like** environment and data volumes - testing against a tiny dataset
    lies. Beware caches that make the second run unrealistically fast.
-3. Model **realistic traffic** — mixed endpoints, think-times, real payload sizes, ramp-up
-   — not a single endpoint hammered flat out (unless that's the real pattern).
+3. Model **realistic traffic** - mixed endpoints, think-times, real payload sizes, ramp-up
+ - not a single endpoint hammered flat out (unless that's the real pattern).
 4. Establish a **baseline**, then track over time so you catch regressions.
 5. Measure the **full distribution** (p50/p95/p99/max), not averages. Watch server-side
    resource saturation simultaneously to find the bottleneck.

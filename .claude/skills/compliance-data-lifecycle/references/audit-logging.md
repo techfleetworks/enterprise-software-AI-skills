@@ -19,11 +19,11 @@ what to sensitive data* to an auditor or investigator.
   and fulfilled, retention/deletion jobs run.
 
 ## What each entry should contain
-- **Who** — authenticated identity (user/service), not just an IP.
-- **What** — the action and the target (record/resource id).
-- **When** — precise, synchronized timestamp (UTC, NTP-synced).
-- **Where** — source IP / device / session, and which system.
-- **Outcome** — success/failure and reason.
+- **Who** - authenticated identity (user/service), not just an IP.
+- **What** - the action and the target (record/resource id).
+- **When** - precise, synchronized timestamp (UTC, NTP-synced).
+- **Where** - source IP / device / session, and which system.
+- **Outcome** - success/failure and reason.
 - **Before/after** or a reference for data changes.
 Use a **consistent, structured schema** (see the logging-vocabulary idea in
 `owasp-secure-coding-bdd`) so audit events are queryable and alertable.
@@ -34,7 +34,7 @@ Use a **consistent, structured schema** (see the logging-vocabulary idea in
   sensitive and access-controlled.
 
 ## Tamper-evidence & integrity
-- Audit logs must be **append-only** and protected from modification/deletion — even by
+- Audit logs must be **append-only** and protected from modification/deletion - even by
   admins whose actions they record. Use write-once/immutable storage, a separate
   security-controlled account/system, or cryptographic chaining (hash-linked entries) for
   high assurance.
@@ -45,14 +45,14 @@ Use a **consistent, structured schema** (see the logging-vocabulary idea in
 ## Retention
 - Retain audit logs per the applicable requirement, defined explicitly and enforced. Concrete
   anchors (verify against the current standard for your sector):
-  - **PCI DSS Req. 10.5.1** — retain audit log history **≥ 12 months**, with the **most recent
-    3 months immediately available** for analysis. [documented — PCI DSS v4.0 Req. 10.5.1; this
+  - **PCI DSS Req. 10.5.1** - retain audit log history **≥ 12 months**, with the **most recent
+    3 months immediately available** for analysis. [documented - PCI DSS v4.0 Req. 10.5.1; this
     was Req. 10.7 in v3.2.1]
-  - **HIPAA §164.316(b)(2)(i)** — retain required Security Rule documentation **6 years** from
+  - **HIPAA §164.316(b)(2)(i)** - retain required Security Rule documentation **6 years** from
     creation or last-effective date. The audit-control standard (§164.312(b)) sets *no* period, so
     the 6-year figure is the common reading of logs as part of that documentation set, not an
-    explicit HHS log rule — state your interpretation. [documented — 45 CFR §164.316(b)(2)(i)]
-  - **SOC 2** — no fixed statutory period; auditors typically expect evidence covering the audit
+    explicit HHS log rule - state your interpretation. [documented - 45 CFR §164.316(b)(2)(i)]
+  - **SOC 2** - no fixed statutory period; auditors typically expect evidence covering the audit
     period (commonly ~1 year). [reported]
   - Under multiple regimes, keep for the **longest** applicable period (plus the shortest hot-access
     window, e.g. PCI's 3 months).

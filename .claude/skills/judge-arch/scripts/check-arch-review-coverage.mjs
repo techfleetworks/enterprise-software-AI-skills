@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// check-arch-review-coverage — a change isn't "reviewed" unless the review log proves it.
+// check-arch-review-coverage - a change isn't "reviewed" unless the review log proves it.
 //
 // For the changed code files, the latest entry in the append-only review log must cover EVERY file
 // against ALL four questions, with a verdict per cell, a re-runnable evidence source on every
@@ -12,7 +12,7 @@
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 
-const die = (m) => { console.error(`[check-arch-review-coverage] FAIL — ${m}`); process.exit(1); };
+const die = (m) => { console.error(`[check-arch-review-coverage] FAIL - ${m}`); process.exit(1); };
 const args = process.argv.slice(2);
 const opt = (n) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : undefined; };
 
@@ -37,15 +37,15 @@ if (!raw.trim()) die(`review log is empty: ${logPath}`);
 
 // Append-only: the committed log must be a clean append to the base revision's log. CI should pass the
 // base-revision log via --base; set ARCH_REQUIRE_LOG_BASE=1 to make its absence a hard failure. We
-// never silently skip AND claim it was checked — the OK line discloses exactly what was verified.
+// never silently skip AND claim it was checked - the OK line discloses exactly what was verified.
 let logNote;
 if (basePath) {
-  if (!existsSync(basePath)) die(`--base given but not found: ${basePath} — cannot verify append-only (fail closed).`);
+  if (!existsSync(basePath)) die(`--base given but not found: ${basePath} - cannot verify append-only (fail closed).`);
   const base = readFileSync(basePath, "utf8");
-  if (base && !raw.startsWith(base)) die("review log is not append-only — a prior entry was edited or removed (history must be immutable).");
+  if (base && !raw.startsWith(base)) die("review log is not append-only - a prior entry was edited or removed (history must be immutable).");
   logNote = "append-only verified";
 } else if (process.env.ARCH_REQUIRE_LOG_BASE) {
-  die("ARCH_REQUIRE_LOG_BASE is set but no --base was given — cannot verify append-only. In CI, pass --base <base-revision log> (e.g. git show origin/main:docs/arch-reviews/log.jsonl > base.jsonl).");
+  die("ARCH_REQUIRE_LOG_BASE is set but no --base was given - cannot verify append-only. In CI, pass --base <base-revision log> (e.g. git show origin/main:docs/arch-reviews/log.jsonl > base.jsonl).");
 } else {
   logNote = "append-only NOT verified (pass --base to check history)";
 }
@@ -54,9 +54,9 @@ const lines = raw.split(/\r?\n/).filter((l) => l.trim());
 let entries;
 try { entries = lines.map((l) => JSON.parse(l)); }
 catch (e) { die(`a log entry is not valid JSON: ${e.message}`); }
-// The review must be FOR this change — not just any past entry that happens to mention these files.
+// The review must be FOR this change - not just any past entry that happens to mention these files.
 const entry = [...entries].reverse().find((e) => e && e.change === change);
-if (!entry) die(`no review record whose change == "${change}" — append a review for THIS change (a stale entry for an unrelated change does not count).`);
+if (!entry) die(`no review record whose change == "${change}" - append a review for THIS change (a stale entry for an unrelated change does not count).`);
 
 const matrix = entry.matrix || {};
 const problems = [];
@@ -87,10 +87,10 @@ if (!Array.isArray(entry.grepCommands) || entry.grepCommands.length === 0) {
 }
 
 if (problems.length) {
-  console.error(`[check-arch-review-coverage] FAIL — ${problems.length} problem(s):`);
+  console.error(`[check-arch-review-coverage] FAIL - ${problems.length} problem(s):`);
   for (const p of problems) console.error("  • " + p);
   process.exit(1);
 }
-console.log(`[check-arch-review-coverage] OK — ${changed.length} changed file(s) fully reviewed ` +
+console.log(`[check-arch-review-coverage] OK - ${changed.length} changed file(s) fully reviewed ` +
   `(× ${QUESTIONS.length} questions), every cell verdicted + evidenced, logged; ${logNote}.`);
 process.exit(0);

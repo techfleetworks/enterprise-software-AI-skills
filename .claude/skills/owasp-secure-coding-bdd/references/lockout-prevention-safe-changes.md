@@ -1,6 +1,6 @@
 # Preventing Lockouts, Accidental Deletion & Broken Access During Secure Hardening
 
-This file is not tied to a single OWASP cheat sheet — it's a mandatory safety layer that applies to EVERY secure-coding change, because tightening security is exactly the kind of work that causes self-inflicted outages: revoking a permission that was actually load-bearing, deleting a "test" account that was the only admin, rotating a key that's still in use, or locking a firewall rule that cuts off the only access path. This has caused real lockouts before — treat this file as non-negotiable, not optional caution.
+This file is not tied to a single OWASP cheat sheet - it's a mandatory safety layer that applies to EVERY secure-coding change, because tightening security is exactly the kind of work that causes self-inflicted outages: revoking a permission that was actually load-bearing, deleting a "test" account that was the only admin, rotating a key that's still in use, or locking a firewall rule that cuts off the only access path. This has caused real lockouts before - treat this file as non-negotiable, not optional caution.
 
 ## Read this before touching any of the following
 Permissions/roles/IAM policies, API keys/secrets/tokens, SSH keys or authorized_keys, firewall/security group rules, admin/user accounts, database grants, file/directory permissions, `.env`/config files controlling access, CI/CD deploy credentials, DNS records tied to access, encryption keys for data already at rest.
@@ -11,9 +11,9 @@ Permissions/roles/IAM policies, API keys/secrets/tokens, SSH keys or authorized_
 
 2. **Never remove the last admin/owner/break-glass path.** Before deleting, disabling, or downgrading any account, role, or credential, verify there is still at least one other functioning path with equivalent access for both the human user and, where relevant, the automation/AI acting on their behalf. Never leave a system in a state where zero accounts can perform admin recovery actions.
 
-3. **Additive before subtractive, whenever the order matters.** When replacing a permission scheme (e.g., moving from a broad role to least-privilege roles), grant and verify the new access first, confirm it actually works end-to-end, and only then revoke the old broad access — never revoke first and grant second "to be safe," since a mistake in the new grant then leaves nobody with access at all.
+3. **Additive before subtractive, whenever the order matters.** When replacing a permission scheme (e.g., moving from a broad role to least-privilege roles), grant and verify the new access first, confirm it actually works end-to-end, and only then revoke the old broad access - never revoke first and grant second "to be safe," since a mistake in the new grant then leaves nobody with access at all.
 
-4. **Test permission/access changes in a reversible way.** Prefer a dry-run, plan/preview, or staging-environment application of the change before applying it to production (e.g., `terraform plan` before `apply`, IAM policy simulator before attaching a policy, a firewall rule change reviewed before it goes live). If the platform has no dry-run mode, apply the change in a way you can immediately undo (keep the previous config/value in hand, not just in version control history you'd need extra steps to restore) — read and note the exact prior state before changing it, in the same turn.
+4. **Test permission/access changes in a reversible way.** Prefer a dry-run, plan/preview, or staging-environment application of the change before applying it to production (e.g., `terraform plan` before `apply`, IAM policy simulator before attaching a policy, a firewall rule change reviewed before it goes live). If the platform has no dry-run mode, apply the change in a way you can immediately undo (keep the previous config/value in hand, not just in version control history you'd need extra steps to restore) - read and note the exact prior state before changing it, in the same turn.
 
 5. **Never revoke or rotate a credential/key that's still actively referenced** without first locating every place it's used (config files, CI/CD secrets, running service instances, other developers' environments) and confirming a replacement is deployed everywhere it's needed. A key rotation is a two-sided change (new key works everywhere) not a one-sided deletion (old key removed).
 
@@ -21,16 +21,16 @@ Permissions/roles/IAM policies, API keys/secrets/tokens, SSH keys or authorized_
 
 7. **Watch for self-lockout specifically in these common patterns:**
    - Tightening a security group/firewall rule and accidentally blocking the management/SSH/admin port you're connecting through right now
-   - Rotating or deleting an API key that the CI/CD pipeline itself uses to deploy — breaking your own ability to deploy the fix
+   - Rotating or deleting an API key that the CI/CD pipeline itself uses to deploy - breaking your own ability to deploy the fix
    - Changing file/directory permissions recursively (`chmod -R`, `chown -R`) and catching files needed by the running process or by your own tooling
-   - Enforcing MFA or a new auth policy org-wide without first confirming the acting account (human or service account) has MFA/the new credential configured — locking yourself out of the very console you'd use to fix it
+   - Enforcing MFA or a new auth policy org-wide without first confirming the acting account (human or service account) has MFA/the new credential configured - locking yourself out of the very console you'd use to fix it
    - Revoking a broad IAM/role grant before the narrower replacement grants have been verified to actually cover every action currently performed by automation depending on it
    - Encrypting data with a new key and losing/not saving the old key needed to decrypt existing data, or losing the new key with no backup
    - Disabling a "default"/"legacy" account without checking that nothing (including scheduled jobs, health checks, or the deploy pipeline) still authenticates as that account
 
-8. **Prefer changes that degrade gracefully.** Where a security control could be added in a "log/alert only" or "warn" mode before a hard "block/deny" mode, consider proposing that staged rollout to the user for high-blast-radius changes (org-wide auth policy, broad firewall tightening) rather than flipping straight to enforcement — mention this as an option rather than unilaterally deciding, since the user may have good reason to want it enforced immediately.
+8. **Prefer changes that degrade gracefully.** Where a security control could be added in a "log/alert only" or "warn" mode before a hard "block/deny" mode, consider proposing that staged rollout to the user for high-blast-radius changes (org-wide auth policy, broad firewall tightening) rather than flipping straight to enforcement - mention this as an option rather than unilaterally deciding, since the user may have good reason to want it enforced immediately.
 
-9. **When in doubt about blast radius, ask.** If a security-hardening change could plausibly affect access for the user themselves, other legitimate users, or the AI/automation's own ability to continue working on the system, say so explicitly and ask for confirmation before applying it — don't assume it's fine because it's "the secure thing to do." Secure and available are both real requirements; this file exists because sacrificing availability isn't automatically the safe choice.
+9. **When in doubt about blast radius, ask.** If a security-hardening change could plausibly affect access for the user themselves, other legitimate users, or the AI/automation's own ability to continue working on the system, say so explicitly and ask for confirmation before applying it - don't assume it's fine because it's "the secure thing to do." Secure and available are both real requirements; this file exists because sacrificing availability isn't automatically the safe choice.
 
 ## BDD scenario patterns for this (write these into the feature file whenever a change touches permissions/access/keys)
 

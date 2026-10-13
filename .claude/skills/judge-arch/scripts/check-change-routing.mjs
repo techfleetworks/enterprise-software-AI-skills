@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// check-change-routing.mjs — route a change to the disciplines it must carry.
+// check-change-routing.mjs - route a change to the disciplines it must carry.
 //
 // The capstone of "loaded is not obeyed": whatever an agent or dev read or skipped, a change that touches a
 // given KIND of surface must ship the artifact that proves the matching discipline ran. This gate maps the

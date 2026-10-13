@@ -9,7 +9,7 @@ the answer is no for even one check, the build is blocked.
 Mutation testing, applied to your checks instead of your product code. The simplest, most
 general mutation of any check is to **replace it entirely with a no-op that always passes**
 (exit 0). A faithful test for that check asserts something that depends on the check actually
-detecting a violation — so against the no-op, that assertion must **fail**. If the test still
+detecting a violation - so against the no-op, that assertion must **fail**. If the test still
 passes against a check that does nothing, the test proves nothing about detection: it is
 **vacuous**, and a genuinely broken check would ship green behind it.
 
@@ -25,7 +25,7 @@ for each such check, ONE AT A TIME:
     overwrite the check with a no-op stub that exits 0
     run ONLY that check's mapped test(s)
     restore the check from its saved source        # immediately, so later checks see the real others
-    if its test(s) PASSED against the no-op:        # vacuous — the failure it should catch didn't happen
+    if its test(s) PASSED against the no-op:        # vacuous - the failure it should catch didn't happen
         record it
 restore every check in a finally (defensive sweep, even on crash)
 if any vacuous test was found: exit non-zero (list them)
@@ -38,7 +38,7 @@ Key properties, each of which matters:
   (one suite run), but it lets one stubbed check **mask** another: if a test touches more than one
   check, a second no-op can be the reason it goes red, so the gate can't attribute the red to the
   check it's actually proving. Mutating per-check and running only that check's mapped tests removes
-  the ambiguity — a red is unambiguously caused by *this* check being neutralized. The reference
+  the ambiguity - a red is unambiguously caused by *this* check being neutralized. The reference
   implementation (`verify-check-discrimination.mjs`) does exactly this, restoring each check before
   moving to the next. The all-at-once variant is a valid optimization only when every test is mapped
   to exactly one check; prefer per-check as the safe default.
@@ -50,15 +50,15 @@ Key properties, each of which matters:
   (re-checkout the checks directory) in case a hard kill still slips through.
 
 - **Fail closed.** If the gate can't find the checks directory, the test directory, the
-  allowlist, or a check it expected a test for, it exits non-zero — never a silent pass. A gate
+  allowlist, or a check it expected a test for, it exits non-zero - never a silent pass. A gate
   that guards quality must itself refuse to pass when it can't do its job.
 
 - **Map tests to checks honestly.** Decide which test file corresponds to which check by a stable
   convention: the test references the check's path (e.g. it spawns `path/to/check`), and the gate
-  reads that reference. A test that passes a *no-op*'s path is still mapped to that check — that's
+  reads that reference. A test that passes a *no-op*'s path is still mapped to that check - that's
   the point. Don't credit a check whose "test" never actually runs it.
 
-- **This gate is itself a check.** It's code that can rot, so it needs its own test — but it is a
+- **This gate is itself a check.** It's code that can rot, so it needs its own test - but it is a
   *mutation-testing job*, not a scanning check, so it's exempt from the coverage gate's
   "must-exec-a-check" rule and instead proven by (a) unit tests of its fail-closed paths against
   throwaway fixtures, and (b) its own required run on the real repository. Note this exemption
@@ -67,19 +67,19 @@ Key properties, each of which matters:
 ## Wiring it in
 
 - Make it a **blocking** CI check (in the required set that must be green to merge). Its cost is
-  one extra run of the check-test suite — put it in its own job so it parallelizes.
+  one extra run of the check-test suite - put it in its own job so it parallelizes.
 - Run it **after** the coverage gate, or alongside it: coverage proves a test *exists and execs
-  the check*; discrimination proves that test *asserts detection*. You need both — one without the
+  the check*; discrimination proves that test *asserts detection*. You need both - one without the
   other is half a guarantee.
 
 ## Proving it yourself in one line
 You don't need the whole gate to sanity-check a single check: break its detection by hand (change
 its core pattern to match nothing, or invert its condition) and run its committed test. It must go
-**red**. If it stays green, the test is fake — fix the test. Restore the check. This is the same
+**red**. If it stays green, the test is fake - fix the test. Restore the check. This is the same
 proof the gate automates for everyone, forever.
 
 ## What it deliberately does not do
-- It does not prove the check's fixture is *complete* (that it covers every violation shape) — only
+- It does not prove the check's fixture is *complete* (that it covers every violation shape) - only
   that the test depends on the check detecting *something*. Faithful-fixture discipline (see
   `check-test-patterns.md`) covers breadth; the mutation gate covers non-vacuity.
 - It does not replace human/adversarial review of whether a check guards the *right* thing. It

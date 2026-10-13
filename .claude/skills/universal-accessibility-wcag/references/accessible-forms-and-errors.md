@@ -1,9 +1,9 @@
 # Accessible Forms, Errors & Announcements
 
-Forms are where users commit — sign in, pay, submit. An inaccessible form doesn't
+Forms are where users commit - sign in, pay, submit. An inaccessible form doesn't
 frustrate; it blocks the task entirely.
 
-## Labels — every field, programmatically associated (WCAG 1.3.1 / 3.3.2)
+## Labels - every field, programmatically associated (WCAG 1.3.1 / 3.3.2)
 
 - Use `<label for="id">` (or wrap the input) so clicking the label focuses the field and
   AT announces it. `aria-labelledby`/`aria-label` are fallbacks when a visible `<label>`
@@ -17,10 +17,10 @@ frustrate; it blocks the task entirely.
 
 ## Correct input types & autofill (1.3.5)
 
-- Use the right `type` (`email`, `tel`, `url`, `number`, `date`) — better mobile keyboards
+- Use the right `type` (`email`, `tel`, `url`, `number`, `date`) - better mobile keyboards
   and built-in validation semantics.
 - Set `autocomplete` tokens (`name`, `email`, `street-address`, `one-time-code`, …) so
-  browsers and password managers can fill fields — directly helps people with cognitive
+  browsers and password managers can fill fields - directly helps people with cognitive
   and motor disabilities (and satisfies 1.3.5 Identify Input Purpose).
 - Mark required fields with the `required` attribute **and** a visible indicator explained
   in a legend (not color alone).
@@ -41,11 +41,11 @@ frustrate; it blocks the task entirely.
   code with no accessible alternative; allow paste and password managers.
 
 ```html
-<!-- ❌ never — placeholder as label, error shown by color only, nothing linked to the input -->
+<!-- ❌ never - placeholder as label, error shown by color only, nothing linked to the input -->
 <input type="email" placeholder="Email">
 <span style="color:red">Invalid</span>
 
-<!-- ✅ always — persistent label, aria-invalid on the field, error linked via aria-describedby -->
+<!-- ✅ always - persistent label, aria-invalid on the field, error linked via aria-describedby -->
 <label for="email">Email address</label>
 <input
   id="email"
@@ -56,7 +56,7 @@ frustrate; it blocks the task entirely.
 <p id="email-error" class="error">Enter a valid email address, e.g. name@example.com.</p>
 ```
 
-## Announcing dynamic changes — live regions (WCAG 4.1.3)
+## Announcing dynamic changes - live regions (WCAG 4.1.3)
 
 When content changes without a page load, sighted users see it but AT users won't unless
 you announce it:
@@ -65,7 +65,7 @@ you announce it:
   found"), and `role="alert"` / `aria-live="assertive"` sparingly for urgent ones
   (validation errors, failures).
 - The live region must **exist in the DOM before** its content changes; then update its
-  text. Don't dump huge content into a live region, and **don't move focus** to announce —
+  text. Don't dump huge content into a live region, and **don't move focus** to announce -
   that's disruptive; live regions announce *without* stealing focus.
 - Reflect state changes (`aria-expanded`, `aria-selected`, `aria-checked`, `aria-busy`) as
   they happen so the widget's state is always accurate to AT.
@@ -76,15 +76,15 @@ you announce it:
 ```
 
 ```js
-// ❌ never — innerHTML with text that may echo user input is an XSS footgun
+// ❌ never - innerHTML with text that may echo user input is an XSS footgun
 formErrors.innerHTML = `We couldn't save: ${userMessage}`;
 
-// ✅ always — set textContent; it announces via the live region and can't inject markup
+// ✅ always - set textContent; it announces via the live region and can't inject markup
 formErrors.textContent = `We couldn't save: ${userMessage}`;
 ```
 
 When an error/live-region message may include user-supplied text, write it with
-**`textContent`, not `innerHTML`** — `innerHTML` would execute injected markup (XSS).
+**`textContent`, not `innerHTML`** - `innerHTML` would execute injected markup (XSS).
 
 ## Form accessibility checklist
 

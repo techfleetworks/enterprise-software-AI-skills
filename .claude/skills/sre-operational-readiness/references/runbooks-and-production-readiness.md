@@ -15,7 +15,7 @@ A good runbook contains:
 - **Escalation contacts** and dependencies' on-call.
 - **Break-glass** access procedures.
 
-Keep runbooks executable and current — a stale runbook that lies is worse than none. Prefer
+Keep runbooks executable and current - a stale runbook that lies is worse than none. Prefer
 copy-pasteable commands over prose. Where possible, automate the runbook step (a script or
 a one-click action) rather than documenting a manual sequence.
 
@@ -43,7 +43,7 @@ nobody can operate. Sample PRR checklist:
 
 **Resilience**
 - [ ] Failure modes of each dependency understood + handled (timeouts, retries with
-      backoff, circuit breakers — see enterprise-architecture-standards resilience)
+      backoff, circuit breakers - see enterprise-architecture-standards resilience)
 - [ ] Backups configured; RPO/RTO defined; restore tested
 - [ ] No single points of failure for critical paths
 

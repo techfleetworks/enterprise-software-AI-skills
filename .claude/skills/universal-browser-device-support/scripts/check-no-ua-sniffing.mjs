@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * check-no-ua-sniffing — fail when code branches on the browser's user-agent instead of detecting a
+ * check-no-ua-sniffing - fail when code branches on the browser's user-agent instead of detecting a
  * feature.
  *
  * The structural half of universal-browser-device-support's core rule: feature-detect, never UA-sniff.
@@ -31,7 +31,7 @@
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { join, extname } from "node:path";
 
-function die(msg) { console.error(`[check-no-ua-sniffing] FAIL — ${msg}`); process.exit(2); }
+function die(msg) { console.error(`[check-no-ua-sniffing] FAIL - ${msg}`); process.exit(2); }
 
 const inputs = process.argv.slice(2);
 if (inputs.length === 0) die("no paths given. Usage: check-no-ua-sniffing.mjs <file-or-dir>...");
@@ -49,7 +49,7 @@ function collect(p) {
   return EXTS.has(extname(p).toLowerCase()) ? [p] : [];
 }
 const files = inputs.flatMap(collect);
-if (files.length === 0) die("no JS/TS source files found in the given path(s) (zero-scan — fail closed)");
+if (files.length === 0) die("no JS/TS source files found in the given path(s) (zero-scan - fail closed)");
 
 const UA_API = /\bnavigator\s*\.\s*(userAgent|vendor|appVersion|platform|userAgentData)\b/;
 const BRAND = /\b(MSIE|Trident|Edge|Edg|EdgA|EdgiOS|Chrome|Chromium|CriOS|Firefox|FxiOS|Safari|OPR|Opera|Gecko|WebKit|Windows NT|Macintosh|iPhone|iPad|Android)\b/;
@@ -98,11 +98,11 @@ for (const f of files) {
 }
 
 if (problems.length) {
-  console.error(`[check-no-ua-sniffing] FAIL — ${problems.length} user-agent sniffing site(s):`);
+  console.error(`[check-no-ua-sniffing] FAIL - ${problems.length} user-agent sniffing site(s):`);
   for (const p of problems) console.error(`  • ${p.file}:${p.line}  [${p.rule}]`);
   console.error(`\nFeature-detect instead (@supports in CSS, capability checks like 'IntersectionObserver' in window).\n` +
     `For a reviewed exception, add an inline "// ua-sniff:ignore <reason>" on the line or the line above.`);
   process.exit(1);
 }
-console.log(`[check-no-ua-sniffing] OK — ${files.length} source file(s) scanned, no user-agent sniffing.`);
+console.log(`[check-no-ua-sniffing] OK - ${files.length} source file(s) scanned, no user-agent sniffing.`);
 process.exit(0);

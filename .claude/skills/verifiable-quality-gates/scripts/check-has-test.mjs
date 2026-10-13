@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * check-has-test — the COVERAGE gate (reference implementation).
+ * check-has-test - the COVERAGE gate (reference implementation).
  *
  * Proves that every automated check has a committed test that actually EXECS it. Pairs with
  * verify-check-discrimination.mjs (the mutation gate, which proves those tests DISCRIMINATE).
@@ -27,7 +27,7 @@ import { readFileSync } from "node:fs";
 import { loadConfig, enumerateChecks, execTestFiles, credits } from "./verifiable-lib.mjs";
 
 function die(msg) {
-  console.error(`[check-has-test] FAIL — ${msg}`);
+  console.error(`[check-has-test] FAIL - ${msg}`);
   process.exit(1);
 }
 
@@ -51,12 +51,12 @@ const untested = required.filter((c) => !credited.has(c));
 
 if (untested.length) {
   console.error(
-    `[check-has-test] FAIL — ${untested.length} check(s) have no committed test that execs them:`
+    `[check-has-test] FAIL - ${untested.length} check(s) have no committed test that execs them:`
   );
   for (const c of untested) console.error(`  • ${c}`);
   console.error(
     `\nAdd a test that spawns the real check and asserts its exit code (see check-test-patterns.md),\n` +
-      `or — only for a pre-existing check — add it to ${cfg.allowlist} (shrink-only; burn it down).`
+      `or - only for a pre-existing check - add it to ${cfg.allowlist} (shrink-only; burn it down).`
   );
   process.exit(1);
 }
@@ -64,7 +64,7 @@ if (untested.length) {
 // Report stale allowlist entries (a check on the list that now HAS a test, or no longer exists).
 const stale = [...allowlist].filter((c) => credited.has(c) || !checks.includes(c));
 console.log(
-  `[check-has-test] OK — ${checks.length} checks scanned, ${required.length} required, ` +
+  `[check-has-test] OK - ${checks.length} checks scanned, ${required.length} required, ` +
     `${credited.size} credited by a committed exec-test, ${allowlist.size} on the shrink-only allowlist.`
 );
 if (stale.length) {

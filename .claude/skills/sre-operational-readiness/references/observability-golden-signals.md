@@ -6,24 +6,24 @@ instrumentation mechanics; this covers what to measure and how to make it useful
 
 ## The four golden signals (Google SRE)
 Instrument every user-facing service with at least these:
-1. **Latency** — how long requests take. **Split successful vs. failed** latency (a fast
+1. **Latency** - how long requests take. **Split successful vs. failed** latency (a fast
    500 shouldn't look "fast"). Track p50/p95/p99.
-2. **Traffic** — demand on the system (requests/sec, transactions/sec, concurrent users).
-3. **Errors** — rate of failed requests, by type/status. This is usually your primary SLI.
-4. **Saturation** — how "full" the system is (CPU, memory, disk I/O, queue depth,
+2. **Traffic** - demand on the system (requests/sec, transactions/sec, concurrent users).
+3. **Errors** - rate of failed requests, by type/status. This is usually your primary SLI.
+4. **Saturation** - how "full" the system is (CPU, memory, disk I/O, queue depth,
    connection-pool utilization, thread pools). Saturation predicts *imminent* failure.
 
-(For resource-oriented systems, the **USE** method — Utilization, Saturation, Errors per
-resource — complements this. For request-oriented systems, the **RED** method — Rate,
-Errors, Duration — is the same idea framed per service.)
+(For resource-oriented systems, the **USE** method - Utilization, Saturation, Errors per
+resource - complements this. For request-oriented systems, the **RED** method - Rate,
+Errors, Duration - is the same idea framed per service.)
 
 ## The three pillars
-- **Metrics** — cheap, aggregate, always-on numbers for dashboards + alerting (Prometheus,
+- **Metrics** - cheap, aggregate, always-on numbers for dashboards + alerting (Prometheus,
   Datadog, CloudWatch, OpenTelemetry metrics). Good for "is something wrong?"
-- **Logs** — structured (JSON), leveled, and correlated. Never log secrets/PII (see the
+- **Logs** - structured (JSON), leveled, and correlated. Never log secrets/PII (see the
   logging guidance in `owasp-secure-coding-bdd`/`bdd-comprehensive-testing`). Good for
   "what exactly happened?"
-- **Traces** — follow one request across services with spans and timings (OpenTelemetry,
+- **Traces** - follow one request across services with spans and timings (OpenTelemetry,
   Jaeger, Tempo, Zipkin). Good for "where in the call chain is the latency/error?"
 
 ## Correlation is what makes it usable
@@ -45,7 +45,7 @@ Errors, Duration — is the same idea framed per service.)
 - **Liveness**: is the process alive? (restart if not)
 - **Readiness**: can it serve traffic *right now*? (includes critical dependency checks;
   fail readiness → load balancer stops routing to it, no user-facing errors)
-- Keep health checks cheap and honest — a readiness check that always returns 200 is
+- Keep health checks cheap and honest - a readiness check that always returns 200 is
   useless.
 
 ## BDD-testable observability properties

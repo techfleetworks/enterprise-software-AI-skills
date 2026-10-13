@@ -1,8 +1,8 @@
-// verifiable-lib.mjs — shared helpers for the two verifiable-quality gates.
+// verifiable-lib.mjs - shared helpers for the two verifiable-quality gates.
 //
 // check-has-test (coverage) and verify-check-discrimination (mutation) both load the same config,
 // enumerate the same checks, walk the same tests, and credit a test to a check the same way. That is
-// ONE fact about "how a test is tied to a check" — it must live in one place, or the two gates drift
+// ONE fact about "how a test is tied to a check" - it must live in one place, or the two gates drift
 // (add a runner token to one and not the other and they silently disagree). This is that one place.
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -56,7 +56,7 @@ export function execTestFiles(testsDir, testRe) {
 
 // The single crediting heuristic: a test file credits a check if it references the check's name.
 // (Documented limitation: substring match; a stricter version would AST-confirm the check's path is
-// the exec argument — see check-test-patterns.md.)
+// the exec argument - see check-test-patterns.md.)
 export function credits(testSrc, checkName) {
   return testSrc.includes(checkName);
 }

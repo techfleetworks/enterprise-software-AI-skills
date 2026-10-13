@@ -4,7 +4,7 @@ Tests are only valuable if the suite is *trusted* and *meaningful*. These gates 
 
 ## Coverage (necessary, not sufficient)
 - Enforce a coverage threshold, ideally on **changed lines** in a PR (diff coverage) rather
-  than only a global number — global % barely moves and hides untested new code.
+  than only a global number - global % barely moves and hides untested new code.
 - Coverage proves code was *executed*, not that it was *asserted correctly*. High coverage
   with weak assertions is false confidence. Don't chase 100%; target meaningful coverage of
   logic and error paths, and don't write tests purely to hit a number.
@@ -12,15 +12,15 @@ Tests are only valuable if the suite is *trusted* and *meaningful*. These gates 
 
 ## Mutation testing (checks that tests actually assert)
 - A mutation tool makes small changes to your code (flip a `<` to `<=`, remove a line) and
-  re-runs the tests. If tests still pass, they didn't really test that logic — a "surviving
+  re-runs the tests. If tests still pass, they didn't really test that logic - a "surviving
   mutant."
-- Run it on critical/complex modules (not the whole codebase every time — it's slow).
+- Run it on critical/complex modules (not the whole codebase every time - it's slow).
 - Tools: Stryker (JS/.NET/Scala), PIT (JVM), mutmut/cosmic-ray (Python).
 - Mutation score is a far better signal of test quality than line coverage.
 
 ## Property-based testing (finds edge cases you wouldn't pick)
 - Instead of hand-picked examples, specify a **property** that must always hold, and the
-  tool generates hundreds of random inputs trying to falsify it — then shrinks any failure
+  tool generates hundreds of random inputs trying to falsify it - then shrinks any failure
   to a minimal reproducer.
 - Ideal for: parsers/serializers (round-trip), encoders, math, sorting/collections,
   invariants ("output is always sorted," "decode(encode(x)) == x").
@@ -28,10 +28,10 @@ Tests are only valuable if the suite is *trusted* and *meaningful*. These gates 
 
 ## Flaky-test management (a flaky suite is a liability)
 A test that passes and fails without code changes destroys trust: people re-run until green
-and stop reading failures — so real regressions ship. Treat flakiness as a defect.
+and stop reading failures - so real regressions ship. Treat flakiness as a defect.
 - **Detect**: track pass/fail history; flag tests that fail intermittently.
 - **Quarantine**: move a known-flaky test out of the blocking suite (so it doesn't gate
-  merges) but keep it running and **file a ticket to fix or delete it** — quarantine is a
+  merges) but keep it running and **file a ticket to fix or delete it** - quarantine is a
   hospital, not a graveyard.
 - **Fix root causes**: usually timing/`sleep` races, test interdependence/shared state,
   real time/random without seeding, network/external calls, or order dependence.

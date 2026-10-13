@@ -10,10 +10,10 @@ keyboard, it doesn't work. This is where custom UIs fail most often.
   focusable by default; custom widgets need `tabindex="0"` on the single element that
   represents the control (use roving `tabindex`/arrow keys *inside* composite widgets, not
   a tab stop per item).
-- **Operable**: activate with the expected keys — Enter/Space for buttons, arrow keys for
+- **Operable**: activate with the expected keys - Enter/Space for buttons, arrow keys for
   radio groups / tabs / menus / sliders, Escape to close dialogs/menus, per the APG
   pattern for the widget.
-- **Never** use `tabindex` values greater than 0 — they hijack the natural order and create
+- **Never** use `tabindex` values greater than 0 - they hijack the natural order and create
   confusing jumps. Use `0` (in order) or `-1` (focusable only via script).
 
 ## Visible focus (WCAG 2.4.7 / 2.4.11)
@@ -21,17 +21,17 @@ keyboard, it doesn't work. This is where custom UIs fail most often.
 - Every focusable element shows a **clearly visible focus indicator**. Prefer
   `:focus-visible` so keyboard users get a ring without mouse-clicks showing one.
 - **Never** `outline: none` without a stronger replacement (a ring, border, or background
-  change with sufficient contrast). Removing focus styles is one of the most common — and
-  most damaging — accessibility bugs.
-- The focused element must not be **hidden behind sticky headers/footers** (2.4.11) —
+  change with sufficient contrast). Removing focus styles is one of the most common - and
+  most damaging - accessibility bugs.
+- The focused element must not be **hidden behind sticky headers/footers** (2.4.11) -
   ensure it scrolls into a visible position.
 
 ## Logical focus order & no traps (2.4.3 / 2.1.2)
 
 - Tab order follows the visual/reading order. If DOM order and visual order diverge (via
-  CSS ordering), fix the DOM — don't paper over it.
+  CSS ordering), fix the DOM - don't paper over it.
 - **No keyboard traps**: the user can always move focus *away* from any component with the
-  keyboard alone. (Modal dialogs are the *intentional* exception — see below — but must be
+  keyboard alone. (Modal dialogs are the *intentional* exception - see below - but must be
   escapable via Escape/close.)
 - Provide a **skip link** ("Skip to main content") as the first focusable element so
   keyboard/AT users can bypass repeated navigation (2.4.1).
@@ -66,4 +66,4 @@ deliberately or it gets lost (dumped to `<body>`, or stuck on a now-hidden eleme
 
 Put the mouse away and complete every flow with Tab, Shift+Tab, Enter, Space, arrows, and
 Escape. If you can't reach it, can't tell where focus is, get stuck, or lose focus after an
-action — it's a bug.
+action - it's a bug.

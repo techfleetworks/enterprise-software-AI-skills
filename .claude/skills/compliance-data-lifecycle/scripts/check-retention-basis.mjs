@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * check-retention-basis — fail when a personal-data entry in the data map has no lawful basis or no
+ * check-retention-basis - fail when a personal-data entry in the data map has no lawful basis or no
  * retention period.
  *
  * The structural half of compliance-data-lifecycle's privacy obligations: GDPR Article 6 requires a
@@ -29,7 +29,7 @@
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 
-function die(msg) { console.error(`[check-retention-basis] FAIL — ${msg}`); process.exit(2); }
+function die(msg) { console.error(`[check-retention-basis] FAIL - ${msg}`); process.exit(2); }
 
 const args = process.argv.slice(2);
 const mapIdx = args.indexOf("--map");
@@ -76,7 +76,7 @@ for (const e of entries) {
     // exempt that column name in EVERY table, a blanket waiver that could silently clear real PII
     // elsewhere. Both gates must treat the shared map identically, so fail closed here too.
     if (!String(field).includes(".")) {
-      die(`entry "${field}" is "not-personal" with a bare key — qualify it as table.column ` +
+      die(`entry "${field}" is "not-personal" with a bare key - qualify it as table.column ` +
         `(e.g. support.email) so the exemption can't blanket-clear a same-named personal column in another table`);
     }
     continue; // exempt: no personal data to hold a basis or retention for
@@ -87,11 +87,11 @@ for (const e of entries) {
 }
 
 if (problems.length) {
-  console.error(`[check-retention-basis] FAIL — ${problems.length} personal-data entr(y/ies) missing a basis or retention:`);
-  for (const p of problems) console.error(`  • ${p.field}: missing ${p.what} — ${p.why}`);
+  console.error(`[check-retention-basis] FAIL - ${problems.length} personal-data entr(y/ies) missing a basis or retention:`);
+  for (const p of problems) console.error(`  • ${p.field}: missing ${p.what} - ${p.why}`);
   console.error(`\nAdd the missing field(s) to the data map, using the object form ` +
     `{"class":..., "basis":..., "retention":...}. A "not-personal" entry is exempt.`);
   process.exit(1);
 }
-console.log(`[check-retention-basis] OK — ${personal} personal-data entr(y/ies), each with a lawful basis and a retention period.`);
+console.log(`[check-retention-basis] OK - ${personal} personal-data entr(y/ies), each with a lawful basis and a retention period.`);
 process.exit(0);

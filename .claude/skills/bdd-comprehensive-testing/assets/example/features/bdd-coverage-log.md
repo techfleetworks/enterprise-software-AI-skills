@@ -4,7 +4,7 @@ Append-only history of behavioral changes. Never edit or delete a past entry; on
 Each entry records what changed, the taxonomy of the scenarios touched, and the gate run that proved
 them (the receipt).
 
-## 2026-10-10 — add the refund feature (PR #example)
+## 2026-10-10 - add the refund feature (PR #example)
 - event: added
 - change: example-commit
 - scenarios: refund-happy-path, refund-ineligible, refund-permission-denied, refund-double-submit, refund-failure

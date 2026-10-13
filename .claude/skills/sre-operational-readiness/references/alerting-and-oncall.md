@@ -33,8 +33,8 @@ This catches both sudden outages and slow degradations without noise.
 - Set sane thresholds with a duration ("for 5 minutes") to avoid flapping.
 
 ## On-call practices (sustainable, not heroic)
-- A rotation with enough people that no one is perpetually on call (a common floor is 6–8
-  so shifts are ~1 week every 6–8 weeks).
+- A rotation with enough people that no one is perpetually on call (a common floor is 6-8
+  so shifts are ~1 week every 6-8 weeks).
 - Clear **escalation policy**: if primary doesn't ack in N minutes → secondary → manager.
 - **Handoff**: each shift ends with a short handoff of ongoing issues.
 - **Toil budget**: track time spent on repetitive manual work; cap it (Google's guideline

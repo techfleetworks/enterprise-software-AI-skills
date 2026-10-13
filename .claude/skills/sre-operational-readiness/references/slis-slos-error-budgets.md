@@ -7,14 +7,14 @@
   succeed over 28 days." Internal.
 - **SLA** (Agreement): a *contractual* promise to customers with consequences (credits) if
   missed. Always set the SLA looser than the SLO so you have margin before breaching it.
-- **Error budget**: `100% − SLO`. At 99.9% over 30 days, the budget is ~43 minutes of
+- **Error budget**: `100% - SLO`. At 99.9% over 30 days, the budget is ~43 minutes of
   unavailability. It's the amount of failure you're *allowed* to spend.
 
 ## Choosing good SLIs
 - Measure as close to the user as possible (at the load balancer / API edge, not deep
   inside).
 - Common SLI types: **availability** (good requests / valid requests), **latency**
-  (fraction under a threshold — use a threshold, not an average), **quality/correctness**,
+  (fraction under a threshold - use a threshold, not an average), **quality/correctness**,
   **freshness/staleness** (for data pipelines), **throughput/coverage**.
 - Define "good" precisely: which status codes count as failures? which endpoints? Exclude
   invalid client requests (4xx from bad input) from availability where appropriate.
@@ -23,16 +23,16 @@
 
 ## Setting SLOs
 - Base the target on what users actually need, not on the maximum achievable. 99.9% and
-  99.99% differ by 10x in cost and effort — don't buy nines you don't need.
+  99.99% differ by 10x in cost and effort - don't buy nines you don't need.
 - Start from current measured performance; set an SLO slightly tighter as a goal, iterate.
-- Measure over a rolling window (commonly 28–30 days) so a single bad day doesn't
+- Measure over a rolling window (commonly 28-30 days) so a single bad day doesn't
   permanently doom the quarter.
 
 ## Error budget policy (the point of all this)
 The budget converts reliability into a decision rule agreed *in advance*:
 - **Budget remaining** → ship features; take reasonable risks; velocity is fine.
 - **Budget exhausted** → feature freeze; all effort shifts to reliability until you're back
-  in budget. No debate in the moment — the policy decided it earlier.
+  in budget. No debate in the moment - the policy decided it earlier.
 - This aligns dev and ops: reliability isn't "as much as possible" (which fights features),
   it's "meet the SLO," which is a shared, finite target.
 
@@ -45,6 +45,6 @@ immediately, slow burn opens a ticket.
 ## Anti-patterns
 - Aiming for 100% (impossible, and it makes every deploy terrifying).
 - SLIs that measure the machine (CPU) instead of the user (success rate).
-- SLA tighter than or equal to SLO (no margin — you breach the contract the moment you miss
+- SLA tighter than or equal to SLO (no margin - you breach the contract the moment you miss
   internal target).
 - An error-budget policy nobody enforces (then it's just a chart).

@@ -1,6 +1,6 @@
 {
   "_preset": "react-supabase",
-  "_comment": "Batteries-included architecture-gate rules for a React (Vite/CRA/Next) + Supabase app: UI → data hooks → services → lib/integrations, with exactly one Supabase client and edge functions composing a shared layer. Adjust the globs to your repo's folder names, then run `node scripts/arch-gate.mjs --baseline > arch-gate.waivers.json` to grandfather existing violations. Rule names are stable identifiers — a waiver's 'rule' field must match one exactly.",
+  "_comment": "Batteries-included architecture-gate rules for a React (Vite/CRA/Next) + Supabase app: UI → data hooks → services → lib/integrations, with exactly one Supabase client and edge functions composing a shared layer. Adjust the globs to your repo's folder names, then run `node scripts/arch-gate.mjs --baseline > arch-gate.waivers.json` to grandfather existing violations. Rule names are stable identifiers - a waiver's 'rule' field must match one exactly.",
   "ignore": ["public", "docs", "scripts", "e2e", "test", "tests", ".branches"],
   "_builtins_note": "emptyCatch/swallowReturn flag comment-only catch bodies. On a NEW project keep them ON. On a MATURE codebase with many intentional graceful-degradation catches (e.g. catch { /* storage disabled */ }), set them false and let the judge-arch review handle error-handling judgment.",
   "builtins": { "emptyCatch": true, "swallowReturn": true, "keepInSync": true },
@@ -17,7 +17,7 @@
       "include": ["src/services/**", "src/domain/**"],
       "exclude": ["**/*.test.{ts,tsx}", "**/*.spec.{ts,tsx}"],
       "forbid": ["from ['\"]react['\"]", "from ['\"]react-router", "\\bwindow\\.", "\\bdocument\\.", "\\blocalStorage\\b", "\\bsessionStorage\\b"],
-      "message": "Service/domain code leaks a web/UI concern and can no longer be tested or reused without a browser. Keep React/DOM at the boundary; pass plain data into the service. (src/lib often holds legitimate web adapters, so it is not policed here — add specific lib subdirs to 'include' if you keep pure logic there.)"
+      "message": "Service/domain code leaks a web/UI concern and can no longer be tested or reused without a browser. Keep React/DOM at the boundary; pass plain data into the service. (src/lib often holds legitimate web adapters, so it is not policed here - add specific lib subdirs to 'include' if you keep pure logic there.)"
     },
     {
       "name": "Exactly one Supabase client in the frontend",
