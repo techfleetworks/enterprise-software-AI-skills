@@ -1,34 +1,24 @@
 {
-  "_comment": "Root architecture gate for THIS repo (a library of skills + offline gate scripts). The built-in error-handling checks (emptyCatch/swallowReturn/keepInSync) are left OFF here on purpose: the gate scripts use deliberate best-effort catches, and .claude/skills/judge-arch/assets/discriminate-fixtures holds intentionally-bad code used by the mutation test. Those built-ins belong in an adopter's application config (they are ON in the presets under .claude/skills/judge-arch/assets/presets). What this root gate enforces is what is true and valuable for this repo: house style and script hygiene. Expand house-style-no-em-dash's include list as each skill is rewritten clean (ratchet).",
+  "_comment": "Root architecture gate for THIS repo (a library of skills + offline gate scripts). The built-in error-handling checks (emptyCatch/swallowReturn/keepInSync) are left OFF here on purpose: the gate scripts use deliberate best-effort catches, and .claude/skills/judge-arch/assets/discriminate-fixtures holds intentionally-bad code used by the mutation test. Those built-ins belong in an adopter's application config (they are ON in the presets under .claude/skills/judge-arch/assets/presets). What this root gate enforces is what is true and valuable for this repo: house style and script hygiene. house-style-no-em-dash now scans ALL skill docs, scripts, scenarios, and configs plus the front-door files via globs (ADR-0033), so a dash anywhere in scope fails the gate rather than relying on a per-file ratchet. The vendor dir, discriminate-fixtures, and app-managed worktrees are ignored.",
   "ignore": ["discriminate-fixtures", "vendor", "worktrees"],
   "builtins": { "emptyCatch": false, "swallowReturn": false, "keepInSync": false },
   "rules": [
     {
       "name": "house-style-no-em-dash",
       "include": [
-        ".claude/skills/pattern-selector/**/*.md",
-        ".claude/skills/arch-encode/**/*.md",
-        ".claude/skills/architectural-decision-records/**/*.md",
-        ".claude/skills/enterprise-architecture-standards/**/*.md",
-        ".claude/skills/judge-arch/SKILL.md",
-        ".claude/skills/comprehensive-test-strategy/SKILL.md",
-        ".claude/skills/verifiable-quality-gates/SKILL.md",
-        ".claude/skills/release-deployment-safety/SKILL.md",
-        ".claude/skills/sre-operational-readiness/SKILL.md",
-        ".claude/skills/compliance-data-lifecycle/SKILL.md",
-        ".claude/skills/universal-accessibility-wcag/SKILL.md",
-        ".claude/skills/universal-browser-device-support/SKILL.md",
-        ".claude/skills/usability-ux-universal-design/SKILL.md",
-        ".claude/skills/owasp-secure-coding-bdd/SKILL.md",
-        ".claude/skills/owasp-secure-coding-bdd/references/cheatsheets/*.md",
+        ".claude/skills/**/*.md",
+        ".claude/skills/**/*.mjs",
+        ".claude/skills/**/*.feature",
+        ".claude/skills/**/*.json",
+        "always-on/**/*.md",
+        "always-on/**/*.mjs",
+        "README.md",
+        "CONTRIBUTING.md",
+        "CLAUDE.md",
         "docs/arch-reviews/README.md",
-        "docs/audit/README.md",
-        "always-on/README.md",
-        "always-on/enterprise-skills-always-on.md",
-        ".claude/skills/bootstrap/SKILL.md",
-        "CLAUDE.md"
+        "docs/audit/README.md"
       ],
-      "forbid": ["\\u2014", "\\u2013"],
+      "forbid": ["\\u2014", "\\u2013", "\\u2012", "\\u2015", "\\u2212"],
       "message": "House style: no em or en dashes in prose. Use a period, a comma, or parentheses. Add a skill's path here once it is rewritten clean."
     },
     {

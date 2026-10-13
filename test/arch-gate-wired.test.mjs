@@ -27,19 +27,19 @@ const CONFIG = JSON.parse(readFileSync(resolve(REPO, "arch-gate.config.json"), "
 // with the ratchet. This is a deliberate guard-the-config duplicate, not drift: the config says what to
 // enforce; this list says what must never silently leave enforcement.
 const REQUIRED_INCLUDE = [
-  ".claude/skills/pattern-selector/**/*.md",
-  ".claude/skills/arch-encode/**/*.md",
-  ".claude/skills/architectural-decision-records/**/*.md",
-  ".claude/skills/enterprise-architecture-standards/**/*.md",
-  ".claude/skills/judge-arch/SKILL.md",
-  ".claude/skills/comprehensive-test-strategy/SKILL.md",
-  ".claude/skills/verifiable-quality-gates/SKILL.md",
-  ".claude/skills/owasp-secure-coding-bdd/SKILL.md",
-  ".claude/skills/owasp-secure-coding-bdd/references/cheatsheets/*.md",
+  ".claude/skills/**/*.md",
+  ".claude/skills/**/*.mjs",
+  ".claude/skills/**/*.feature",
+  ".claude/skills/**/*.json",
+  "always-on/**/*.md",
+  "always-on/**/*.mjs",
+  "README.md",
+  "CONTRIBUTING.md",
+  "CLAUDE.md",
   "docs/arch-reviews/README.md",
   "docs/audit/README.md",
 ];
-const REQUIRED_DASH_FORBID = ["\\u2014", "\\u2013"]; // em AND en dash code points
+const REQUIRED_DASH_FORBID = ["\\u2014", "\\u2013", "\\u2012", "\\u2015", "\\u2212"]; // em, en, figure, horizontal-bar, minus
 const REQUIRED_WEB_FORBID = ["\\bfetch\\s*\\(", "\\baxios\\b", "new\\s+Response\\b", "require\\(['\"]https?:?['\"]\\)"];
 
 function runGate(cwd) {
@@ -116,6 +116,13 @@ test("wired: the house-style rule catches a planted EN dash too (both forbids li
   const target = concretePath(house.include[0]);
   const dirty = withCommittedConfig(target, "This line has an en dash – right here.\n");
   assert.equal(runGate(dirty).status, 1, "a planted en dash must fail the live gate (the en-dash forbid must fire)");
+});
+
+test("wired: the house-style rule catches a planted minus sign too (all five dash forbids live)", () => {
+  const house = rule("house-style-no-em-dash");
+  const target = concretePath(house.include[0]);
+  const dirty = withCommittedConfig(target, "This line has a minus sign − right here.\n");
+  assert.equal(runGate(dirty).status, 1, "a planted minus sign must fail the live gate (the minus forbid must fire)");
 });
 
 test("wired: the committed no-web rule catches a planted outbound call (discriminating)", () => {

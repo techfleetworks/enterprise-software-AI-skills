@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * check-alert-hygiene â€” flag alert rules that break the SRE alerting discipline before they ship.
+ * check-alert-hygiene - flag alert rules that break the SRE alerting discipline before they ship.
  *
  * The structural half of sre-operational-readiness's "alert on symptoms, make every alert
  * actionable" rule. It scans Prometheus-style alerting-rule YAML (the de-facto format shared by
@@ -36,7 +36,7 @@
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { join, extname } from "node:path";
 
-function die(msg) { console.error(`[check-alert-hygiene] FAIL â€” ${msg}`); process.exit(2); }
+function die(msg) { console.error(`[check-alert-hygiene] FAIL - ${msg}`); process.exit(2); }
 
 const inputs = process.argv.slice(2);
 if (inputs.length === 0) die("no paths given. Usage: check-alert-hygiene.mjs <file-or-dir>...");
@@ -49,7 +49,7 @@ function collect(p) {
   return [".yml", ".yaml"].includes(extname(p).toLowerCase()) ? [p] : [];
 }
 const files = inputs.flatMap(collect);
-if (files.length === 0) die("no .yml/.yaml files found in the given path(s) (zero-scan â€” fail closed)");
+if (files.length === 0) die("no .yml/.yaml files found in the given path(s) (zero-scan - fail closed)");
 
 // --- split a file into blocks on `- alert:` / `- record:` markers -------------
 // A block spans from one marker line to the next (or EOF). We lint only `alert` blocks, so a
@@ -143,14 +143,14 @@ for (const f of files) {
   }
 }
 
-if (alertCount === 0) die("no alert blocks found in the given .yml/.yaml file(s) (zero-scan â€” fail closed; point me at your alerting rules)");
+if (alertCount === 0) die("no alert blocks found in the given .yml/.yaml file(s) (zero-scan - fail closed; point me at your alerting rules)");
 
 if (problems.length) {
-  console.error(`[check-alert-hygiene] FAIL â€” ${problems.length} alert-hygiene problem(s):`);
-  for (const p of problems) console.error(`  â€¢ ${p.file}:${p.line}  [${p.rule}] ${p.label}: ${p.why}`);
-  console.error(`\nFix per references/alerting-and-oncall.md, or â€” for a reviewed exception â€”\n` +
+  console.error(`[check-alert-hygiene] FAIL - ${problems.length} alert-hygiene problem(s):`);
+  for (const p of problems) console.error(`  * ${p.file}:${p.line}  [${p.rule}] ${p.label}: ${p.why}`);
+  console.error(`\nFix per references/alerting-and-oncall.md, or - for a reviewed exception -\n` +
     `add an inline "# alert-hygiene:ignore <reason>" (or "=rule") inside that alert block.`);
   process.exit(1);
 }
-console.log(`[check-alert-hygiene] OK â€” ${alertCount} alert(s) across ${files.length} file(s), all with a severity, summary, and runbook, and no cause-based pages.`);
+console.log(`[check-alert-hygiene] OK - ${alertCount} alert(s) across ${files.length} file(s), all with a severity, summary, and runbook, and no cause-based pages.`);
 process.exit(0);

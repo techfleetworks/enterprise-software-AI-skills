@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// bdd-index-generate — (re)generate the centralized datastore from the feature files.
+// bdd-index-generate - (re)generate the centralized datastore from the feature files.
 //
 // The feature files are the single source of truth for scenario content; this derives the registry
 // over them (features/bdd-index.json canonical + features/INDEX.md human view) so the two can never
@@ -24,11 +24,11 @@ if (check) {
   if (read(jsonPath) !== json) drift.push("bdd-index.json");
   if (read(mdPath) !== md) drift.push("INDEX.md");
   if (drift.length) {
-    console.error(`[bdd-index] FAIL — datastore out of sync with the feature files: ${drift.join(", ")}. ` +
+    console.error(`[bdd-index] FAIL - datastore out of sync with the feature files: ${drift.join(", ")}. ` +
       `Run: node bdd-index-generate.mjs ${root}`);
     process.exit(1);
   }
-  console.log("[bdd-index] OK — datastore matches the feature files.");
+  console.log("[bdd-index] OK - datastore matches the feature files.");
   process.exit(0);
 }
 

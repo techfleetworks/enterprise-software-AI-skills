@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// check-cheatsheet-catalog.mjs — the completeness gate for the per-cheat-sheet OWASP files.
+// check-cheatsheet-catalog.mjs - the completeness gate for the per-cheat-sheet OWASP files.
 //
 // The owasp-secure-coding-bdd skill turns every OWASP cheat sheet into its own reference file under
 // references/cheatsheets/<Slug>.md. This gate keeps that catalog honest and lets it grow one cluster at a
@@ -167,7 +167,7 @@ for (const s of sheets) {
   g.total++; if (s.done) g.done++; g.slugs.add(s.slug);
 }
 // Parse every "### <name> (<done>/<total>)" heading in SKILL.md and the sheet files listed beneath it (up to
-// the next ### or ## heading). Headings without a (n/n) count — e.g. the threat-model steps — are ignored.
+// the next ### or ## heading). Headings without a (n/n) count - e.g. the threat-model steps - are ignored.
 const skillGroups = new Map();
 for (const m of skillText.matchAll(/\n### (.+?) \((\d+)\/(\d+)\)[^\n]*\n/g)) {
   const name = m[1].trim();
@@ -210,10 +210,10 @@ for (const cat of skillGroups.keys()) if (!manifestGroups.has(cat)) violations.p
 
 const total = sheets.length;
 if (violations.length) {
-  console.error(`\ncheck-cheatsheet-catalog — ${doneCount}/${total} sheets done, ${violations.length} violation(s):\n`);
+  console.error(`\ncheck-cheatsheet-catalog - ${doneCount}/${total} sheets done, ${violations.length} violation(s):\n`);
   for (const v of violations) console.error(`  ✖ ${v}`);
   console.error("");
   process.exit(1);
 }
-console.log(`check-cheatsheet-catalog — PASS. ${doneCount}/${total} cheat sheets complete, indexed, and cited; no orphans.`);
+console.log(`check-cheatsheet-catalog - PASS. ${doneCount}/${total} cheat sheets complete, indexed, and cited; no orphans.`);
 process.exit(0);

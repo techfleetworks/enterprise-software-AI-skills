@@ -1,9 +1,9 @@
 # Cross-Browser CSS & JS: Fallbacks, Prefixes, Polyfills, Gotchas
 
-Engines differ. Handle the differences on purpose, in the build and in the code — not by
+Engines differ. Handle the differences on purpose, in the build and in the code - not by
 discovering them in a user's bug report.
 
-## Autoprefix — don't hand-write vendor prefixes
+## Autoprefix - don't hand-write vendor prefixes
 
 Let the build add `-webkit-`/`-moz-` prefixes based on your `browserslist`. **Autoprefixer**
 (usually via PostCSS) does this automatically and correctly, and *removes* prefixes no
@@ -23,13 +23,13 @@ Provide the safe version first, then enhance:
 ```
 
 The cascade means an unsupported later declaration is simply ignored, so ordering "old
-then new" gives older browsers the old value and newer ones the new value — often no
+then new" gives older browsers the old value and newer ones the new value - often no
 `@supports` needed for simple property/value fallbacks.
 
 ## Polyfill only what the matrix needs
 
 - Polyfill a *missing API*, load it **conditionally** (only when the capability check
-  fails), and keep it scoped — don't ship a giant catch-all polyfill bundle to everyone.
+  fails), and keep it scoped - don't ship a giant catch-all polyfill bundle to everyone.
 - Transpilation (Babel/SWC) handles *syntax*; polyfills handle *missing runtime APIs*
   (e.g. `IntersectionObserver`, `structuredClone`, certain `Intl` features). Drive both
   from `browserslist` so they match your target.
@@ -49,10 +49,10 @@ then new" gives older browsers the old value and newer ones the new value — of
 - **Font rendering.** Anti-aliasing and metrics differ across OSes; don't pixel-pin
   layouts to a specific font's rendering. Set `font-display` for web fonts to avoid
   invisible text while loading.
-- **Focus behavior.** `:focus` vs `:focus-visible` support and default outlines vary —
+- **Focus behavior.** `:focus` vs `:focus-visible` support and default outlines vary -
   always provide an explicit visible focus style.
 - **Event/quirk differences.** Passive listeners, `pointer` vs `touch` vs `mouse`, and
-  clipboard/permission APIs vary — feature-detect and provide fallbacks.
+  clipboard/permission APIs vary - feature-detect and provide fallbacks.
 
 ## General rules
 

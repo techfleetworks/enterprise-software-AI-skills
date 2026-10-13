@@ -2,7 +2,7 @@
 
 Companion to `platform-framework-specific.md`, which covers Node.js, Django, Ruby on Rails,
 and mobile in depth. This file covers the remaining language/framework-specific OWASP
-cheat sheets. Read the section matching the stack you're writing in — apply it in addition
+cheat sheets. Read the section matching the stack you're writing in - apply it in addition
 to the general controls (injection, access control, crypto, etc.), not instead of them.
 
 ## Java
@@ -39,7 +39,7 @@ Covers: PHP Configuration, Laravel, Symfony.
 ## C / C++
 Covers: C-Based Toolchain Hardening.
 - Compile with hardening: `-fstack-protector-strong`, `-D_FORTIFY_SOURCE=2` (use
-  `-D_FORTIFY_SOURCE=3` for stronger, dynamic buffer checks where your toolchain supports it —
+  `-D_FORTIFY_SOURCE=3` for stronger, dynamic buffer checks where your toolchain supports it -
   it needs **GCC 12+ or recent Clang** and **glibc 2.35+**, backported to glibc 2.34 on RHEL 9 and
   derivatives; otherwise level 3 silently falls back to 2), `-fPIE -pie`,
   full RELRO (`-Wl,-z,relro,-z,now`), `-Wformat -Wformat-security`. `[documented: Red Hat, "GCC's new fortification level"]`

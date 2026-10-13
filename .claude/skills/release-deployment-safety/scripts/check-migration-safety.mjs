@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * check-migration-safety — flag unsafe SQL migration patterns before they ship.
+ * check-migration-safety - flag unsafe SQL migration patterns before they ship.
  *
  * The structural half of release-deployment-safety's expand/contract rule: it fails (exit 1) when a
  * migration contains a change that breaks a running old instance or takes a blocking lock, so the
@@ -11,17 +11,17 @@
  *   node check-migration-safety.mjs <file-or-dir>...   # scan .sql files (dirs scanned recursively)
  *
  * Suppressing a deliberate, reviewed exception (e.g. a contract-phase DROP that is backed up and
- * announced): put an inline comment ON OR BEFORE the statement (within the same statement — i.e. after
- * the previous `;`; a trailing comment after the statement's own `;` binds to the NEXT statement) —
+ * announced): put an inline comment ON OR BEFORE the statement (within the same statement - i.e. after
+ * the previous `;`; a trailing comment after the statement's own `;` binds to the NEXT statement) -
  *   -- migration-safety:ignore <reason>              (suppress every rule for that statement)
  *   -- migration-safety:ignore=drop-table <reason>   (suppress one rule for that statement)
  * The reason is REQUIRED; a bare `ignore` with no reason does NOT suppress (an unexplained waiver is
- * not a waiver — mirrors the arch-gate waiver discipline).
+ * not a waiver - mirrors the arch-gate waiver discipline).
  *
  * Scope / limitations (honest): this is a regex/statement linter, not a SQL parser. It does NOT
  * detect a one-shot `UPDATE` backfill (no row-count signal in the text). A `;` inside a string
  * literal or a `$$ … $$` function body can mis-split, and a forbidden keyword inside such a span can
- * over-flag — but the direction is ALWAYS over-flag (a real top-level unsafe statement is never
+ * over-flag - but the direction is ALWAYS over-flag (a real top-level unsafe statement is never
  * hidden); use the inline ignore for those. A dialect/format quirk can likewise over- or under-match.
  *
  * Exit 0 = clean. 1 = one or more unsuppressed unsafe patterns. 2 = bad usage / unreadable input.
@@ -29,7 +29,7 @@
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { join, extname } from "node:path";
 
-function die(msg) { console.error(`[check-migration-safety] FAIL — ${msg}`); process.exit(2); }
+function die(msg) { console.error(`[check-migration-safety] FAIL - ${msg}`); process.exit(2); }
 
 const inputs = process.argv.slice(2);
 if (inputs.length === 0) die("no paths given. Usage: check-migration-safety.mjs <file-or-dir>...");
@@ -42,10 +42,10 @@ function collect(p) {
   return extname(p).toLowerCase() === ".sql" ? [p] : [];
 }
 const files = inputs.flatMap(collect);
-if (files.length === 0) die("no .sql files found in the given path(s) (zero-scan — fail closed)");
+if (files.length === 0) die("no .sql files found in the given path(s) (zero-scan - fail closed)");
 
 // --- rules: each is tested against ONE comment-stripped statement -------------
-// `unless` (when present and found) clears the match — this is what a plain forbidden-regex engine
+// `unless` (when present and found) clears the match - this is what a plain forbidden-regex engine
 // can't express (e.g. NOT NULL is fine *with* a DEFAULT), which is why this gate is its own script.
 const RULES = [
   { name: "drop-table", re: /\bDROP\s+TABLE\b/i,
@@ -57,25 +57,25 @@ const RULES = [
   { name: "rename-column", re: /\bRENAME\s+(COLUMN|TO)\b/i,
     why: "a direct rename breaks running old code instantly. Add new → dual-write → backfill → switch → drop old." },
   // `(?!CONSTRAINT\b)` so this fires only on ADD COLUMN … NOT NULL, not on ADD CONSTRAINT … CHECK
-  // (col IS NOT NULL) — the latter is the skill's own safe 3-step and is handled by fk-check-not-valid.
+  // (col IS NOT NULL) - the latter is the skill's own safe 3-step and is handled by fk-check-not-valid.
   { name: "add-not-null-no-default", re: /\bADD\s+(COLUMN\s+)?(?!CONSTRAINT\b)[^;]*\bNOT\s+NULL\b/i, unless: /\b(DEFAULT|GENERATED|NOT\s+VALID)\b/i,
     why: "NOT NULL without a DEFAULT on a populated table fails/locks. Add it nullable or with a default, then tighten." },
   { name: "set-not-null-direct", re: /\bSET\s+NOT\s+NULL\b/i,
-    why: "a bare SET NOT NULL scans the whole table under lock. Use the 3-step CHECK … NOT VALID → VALIDATE → SET NOT NULL — and because the final SET NOT NULL is textually identical, suppress it with an inline ignore noting the prior validated CHECK." },
+    why: "a bare SET NOT NULL scans the whole table under lock. Use the 3-step CHECK … NOT VALID → VALIDATE → SET NOT NULL - and because the final SET NOT NULL is textually identical, suppress it with an inline ignore noting the prior validated CHECK." },
   // Require ALTER COLUMN <name> TYPE adjacency so a column literally named "type" isn't mistaken for a type change.
   { name: "alter-column-type", re: /\bALTER\s+COLUMN\s+\S+\s+(SET\s+DATA\s+)?TYPE\b/i,
     why: "an in-place type change rewrites + locks the table and breaks old code. Add a new column → backfill → switch → drop." },
   { name: "fk-check-not-valid", re: /\bADD\s+(CONSTRAINT\s+\S+\s+)?(CHECK|FOREIGN\s+KEY)\b/i, unless: /\bNOT\s+VALID\b/i,
     why: "adding a CHECK or FOREIGN KEY validates existing rows under lock. Add it NOT VALID, then VALIDATE CONSTRAINT in a separate step (Postgres)." },
   { name: "index-not-concurrent", re: /\bCREATE\s+(UNIQUE\s+)?INDEX\b/i, unless: /\bCONCURRENTLY\b/i,
-    why: "a non-CONCURRENT index build takes an ACCESS EXCLUSIVE lock that blocks writes. Use CREATE INDEX CONCURRENTLY (Postgres). (For a brand-new table this is safe — suppress with a reason.)" },
+    why: "a non-CONCURRENT index build takes an ACCESS EXCLUSIVE lock that blocks writes. Use CREATE INDEX CONCURRENTLY (Postgres). (For a brand-new table this is safe - suppress with a reason.)" },
 ];
 
 // Strip block comments then line comments, so rules never match commented-out SQL.
 const stripComments = (s) => s.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/--[^\n]*/g, " ");
 
 // Find ignore directives in a statement's RAW text (before stripping). Returns {all, rules:Set}.
-// Scanned per LINE so the required reason must sit on the directive's own line — otherwise a bare
+// Scanned per LINE so the required reason must sit on the directive's own line - otherwise a bare
 // `ignore` could swallow the next line's SQL as its "reason" and silently suppress a real violation.
 function ignores(rawStmt) {
   const out = { all: false, rules: new Set() };
@@ -131,11 +131,11 @@ for (const f of files) {
 }
 
 if (problems.length) {
-  console.error(`[check-migration-safety] FAIL — ${problems.length} unsafe migration pattern(s):`);
+  console.error(`[check-migration-safety] FAIL - ${problems.length} unsafe migration pattern(s):`);
   for (const p of problems) console.error(`  • ${p.file}:${p.line}  [${p.rule}] ${p.why}`);
-  console.error(`\nFix with the expand/contract sequence (references/zero-downtime-db-migrations.md), or — for a\n` +
-    `deliberate, backed-up, announced change — add an inline "-- migration-safety:ignore <reason>" to that statement.`);
+  console.error(`\nFix with the expand/contract sequence (references/zero-downtime-db-migrations.md), or - for a\n` +
+    `deliberate, backed-up, announced change - add an inline "-- migration-safety:ignore <reason>" to that statement.`);
   process.exit(1);
 }
-console.log(`[check-migration-safety] OK — ${files.length} .sql file(s) scanned, no unsafe patterns.`);
+console.log(`[check-migration-safety] OK - ${files.length} .sql file(s) scanned, no unsafe patterns.`);
 process.exit(0);

@@ -3,18 +3,18 @@
 Covers: Authentication, Password Storage, Session Management, Multifactor Authentication, Forgot Password/Credential Recovery, Credential Stuffing.
 
 ## Password handling
-- Hash passwords with **Argon2id** (preferred) at the OWASP minimums — **m = 19456 KiB, t = 2, p = 1** — or **bcrypt** (work factor **≥ 10–12**) / **scrypt** (**N = 2¹⁷, r = 8, p = 1**) where Argon2 isn't available. Never MD5, SHA-1, SHA-256 alone, or any fast general-purpose hash — those are crackable at billions of guesses/second on commodity GPUs. `[documented: OWASP Password Storage Cheat Sheet]`
-- Use a unique random salt per password (handled automatically by Argon2id/bcrypt/scrypt libraries — don't roll your own).
-- Enforce a minimum length (12+ characters recommended) over complexity rules (arbitrary "must contain a symbol" rules push users toward predictable patterns). Do not enforce a maximum length below 64 characters. **Caveat for bcrypt specifically:** it silently **truncates input at 72 bytes**, so a 64-character *multibyte* passphrase can exceed that and have its tail ignored. If you must accept long inputs with bcrypt, pre-hash with a server-side **pepper** — `bcrypt(base64(HMAC-SHA-384(password, pepper)))` — which fixes both the 72-byte limit and the null-byte issue; a **plain** `SHA-256`-then-bcrypt pre-hash is discouraged because it enables **password shucking**. Simplest: prefer Argon2id, which has no 72-byte limit. `[documented: OWASP Password Storage Cheat Sheet]`
+- Hash passwords with **Argon2id** (preferred) at the OWASP minimums - **m = 19456 KiB, t = 2, p = 1** - or **bcrypt** (work factor **≥ 10-12**) / **scrypt** (**N = 2¹⁷, r = 8, p = 1**) where Argon2 isn't available. Never MD5, SHA-1, SHA-256 alone, or any fast general-purpose hash - those are crackable at billions of guesses/second on commodity GPUs. `[documented: OWASP Password Storage Cheat Sheet]`
+- Use a unique random salt per password (handled automatically by Argon2id/bcrypt/scrypt libraries - don't roll your own).
+- Enforce a minimum length (12+ characters recommended) over complexity rules (arbitrary "must contain a symbol" rules push users toward predictable patterns). Do not enforce a maximum length below 64 characters. **Caveat for bcrypt specifically:** it silently **truncates input at 72 bytes**, so a 64-character *multibyte* passphrase can exceed that and have its tail ignored. If you must accept long inputs with bcrypt, pre-hash with a server-side **pepper** - `bcrypt(base64(HMAC-SHA-384(password, pepper)))` - which fixes both the 72-byte limit and the null-byte issue; a **plain** `SHA-256`-then-bcrypt pre-hash is discouraged because it enables **password shucking**. Simplest: prefer Argon2id, which has no 72-byte limit. `[documented: OWASP Password Storage Cheat Sheet]`
 - Never log passwords, even at debug level. Never send passwords back in any response, including in "confirm your details" emails.
 - On password change, invalidate all other active sessions/tokens.
 
 ## Login flow
-- Return the **same generic error** ("invalid username or password") for both "user doesn't exist" and "password wrong" — never reveal which one was incorrect (prevents username enumeration).
+- Return the **same generic error** ("invalid username or password") for both "user doesn't exist" and "password wrong" - never reveal which one was incorrect (prevents username enumeration).
 - Enforce this same generic-error/uniform-timing principle on the password-reset and MFA flows too.
 - Rate-limit login attempts per account and per source IP (e.g., exponential backoff or lockout after N failures) to blunt credential stuffing and brute force. Log repeated failures with source IP/timestamp for detection.
 - Consider CAPTCHA or proof-of-work after repeated failures, not from the first attempt (avoid punishing legitimate users).
-- Never allow authentication decisions to be made client-side only — always re-verify server-side even if a client-side check exists for UX.
+- Never allow authentication decisions to be made client-side only - always re-verify server-side even if a client-side check exists for UX.
 
 ## Multi-factor authentication (MFA)
 - Support MFA (TOTP is the pragmatic default) for any account with elevated privileges or sensitive data access; make it available to all users.
@@ -25,17 +25,17 @@ Covers: Authentication, Password Storage, Session Management, Multifactor Authen
 ## Session management
 - Generate session IDs with a cryptographically secure random generator, at least 128 bits of entropy.
 - Set cookies with `HttpOnly` (blocks JS access, mitigates XSS token theft), `Secure` (HTTPS only), and `SameSite=Strict` or `Lax` (mitigates CSRF).
-- Regenerate the session ID on privilege change (login, logout, privilege elevation) — never reuse a pre-authentication session ID after login (session fixation).
+- Regenerate the session ID on privilege change (login, logout, privilege elevation) - never reuse a pre-authentication session ID after login (session fixation).
 - Set both an idle timeout (e.g., 15-30 min for sensitive apps) and an absolute session lifetime, enforced server-side.
 - Provide an explicit logout that invalidates the session server-side, not just a client-side cookie clear.
-- For token-based auth (JWT), prefer short-lived access tokens (minutes) with a separate refresh token, validate signature and `exp`/`iss`/`aud` claims on every request, and support server-side revocation (a deny-list or short expiry) — a JWT that's just "trust the signature forever" cannot be revoked if compromised.
+- For token-based auth (JWT), prefer short-lived access tokens (minutes) with a separate refresh token, validate signature and `exp`/`iss`/`aud` claims on every request, and support server-side revocation (a deny-list or short expiry) - a JWT that's just "trust the signature forever" cannot be revoked if compromised.
 
 ## Security questions (avoid if possible)
-- Prefer not to use "security questions" (mother's maiden name, first pet, etc.) as a standalone recovery/verification factor — answers are frequently guessable, publicly discoverable (social media), or have a small real-world set of possible answers. If required for legacy/compliance reasons, treat them as one weak factor combined with something stronger (a verified email/SMS/authenticator step), never as a sole gate for account recovery or step-up authentication.
+- Prefer not to use "security questions" (mother's maiden name, first pet, etc.) as a standalone recovery/verification factor - answers are frequently guessable, publicly discoverable (social media), or have a small real-world set of possible answers. If required for legacy/compliance reasons, treat them as one weak factor combined with something stronger (a verified email/SMS/authenticator step), never as a sole gate for account recovery or step-up authentication.
 
 ## Forgot-password / account recovery
 - Reset tokens must be single-use, cryptographically random, and short-lived (15-60 min).
-- Don't reveal whether an email/username exists — respond with the same message ("if an account exists, a reset email has been sent") regardless.
+- Don't reveal whether an email/username exists - respond with the same message ("if an account exists, a reset email has been sent") regardless.
 - Invalidate the reset token immediately after use, and invalidate all other active sessions once the password is actually changed.
 
 ## BDD security scenario patterns

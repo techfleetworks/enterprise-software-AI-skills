@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// check-bdd-tags — every scenario must carry the full taxonomy, each value in-vocabulary.
+// check-bdd-tags - every scenario must carry the full taxonomy, each value in-vocabulary.
 //
 // Dimensions (see SKILL.md "Categorization"): @audience (in the declared list, if one is configured),
 // @usecase (present), @category (vocab), @quality (vocab, or a sibling alias like @security),
@@ -18,19 +18,19 @@ import {
 const root = resolve(process.argv[2] ?? "features");
 const files = findFeatureFiles(root);
 if (files.length === 0) {
-  console.error(`[check-bdd-tags] FAIL — no .feature files under ${root} (zero-scan; fail closed).`);
+  console.error(`[check-bdd-tags] FAIL - no .feature files under ${root} (zero-scan; fail closed).`);
   process.exit(1);
 }
 
 let cfg;
 try { cfg = loadConfig(root); }
-catch (e) { console.error(`[check-bdd-tags] FAIL — ${e.message}`); process.exit(1); }
+catch (e) { console.error(`[check-bdd-tags] FAIL - ${e.message}`); process.exit(1); }
 const audiences = Array.isArray(cfg.audiences) ? new Set(cfg.audiences) : null;
 const problems = [];
 
 for (const f of files) {
   const parsed = parseFeature(f);
-  if (parsed.error) { problems.push(`${f}: unparseable — run check-gherkin-valid`); continue; }
+  if (parsed.error) { problems.push(`${f}: unparseable - run check-gherkin-valid`); continue; }
   for (const s of scenariosOf(parsed, root)) {
     const where = `${s.file} » "${s.name}"`;
     const audience = tagValue(s.tags, "audience");
@@ -52,9 +52,9 @@ for (const f of files) {
 }
 
 if (problems.length) {
-  console.error(`[check-bdd-tags] FAIL — ${problems.length} tag problem(s):`);
+  console.error(`[check-bdd-tags] FAIL - ${problems.length} tag problem(s):`);
   for (const p of problems) console.error("  • " + p);
   process.exit(1);
 }
-console.log("[check-bdd-tags] OK — every scenario carries the full, in-vocabulary taxonomy.");
+console.log("[check-bdd-tags] OK - every scenario carries the full, in-vocabulary taxonomy.");
 process.exit(0);

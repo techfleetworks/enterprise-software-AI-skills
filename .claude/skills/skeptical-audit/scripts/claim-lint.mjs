@@ -1,22 +1,22 @@
 #!/usr/bin/env node
-// claim-lint — a smoke alarm for unproven claims in a text/markdown draft.
+// claim-lint - a smoke alarm for unproven claims in a text/markdown draft.
 //
 //   node claim-lint.mjs <file.md> [--strict]
 //
 // It flags two things, line by line (fenced ``` code blocks are skipped, so
 // evidence ledgers, command output, and examples don't trip it):
-//   1. HEDGE  — weasel words that stand in for a measurement.
-//   2. CLAIM  — assertion-shaped sentences carrying NO evidence state.
+//   1. HEDGE - weasel words that stand in for a measurement.
+//   2. CLAIM - assertion-shaped sentences carrying NO evidence state.
 //
 // Evidence states it recognises (case-insensitive, backticks ignored):
 //   observed · inferred · documented · reported · not-assessed / not assessed
 //
 // Exit codes:
-//   0 = clean, OR findings in warn-only mode (no --strict) — prints them, does not block.
-//   1 = findings AND --strict — blocks (use this in CI to fail the build on untagged claims).
+//   0 = clean, OR findings in warn-only mode (no --strict) - prints them, does not block.
+//   1 = findings AND --strict - blocks (use this in CI to fail the build on untagged claims).
 //   2 = bad usage (no file / unreadable file).
 // It is a smoke alarm, not a judge: a clean run only means the obvious misses
-// are gone — the skeptic's loop still owns the subtle ones.
+// are gone - the skeptic's loop still owns the subtle ones.
 
 import { readFileSync } from "node:fs";
 
@@ -28,7 +28,7 @@ const HEDGE_WORDS = [
   "i'm fairly sure", "im fairly sure", "fairly confident", "in theory",
 ];
 // Match each hedge on WORD BOUNDARIES, not as a raw substring: a substring match flags "likely"
-// inside "unlikely" and "should be" inside "should become" — false positives that train people to
+// inside "unlikely" and "should be" inside "should become" - false positives that train people to
 // ignore the tool. \b anchors mean the hedge must stand as its own word(s). (Case-insensitive; the
 // phrases hold only letters/spaces/apostrophes, so \b around them behaves.)
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -94,18 +94,18 @@ lines.forEach((raw, i) => {
 });
 
 if (findings.length === 0) {
-  console.log(`claim-lint: clean — no hedge-words or untagged claims in ${file}`);
+  console.log(`claim-lint: clean - no hedge-words or untagged claims in ${file}`);
   console.log("(smoke alarm only: run the skeptic's loop for the subtle ones.)");
   process.exit(0);
 }
 
 const hedges = findings.filter((f) => f.kind === "HEDGE").length;
 const claims = findings.filter((f) => f.kind === "CLAIM").length;
-console.log(`claim-lint: ${findings.length} finding(s) in ${file} — ${hedges} hedge-word(s), ${claims} untagged claim(s)\n`);
+console.log(`claim-lint: ${findings.length} finding(s) in ${file} - ${hedges} hedge-word(s), ${claims} untagged claim(s)\n`);
 for (const f of findings) {
   const why = f.kind === "HEDGE"
-    ? `hedge-word "${f.hit}" — cite a measurement or say not-assessed`
-    : `claim "${f.hit}" has no evidence state — tag observed/inferred/documented/reported/not-assessed`;
+    ? `hedge-word "${f.hit}" - cite a measurement or say not-assessed`
+    : `claim "${f.hit}" has no evidence state - tag observed/inferred/documented/reported/not-assessed`;
   console.log(`  L${f.n}  [${f.kind}] ${why}`);
   console.log(`         > ${f.line}`);
 }

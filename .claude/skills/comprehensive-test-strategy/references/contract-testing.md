@@ -8,13 +8,13 @@ integration *independently*, in fast unit-test-speed runs.
 
 ## How it works (Pact-style, consumer-driven)
 1. **Consumer** writes a test describing exactly the requests it makes and the responses it
-   expects. Running it produces a **contract** (a "pact" file) — the consumer's real
+   expects. Running it produces a **contract** (a "pact" file) - the consumer's real
    expectations, not a hand-written doc.
 2. The contract is shared with the provider (via a **Pact Broker** or a shared artifact).
 3. **Provider** runs **provider verification**: replays the contract against the real
    provider and confirms it can satisfy every consumer expectation.
 4. If a provider change would break a consumer, provider verification fails *in the
-   provider's own CI* — before deploy, without an integrated environment.
+   provider's own CI* - before deploy, without an integrated environment.
 
 ## Why "consumer-driven"
 The contract reflects what consumers *actually use*, so providers know exactly what they
@@ -22,7 +22,7 @@ can and can't change. A provider can freely change anything no consumer depends 
 
 ## Where it fits
 - REST/HTTP APIs between services, and frontend ↔ backend.
-- Message/event contracts (async) — Pact and others support message pacts: the producer
+- Message/event contracts (async) - Pact and others support message pacts: the producer
   guarantees the message shape the consumer expects.
 - Complements, doesn't replace, the provider's own functional tests.
 
@@ -39,18 +39,18 @@ provider verification and can-i-deploy into the CI pipeline shared with
 
 ## Keeping a third-party fake faithful (the integration-test link)
 When you integration-test against a **fake** of a service you don't own (e.g. a WireMock stub of a
-payment API — see `test-pyramid-and-types.md`), the fake can silently **drift** from the real service
+payment API - see `test-pyramid-and-types.md`), the fake can silently **drift** from the real service
 as it changes, and your green tests then prove nothing. Pair the fake with a **contract test run
 against the real (or a dedicated test) instance** on a schedule, so a drift fails loudly instead of
 leaking to production. A consumer (Pact) test can double as the narrow integration test for that
-client — use one or the other per client, not both.
+client - use one or the other per client, not both.
 
 ## Good practices
-- Keep contracts focused on structure and semantics the consumer relies on — not exhaustive
+- Keep contracts focused on structure and semantics the consumer relies on - not exhaustive
   data values (that's the provider's functional tests).
-- Don't let contracts become a second copy of the API spec maintained by hand — they should
+- Don't let contracts become a second copy of the API spec maintained by hand - they should
   be generated from real consumer tests.
-- Contract tests verify *compatibility*, not correctness of business logic — keep both.
+- Contract tests verify *compatibility*, not correctness of business logic - keep both.
 
 ## Example flow in CI
 ```

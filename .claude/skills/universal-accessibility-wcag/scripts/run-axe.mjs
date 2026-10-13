@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * run-axe — SCAFFOLD: drive a real browser, run axe-core on each configured page, and write the
+ * run-axe - SCAFFOLD: drive a real browser, run axe-core on each configured page, and write the
  * results JSON that check-axe-results.mjs then judges. This is the browser half of the accessibility
  * gate and, unlike the repo's other gates, it is NOT dependency-free and does NOT run in this repo's
- * own CI — it needs Playwright + @axe-core/playwright and a RUNNING instance of your app. Copy it into
+ * own CI - it needs Playwright + @axe-core/playwright and a RUNNING instance of your app. Copy it into
  * an adopting repo, install the two devDependencies, point it at your pages, and wire the pair into CI:
  *
  *   npm i -D playwright @axe-core/playwright

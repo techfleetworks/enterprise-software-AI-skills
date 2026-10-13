@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * check-owasp-lints — fail on two high-signal, low-false-positive secure-coding mistakes.
+ * check-owasp-lints - fail on two high-signal, low-false-positive secure-coding mistakes.
  *
  * The structural half of owasp-secure-coding-bdd for the two defects that are reliably detectable in
  * source text (unlike most of the skill, which needs threat-modeling + BDD). Dependency-free.
@@ -8,15 +8,15 @@
  *   node check-owasp-lints.mjs <file-or-dir>...
  *
  * Rules (each traces to a skill reference):
- *   jwt-alg-none      — a JWT algorithm literal of "none" (api-tokens-graphql-microservices.md:
+ *   jwt-alg-none - a JWT algorithm literal of "none" (api-tokens-graphql-microservices.md:
  *                       "never accept whatever alg the token claims … the classic alg:none bypass").
- *   cookie-insecure   — a cookie set without HttpOnly + Secure + SameSite all present in the call /
+ *   cookie-insecure - a cookie set without HttpOnly + Secure + SameSite all present in the call /
  *                       header (authentication-session.md: "Set cookies with HttpOnly, Secure, and
  *                       SameSite"). Checks `.cookie(...)` / `setCookie(...)` / `setHeader(...Set-Cookie...)`
  *                       call spans and raw `Set-Cookie:` header string literals.
  *
  * SSRF is deliberately NOT a text lint here: the skill's own structural control is a network egress
- * proxy with no route to internal infra (file-upload-ssrf-deserialization.md) — "the network boundary
+ * proxy with no route to internal infra (file-upload-ssrf-deserialization.md) - "the network boundary
  * is what holds when a check is bypassed." A regex over outbound calls would be mostly false
  * positives; SSRF is enforced by that egress architecture + a @security BDD scenario, not this gate.
  *
@@ -28,7 +28,7 @@
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { join, extname } from "node:path";
 
-function die(msg) { console.error(`[check-owasp-lints] FAIL — ${msg}`); process.exit(2); }
+function die(msg) { console.error(`[check-owasp-lints] FAIL - ${msg}`); process.exit(2); }
 
 const inputs = process.argv.slice(2);
 if (inputs.length === 0) die("no paths given. Usage: check-owasp-lints.mjs <file-or-dir>...");
@@ -47,11 +47,11 @@ function collect(p) {
   return CODE_EXT.has(extname(p).toLowerCase()) ? [p] : [];
 }
 const files = inputs.flatMap(collect);
-if (files.length === 0) die("no source files found in the given path(s) (zero-scan — fail closed)");
+if (files.length === 0) die("no source files found in the given path(s) (zero-scan - fail closed)");
 
 // Blank out comments (keep length + newlines so offsets/lines stay aligned) for RULE matching.
 // Ignore directives are read from the RAW text first, so blanking comments never hides them.
-// `#` is a line comment only in Python/Ruby — applying it to JS/TS/etc. would over-blank a `#private`
+// `#` is a line comment only in Python/Ruby - applying it to JS/TS/etc. would over-blank a `#private`
 // field or `#`-token and hide a real finding later on the same line, so gate it by extension.
 const HASH_COMMENT_EXT = new Set([".py", ".rb"]);
 function blankComments(s, ext) {
@@ -141,15 +141,15 @@ for (const f of files) {
 }
 
 if (problems.length) {
-  console.error(`[check-owasp-lints] FAIL — ${problems.length} finding(s):`);
+  console.error(`[check-owasp-lints] FAIL - ${problems.length} finding(s):`);
   for (const p of problems) {
     const extra = p.rule === "cookie-insecure" ? ` (missing: ${p.missing.join(", ")})` : "";
-    const why = p.rule === "jwt-alg-none" ? "JWT alg \"none\" — pin the expected algorithm server-side; never accept alg:none"
+    const why = p.rule === "jwt-alg-none" ? "JWT alg \"none\" - pin the expected algorithm server-side; never accept alg:none"
       : "cookie set without HttpOnly+Secure+SameSite";
     console.error(`  • ${p.file}:${p.line}  [${p.rule}] ${why}${extra}`);
   }
   console.error(`\nFix the code, or add an inline "// owasp-lint:ignore <reason>" on a line in the finding's span.`);
   process.exit(1);
 }
-console.log(`[check-owasp-lints] OK — ${files.length} source file(s) scanned, no jwt-alg-none or insecure-cookie findings.`);
+console.log(`[check-owasp-lints] OK - ${files.length} source file(s) scanned, no jwt-alg-none or insecure-cookie findings.`);
 process.exit(0);

@@ -7,9 +7,9 @@ feed a model, exposes or consumes tools/MCP servers, runs an autonomous agent, o
 AI system take actions (especially financial or otherwise irreversible ones).
 
 ## The one rule that underlies all of this
-Everything the model reads that you did not fully control is untrusted input — user
+Everything the model reads that you did not fully control is untrusted input - user
 messages, retrieved documents, web pages, tool outputs, file contents, prior model
-output. Prompt injection is the injection vulnerability of this cluster — but, crucially,
+output. Prompt injection is the injection vulnerability of this cluster - but, crucially,
 **it has no complete fix**: SQL injection is fully solved by parameterization (data can't
 become code), whereas there is **no reliable equivalent** that separates instructions from
 data inside an LLM. So treating model-visible text as untrusted is necessary defense in depth,
@@ -34,7 +34,7 @@ alone to hold.
 - Sandbox execution (network, filesystem, time, cost limits); no ambient production creds.
 - Confirm irreversible/destructive actions out-of-band; default to dry-run/preview.
 - Defend against goal hijacking and tool-output injection (a tool result can contain an
-  injection payload — treat it as untrusted).
+  injection payload - treat it as untrusted).
 - Log every agent action with inputs/outputs; rate-limit and cap spend/iterations.
 
 ## RAG security
@@ -50,7 +50,7 @@ alone to hold.
 - Access-control and rate-limit inference endpoints; monitor for abuse and drift.
 
 ## Secure coding with AI (AI-generated code)
-- Review AI-generated code against this whole skill — it can contain the same OWASP flaws.
+- Review AI-generated code against this whole skill - it can contain the same OWASP flaws.
 - Never ship AI-generated crypto, auth, or authz without human verification.
 - Run SAST/SCA on generated code in CI; keep a human accountable for merges.
 

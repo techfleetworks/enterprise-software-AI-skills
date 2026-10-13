@@ -22,7 +22,7 @@
       "include": ["supabase/functions/**/*.ts"],
       "exclude": ["supabase/functions/**/_shared/**", "supabase/functions/**/config.ts"],
       "forbid": ["Deno\\.env\\.get\\("],
-      "message": "Environment/secret access scattered through a function body. Read config once at the boundary and pass values in — this is a starter rule; tune paths to the real structure."
+      "message": "Environment/secret access scattered through a function body. Read config once at the boundary and pass values in - this is a starter rule; tune paths to the real structure."
     }
   ]
 }

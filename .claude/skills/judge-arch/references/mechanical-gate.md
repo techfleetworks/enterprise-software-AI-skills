@@ -1,6 +1,6 @@
 # The mechanical gate
 
-> Load this reference when installing, configuring, or running the deterministic gate — the
+> Load this reference when installing, configuring, or running the deterministic gate - the
 > `scripts/arch-gate.mjs` scanner bundled with this skill. `judge-arch` is the *judgment* half of
 > the gate; this is the *mechanical* half that a CI job can pass or fail on.
 
@@ -16,7 +16,7 @@ judge-arch/
 ```
 Adopting a repo means **copying** `arch-gate.mjs` into that repo's `scripts/`, plus a config, then
 running it. See the "Adopt the architecture gate" steps in the repo README, or a preset's own
-README, for the full sequence. Nothing to `npm install` — it uses only Node built-ins.
+README, for the full sequence. Nothing to `npm install` - it uses only Node built-ins.
 
 ## Running it
 ```bash
@@ -37,7 +37,7 @@ file saved by a Windows editor still parses.
   "builtins": { "emptyCatch": true, "swallowReturn": true, "keepInSync": true },
   "rules": [
     {
-      "name": "UI must not access the database directly",   // STABLE id — a waiver's "rule" must match it exactly
+      "name": "UI must not access the database directly",   // STABLE id - a waiver's "rule" must match it exactly
       "include": ["src/components/**", "src/pages/**"],      // globs: ** * ? and {a,b}
       "exclude": ["**/*.test.{ts,tsx}"],                     // globs that override include
       "forbid": ["db\\.(from|rpc)\\b"],                      // JS regex sources; any match in an included file = a violation
@@ -52,9 +52,9 @@ file saved by a Windows editor still parses.
   reported with `path:line` and a short snippet.
 - **Built-ins** run on code files regardless of rules: `emptyCatch` (a `catch` whose body is empty
   or comment-only), `swallowReturn` (`catch { return null/false/undefined }`), `keepInSync` (a
-  "keep in sync" marker — a data-ownership smell). Toggle any off in `builtins`.
+  "keep in sync" marker - a data-ownership smell). Toggle any off in `builtins`.
 
-## Waivers — the only sanctioned bypass (`arch-gate.waivers.json`)
+## Waivers - the only sanctioned bypass (`arch-gate.waivers.json`)
 ```jsonc
 [
   {
@@ -66,13 +66,13 @@ file saved by a Windows editor still parses.
   }
 ]
 ```
-A waiver is explicit, attributed, and (ideally) dated. That is the whole bypass mechanism — there
+A waiver is explicit, attributed, and (ideally) dated. That is the whole bypass mechanism - there
 is no "skip because it's trivial." An expired waiver goes red again, so the set of exceptions can
 only shrink.
 
-## The ratchet — how to go blocking without a big-bang cleanup
+## The ratchet - how to go blocking without a big-bang cleanup
 1. Write the rules for the standard you want.
-2. `node scripts/arch-gate.mjs --baseline > arch-gate.waivers.json` — this grandfathers **every
+2. `node scripts/arch-gate.mjs --baseline > arch-gate.waivers.json` - this grandfathers **every
    current violation** into the waiver file (one entry per rule × file).
 3. Run the gate on CI with `--changed`. It now blocks **new** violations in touched files, while
    the baseline suppresses the pre-existing ones.
@@ -81,21 +81,21 @@ only shrink.
 
 ## Two tiers of rules
 - **Clean-invariant rules** protect something already true (e.g. "exactly one DB client", "no
-  empty catches"). These have *zero* baseline waivers — turn them on blocking immediately, for
+  empty catches"). These have *zero* baseline waivers - turn them on blocking immediately, for
   free.
 - **Ratchet rules** describe a standard the codebase doesn't fully meet yet (e.g. "no data access
   in components"). These get a baseline; they block new code and enumerate the debt.
 
-## Mechanical vs judgment — what belongs here vs in the review
-Put a rule in the gate when it's **"pattern X must not appear in glob Y"** — import boundaries,
+## Mechanical vs judgment - what belongs here vs in the review
+Put a rule in the gate when it's **"pattern X must not appear in glob Y"** - import boundaries,
 web concerns in domain code, direct DB access in the UI, empty catches, duplicated-fact markers.
-Leave to the `judge-arch` review the rules that need judgment — *is this the right owner for this
+Leave to the `judge-arch` review the rules that need judgment - *is this the right owner for this
 data, is this workflow trapped in one caller, is this abstraction premature*. The gate catches the
 mechanical; the review catches the structural. A complete gate needs both halves: it is green only
 when `arch-gate.mjs` exits 0 **and** the review is PASS-or-all-waived.
 
 ## Adding a rule later
 When you catch a new bad pattern, use the `arch-encode` skill: it writes the rule as a negative
-example in the right file and, if the pattern is greppable, adds it here as a new `rules[]` entry —
+example in the right file and, if the pattern is greppable, adds it here as a new `rules[]` entry -
 then proves it holds. A rule that *can* be mechanical *should* be; that's the difference between
 "less likely" and "cannot merge."

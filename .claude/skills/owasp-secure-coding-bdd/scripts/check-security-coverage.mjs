@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// check-security-coverage.mjs — enforce the OWASP selection flow at the OUTCOME.
+// check-security-coverage.mjs - enforce the OWASP selection flow at the OUTCOME.
 //
 // The idea (like pattern-selector forcing a pattern): a change that touches a security-relevant surface must
 // ship the matching @security BDD scenario, or explicitly waive it with a reason. This gate maps the changed
@@ -57,7 +57,7 @@ for (const f of files) {
 }
 
 if (triggered.size === 0) {
-  console.log(`check-security-coverage — PASS. No security-relevant surface in ${files.length} changed file(s).`);
+  console.log(`check-security-coverage - PASS. No security-relevant surface in ${files.length} changed file(s).`);
   process.exit(0);
 }
 
@@ -119,10 +119,10 @@ for (const [surface, { rule, byFile }] of triggered) {
 }
 
 if (violations.length) {
-  console.error(`\ncheck-security-coverage — FAIL. ${violations.length} security surface(s) without a scenario:\n`);
+  console.error(`\ncheck-security-coverage - FAIL. ${violations.length} security surface(s) without a scenario:\n`);
   for (const v of violations) console.error(`  ✖ ${v}`);
   console.error("");
   process.exit(1);
 }
-console.log(`check-security-coverage — PASS. ${triggered.size} security surface(s) triggered; all have an @security scenario or a valid waiver.`);
+console.log(`check-security-coverage - PASS. ${triggered.size} security surface(s) triggered; all have an @security scenario or a valid waiver.`);
 process.exit(0);

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * check-untagged-pii — fail when a PII-looking schema column is not classified in the data map.
+ * check-untagged-pii - fail when a PII-looking schema column is not classified in the data map.
  *
  * The structural half of compliance-data-lifecycle's "maintain a data inventory / map" rule
  * (references/data-classification-and-retention.md): every data element gets a class on creation.
@@ -10,13 +10,13 @@
  *
  *   node check-untagged-pii.mjs --map data-map.json <schema-file-or-dir>...
  *
- * The data map is JSON — either {"users.email":"restricted", ...} or
+ * The data map is JSON - either {"users.email":"restricted", ...} or
  * [{"field":"users.email","class":"restricted","basis":"...","retention":"..."}].
  * A field key is "table.column" or a bare "column". Recognized classes:
  *   public | internal | confidential | restricted | not-personal
- * A false positive (a name that looks like PII but isn't — e.g. a shared-inbox `support.email`) is
+ * A false positive (a name that looks like PII but isn't - e.g. a shared-inbox `support.email`) is
  * resolved the honest way: DECLARE it as `not-personal`. That records the decision instead of hiding
- * it — and a `not-personal` entry MUST be table-qualified (`support.email`, not a bare `email`) so an
+ * it - and a `not-personal` entry MUST be table-qualified (`support.email`, not a bare `email`) so an
  * exemption can't blanket-clear a same-named real-PII column in another table.
  *
  * Exit 0 = every PII-looking column is classified. 1 = one or more undeclared. 2 = bad usage / IO.
@@ -24,12 +24,12 @@
  * Scope (honest): it reads column NAMES from `CREATE TABLE` blocks and `ADD COLUMN`, line-oriented
  * (one column per line, as migrations are normally written); a single-line CREATE TABLE or a non-SQL
  * ORM schema is out of scope. The name heuristic is tunable (PII_INDICATORS) and errs toward
- * flagging — the map is where the truth is recorded.
+ * flagging - the map is where the truth is recorded.
  */
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { join, extname, resolve } from "node:path";
 
-function die(msg) { console.error(`[check-untagged-pii] FAIL — ${msg}`); process.exit(2); }
+function die(msg) { console.error(`[check-untagged-pii] FAIL - ${msg}`); process.exit(2); }
 
 const args = process.argv.slice(2);
 const mapIdx = args.indexOf("--map");
@@ -52,10 +52,10 @@ function declare(field, cls) {
     die(`data map entry "${field}" has an invalid class "${cls}" (use: ${[...CLASSES].join(", ")})`);
   }
   const key = String(field).toLowerCase();
-  // A bare (table-less) "not-personal" would exempt that column name in EVERY table — a blanket
+  // A bare (table-less) "not-personal" would exempt that column name in EVERY table - a blanket
   // waiver that could silently clear real PII elsewhere. An exemption must name its exact column.
   if (cls.toLowerCase() === "not-personal" && !key.includes(".")) {
-    die(`data map entry "${field}" is "not-personal" with a bare key — qualify it as table.column ` +
+    die(`data map entry "${field}" is "not-personal" with a bare key - qualify it as table.column ` +
       `(e.g. support.email) so the exemption can't blanket-clear a same-named PII column in another table`);
   }
   declared.set(key, cls.toLowerCase());
@@ -109,7 +109,7 @@ function collectColumns(sql, file) {
       if (depth <= 0) table = null; // left the CREATE TABLE block
       continue;
     }
-    // ALTER TABLE [ONLY] t ADD [COLUMN] [IF NOT EXISTS] name  — scan EVERY add on the line.
+    // ALTER TABLE [ONLY] t ADD [COLUMN] [IF NOT EXISTS] name - scan EVERY add on the line.
     const alterM = raw.match(/\balter\s+table\s+(?:only\s+)?"?([\w.]+)"?/i);
     if (alterM) {
       const addRe = /\badd\s+(?:column\s+)?(?:if\s+not\s+exists\s+)?"?([A-Za-z_]\w*)"?/gi;
@@ -130,7 +130,7 @@ function collect(p) {
     : extname(p).toLowerCase() === ".sql" ? [p] : [];
 }
 const files = paths.flatMap(collect);
-if (files.length === 0) die("no .sql files found in the given path(s) (zero-scan — fail closed)");
+if (files.length === 0) die("no .sql files found in the given path(s) (zero-scan - fail closed)");
 
 // --- check every PII-looking column is declared ------------------------------
 const problems = [];
@@ -148,11 +148,11 @@ for (const f of files) {
 }
 
 if (problems.length) {
-  console.error(`[check-untagged-pii] FAIL — ${problems.length} PII-looking column(s) not in the data map (${mapPath}):`);
+  console.error(`[check-untagged-pii] FAIL - ${problems.length} PII-looking column(s) not in the data map (${mapPath}):`);
   for (const p of problems) console.error(`  • ${p.file}:${p.line}  ${p.field}`);
-  console.error(`\nClassify each in the data map (public|internal|confidential|restricted), or — if it is not personal\n` +
-    `data despite the name — declare it as "not-personal" to record that decision.`);
+  console.error(`\nClassify each in the data map (public|internal|confidential|restricted), or - if it is not personal\n` +
+    `data despite the name - declare it as "not-personal" to record that decision.`);
   process.exit(1);
 }
-console.log(`[check-untagged-pii] OK — ${files.length} .sql file(s), ${piiCount} PII-looking column(s), all classified in the data map.`);
+console.log(`[check-untagged-pii] OK - ${files.length} .sql file(s), ${piiCount} PII-looking column(s), all classified in the data map.`);
 process.exit(0);

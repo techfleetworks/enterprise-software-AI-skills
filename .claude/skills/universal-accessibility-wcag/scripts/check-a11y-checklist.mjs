@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * check-a11y-checklist — fail unless every item in the combined accessibility checklist has a verdict.
+ * check-a11y-checklist - fail unless every item in the combined accessibility checklist has a verdict.
  *
  * The structural half of "comply with all of them." The combined checklist (assets/combined-a11y-checklist.json)
  * is WCAG 2.2 Level A and AA, the strict superset of every stable web accessibility requirement the three
@@ -27,7 +27,7 @@
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 
-function die(msg) { console.error(`[check-a11y-checklist] FAIL — ${msg}`); process.exit(2); }
+function die(msg) { console.error(`[check-a11y-checklist] FAIL - ${msg}`); process.exit(2); }
 
 const args = process.argv.slice(2);
 function opt(name) { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; }
@@ -88,11 +88,11 @@ for (const item of checklist) {
 }
 
 if (problems.length) {
-  console.error(`[check-a11y-checklist] FAIL — ${problems.length} of ${checklist.length} criteria without a valid verdict:`);
+  console.error(`[check-a11y-checklist] FAIL - ${problems.length} of ${checklist.length} criteria without a valid verdict:`);
   for (const p of problems) console.error("  • " + p);
   console.error(`\nEvery criterion in the combined checklist (WCAG 2.2 A and AA = Section 508 + ADA Title II + more)\n` +
     `needs a verdict: pass-automated (automated-only criteria), pass-manual (reviewer + date), or not-applicable (reason).`);
   process.exit(1);
 }
-console.log(`[check-a11y-checklist] OK — all ${checklist.length} combined-checklist criteria have a valid verdict.`);
+console.log(`[check-a11y-checklist] OK - all ${checklist.length} combined-checklist criteria have a valid verdict.`);
 process.exit(0);

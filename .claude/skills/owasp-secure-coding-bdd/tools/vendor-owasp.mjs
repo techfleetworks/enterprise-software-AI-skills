@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// vendor-owasp.mjs — fetch the EXACT upstream OWASP text from source, on demand.
+// vendor-owasp.mjs - fetch the EXACT upstream OWASP text from source, on demand.
 //
 // Why this exists: the OWASP Cheat Sheet Series and the OWASP Top 10 for LLM Applications are licensed
 // CC-BY-SA-4.0; this repo's own code is MIT. You may use and redistribute OWASP's text WITH attribution and

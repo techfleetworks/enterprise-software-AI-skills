@@ -1,6 +1,6 @@
 ---
 name: bdd-comprehensive-testing
-description: "Use on EVERY code push in any repo: enumerate ALL use cases (the happy path and every non-happy path — edge, error, boundary, negative, adverse, concurrency, permission-denied, empty, overflow, timeout) for ALL user audiences, write them as Gherkin (Given/When/Then), store them in a permanent feature-file index, and wire them into CI as executable, blocking tests (Cucumber / pytest-bdd / Behave / SpecFlow / Cucumber-JVM / godog, per stack). If the intended audiences for the change are not certain, STOP and ASK the user — never guess. Trigger on build / add / implement / fix / change / push even when 'tests', 'BDD', 'Gherkin', or 'CI' are not mentioned."
+description: "Use on EVERY code push in any repo: enumerate ALL use cases (the happy path and every non-happy path - edge, error, boundary, negative, adverse, concurrency, permission-denied, empty, overflow, timeout) for ALL user audiences, write them as Gherkin (Given/When/Then), store them in a permanent feature-file index, and wire them into CI as executable, blocking tests (Cucumber / pytest-bdd / Behave / SpecFlow / Cucumber-JVM / godog, per stack). If the intended audiences for the change are not certain, STOP and ASK the user - never guess. Trigger on build / add / implement / fix / change / push even when 'tests', 'BDD', 'Gherkin', or 'CI' are not mentioned."
 ---
 
 # BDD Comprehensive Testing
@@ -8,7 +8,7 @@ description: "Use on EVERY code push in any repo: enumerate ALL use cases (the h
 ## Why this exists
 
 A feature isn't done when the happy path works for the person who built it. It's done when every
-path — the mistakes, the empty states, the denied permissions, the timeouts — behaves correctly for
+path - the mistakes, the empty states, the denied permissions, the timeouts - behaves correctly for
 **every kind of user who will hit it**. Those behaviors are the contract of the feature, and the only
 way to keep a contract honest is to write it down as executable scenarios that run on every change.
 
@@ -18,14 +18,14 @@ CI as a blocking gate. "We wrote some tests" is not the bar. The bar is: the ful
 *use case × audience* is covered, or each uncovered cell has a recorded reason.
 
 This skill is the companion to `comprehensive-test-strategy`. **This skill owns the Gherkin /
-behavioral layer and wires the suite into CI; that skill owns the full test *mix*** — the pyramid
+behavioral layer and wires the suite into CI; that skill owns the full test *mix*** - the pyramid
 (unit/integration/e2e), contract, load, chaos, and the coverage/mutation quality gates. Use them
 together; don't duplicate the behavioral scenarios there.
 
-**Total coverage, but down the pyramid — not an ice-cream cone.** Covering every use case × audience
+**Total coverage, but down the pyramid - not an ice-cream cone.** Covering every use case × audience
 does *not* mean running every scenario through the browser. Execute each behavioral scenario at the
-**lowest layer that proves the behavior** — subcutaneously, at the service/API boundary, wherever you
-can — and reserve full end-to-end UI runs for the few journeys that genuinely need the UI. Completeness
+**lowest layer that proves the behavior** - subcutaneously, at the service/API boundary, wherever you
+can - and reserve full end-to-end UI runs for the few journeys that genuinely need the UI. Completeness
 is measured by *behavior* (the use-case × audience matrix), independent of layer, so you keep total
 coverage while keeping the suite fast and stable. See `comprehensive-test-strategy`'s pyramid "Rules of
 thumb" (push every test as far down as it can go; delete redundant higher-level tests).
@@ -34,40 +34,40 @@ thumb" (push every test as far down as it can go; delete redundant higher-level 
 
 These are not optional and not left to judgment. Every time this skill runs:
 
-1. **Total coverage — ALL use cases × ALL audiences, actually written out.** Build the scenario
-   matrix: every use case (the happy path *and* every non-happy path — edge, error, boundary,
+1. **Total coverage - ALL use cases × ALL audiences, actually written out.** Build the scenario
+   matrix: every use case (the happy path *and* every non-happy path - edge, error, boundary,
    negative, adverse, concurrency, permission-denied, empty/overflow, timeout/failure) crossed with
-   every distinct user/audience/role — **including the common, "obvious" edge cases; nothing is
+   every distinct user/audience/role - **including the common, "obvious" edge cases; nothing is
    skipped because it seems routine.** Then **write every one out as a committed Gherkin scenario.**
-   The deliverable is the scenarios themselves, in the repo — not a list of cases you "would" cover,
+   The deliverable is the scenarios themselves, in the repo - not a list of cases you "would" cover,
    not a plan to add them later, not a description of what you'd test. **Show the receipts: the
    actual Given/When/Then for every cell.** The only cell allowed to have no scenario is one carrying
    an explicit, recorded `N/A: <reason>`. A token sample is a fail; identifying cases without writing
    them is a fail; a plan is a fail. The complete, written-out matrix is the bar.
 
-2. **Severity-ranked — prioritized, never gated.** Rate every use case by **severity: how
-   mission-critical it is — how badly its failure would break performance, user experience,
+2. **Severity-ranked - prioritized, never gated.** Rate every use case by **severity: how
+   mission-critical it is - how badly its failure would break performance, user experience,
    architectural standards, security, confidentiality, or the integrity of the codebase and the
-   product.** This is the **impact** axis of risk-based testing — ISTQB defines a risk's level as its
+   product.** This is the **impact** axis of risk-based testing - ISTQB defines a risk's level as its
    *impact × likelihood* and lists "order of testing activities according to risk" among its uses
    (see Sources); severity captures impact, and teams wanting finer ordering may also weigh
    likelihood. Use severity to *prioritize*: write and review the highest-severity scenarios first,
-   and make them the loudest signals in CI. But **severity never reduces coverage** — a low-severity
+   and make them the loudest signals in CI. But **severity never reduces coverage** - a low-severity
    case is still written out in full, just ranked lower. Tag each scenario with its severity
    (`@severity:critical | high | medium | low`) so the ranking is visible and auditable, and the
    critical paths are unmistakable.
 
-3. **Audiences are established with certainty — never guessed.** Determine the intended audiences
+3. **Audiences are established with certainty - never guessed.** Determine the intended audiences
    *before* authoring. **If the audience set isn't stated or can't be derived with certainty from the
    request or the repo, STOP and ASK the user** an explicit clarifying question listing the candidate
-   audiences, and wait. Never assume or silently default — getting the audience wrong silently ships
+   audiences, and wait. Never assume or silently default - getting the audience wrong silently ships
    untested paths for real users. The audience list must be *observed/reported* (stated by the user
    or verified in the repo), never *inferred*; an inferred audience is a hard stop that forces the
    question.
 
 4. **Every scenario is traceable and categorized.** Tag each scenario on the shared taxonomy (see
-   "Categorization") — audience, use case, behavior class, quality dimension, and severity:
-   `@audience:admin @usecase:refund-failure @category:error @quality:reliability @severity:critical` —
+   "Categorization") - audience, use case, behavior class, quality dimension, and severity:
+   `@audience:admin @usecase:refund-failure @category:error @quality:reliability @severity:critical` -
    so coverage is auditable, the records are semantically groupable/queryable, the critical paths are
    obvious, and matrix gaps are mechanically detectable.
 
@@ -77,26 +77,26 @@ These are not optional and not left to judgment. Every time this skill runs:
    per-audience scenarios fails the gate.
 
 6. **Completeness is proven, not hoped-for.** Ship the `check-bdd-coverage` gate (below) so the
-   failure modes — a changed behavior with no scenario, a feature with only happy-path scenarios, a
-   declared audience with no scenario, a scenario with no severity tag — fail the build closed.
+   failure modes - a changed behavior with no scenario, a feature with only happy-path scenarios, a
+   declared audience with no scenario, a scenario with no severity tag - fail the build closed.
 
 7. **A centralized BDD datastore, maintained in the repo.** Every repo that pushes code using this
    skill MUST create and keep up to date a **single, central datastore of all BDD scenarios, committed
-   in the repo itself** — one source of truth any developer can open to see the whole picture: for
+   in the repo itself** - one source of truth any developer can open to see the whole picture: for
    each scenario, its definition/purpose, its Given/When/Then, its audiences, its use case, its
    severity, and its **coverage status** (`covered | N/A:<reason> | pending`). It lives in one place
    (canonical machine-readable `features/bdd-index.json`, plus a human-readable `features/INDEX.md`
    view) and is **generated from the feature files**, so it is always maintained and can never become
-   a second, drifting copy — the `.feature` files stay the source of truth for scenario content, and
+   a second, drifting copy - the `.feature` files stay the source of truth for scenario content, and
    the datastore is the derived, committed registry over them. The `check-bdd-coverage` gate **fails
    the build if the datastore is missing, stale, or out of sync** with the feature files. (Live
    pass/fail for a run is linked from the CI report, not duplicated into the datastore.)
 
-8. **An append-only log of the receipts — the history, not just the snapshot.** Beyond the current
+8. **An append-only log of the receipts - the history, not just the snapshot.** Beyond the current
    scenarios (source of truth) and the datastore (current state), maintain a committed, **append-only
    coverage/evidence log** (`features/bdd-coverage-log.md`) that records the *history*: for every
    behavioral change, a dated entry naming the change (commit/PR), the scenarios added / updated /
-   removed with their audience · use case · severity, and the gate outcome that proved them — the
+   removed with their audience · use case · severity, and the gate outcome that proved them - the
    receipt. **Entries are only ever appended; past entries are never edited or deleted**, so the log is
    a tamper-evident history any developer can read to see how the behavioral contract and its coverage
    evolved over time. `check-bdd-coverage` fails closed if a behavioral change ships with no new log
@@ -105,35 +105,35 @@ These are not optional and not left to judgment. Every time this skill runs:
 
 ## The workflow
 
-### Step 1 — Establish the audiences (with certainty, or ASK)
+### Step 1 - Establish the audiences (with certainty, or ASK)
 
 List the distinct audiences the change serves. Common ones: anonymous/guest, authenticated end
 user, admin/operator, API/service consumer, internal/back-office, third-party/partner,
 assistive-technology user, plus any domain-specific roles. Confirm each against the request or the
 repo (routes, role checks, auth config). **If you cannot establish the set with certainty, stop and
-ask** — list the candidates and let the user confirm. Record the confirmed list; it anchors the
+ask** - list the candidates and let the user confirm. Record the confirmed list; it anchors the
 matrix.
 
-### Step 2 — Enumerate every use case (happy + non-happy) and rate its severity
+### Step 2 - Enumerate every use case (happy + non-happy) and rate its severity
 
 For the changed behavior, list the happy path and every non-happy path: edge, error, boundary,
-negative, adverse, concurrency, permission-denied, empty/overflow, timeout/failure — **including the
-common ones; list them no matter how routine they seem.** This is the **Example Mapping** technique —
+negative, adverse, concurrency, permission-denied, empty/overflow, timeout/failure - **including the
+common ones; list them no matter how routine they seem.** This is the **Example Mapping** technique -
 break the behavior into its rules and concrete examples before coding (see Sources). Think like an
-adversary and like a confused first-time user, not just the author. For each, assign a **severity** —
+adversary and like a confused first-time user, not just the author. For each, assign a **severity** -
 how badly its failure would break performance, user experience, architectural standards, security,
 confidentiality, or the integrity of the codebase/product (`critical | high | medium | low`).
 
-### Step 3 — Build the coverage matrix
+### Step 3 - Build the coverage matrix
 
 Cross every use case with every audience, carrying each cell's severity. Each cell → a scenario, or a
 recorded `N/A: <reason>` (e.g. "guest can't reach the admin refund flow"). Order the work by severity
-(critical first) — but every non-N/A cell must still be written. This grid is the deliverable; gaps
+(critical first) - but every non-N/A cell must still be written. This grid is the deliverable; gaps
 must be deliberate and visible.
 
-### Step 4 — Write every cell out as a tagged Gherkin scenario
+### Step 4 - Write every cell out as a tagged Gherkin scenario
 
-**Actually write each cell** (not N/A) as a committed Given/When/Then — the written scenarios are the
+**Actually write each cell** (not N/A) as a committed Given/When/Then - the written scenarios are the
 deliverable, highest-severity first. Tag each with its audience, use case, and severity:
 
 ```gherkin
@@ -176,7 +176,7 @@ Feature: Refund a completed order
 
 Keep steps behavioral (user-observable outcomes), not implementation detail.
 
-### Step 5 — Map to the stack's BDD framework
+### Step 5 - Map to the stack's BDD framework
 
 Pick the runner for the repo's language and wire step definitions:
 
@@ -194,7 +194,7 @@ Match the repo's existing choice if one exists; don't introduce a second BDD run
 ## Storing BDD scenarios permanently
 
 "Permanently" means one specific thing: **committed into the project's own version-controlled
-repository** — the same repo whose code is being pushed. Not in an agent's memory, not in a scratch
+repository** - the same repo whose code is being pushed. Not in an agent's memory, not in a scratch
 folder, not on one developer's machine, not in a chat transcript. The scenarios are the project's
 **single, authoritative, shared specification of how the system behaves**, and the whole point is that
 they outlive any individual: they must survive one developer leaving, and they become the universal
@@ -203,7 +203,7 @@ reference that *every* developer who pushes to the repo inherits and is held to.
 This is non-negotiable. Whatever behavior these scenarios capture is solidified in the repository so
 that:
 
-- it is the **same for everyone** — one shared source of truth, never per-developer or per-branch
+- it is the **same for everyone** - one shared source of truth, never per-developer or per-branch
   knowledge;
 - a **new developer inherits the full behavioral contract automatically** by cloning the repo;
 - it is **reviewed in pull requests like any other source** and carried in git history, so the
@@ -215,37 +215,37 @@ Layout that makes this work:
 
 - **Location.** All `.feature` files live in the project repository under a single top-level
   `features/` directory (or the stack's idiomatic equivalent, e.g. `tests/features/`), organized by
-  domain/feature area — `features/<area>/<feature>.feature`. One feature file per cohesive feature.
+  domain/feature area - `features/<area>/<feature>.feature`. One feature file per cohesive feature.
 - **Centralized datastore (source of truth for all devs).** Maintain one central, committed datastore
   of every BDD scenario in the repo: canonical machine-readable `features/bdd-index.json` plus a
   human-readable `features/INDEX.md` view. For each scenario it records the definition/purpose, the
   feature file + scenario name, the full taxonomy (audience, use case, behavior class, quality
   dimension, severity, and the domain derived from its path), and coverage status
-  (`covered | N/A:<reason> | pending`) — so any developer can open one place and see the full
+  (`covered | N/A:<reason> | pending`) - so any developer can open one place and see the full
   behavioral surface, coverage, categories, and gaps. **It is generated from the `.feature` files, not hand-kept
   in parallel** (the feature files stay the single source of truth for scenario content; the datastore
   is the derived registry over them), regenerated on change and committed, and the
   `check-bdd-coverage` gate fails the build if it is missing or drifts from the feature files.
 - **Append-only history (the log of receipts).** Alongside the datastore, keep
-  `features/bdd-coverage-log.md` — an **append-only** log of every behavioral change: date, change ref
+  `features/bdd-coverage-log.md` - an **append-only** log of every behavioral change: date, change ref
   (commit/PR), the event type (`added`/`updated`/`removed`/…), the scenarios touched (with their full
   taxonomy tags), and the gate result that proved them. New entries are appended; prior entries are immutable. The datastore answers "what is
   covered now"; the log answers "how did we get here, and what proved it then." It is tamper-evident
   (the gate rejects any edit to a past entry) and backed by git history.
-- **One home per feature — additive across skills.** Security (`@security`), release-safety
+- **One home per feature - additive across skills.** Security (`@security`), release-safety
   (`@release-safety`), reliability (`@reliability`), and compliance (`@compliance`) scenarios are
   **added to the same feature file** for that feature, not scattered into parallel files. The OWASP,
   release-deployment-safety, SRE, and compliance skills append their tagged scenarios here; this is
   the shared index they all write into.
 - **Naming.** `kebab-case-feature-name.feature`; scenarios named for the behavior and outcome, each
   carrying its `@audience:` and `@usecase:` tags.
-- **Never deleted on change — updated.** When a feature changes, its feature file is updated, not
+- **Never deleted on change - updated.** When a feature changes, its feature file is updated, not
   discarded, so the behavioral contract stays current while its history remains in version control.
 
-## Categorization — one shared taxonomy for scenarios and log records
+## Categorization - one shared taxonomy for scenarios and log records
 
-So the documentation and the audit log can be made sense of *semantically* — sliced, grouped, and
-queried — every scenario and every log entry is classified on the same controlled dimensions. Agents
+So the documentation and the audit log can be made sense of *semantically* - sliced, grouped, and
+queried - every scenario and every log entry is classified on the same controlled dimensions. Agents
 do not invent categories; they draw from this vocabulary, and `check-bdd-tags` rejects anything off it.
 
 **Scenario dimensions** (tags on each scenario):
@@ -258,7 +258,7 @@ do not invent categories; they draw from this vocabulary, and `check-bdd-tags` r
 | Quality dimension | `@quality:` | *which concern it protects* | `functional · security · reliability · release-safety · compliance · performance · accessibility` (the sibling skills' `@security` / `@compliance` / `@reliability` / `@release-safety` tags are recognized equivalents) |
 | Severity | `@severity:` | *how critical* | `critical · high · medium · low` |
 
-*Domain* (the system area — `auth`, `payments`, `profile`, …) is **derived from the feature file's
+*Domain* (the system area - `auth`, `payments`, `profile`, …) is **derived from the feature file's
 location** (`features/<domain>/<feature>.feature`), not a separate tag, so it can never drift from where
 the file actually lives.
 
@@ -270,10 +270,10 @@ the file actually lives.
 | `scenario` | scenario name + its full dimension tags (so history is filterable by the same taxonomy) |
 | `change` | commit SHA / PR ref |
 | `date` | ISO date |
-| `gate` | the proving run's result (pass + the check names) — the receipt |
+| `gate` | the proving run's result (pass + the check names) - the receipt |
 
-One vocabulary across the scenarios, the datastore, and the log means any developer — or an automated
-query — can ask coherent questions and get a meaningful answer: *"all `@quality:security
+One vocabulary across the scenarios, the datastore, and the log means any developer - or an automated
+query - can ask coherent questions and get a meaningful answer: *"all `@quality:security
 @severity:critical` scenarios in the `payments` domain,"* or *"every `@quality:compliance` scenario with
 an `event:removed` entry this quarter."* `check-bdd-tags` enforces the vocabulary so the categories stay
 trustworthy.
@@ -282,11 +282,11 @@ trustworthy.
 
 ## CI/CD wiring
 
-This is the single pipeline every behavioral scenario plugs into — `@security`, `@release-safety`,
+This is the single pipeline every behavioral scenario plugs into - `@security`, `@release-safety`,
 `@reliability`, `@compliance`, and contract/load tests all run here rather than in parallel setups.
 
 - **Runs on every PR and push.** The BDD suite executes on every pull request and every push to a
-  protected branch. A failing scenario fails the build and blocks merge — no override without an
+  protected branch. A failing scenario fails the build and blocks merge - no override without an
   explicit, recorded waiver.
 - **Pre-push gate too.** A pre-push hook runs the suite (or the affected subset) locally so breaks
   are caught before they reach CI; CI remains the authoritative, un-skippable gate.
@@ -299,7 +299,7 @@ This is the single pipeline every behavioral scenario plugs into — `@security`
   scenarios to the feature files and rely on this wiring (see each skill's reference to
   `ci-cd-wiring`).
 
-## Prove completeness — `check-bdd-coverage`
+## Prove completeness - `check-bdd-coverage`
 
 Advice regresses the moment someone is busy. Make the matrix mechanically enforced. Ship a
 `check-bdd-coverage` gate that, for the changed surface, **fails closed** when:
@@ -312,18 +312,18 @@ Advice regresses the moment someone is busy. Make the matrix mechanically enforc
    sync with the `.feature` files (regenerate → diff → fail on drift), so the shared source of truth
    can never silently fall behind,
 6. a behavioral change ships with no new entry appended to `features/bdd-coverage-log.md`, or
-7. the committed log is not a clean append — a prior entry was edited or removed (history must be
+7. the committed log is not a clean append - a prior entry was edited or removed (history must be
    immutable; the gate compares against the base revision).
 
 Give the check a faithful fixture and a **discriminating test** (no-op the check → its test fails),
 per `verifiable-quality-gates`, so the coverage gate itself can't rot. This is what turns "write BDD
 for everything" from advice into cannot-merge-without-it.
 
-## Legal Gherkin is not optional — malformed scenarios cannot merge
+## Legal Gherkin is not optional - malformed scenarios cannot merge
 
 Agents and people write invalid Gherkin: missing keywords, misnested steps, duplicate scenario names,
 tags that look right but aren't. Do not rely on getting the syntax right. Make wrong syntax
-**impossible to merge** by letting the authoritative parser decide, fail-closed — never a regex or a
+**impossible to merge** by letting the authoritative parser decide, fail-closed - never a regex or a
 guess:
 
 - **Parse with the official Gherkin parser.** `check-gherkin-valid` runs every `.feature` file through
@@ -331,12 +331,12 @@ guess:
   valid Gherkin" is *defined as what that parser accepts*, so there is nothing to be wrong about:
   legal syntax always parses (no false positive), illegal syntax cannot (no false negative). A parse
   error fails the build with the file and line. (The parser settles *syntax*; a wrong-but-valid keyword
-  choice or a weak structure is a semantic/style matter the tag vocabulary below — and an optional
-  Gherkin style-lint — cover, not the parser. Say so rather than overclaim.)
+  choice or a weak structure is a semantic/style matter the tag vocabulary below - and an optional
+  Gherkin style-lint - cover, not the parser. Say so rather than overclaim.)
 - **Undefined / pending steps fail, not pass.** Run the suite so a Given/When/Then with no matching
   step definition is a hard failure, never a silent "pending": **cucumber-js runs strict by default**
   (undefined/pending exit non-zero); **behave** counts `undefined`/`pending` as errors; **pytest-bdd**
-  raises `StepDefinitionNotFoundError`; SpecFlow/Reqnroll, Cucumber-JVM, and godog have equivalents —
+  raises `StepDefinitionNotFoundError`; SpecFlow/Reqnroll, Cucumber-JVM, and godog have equivalents -
   confirm the exact setting for your framework and version (see Sources). A scenario that parses but
   isn't wired to code is not coverage.
 - **Tags are validated against a committed vocabulary.** `check-bdd-tags` asserts every scenario carries
@@ -344,37 +344,37 @@ guess:
   `@usecase:` present; `@category:` ∈ {happy, edge, error, boundary, negative, adverse, concurrency,
   permission, empty-overflow, timeout}; `@quality:` ∈ {functional, security, reliability, release-safety,
   compliance, performance, accessibility}; `@severity:` ∈ {critical, high, medium, low}. A missing,
-  typo'd, or invented tag fails the build — so the matrix, datastore, and log can't be fooled by a tag
+  typo'd, or invented tag fails the build - so the matrix, datastore, and log can't be fooled by a tag
   that merely looks valid.
 - **The datastore is generated from the parser's AST**, so it can only ever contain scenarios the
-  parser accepted — malformed Gherkin fails `check-gherkin-valid` before it could reach the index.
+  parser accepted - malformed Gherkin fails `check-gherkin-valid` before it could reach the index.
 - **Every one of these gates ships a discriminating test** (feed it malformed Gherkin, a pending step,
   a bad tag → it must go red; feed valid input → green), per `verifiable-quality-gates`, so the
   validators themselves can't rot into false green.
 
-Run all of them in the same CI wiring as **required** checks, plus the pre-push hook — so the only
+Run all of them in the same CI wiring as **required** checks, plus the pre-push hook - so the only
 Gherkin that can reach `main` is Gherkin the official parser, the strict runner, and the tag
 vocabulary all accept. The author never decides what's legal; the parser does.
 
-## The suite must actually run — execution is gated, not just the files
+## The suite must actually run - execution is gated, not just the files
 
 The checks above prove the *specification* is complete, legal, and categorized. They do **not**, on
-their own, prove the scenarios were executed against the real system — a CI job could lint the
+their own, prove the scenarios were executed against the real system - a CI job could lint the
 `.feature` files and go green while no behavior was ever exercised. Writing Gherkin is not testing;
 **the scenarios must be bound to real code and run**. So execution is gated too:
 
 - **Bind every scenario to step definitions and run it against the real system.** The BDD runner
-  (Cucumber / pytest-bdd / behave / SpecFlow / godog) executes the scenarios — not a stand-in for them
-  — on every PR and push, in **strict mode**, so an undefined or pending step is a hard failure. This
+  (Cucumber / pytest-bdd / behave / SpecFlow / godog) executes the scenarios - not a stand-in for them
+ - on every PR and push, in **strict mode**, so an undefined or pending step is a hard failure. This
   is what forces real step definitions wired to the actual code: a scenario with no implementation
   cannot pass.
 - **Emit a machine-readable results report** from the run (Cucumber JSON, which cucumber-js, behave
   `-f json`, Cucumber-JVM, and others can all produce, or the runner's equivalent).
-- **Reconcile the run against the datastore — `check-bdd-executed`.** It reads the results report and
+- **Reconcile the run against the datastore - `check-bdd-executed`.** It reads the results report and
   **fails closed unless every scenario in the datastore actually executed and passed, with zero
   undefined / pending / skipped / failed.** A misconfigured job that runs zero scenarios, or silently
   skips some, fails the build instead of going green. This is the piece that makes "the autotests
-  really ran and really covered every scenario" *provable*, not assumed — the vacuous-green failure
+  really ran and really covered every scenario" *provable*, not assumed - the vacuous-green failure
   mode this repo exists to prevent. It ships with a discriminating test (feed it a report with a
   missing / failed / undefined scenario → it must go red).
 
@@ -386,10 +386,10 @@ completeness and live execution are **both** required; neither alone is enough.
 ## Definition of done
 
 - [ ] Audiences established with certainty (asked the user if uncertain) and recorded.
-- [ ] Every use case × audience cell is **written out as a committed Gherkin scenario**, or carries a recorded `N/A: <reason>` — no cell left as a plan or a mention, no edge case skipped for being common.
-- [ ] Non-happy paths written (edge, error, boundary, negative, adverse, concurrency, perms, empty/overflow, timeout) — not just the happy path.
+- [ ] Every use case × audience cell is **written out as a committed Gherkin scenario**, or carries a recorded `N/A: <reason>` - no cell left as a plan or a mention, no edge case skipped for being common.
+- [ ] Non-happy paths written (edge, error, boundary, negative, adverse, concurrency, perms, empty/overflow, timeout) - not just the happy path.
 - [ ] Each use case severity-rated; highest-severity scenarios written/reviewed first and tagged so critical paths are unmistakable.
-- [ ] Every scenario carries the full taxonomy — `@audience:` + `@usecase:` + `@category:` + `@quality:` + `@severity:` — each value in-vocabulary.
+- [ ] Every scenario carries the full taxonomy - `@audience:` + `@usecase:` + `@category:` + `@quality:` + `@severity:` - each value in-vocabulary.
 - [ ] Scenarios committed to the project repo's permanent `features/` index; security/release/reliability/compliance scenarios added to the same files.
 - [ ] A new entry appended to the `features/bdd-coverage-log.md` history for this change; no prior entry altered (append-only).
 - [ ] Suite wired into CI as a blocking gate (and a pre-push hook).
@@ -402,18 +402,18 @@ This skill is not advice that lives in one chat. It binds universally because it
 **committed repo artifacts, not memory**:
 
 - **Agents** get it on every run: the always-on hook (`always-on/`) injects the directive into every
-  session and every subagent, in any repo that installs it — so a coding agent cannot "forget" to
+  session and every subagent, in any repo that installs it - so a coding agent cannot "forget" to
   apply it.
-- **Humans and agents alike** are bound by the gates above, made **required via branch protection** —
+- **Humans and agents alike** are bound by the gates above, made **required via branch protection** -
   `check-bdd-coverage`, `check-gherkin-valid`, `check-bdd-tags`, and the strict suite. The gate does
   not care whether you read the skill; a push without the complete, legal, tagged matrix cannot merge.
   That mechanical, fail-closed layer is what turns "should" into "cannot otherwise."
 - **It survives any individual** because the scenarios, the datastore, the gates, and the directive are
-  all committed and carried in git history — a new developer inherits the whole contract by cloning,
+  all committed and carried in git history - a new developer inherits the whole contract by cloning,
   and removing it is a visible, reviewed, admin-level act, never a silent lapse.
 
 The honest limit, stated plainly: nothing can stop a repo admin from *deliberately* disabling a
-required check or uninstalling the hook — but by construction that cannot happen silently, by accident,
+required check or uninstalling the hook - but by construction that cannot happen silently, by accident,
 or by omission. The only path around the gate is explicit, attributed, and visible in git or the
 ruleset. That is what "structurally impossible to fail" means in practice.
 
@@ -421,12 +421,12 @@ ruleset. That is what "structurally impossible to fail" means in practice.
 
 This skill holds its own output to the repo's evidence discipline (see
 `skeptical-audit/references/evidence-discipline.md`): **every factual or standards claim you make while
-applying this skill carries an evidence state, a re-runnable source, and a named limitation** —
+applying this skill carries an evidence state, a re-runnable source, and a named limitation** -
 `proven` (a committed, discriminating gate keeps it true) · `observed` (ran this session; command +
 output attached) · `documented` (an authoritative doc says so; URL + date) · `inferred` (from named
 facts) · `reported` · `not-assessed` (a stated gap, never a silent pass). Do not report BDD coverage
 "done" without the ledger: which scenarios exist, which gate run proves them, and what is still
-`not-assessed`. This ledger is not only per-change — it **persists as the append-only coverage/evidence
+`not-assessed`. This ledger is not only per-change - it **persists as the append-only coverage/evidence
 log** (`features/bdd-coverage-log.md`), so the *history* of receipts, not just the latest snapshot,
 lives in version control.
 
@@ -442,32 +442,32 @@ lives in version control.
 
 ### Sources & standards (retrieved 2026-10-10)
 
-The practices here are grounded in published standards, not invented — cited so any developer can check
+The practices here are grounded in published standards, not invented - cited so any developer can check
 the primary source:
 
 - **Gherkin syntax** (keywords; Feature/Rule/Scenario/Background/Scenario Outline; Given-When-Then):
-  official Cucumber Gherkin reference — <https://cucumber.io/docs/gherkin/reference/> `[documented]`.
+  official Cucumber Gherkin reference - <https://cucumber.io/docs/gherkin/reference/> `[documented]`.
   This is why `check-gherkin-valid` uses the official parser as the oracle: the reference *is* the
   grammar that parser implements.
-- **Undefined/pending steps fail (strict):** cucumber-js is strict by default —
-  <https://github.com/cucumber/cucumber-js>; behave treats `undefined`/`pending` as errors —
+- **Undefined/pending steps fail (strict):** cucumber-js is strict by default -
+  <https://github.com/cucumber/cucumber-js>; behave treats `undefined`/`pending` as errors -
   <https://behave.readthedocs.io/en/latest/appendix.status/>; pytest-bdd raises
   `StepDefinitionNotFoundError` `[documented]`.
-- **Enumerate the full case set (the matrix):** Example Mapping (Matt Wynne) — breaking a story into
-  rules, examples, and open questions before coding — <https://cucumber.io/docs/bdd/example-mapping/>
+- **Enumerate the full case set (the matrix):** Example Mapping (Matt Wynne) - breaking a story into
+  rules, examples, and open questions before coding - <https://cucumber.io/docs/bdd/example-mapping/>
   `[documented]`.
 - **Severity / risk-based prioritization:** ISTQB defines a risk's level as *impact × likelihood* and
-  lists ordering test activities by risk among its uses — ISTQB Glossary, "risk level",
+  lists ordering test activities by risk among its uses - ISTQB Glossary, "risk level",
   <https://glossary.istqb.org/> `[documented]`. `@severity:` captures the impact axis.
 - **Scenarios as the committed source of truth / living documentation:** Specification by Example
-  (Gojko Adzic, 2011) — concrete examples become a single, automatically-validated source of truth
-  shared by business, dev, and test — <https://en.wikipedia.org/wiki/Specification_by_example>
+  (Gojko Adzic, 2011) - concrete examples become a single, automatically-validated source of truth
+  shared by business, dev, and test - <https://en.wikipedia.org/wiki/Specification_by_example>
   `[documented]`.
 
 **Limitations (stated, not hidden):** the per-framework strict settings are `[documented]` from each
-tool's docs, not re-run on every stack this session — confirm for your framework/version at adoption.
+tool's docs, not re-run on every stack this session - confirm for your framework/version at adoption.
 The parser guarantees *syntactic* legality only; semantic/style quality is the tag-vocabulary gate's
-job. "Structurally impossible to fail" means impossible *silently, by accident, or by omission* — a
+job. "Structurally impossible to fail" means impossible *silently, by accident, or by omission* - a
 repo admin can still deliberately and visibly disable a gate.
 
 ## Reference files

@@ -15,7 +15,7 @@ blue when green is verified; keep blue warm for instant rollback.
 - Cut over at the load balancer / DNS / service mesh, not by redeploying.
 
 ## Canary deployment
-Route a small slice of real traffic (1–5%) to the new version, compare against the stable
+Route a small slice of real traffic (1-5%) to the new version, compare against the stable
 baseline, then progressively widen.
 - Stages: 1% → 5% → 25% → 50% → 100%, with a "bake time" at each stage.
 - Canary analysis compares canary vs. baseline on: error rate, p50/p95/p99 latency, CPU/
@@ -26,7 +26,7 @@ baseline, then progressively widen.
 
 ## Progressive delivery
 Canary + feature flags + automated analysis combined: ship dormant, enable for a cohort,
-measure, widen. This is the modern default at scale — it decouples deploy from release and
+measure, widen. This is the modern default at scale - it decouples deploy from release and
 makes every rollout a measured experiment.
 
 ## Shadow / mirror traffic

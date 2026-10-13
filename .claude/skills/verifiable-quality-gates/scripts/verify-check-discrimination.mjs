@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * verify-check-discrimination — the MUTATION gate (reference implementation).
+ * verify-check-discrimination - the MUTATION gate (reference implementation).
  *
  * For each check that is expected to have a test, replace the check with a no-op that always
  * passes, run that check's test(s), and REQUIRE them to FAIL. A test that still passes against a
- * do-nothing check asserts nothing about detection — it is vacuous — and this gate blocks the
+ * do-nothing check asserts nothing about detection - it is vacuous - and this gate blocks the
  * merge. Pairs with check-has-test.mjs (the coverage gate). See references/mutation-gate.md.
  *
  * Dependency-free (Node built-ins) and vendor-neutral. It shells out to a configurable test
@@ -12,7 +12,7 @@
  * The reference no-op stub assumes Node checks (see NOOP); adapt it if your checks are in another
  * language.
  *
- * Config (JSON; path via argv[2] or ./verifiable-gates.config.json) — same keys as
+ * Config (JSON; path via argv[2] or ./verifiable-gates.config.json) - same keys as
  * check-has-test.mjs, plus:
  *   "testCommand": ["node", "--test"]   // test file paths are appended to this argv
  *
@@ -30,7 +30,7 @@ import { spawnSync } from "node:child_process";
 import { loadConfig, enumerateChecks, execTestFiles, credits } from "./verifiable-lib.mjs";
 
 function die(msg) {
-  console.error(`[verify-check-discrimination] FAIL — ${msg}`);
+  console.error(`[verify-check-discrimination] FAIL - ${msg}`);
   process.exit(1);
 }
 
@@ -49,7 +49,7 @@ if (!Array.isArray(cfg.testCommand) || cfg.testCommand.length === 0) {
 const checks = enumerateChecks(checksDir, checkRe);
 const required = checks.filter((c) => !allowlist.has(c));
 if (required.length === 0) {
-  console.log("[verify-check-discrimination] OK — no non-allowlisted checks to mutate (nothing to do).");
+  console.log("[verify-check-discrimination] OK - no non-allowlisted checks to mutate (nothing to do).");
   process.exit(0);
 }
 
@@ -64,7 +64,7 @@ for (const c of required) {
 
 // If this gate is itself invoked from inside a test runner (e.g. `node --test` wires it into the
 // suite), the runner exports NODE_TEST_CONTEXT/NODE_TEST_WORKER_ID. A nested `node --test` that
-// inherits those switches into child-reporter mode — it streams results over IPC and exits 0 even
+// inherits those switches into child-reporter mode - it streams results over IPC and exits 0 even
 // when assertions fail, which would make a FAILING (good) test look like it PASSED against the
 // no-op and be reported as vacuous. Strip them so the inner runner's exit code is authoritative.
 const childEnv = { ...process.env };
@@ -105,7 +105,7 @@ try {
 // --- verdict -----------------------------------------------------------------
 if (vacuous.length) {
   console.error(
-    `[verify-check-discrimination] FAIL — ${vacuous.length} check(s) have a VACUOUS test ` +
+    `[verify-check-discrimination] FAIL - ${vacuous.length} check(s) have a VACUOUS test ` +
       `(it still passes when the check is a no-op):`
   );
   for (const c of vacuous) console.error(`  • ${c}`);
@@ -118,7 +118,7 @@ if (vacuous.length) {
 }
 
 console.log(
-  `[verify-check-discrimination] OK — ${required.length} check(s) mutated; ` +
+  `[verify-check-discrimination] OK - ${required.length} check(s) mutated; ` +
     `each FAILS when its check is a no-op (all genuinely discriminate).`
 );
 process.exit(0);

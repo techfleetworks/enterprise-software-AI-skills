@@ -6,7 +6,7 @@ stages that come after tests pass.
 ## Build once, promote the same artifact
 - Produce **one immutable artifact** (container image, jar, zip) per commit, identified by
   git SHA.
-- Promote that *exact* artifact through environments — never rebuild per environment
+- Promote that *exact* artifact through environments - never rebuild per environment
   ("build once, deploy many"). Rebuilding introduces "works in staging, breaks in prod"
   drift.
 - Store artifacts in a registry with retention so you can redeploy any recent version.
@@ -23,12 +23,12 @@ commit → CI (build + all tests) → deploy to dev → automated checks
 
 ## Migrations in the pipeline
 - Run migrations as an explicit, ordered pipeline step (expand step before code deploy;
-  contract step in a later pipeline run) — never ad hoc by hand.
+  contract step in a later pipeline run) - never ad hoc by hand.
 - Migrations must be idempotent and safe to re-run if a stage retries.
 
 ## Configuration & secrets
 - Config per environment via env vars / config service, not baked into the artifact.
-- Secrets from a vault / secret manager injected at deploy time — never in the image or
+- Secrets from a vault / secret manager injected at deploy time - never in the image or
   repo (see `owasp-secure-coding-bdd` secrets guidance).
 
 ## GitOps
