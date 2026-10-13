@@ -111,8 +111,9 @@ pipeline is not a safety net, it is a comment that lies. See `references/owning-
 ### 5. Ratchet, do not big-bang
 Retrofitting existing checks with tests takes time. Use a shrink-only allowlist of checks that predate the
 requirement: the coverage gate blocks any new untested check immediately, while the backlog is burned down
-one entry at a time. Names may only be removed from the allowlist (once a real, discriminating test exists),
-never added. This makes the system tighten in one direction without demanding a flag day. See
+one entry at a time. Once a check has a real, discriminating test its name must come off the allowlist, and
+`check-has-test` FAILS until it does, so the list can only shrink. This tightens in one direction without a
+flag day. See
 `references/owning-layer-and-ratchet.md`.
 
 ## Mechanical gate

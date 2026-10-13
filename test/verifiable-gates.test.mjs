@@ -118,6 +118,13 @@ test("coverage: FAILS when no test references the check at all (discriminating)"
   const r = runHas(fixture({ tests: {} }));
   assert.equal(r.status, 1);
 });
+test("coverage: FAILS (shrink-only) when a check that now has a test is still on the allowlist (discriminating)", () => {
+  // The check has a good exec-test (credited) AND is on the allowlist. The allowlist is shrink-only, so the
+  // gate must FAIL until the stale entry is removed. Old behavior printed a note and exited 0.
+  const r = runHas(fixture({ tests: { "foo.test.mjs": goodTest }, allowlistValue: JSON.stringify(["check-foo.mjs"]) }));
+  assert.equal(r.status, 1, (r.stdout || "") + (r.stderr || ""));
+  assert.match((r.stdout || "") + (r.stderr || ""), /shrink-only|REMOVED/i);
+});
 
 // --- mutation gate (verify-check-discrimination) ----------------------------
 test("mutation: PASSES when the test fails against a no-op check", () => {

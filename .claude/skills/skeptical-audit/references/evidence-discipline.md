@@ -72,7 +72,9 @@ Every `SKILL.md` must carry a section titled exactly:
 
 that (a) **links to this contract** (`skeptical-audit/references/evidence-discipline.md`), (b) states
 the skill's own central claims and the measurement that earns each `observed`/`proven` (a claim →
-proof map), and (c) requires the **evidence ledger** in the skill's Definition of done. Link, don't
+proof map), and (c) carries the **evidence ledger** in its Definition of done. Link, don't
 copy - one owner, per the repo's data-ownership rule. The `check-skill-evidence-contract` gate
-(`skeptical-audit/scripts/`) fails the build for any non-exempt skill missing these, and a shrink-only
-allowlist tightens to 100% as each skill adopts the contract.
+(`skeptical-audit/scripts/`) mechanically enforces that the section is present, the contract link
+RESOLVES on disk, and the ledger phrase is there; it does NOT verify that the claim -> proof map is real
+or sound, which stays a judge-arch and human review. A shrink-only allowlist tightens to 100% as each
+skill adopts the contract.

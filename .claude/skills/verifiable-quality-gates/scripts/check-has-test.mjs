@@ -61,15 +61,19 @@ if (untested.length) {
   process.exit(1);
 }
 
-// Report stale allowlist entries (a check on the list that now HAS a test, or no longer exists).
+// Shrink-only, enforced (matching check-skill-evidence-contract): an allowlist entry whose check now HAS a
+// test, or whose check no longer exists, must be REMOVED. It is a hard failure, not a note, so the ratchet
+// can only tighten and the list can never silently retain a check that is already covered or gone.
 const stale = [...allowlist].filter((c) => credited.has(c) || !checks.includes(c));
+if (stale.length) {
+  console.error(
+    `[check-has-test] FAIL - ${stale.length} allowlist entry(ies) must be REMOVED (now tested, or the check is gone); ` +
+      `the allowlist is shrink-only: ${stale.join(", ")}`
+  );
+  process.exit(1);
+}
 console.log(
   `[check-has-test] OK - ${checks.length} checks scanned, ${required.length} required, ` +
     `${credited.size} credited by a committed exec-test, ${allowlist.size} on the shrink-only allowlist.`
 );
-if (stale.length) {
-  console.log(
-    `  note: ${stale.length} allowlist entry(ies) can be REMOVED (now tested, or the check is gone): ${stale.join(", ")}`
-  );
-}
 process.exit(0);

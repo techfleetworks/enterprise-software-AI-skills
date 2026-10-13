@@ -109,7 +109,7 @@ node .claude/skills/bootstrap/scripts/esk-init.mjs --personal --yes --skills   #
 ## Mechanical gate
 
 `scripts/esk-init.mjs --check` is the drift gate. It exits non-zero when the always-on hook is missing,
-not pointing at this repo, the `settings.json` is invalid, the marker is absent, or the installed version
+the `settings.json` is invalid, the marker is absent, or the installed version
 is behind the repo version (and, when skills were mirrored with `--skills`, a mirrored skill is missing or
 behind), and it exits 0 only when the hook is installed, current, and emitting. Wire it
 into CI so a teammate who has drifted or fallen behind is caught, not assumed current. The installer is

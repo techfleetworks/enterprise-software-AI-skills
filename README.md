@@ -442,13 +442,13 @@ flowchart TD
     style L2 fill:#e6f0ff
 ```
 
-> Scope note: the two committed layers (CLAUDE.md + the hook) and the installer today own the
-> always-on **directive** lifecycle (load, install, verify, reconcile, drift). They carry the
-> directive text, not the skill files: Claude Code discovers skills from `~/.claude/skills`, a
-> project's `.claude/skills`, or a plugin, not from this repo's root layout, so a pull does not
-> by itself make the skills loadable (a per-machine install does). Coverage is also not
-> universal: a session rooted outside the repo relies on the per-machine hook, and a cloud
-> session does not read `~/.claude` at all. The coverage map is in the
+> Scope note: the two committed layers (CLAUDE.md + the hook) and the installer own the always-on
+> **directive** lifecycle (load, install, verify, reconcile, drift). The skills themselves live in the
+> repo's committed `.claude/skills/`, which is a discovery location, so a pull makes them loadable for a
+> session working IN the repo (and a cloud single-repo session) with no install. Coverage is not universal,
+> though: a session rooted outside the repo loads the skills only after the per-machine installer mirrors
+> them into `~/.claude/skills`, and a cloud multi-repo session does not read `~/.claude` at all. The coverage
+> map is in the
 > [`always-on/` README](always-on/#what-each-path-actually-covers). The broader artifact
 > scaffolding (asking for audiences and SLOs, baselining existing debt, turning on the other
 > gates) is the next phase and plugs into the same plan, consent, backup, verify, and record

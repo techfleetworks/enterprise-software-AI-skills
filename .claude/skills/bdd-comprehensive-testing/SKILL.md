@@ -302,18 +302,21 @@ This is the single pipeline every behavioral scenario plugs into - `@security`, 
 ## Prove completeness - `check-bdd-coverage`
 
 Advice regresses the moment someone is busy. Make the matrix mechanically enforced. Ship a
-`check-bdd-coverage` gate that, for the changed surface, **fails closed** when:
+`check-bdd-coverage` gate. On its own (it reads the feature files, not a diff) it **fails closed** when there
+are no feature files at all, or when:
 
-1. a changed behavior has no corresponding scenario,
-2. a feature has only happy-path scenarios (no non-happy path for it),
-3. a declared audience for that feature has no scenario tagged for it,
-4. a scenario is missing its `@audience:` / `@usecase:` / `@severity:` tags,
-5. the centralized datastore (`features/bdd-index.json` + `features/INDEX.md`) is missing or out of
+1. a feature has only happy-path scenarios (no non-happy path for it),
+2. a declared audience for that feature has no scenario tagged for it,
+3. the centralized datastore (`features/bdd-index.json` + `features/INDEX.md`) is missing or out of
    sync with the `.feature` files (regenerate → diff → fail on drift), so the shared source of truth
    can never silently fall behind,
-6. a behavioral change ships with no new entry appended to `features/bdd-coverage-log.md`, or
-7. the committed log is not a clean append - a prior entry was edited or removed (history must be
-   immutable; the gate compares against the base revision).
+4. the coverage log is missing or empty, carries an unknown event, or (when the base revision is given)
+   was not a clean append - a prior entry was edited or removed (history must be immutable).
+
+Two related rules are NOT in this self-contained gate, so do not read the list as proof a changed
+behavior was covered: per-scenario tag validity (`@audience:` / `@usecase:` / `@severity:`) is enforced by
+**`check-bdd-tags`**, and "a changed behavior must have a scenario and ship a new log entry" needs the PR
+diff, so it rests on the author and the PR checklist (wire a CI diff step if you want it mechanical).
 
 Give the check a faithful fixture and a **discriminating test** (no-op the check → its test fails),
 per `verifiable-quality-gates`, so the coverage gate itself can't rot. This is what turns "write BDD

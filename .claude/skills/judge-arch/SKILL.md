@@ -333,7 +333,7 @@ mechanical layer that no longer detects. That is the structural core of "impossi
 Lead with the verdict line, then one block per finding, most-severe first:
 
 ```
-Architecture gate: <PASS | N finding(s)>. Scoped to: <what>. Matrix: <F files x 6 questions, all cells verdicted>.
+Architecture gate: <PASS | N finding(s)>. Scoped to: <what>. Matrix: <F files x 4 questions, all cells verdicted>.
 
 ### <the rule that was broken, stated as the title>
 Where: <area of the app: module, layer, or file>
@@ -376,11 +376,12 @@ and a bare "PASS" given only once every cell is `observed` clean and `check-arch
 ## Why this holds for every developer and every agent
 It binds everyone because it lives in committed artifacts, not memory. **Agents** get it via the always-on
 hook (the directive is injected every session and subagent). **Humans and agents alike** are bound by the
-per-change **required** CI gates (`arch-gate` via `npm run check:architecture`, `check-arch-review-coverage`,
-and `check-arch-rules-discriminate`; the evidence-contract gate keeps this skill itself honest). Separately,
-`check-change-routing` (ADR-0031) runs on every PR via `routing.yml` and routes a change to the artifacts it
-must carry; adding `routing` to branch protection makes a routing gap block merge. A change that was not
-reviewed, or was reviewed partially or without evidence, cannot merge. **It
+per-change **required** CI checks: the gate-script tests and `arch-gate` (`npm run check:architecture`) run in
+the `test` job, and `routing` (`check-change-routing`, ADR-0031 and ADR-0032) is a required check that blocks a
+change which skips a routed artifact. `check-arch-review-coverage` and `check-arch-rules-discriminate` exist and
+are tested, but `check-arch-review-coverage` needs the change diff and is not wired as a required check, so
+whether the fresh-context review happened rests on the directive and the PR checklist, not on a gate. A change
+that skips a routed artifact cannot merge; the review itself is required but not mechanically verified. **It
 survives any individual** because the review log, the gates, and `decisions.md` are all in git. The honest
 limit above stands: this makes *not looking* impossible, not *flawless perception* guaranteed. That is the
 achievable, enforceable half of "impossible to miss."
