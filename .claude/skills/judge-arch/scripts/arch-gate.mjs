@@ -159,6 +159,10 @@ const BUILTIN_CHECKS = [
   ['keepInSync', 'a "keep in sync" marker - two copies of one fact; give it one owner',
     /keep\s+(?:in|these\s+in|them\s+in|it\s+in)\s+sync/gi],
 ];
+// A builtin's rule NAME is its stable short key (emptyCatch / swallowReturn / keepInSync), not its prose
+// label, so a waiver matches on a key that never changes and the label is surfaced as the fix message.
+// Rewording or de-dashing a label can no longer break a waiver (the regression this prevents).
+for (const [key, label] of BUILTIN_CHECKS) ruleMessages.set(key, label);
 
 const matches = (regexes, file) => regexes.some((re) => re.test(file));
 const violations = [];
@@ -195,7 +199,7 @@ for (const file of files) {
   try { content = fs.readFileSync(path.join(ROOT, file), 'utf8'); }
   catch (e) { console.error(`arch-gate: WARNING - could not read ${file} (${e.message}); it was NOT scanned`); continue; }
   for (const r of applicableRules) for (const re of r.forbid) record(r.name, file, content, re);
-  if (runBuiltins) for (const [key, label, re] of BUILTIN_CHECKS) if (builtins[key]) record(label, file, content, re);
+  if (runBuiltins) for (const [key, , re] of BUILTIN_CHECKS) if (builtins[key]) record(key, file, content, re);
 }
 
 const active = violations.filter((v) => !v.waived);

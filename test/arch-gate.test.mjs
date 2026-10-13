@@ -66,7 +66,7 @@ test("S3a: a rule's message is printed in the report — discriminating", () => 
 test("S6: a waiver missing required fields fails closed (exit 2) — discriminating", () => {
   const dir = fixture({
     config: { builtins: { emptyCatch: true } },
-    waivers: [{ rule: "catch block does nothing (recover, retry, or report - pick one)", path: "empty.js" }],
+    waivers: [{ rule: "emptyCatch", path: "empty.js" }],
     files: { "empty.js": EMPTY_CATCH },
   });
   const r = runGate(dir);
@@ -75,7 +75,7 @@ test("S6: a waiver missing required fields fails closed (exit 2) — discriminat
 });
 
 test("S6: a valid, non-expired waiver suppresses the violation (exit 0)", () => {
-  const RULE = "catch block does nothing (recover, retry, or report - pick one)";
+  const RULE = "emptyCatch";
   const dir = fixture({
     config: { builtins: { emptyCatch: true } },
     waivers: [{ rule: RULE, path: "empty.js", reason: "legacy", approvedBy: "tester", expires: "2999-01-01" }],
@@ -86,7 +86,7 @@ test("S6: a valid, non-expired waiver suppresses the violation (exit 0)", () => 
 });
 
 test("S6: an expired waiver no longer suppresses (exit 1)", () => {
-  const RULE = "catch block does nothing (recover, retry, or report - pick one)";
+  const RULE = "emptyCatch";
   const dir = fixture({
     config: { builtins: { emptyCatch: true } },
     waivers: [{ rule: RULE, path: "empty.js", reason: "legacy", approvedBy: "tester", expires: "2000-01-01" }],
@@ -94,6 +94,14 @@ test("S6: an expired waiver no longer suppresses (exit 1)", () => {
   });
   const r = runGate(dir);
   assert.equal(r.status, 1, "an expired waiver must stop suppressing");
+});
+
+test("builtin rule NAME is the stable short id, not the prose label (a label reword cannot break a waiver)", () => {
+  const dir = fixture({ config: { builtins: { emptyCatch: true } }, files: { "empty.js": EMPTY_CATCH } });
+  const r = runGate(dir);
+  assert.equal(r.status, 1);
+  assert.match(r.out, /emptyCatch/, "violations group under the stable short id");
+  assert.match(r.out, /catch block does nothing/, "the prose label is still shown as the fix message");
 });
 
 // Finding C (docs/arch-reviews/log.jsonl): a file that is present and stat-able but UNREADABLE must
