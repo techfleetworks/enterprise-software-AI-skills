@@ -228,6 +228,11 @@ peer-reviewed studies below.
 - Fowler, Rice, Foemmel, Hieatt, Mee & Stafford, *Patterns of Enterprise Application Architecture*,
   Addison-Wesley 2002 (ISBN 0-321-12742-0). The enterprise layer, cited by page. Public index:
   <https://martinfowler.com/eaaCatalog/>. `[documented]`
+- Eric Evans, *Domain-Driven Design: Tackling Complexity in the Heart of Software*, Addison-Wesley 2003
+  (ISBN 0-321-12521-5). The tactical patterns (Entity, Value Object, Aggregate, Repository, Anti-Corruption
+  Layer) cited per entry in `references/enterprise-patterns.md`. `[documented]`
+- Brian Goetz et al., *Java Concurrency in Practice*, Addison-Wesley 2006 (ISBN 978-0-321-34960-6). The
+  concurrency-pattern cluster cited per entry in `references/enterprise-patterns.md`. `[documented]`
 - Martin Fowler, *Inversion of Control Containers and the Dependency Injection pattern*,
   <https://martinfowler.com/articles/injection.html>. `[documented]`
 - Microsoft Azure Architecture Center, *Cloud Design Patterns*,

@@ -67,7 +67,7 @@ a routing gap block merge.
 
 ### Confirmation
 
-`test/change-routing.test.mjs` (14 tests, in `npm test`) exercises every path: a rule firing with its artifact
+`test/change-routing.test.mjs` (16 tests, in `npm test`) exercises every path: a rule firing with its artifact
 present passes, firing with the artifact missing fails with exit 1, a valid waiver passes, an expired waiver
 fails, an unparseable waiver date fails closed with exit 2, no rule firing passes, and missing or malformed
 config or changed-list fails closed. One test runs the SHIPPED active config and proves a new `SKILL.md`

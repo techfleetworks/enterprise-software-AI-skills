@@ -213,7 +213,7 @@ findings; attribute them precisely when published externally.
   recall, processing information best in small chunks and in story form, the inability to truly
   multitask, and attention being selective and short. `[documented]`
 - Jon Yablonski, "Laws of UX" (<https://lawsofux.com/>, retrieved 2026-10-12): the collection of UX
-  laws referenced in Step 2 (Hick's Law, Fitts's Law, Miller's Law, Jakob's Law, the Gestalt laws,
+  laws, several of which Step 2 applies (Hick's Law, Fitts's Law, Miller's Law, Jakob's Law, the Gestalt laws,
   Serial Position Effect, Peak-End Rule, Aesthetic-Usability Effect, Doherty Threshold, Tesler's Law,
   Postel's Law). The underlying laws are public psychology and HCI principles; this site is cited as the
   collection, not reproduced. `[documented]`
