@@ -1,0 +1,25 @@
+{
+  "_comment": "Routing-coupling map for check-skill-receipt.mjs (ADR-0038). policy-as-data: when a change touches a surface, the coupled skill(s) MUST be marked `applied` in the receipt, never `not-applicable`. This removes the escape of marking everything not-applicable. It is a STARTER map (spec decision 8d); each gap found later becomes one more rule here. The gate only FORCES applied on a firing surface; it never forbids marking an un-fired skill applied. Globs are generic so an adopter repo inherits sensible defaults; `when` is matched against the change's changed-file list (passed via --changed-list, computed from the PR diff in CI).",
+  "rules": [
+    {
+      "id": "behavior-change",
+      "when": ["**/*.mjs", "**/*.js", "**/*.ts", "**/*.tsx", "**/*.jsx", "**/*.py", "**/*.go", "**/*.java", "**/*.rb", "**/*.cs", "**/*.rs"],
+      "requires": ["bdd-comprehensive-testing", "comprehensive-test-strategy"]
+    },
+    {
+      "id": "ui-change",
+      "when": ["**/*.tsx", "**/*.jsx", "**/*.vue", "**/*.svelte", "**/*.html", "**/*.css", "**/*.scss"],
+      "requires": ["universal-accessibility-wcag", "usability-ux-universal-design", "universal-browser-device-support"]
+    },
+    {
+      "id": "security-surface",
+      "when": ["**/auth/**", "**/*session*", "**/*login*", "**/*password*", "**/*secret*", "**/*crypto*", "**/*upload*", "**/*token*"],
+      "requires": ["owasp-secure-coding-bdd"]
+    },
+    {
+      "id": "decision-or-schema",
+      "when": ["docs/adr/**", "**/migrations/**", "**/*.sql"],
+      "requires": ["architectural-decision-records"]
+    }
+  ]
+}

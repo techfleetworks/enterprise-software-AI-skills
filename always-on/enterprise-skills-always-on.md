@@ -40,6 +40,15 @@ routed artifact is present and the repo passes its gates; they do NOT verify tha
 happened (no required check reads the review log) or that the judgment was sound. The review is required by
 this directive and the PR checklist, not by a gate, so run it anyway: loaded is not the same as reviewed.
 
+Also append a skill-application receipt for the change to `docs/skill-receipts/log.jsonl`: one entry per PR
+covering EVERY skill (applied or not-applicable), each `applied` entry citing a real skill heading, quoting at
+least eight exact words from under that heading, and pointing at files really in the change. `npm run
+check:receipt` checks it is complete and that every quote is a verbatim run from the cited section; add
+`--changed-list <the diff>` to also check that the cited files are in the change and that a coupled surface
+is marked applied (the merge-blocking CI job that passes the diff and base is deferred to the techfleetnetwork
+release). None of it proves the work is true or good, so a human must still review it. A silent skip becomes a
+failing empty cell: you cannot claim a skill without showing what you pulled and where.
+
 ## Evidence is mandatory on every claim
 Every factual claim you output carries an **evidence state** (`proven` / `observed` / `inferred` /
 `documented` / `reported` / `not-assessed`), a **re-runnable source**, and a **named limitation**. Run
