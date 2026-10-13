@@ -25,9 +25,9 @@ GDPR (and similarly CCPA/CPRA) grant individuals rights you must be able to fulf
   permission is needed. [documented - GDPR Art. 12(3)]
 - **CCPA/CPRA:** respond to a **verifiable consumer request** (the statutory term) within **45
   calendar days**; extendable
-  **once by another 45** (90 total), with notice to the consumer. Confirm receipt within **10
-  business days**. Verification does not pause the 45-day clock. [documented - Cal. Civ. Code
-  §1798.130(a)(2)]
+  **once by another 45** (90 total), with notice to the consumer. [documented - Cal. Civ. Code
+  §1798.130(a)(2)] Confirm receipt within **10 business days**, and note that verification does not
+  pause the 45-day clock. [documented - CCPA Regulations, 11 CCR §7021]
 
 The rights themselves:
 - **Access / portability** - export all personal data you hold on them, in a usable format.

@@ -16,7 +16,7 @@ Tests are only valuable if the suite is *trusted* and *meaningful*. These gates 
   mutant."
 - Run it on critical/complex modules (not the whole codebase every time - it's slow).
 - Tools: Stryker (JS/.NET/Scala), PIT (JVM), mutmut/cosmic-ray (Python).
-- Mutation score is a far better signal of test quality than line coverage.
+- Mutation score is a far better signal of test quality than line coverage. `[documented: Just et al. 2014; Inozemtseva and Holmes 2014]`
 
 ## Property-based testing (finds edge cases you wouldn't pick)
 - Instead of hand-picked examples, specify a **property** that must always hold, and the
@@ -50,3 +50,12 @@ Publish readable reports for each so failures are diagnosable from the CI UI.
 ## Test-suite health metrics worth tracking
 - Total suite runtime (keep the fast feedback loop fast; parallelize/shard if it creeps up).
 - Flaky rate. Diff-coverage trend. Mutation score on critical modules.
+
+## Sources
+- Laura Inozemtseva, Reid Holmes, "Coverage Is Not Strongly Correlated with Test Suite Effectiveness,"
+  ICSE 2014, doi:10.1145/2568225.2568271. Once suite size is controlled, code coverage is a weak predictor
+  of a suite's fault-detection effectiveness. `[documented]`
+- René Just, Darioush Jalali, Laura Inozemtseva, Michael D. Ernst, Reid Holmes, Gordon Fraser, "Are Mutants
+  a Valid Substitute for Real Faults in Software Testing?," FSE 2014, doi:10.1145/2635868.2635929. Mutant
+  detection correlates with real-fault detection more strongly than statement or branch coverage does, which
+  is why mutation score is the stronger quality signal. `[documented]`

@@ -130,7 +130,10 @@
     "date": "2026-10-12"
   },
   "2.4.2": {
-    "status": "pass-automated"
+    "status": "pass-manual",
+    "reviewer": "a11y-team",
+    "date": "2026-10-12",
+    "note": "axe confirmed a <title> is present; reviewer confirmed it describes the page."
   },
   "2.4.3": {
     "status": "pass-manual",

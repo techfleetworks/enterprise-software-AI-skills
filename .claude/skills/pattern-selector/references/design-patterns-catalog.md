@@ -125,7 +125,7 @@ Forces: Exactly one shared resource must exist (one config registry, one connect
 Best situation: There is genuinely one instance for all clients (a shared pool), and you need stricter control than a bare global variable gives.
 Pros: Guarantees a single instance; a global access point; lazy initialization on first use.
 Cons: Violates Single Responsibility (manages its lifecycle *and* its job); masks bad design by letting components know too much about each other; needs special handling under concurrency; makes client code hard to unit-test because the private constructor/static access resists mocking. Measured caution: GoF patterns are not uniformly positive for quality attributes and are empirically associated with code smells (Hussain et al. 2017; Almadi et al. 2021), Singleton is a frequent offender via global state.
-Avoid when: Almost always in application code, the need is usually "one shared instance," which a DI container gives without the global. The GoF authors themselves said (2009) they would consider removing Singleton.
+Avoid when: Almost always in application code, the need is usually "one shared instance," which a DI container gives without the global. GoF co-author Erich Gamma said in 2009 he would drop Singleton, calling it almost always a design smell.
 Failure/rot prevented: Accidental multiple instances of a resource that must be unique (two pools, two caches disagreeing).
 Misuse: Singleton-as-global-mutable-state, a dumping ground reachable from anywhere, turning every test into a shared-state minefield.
 Security trade-off: Global mutable state is a concurrency and tamper hazard, any code path can mutate it, race it, or poison shared config; hidden, app-wide reach widens blast radius. Prefer an injected, scoped instance.

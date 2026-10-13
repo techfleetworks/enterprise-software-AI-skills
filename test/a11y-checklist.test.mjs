@@ -15,7 +15,7 @@ const ASSETS = resolve(REPO, ".claude/skills/universal-accessibility-wcag/assets
 
 // A tiny checklist fixture with one of each method.
 const CHECKLIST = { criteria: [
-  { sc: "2.4.2", name: "Page Titled", method: "automated" },
+  { sc: "3.1.1", name: "Language of Page", method: "automated" },
   { sc: "1.1.1", name: "Non-text Content", method: "both" },
   { sc: "2.1.1", name: "Keyboard", method: "manual" },
 ] };
@@ -29,7 +29,7 @@ function run(record, checklist = CHECKLIST) {
 }
 
 const FULL = {
-  "2.4.2": { status: "pass-automated" },
+  "3.1.1": { status: "pass-automated" },
   "1.1.1": { status: "pass-manual", reviewer: "a11y-team", date: "2026-10-12" },
   "2.1.1": { status: "pass-manual", reviewer: "a11y-team", date: "2026-10-12" },
 };
@@ -71,7 +71,7 @@ test("FLAGS pass-automated on a BOTH criterion (discriminating)", () => {
   assert.equal(r.status, 1, r.out);
 });
 test("ACCEPTS pass-automated on an AUTOMATED criterion (discriminating boundary)", () => {
-  // 2.4.2 is method "automated", so pass-automated alone is valid; keep the others valid.
+  // 3.1.1 is method "automated", so pass-automated alone is valid; keep the others valid.
   assert.equal(run(FULL).status, 0);
 });
 test("FLAGS pass-manual with no reviewer (exit 1)", () => {
