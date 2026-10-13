@@ -50,6 +50,8 @@ const allow = new Map(); // rule id -> entry
 for (const [i, e] of (cfg.allowlist || []).entries()) {
   const missing = ["rule", "reason", "expires"].filter((k) => !e || !e[k]);
   if (missing.length) die(`allowlist[${i}] is missing: ${missing.join(", ")} (every suppression needs rule, reason, expires)`);
+  // A blank or whitespace-only reason is no reason: it must not be able to suppress a critical/serious finding.
+  if (String(e.reason).trim().length < 3) die(`allowlist[${i}] (rule "${e.rule}") has a blank or too-short reason; a suppression needs a real reason (>=3 chars)`);
   if (Number.isNaN(new Date(e.expires).getTime())) die(`allowlist[${i}] (rule "${e.rule}") has an unparseable expires "${e.expires}" (use ISO like 2026-12-31)`);
   allow.set(String(e.rule), e);
 }

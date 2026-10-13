@@ -91,6 +91,7 @@ export function scenariosOf(parsed, featuresRoot) {
           tags: [...inherited, ...names(c.scenario.tags)],
           file: parsed.file,
           domain: domainOf(parsed.file, featuresRoot),
+          steps: (c.scenario.steps || []).length,
         });
       } else if (c.rule) {
         walk(c.rule.children, [...inherited, ...names(c.rule.tags)]);

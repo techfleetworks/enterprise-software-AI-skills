@@ -46,8 +46,10 @@ const REQUIRED_FIELDS = [
   { name: "Example", re: /^\s*Example\s*:/i },
   { name: "Source(s)", re: /^\s*Sources?\s*(\([^)]*\))?\s*:/i },
 ];
-// A real citation: a non-Wikipedia URL, a DOI, an ISBN, or a book page ("(p. 322)" / "p. 322").
-const CITATION = /(https?:\/\/(?!\S*wikipedia\.org)\S+|doi:\s*\S+|isbn[\s:-]*[\dxX-]{10,}|\(p\.?\s*\d+\)|\bp\.?\s*\d+\b)/i;
+// A real citation: a non-Wikipedia URL, a DOI, an ISBN, or a book page ("(p. 322)" / "p. 322" / "pp. 12-15").
+// The page form demands parentheses or a period after p, so a latency string like "p99"/"p95" (which naturally
+// appears in the Operational-cost and Security-trade-off fields) is NOT mistaken for a citation.
+const CITATION = /(https?:\/\/(?!\S*wikipedia\.org)\S+|doi:\s*\S+|isbn[\s:-]*[\dxX-]{10,}|\(pp?\.?\s*\d+\)|\bpp?\.\s*\d+\b)/i;
 
 const isFenceDelim = (line) => /^\s*```/.test(line);
 const isAnyLabel = (line) => REQUIRED_FIELDS.some((f) => f.re.test(line));

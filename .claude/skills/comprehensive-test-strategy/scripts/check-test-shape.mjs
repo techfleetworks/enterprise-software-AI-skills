@@ -73,7 +73,12 @@ const classify = (key) => {
 };
 
 // --- parse JUnit testcases ---------------------------------------------------
-const xml = readFileSync(resolve(reportPath), "utf8");
+// Strip XML comments and CDATA first, so a commented-out block of <testcase> lines (or testcase-like text in a
+// system-out CDATA section) is NOT counted as real tests - otherwise a commented ice-cream cone reads as a
+// healthy pyramid. Content the parser would ignore must not move the pass/fail boundary.
+const xml = readFileSync(resolve(reportPath), "utf8")
+  .replace(/<!--[\s\S]*?-->/g, "")
+  .replace(/<!\[CDATA\[[\s\S]*?\]\]>/g, "");
 const attr = (tagAttrs, name) => { const m = tagAttrs.match(new RegExp(`\\b${name}\\s*=\\s*"([^"]*)"`, "i")); return m ? m[1] : ""; };
 // Quote-aware: a literal '>' is legal inside an XML attribute value, so don't stop at the first '>'.
 // Capture the attribute run, allowing '>' only inside quotes, else a `classname="a>b"` truncates the
@@ -145,5 +150,10 @@ if (problems.length) {
   console.error(`\nPush tests DOWN the pyramid (references/test-pyramid-and-types.md): cover each behavior at the lowest layer that proves it.`);
   process.exit(1);
 }
-console.log(`[check-test-shape] OK - ${total} test(s) on-pyramid. Shape: ${summary}`);
+// Disclose honestly: with no shape threshold configured, only classification ran - the pyramid was NOT
+// enforced, so "on-pyramid" would overclaim. Say exactly what was checked (like the review-coverage gate).
+const verdict = anyShapeThreshold
+  ? `${total} test(s) on-pyramid. Shape: ${summary}`
+  : `${total} test(s) classified. Shape: ${summary}. No shape threshold configured, so the pyramid was NOT enforced (set minShare / maxShare / requirePyramid / maxTotalSeconds to enforce it).`;
+console.log(`[check-test-shape] OK - ${verdict}`);
 process.exit(0);

@@ -10,9 +10,10 @@
  *   no-severity       every alert needs a severity label, or you cannot tell a page from a ticket.
  *   no-summary        every alert needs a summary or description, or the responder learns nothing.
  *   no-runbook        every alert needs a runbook link, or there is no action attached to it.
- *   cause-based-page  a paging alert whose expression watches only a resource cause (CPU, memory,
- *                     disk, load, swap) with no user-facing symptom pages a human for something
- *                     that may not hurt a user. Page on symptoms; make the cause a ticket.
+ *   cause-based-page  a paging alert whose expression contains NO user-facing symptom token (it
+ *                     watches a cause or resource signal, not a symptom like error rate, latency, or
+ *                     SLO burn) pages a human for something that may not hurt a user. Page on
+ *                     symptoms; make the cause a ticket. A reviewed custom-symptom page uses the ignore.
  * Dependency-free (Node built-ins), vendor-neutral. It ships and is copied with the skill.
  *
  *   node check-alert-hygiene.mjs <file-or-dir>...   # scan .yml/.yaml files (dirs scanned recursively)
@@ -110,10 +111,12 @@ function ignores(raw) {
 // on either side blocks it). `_` and digits are not letters, so they count as boundaries.
 const tok = (words) => new RegExp(`(?<![a-z])(?:${words})(?![a-z])`, "i");
 const PAGING = /\b(page|paging|pager|critical|crit|p1|sev-?1)\b/i;
-const CAUSE = tok("cpu|mem\\w*|disk\\w*|filesystem\\w*|fs|load|swap|inode\\w*");
-// `saturat*` is deliberately NOT a symptom token: resource saturation (node_cpu_saturation) is the
-// cause the rule targets, not a user-facing symptom, so it must not clear a cause-based page.
-const SYMPTOM = tok("error|errors|request|requests|latency|slo|budget|burn|availab\\w*|success|probe|http|5xx|4xx|ratio|p99|p95|p50|apdex|queue");
+// A page must watch a USER-FACING SYMPTOM. Rather than enumerate every resource CAUSE (cpu/mem/disk is only a
+// handful - heap, connection pools, file descriptors, threads, bandwidth, GPU, temperature all slip such a
+// list), flag any paging alert whose expression contains NO symptom token. That catches a page on any cause,
+// known or not, and a reviewed custom-symptom page uses the inline ignore. `saturat*` is intentionally NOT a
+// symptom: resource saturation is a cause, so a saturation-only page is still flagged.
+const SYMPTOM = tok("error\\w*|request\\w*|latency|slo|budget|burn|availab\\w*|unavailab\\w*|success\\w*|fail\\w*|probe|http|5xx|4xx|2xx|ratio|p99|p95|p50|apdex|queue|timeout\\w*|reject\\w*|throttl\\w*|outage|downtime|deadline");
 
 const problems = [];
 let alertCount = 0;
@@ -137,8 +140,8 @@ for (const f of files) {
     // Test only the metric signal: drop label-matcher blocks and quoted strings so a symptom word
     // inside a label value (`{job="http-api"}`) cannot silently clear a real cause-based page.
     const signal = expr.replace(/\{[^{}]*\}/g, " ").replace(/"[^"]*"/g, " ").replace(/'[^']*'/g, " ");
-    if (expr && PAGING.test(severity) && CAUSE.test(signal) && !SYMPTOM.test(signal)) {
-      add("cause-based-page", "pages on a resource cause (CPU/memory/disk/load) with no user-facing symptom. Alert on a symptom (error rate, latency, SLO burn), or make this a ticket, not a page.");
+    if (expr && PAGING.test(severity) && !SYMPTOM.test(signal)) {
+      add("cause-based-page", "pages without a user-facing symptom in its expression (it watches a cause or resource signal, not a symptom). Alert on a symptom (error rate, latency, SLO burn, availability), or make this a ticket, not a page. If this metric IS your symptom, suppress with an inline ignore and a reason.");
     }
   }
 }

@@ -25,6 +25,14 @@ test("PASSES a safe expand migration (nullable add + CONCURRENTLY index)", () =>
   const r = run("ALTER TABLE users ADD COLUMN preferred_locale text;\nCREATE INDEX CONCURRENTLY idx_users_locale ON users (preferred_locale);\n");
   assert.equal(r.status, 0, r.out);
 });
+test("FLAGS MySQL MODIFY (in-place type change) and CHANGE (rename) (dialect, discriminating)", () => {
+  assert.equal(run("ALTER TABLE orders MODIFY amount BIGINT NOT NULL;\n").status, 1);
+  assert.equal(run("ALTER TABLE orders CHANGE old_name new_name VARCHAR(255);\n").status, 1);
+});
+test("does NOT flag the words change/modify inside a string literal (no false positive)", () => {
+  assert.equal(run("ALTER TABLE t ADD COLUMN note text DEFAULT 'change requested, please modify soon';\n").status, 0);
+  assert.equal(run("INSERT INTO audit(action) VALUES ('change the old record and modify it');\n").status, 0);
+});
 test("PASSES NOT NULL WHEN a DEFAULT is given (the `unless` clause, discriminating)", () => {
   assert.equal(run("ALTER TABLE users ADD COLUMN active boolean NOT NULL DEFAULT true;\n").status, 0);
 });

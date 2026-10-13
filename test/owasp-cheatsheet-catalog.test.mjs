@@ -24,11 +24,11 @@ const REAL_GATE = resolve(REPO, ".claude/skills/owasp-secure-coding-bdd/scripts/
 const SECTIONS = [
   "# Title",
   "## What it is",
-  "body",
+  "A real description with enough substance to count as a section body.",
   "## The attack it stops",
-  "body",
+  "A concrete attack this control stops, stated in a full sentence.",
   "## Controls",
-  "body",
+  "The specific control and why it matters, written as real guidance.",
   "## @security scenario",
   "```gherkin",
   "@security @usecase:example",
@@ -38,7 +38,7 @@ const SECTIONS = [
   "  Then the control rejects it",
   "```",
   "## The real guarantee",
-  "body",
+  "What the control truly guarantees, and the honest limit beyond it.",
   "## Sources",
   "- OWASP sheet https://cheatsheetseries.owasp.org/cheatsheets/Example_Cheat_Sheet.html (retrieved 2026-10-10)",
 ];
@@ -87,6 +87,28 @@ test("PASS: a done sheet with all sections, a citation, and an index entry", () 
   assert.match(r.out, /1\/1/);
 });
 
+test("PASS: a done sheet whose @security scenario is a Scenario Outline (valid Gherkin, no false positive)", () => {
+  const outline = goodSheet.replace("Scenario: the attack is rejected", "Scenario Outline: the attack is rejected");
+  const dir = fixture({ manifestSheets: [{ slug: "Example", title: "Example", url: "u", done: true }], files: { "Example.md": outline } });
+  assert.equal(run(dir).status, 0, run(dir).out);
+});
+
+test("FAIL: a done sheet with a present-but-EMPTY required section (heading only, discriminating)", () => {
+  const emptyControls = goodSheet.replace(/## Controls\n[^\n]*\n/, "## Controls\n\n");
+  const dir = fixture({ manifestSheets: [{ slug: "Example", title: "Example", url: "u", done: true }], files: { "Example.md": emptyControls } });
+  const r = run(dir);
+  assert.equal(r.status, 1, r.out);
+  assert.match(r.out, /Controls.*no real content|no real content/i);
+});
+
+test("FAIL: a done sheet whose @security scenario is a one-line fake (not real Gherkin, discriminating)", () => {
+  const oneLine = goodSheet.replace(/  Given a request\n  When an attacker sends the payload\n  Then the control rejects it/, "  Given a request When an attacker sends the payload Then it rejects");
+  const dir = fixture({ manifestSheets: [{ slug: "Example", title: "Example", url: "u", done: true }], files: { "Example.md": oneLine } });
+  const r = run(dir);
+  assert.equal(r.status, 1, r.out);
+  assert.match(r.out, /multi-line Gherkin|own line in order/i);
+});
+
 test("PASS: a not-done sheet with no file (backlog) still passes (ratchet)", () => {
   const dir = fixture({ manifestSheets: [{ slug: "Later", title: "Later", url: "u", done: false }] });
   assert.equal(run(dir).status, 0);
@@ -115,7 +137,7 @@ test("FAIL: a @security section that is prose, not a Gherkin scenario (exit 1, d
   const dir = fixture({ manifestSheets: [{ slug: "Example", title: "Example", url: "u", done: true }], files: { "Example.md": bad } });
   const r = run(dir);
   assert.equal(r.status, 1);
-  assert.match(r.out, /not a real Gherkin scenario/);
+  assert.match(r.out, /not a real multi-line Gherkin scenario/);
 });
 
 test("FAIL: a scenario with Gherkin keywords but NO @security tag (exit 1, discriminating)", () => {
@@ -125,7 +147,7 @@ test("FAIL: a scenario with Gherkin keywords but NO @security tag (exit 1, discr
   const dir = fixture({ manifestSheets: [{ slug: "Example", title: "Example", url: "u", done: true }], files: { "Example.md": bad } });
   const r = run(dir);
   assert.equal(r.status, 1);
-  assert.match(r.out, /not a real Gherkin scenario/);
+  assert.match(r.out, /not a real multi-line Gherkin scenario/);
   assert.match(r.out, /@security/);
 });
 

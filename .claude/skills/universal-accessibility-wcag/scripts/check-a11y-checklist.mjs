@@ -66,6 +66,9 @@ const PLACEHOLDER = /^(n\/?a|tba|tbd|todo|xxx|\?+|-+|none|unknown|pending)$/i;
 const real = (v) => typeof v === "string" && v.trim().length >= 3 && !PLACEHOLDER.test(v.trim());
 // A real calendar date: anchored, with month 01-12 and day 01-31, so "0000-00-00" or "2026-99-99" fail.
 const isDate = (v) => typeof v === "string" && /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(v.trim());
+// A review date in the future is not a real sign-off (a fabricated "2099-12-31" would otherwise certify that
+// a human reviewed it). Require a well-formed date that is today or earlier.
+const isFutureDate = (v) => isDate(v) && new Date(v.trim()).getTime() > Date.now();
 
 const problems = [];
 for (const item of checklist) {
@@ -79,8 +82,8 @@ for (const item of checklist) {
   if (status === "pass-automated" && method !== "automated") {
     problems.push(`${sc}: "pass-automated" is not enough for a ${method}-method criterion; automated tools catch only part of it, so verify and record "pass-manual" (reviewer + date)`);
   }
-  if (status === "pass-manual" && (!real(v.reviewer) || !isDate(v.date))) {
-    problems.push(`${sc}: "pass-manual" needs a reviewer and a YYYY-MM-DD date`);
+  if (status === "pass-manual" && (!real(v.reviewer) || !isDate(v.date) || isFutureDate(v.date))) {
+    problems.push(`${sc}: "pass-manual" needs a reviewer and a real YYYY-MM-DD date that is today or earlier (not a future date)`);
   }
   if (status === "not-applicable" && !real(v.note)) {
     problems.push(`${sc}: "not-applicable" needs a note explaining why it does not apply`);

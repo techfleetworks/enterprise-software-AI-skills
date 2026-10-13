@@ -43,7 +43,7 @@ catch (e) { die(`data map is not valid JSON (${e.message})`); }
 
 const CLASSES = new Set(["public", "internal", "confidential", "restricted", "not-personal"]);
 // A value that records no real decision. Mirrors the "reason must be real" bar used by the other gates.
-const PLACEHOLDER = /^(n\/?a|tbd|todo|\?+|-+|none|unknown)$/i;
+const PLACEHOLDER = /^(n\/?a|tbd|tba|todo|fixme|placeholder|soon|later|none|unknown|\?+|-+|\.+|x+)$/i;
 const missing = (v) => {
   const s = (v == null ? "" : String(v)).trim();
   return s.length < 3 || PLACEHOLDER.test(s);

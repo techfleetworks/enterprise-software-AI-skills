@@ -38,6 +38,13 @@ test("FAILS on a dangling reference to a missing file (discriminating)", () => {
   assert.match((r.stdout || "") + (r.stderr || ""), /gone\.md/);
 });
 
+test("FAILS on a dangling reference with an UPPERCASE extension (case-insensitive, discriminating)", () => {
+  const root = tree({ "a.md": "see `GHOST.MD` for more.", "b.md": "hello" });
+  const r = run(root);
+  assert.equal(r.status, 1, (r.stdout || "") + (r.stderr || ""));
+  assert.match((r.stdout || "") + (r.stderr || ""), /GHOST\.MD/i);
+});
+
 test("resolves a reference by basename anywhere in the tree (cross-directory prose pointer)", () => {
   const root = tree({ "x/a.md": "see owasp's `refs/target.md`.", "y/refs/target.md": "hi" });
   const r = run(root);

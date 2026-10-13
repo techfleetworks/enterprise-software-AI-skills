@@ -10,6 +10,31 @@ import { join, resolve } from "node:path";
 // A test that spawns no child process cannot exec a check.
 export const EXEC = /\b(execFileSync|execSync|spawnSync|execFile|spawn|exec)\s*\(/;
 
+// Strip // and /* */ comments while PRESERVING string literals, so a check name or an exec call that appears
+// only inside a comment does not credit a test. Strings are kept because the check's file name legitimately
+// appears inside a string (the path argument to spawn), so stripping strings would drop real credits.
+export function stripComments(src) {
+  let out = "";
+  const n = src.length;
+  for (let i = 0; i < n; i++) {
+    const c = src[i], d = src[i + 1];
+    if (c === '"' || c === "'" || c === "`") { // copy a string literal verbatim, honoring escapes
+      const q = c; out += c; i++;
+      while (i < n) {
+        if (src[i] === "\\") { out += src[i] + (src[i + 1] || ""); i += 2; continue; }
+        out += src[i];
+        if (src[i] === q) break;
+        i++;
+      }
+      continue;
+    }
+    if (c === "/" && d === "/") { while (i < n && src[i] !== "\n") i++; out += "\n"; continue; }
+    if (c === "/" && d === "*") { i += 2; while (i < n && !(src[i] === "*" && src[i + 1] === "/")) i++; i++; continue; }
+    out += c;
+  }
+  return out;
+}
+
 // Load + validate the verifiable-gates config. Fail-closed via the caller's `die` so each gate keeps
 // its own [name] prefix. `requiredKeys` lets the mutation gate also require "testCommand".
 export function loadConfig(die, requiredKeys = ["checksDir", "checkPattern", "testsDir", "testPattern", "allowlist"]) {
@@ -51,12 +76,12 @@ export function walkTests(dir, testRe) {
 
 // Test files that actually spawn a child process (only those can exec a check).
 export function execTestFiles(testsDir, testRe) {
-  return walkTests(testsDir, testRe).filter((tf) => EXEC.test(readFileSync(tf, "utf8")));
+  return walkTests(testsDir, testRe).filter((tf) => EXEC.test(stripComments(readFileSync(tf, "utf8"))));
 }
 
 // The single crediting heuristic: a test file credits a check if it references the check's name.
 // (Documented limitation: substring match; a stricter version would AST-confirm the check's path is
 // the exec argument - see check-test-patterns.md.)
 export function credits(testSrc, checkName) {
-  return testSrc.includes(checkName);
+  return stripComments(testSrc).includes(checkName);
 }

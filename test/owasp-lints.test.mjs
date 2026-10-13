@@ -45,6 +45,11 @@ test("FLAGS res.cookie(...) missing Secure (discriminating; names the missing fl
   assert.match(r.out, /cookie-insecure/);
   assert.match(r.out, /Secure/);
 });
+test("FLAGS a cookie whose flag words are only in the NAME, not the options (evasion, discriminating)", () => {
+  const r = run("res.cookie('session_httponly_secure_samesite', token);\n");
+  assert.equal(r.status, 1, r.out);
+  assert.match(r.out, /cookie-insecure/);
+});
 test("FLAGS a raw Set-Cookie header string with no flags", () => {
   assert.equal(run("res.setHeader('Set-Cookie', 'sid=abc; Path=/');\n").status, 1);
 });

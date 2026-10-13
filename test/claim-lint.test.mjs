@@ -50,6 +50,24 @@ test("evidence-tagged claim passes even with --strict (exit 0)", () => {
   assert.equal(run(TAGGED, ["--strict"]), 0);
 });
 
+test("hardening: catches 'build passes', 'is tested', and the hedges 'maybe'/'perhaps' (discriminating)", () => {
+  assert.equal(run("The build passes.\n", ["--strict"]), 1);
+  assert.equal(run("The auth module is tested.\n", ["--strict"]), 1);
+  assert.equal(run("Maybe the cache is stale; perhaps it self-heals.\n", ["--strict"]), 1);
+});
+test("hardening: a claim backed by an evidence state on the NEXT line is NOT flagged (no false positive)", () => {
+  assert.equal(run("The tests pass.\nEvidence: proven by `npm test`.\n", ["--strict"]), 0);
+});
+test("hardening: 'should be removed' reads as an instruction, not a hedge (no false positive)", () => {
+  assert.equal(run("This deprecated flag should be removed in the next release.\n", ["--strict"]), 0);
+});
+test("hardening: an UNRELATED evidence line below a claim does not silence it (binding, discriminating)", () => {
+  assert.equal(run("The build passes.\nproven: the migration ran cleanly.\n", ["--strict"]), 1);
+});
+test("hardening: a soft-confidence hedge with a participle ('should be cached by now') is still flagged", () => {
+  assert.equal(run("The result should be cached by now.\n", ["--strict"]), 1);
+});
+
 // `proven` is the sixth, strongest evidence state; it must be recognized like the others. Before the fix the
 // STATE regex omitted it, so a proven-tagged claim was flagged as untagged and exited 1 here (discriminating).
 test("a 'proven'-tagged claim passes even with --strict (exit 0) - proven is a recognized state", () => {

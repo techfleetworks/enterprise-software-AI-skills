@@ -46,6 +46,12 @@ test("failOn config is honored: ['critical'] lets a serious violation pass", () 
 });
 
 // --- allowlist discipline ----------------------------------------------------
+test("a whitespace-only reason does NOT suppress a critical (fail closed, discriminating)", () => {
+  const cfg = { allowlist: [{ rule: "color-contrast", reason: "   ", sc: "1.4.3", expires: future }] };
+  const r = run({ url: "/", violations: [v("color-contrast", "critical")] }, cfg);
+  assert.equal(r.status, 2, r.out);
+  assert.match(r.out, /reason/i);
+});
 test("a valid, unexpired allowlist entry suppresses (exit 0)", () => {
   const cfg = { allowlist: [{ rule: "color-contrast", reason: "brand review pending", sc: "1.4.3", expires: future }] };
   assert.equal(run({ url: "/", violations: [v("color-contrast", "serious")] }, cfg).status, 0);

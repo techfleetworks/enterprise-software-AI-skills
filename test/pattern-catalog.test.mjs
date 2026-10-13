@@ -76,6 +76,19 @@ test("FAILS when a bare year like (1994) is the only citation token (not a real 
   assert.equal(run(render(f)).status, 1);
 });
 
+test("FAILS when a p99/p95 latency string is the only citation token (not a book page, discriminating)", () => {
+  const f = entryFields();
+  f["Source(s)"] = "folklore; adds about 40ms at p99 latency under load, no real cite here";
+  const r = run(render(f));
+  assert.equal(r.status, 1, r.out);
+  assert.match(r.out, /citation/);
+});
+test("PASSES when a real book page citation (p. 322) is the source (no false positive)", () => {
+  const f = entryFields();
+  f["Source(s)"] = "Fowler, Patterns of Enterprise Application Architecture, Repository (p. 322)";
+  assert.equal(run(render(f)).status, 0, run(render(f)).out);
+});
+
 test("fields written only INSIDE a fenced code block do not satisfy the entry (fence-blind fix)", () => {
   const fenced = "# Catalog\n\nintro\n\n### Foo — Creational\n```\n" +
     Object.entries(entryFields()).map(([k, v]) => `${k}: ${v}`).join("\n") +

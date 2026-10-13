@@ -68,8 +68,10 @@ for (const f of changed) {
     const cell = cells[q];
     if (!cell || !cell.verdict) { problems.push(`${f} » ${q}: no verdict`); continue; }
     if (!VERDICTS.has(cell.verdict)) { problems.push(`${f} » ${q}: invalid verdict "${cell.verdict}"`); continue; }
-    if ((cell.verdict === "finding" || cell.verdict === "cleared") && !nonEmpty(cell.evidence)) {
-      problems.push(`${f} » ${q}: "${cell.verdict}" with no evidence (no silent clears)`);
+    // Every verdict must carry a reason - including n/a. An all-n/a matrix with no evidence used to certify a
+    // "full review" with zero justification (a reviewer declaring every question not-applicable for every file).
+    if ((cell.verdict === "finding" || cell.verdict === "cleared" || cell.verdict === "n/a") && !nonEmpty(cell.evidence)) {
+      problems.push(`${f} » ${q}: "${cell.verdict}" with no evidence (no silent clears; an n/a must say why the question does not apply)`);
     }
   }
 }

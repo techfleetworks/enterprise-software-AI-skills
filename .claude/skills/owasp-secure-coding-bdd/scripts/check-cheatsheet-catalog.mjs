@@ -113,7 +113,11 @@ for (const s of sheets) {
     continue;
   }
   for (const sec of REQUIRED_SECTIONS) {
-    if (!body.includes(sec)) violations.push(`${rel}: missing required section "${sec}"`);
+    if (!body.includes(sec)) { violations.push(`${rel}: missing required section "${sec}"`); continue; }
+    // A present-but-EMPTY heading is not a real section: require real content below it (not just the heading).
+    const block = sectionBlock(body, sec);
+    const content = block.slice(block.indexOf("\n") + 1).replace(/\s+/g, " ").trim();
+    if (content.length < 30) violations.push(`${rel}: section "${sec}" is present but has no real content below the heading`);
   }
   // Sources section must contain at least one http(s) URL.
   const srcIdx = body.indexOf("## Sources");
@@ -126,9 +130,16 @@ for (const s of sheets) {
   // Scan the section BODY, not the heading: the heading "## @security scenario" itself contains the literal
   // "@security", so scanning the whole block would make the tag check vacuous (always satisfied).
   const secBody = secBlock.slice(secBlock.indexOf("\n") + 1);
-  const missingGherkin = ["@security", "Scenario:", "Given", "When", "Then"].filter((kw) => !secBody.includes(kw));
-  if (missingGherkin.length) {
-    violations.push(`${rel}: @security scenario is not a real Gherkin scenario (missing: ${missingGherkin.join(", ")}). It must be an executable @security scenario per bdd-comprehensive-testing.`);
+  // A real scenario has @security, Scenario:, and Given/When/Then EACH on its own line in order - not a single
+  // "Given When Then" line of prose, which would otherwise satisfy a bare substring check.
+  const secLines = secBody.split("\n").map((l) => l.trim());
+  const hasTag = secBody.includes("@security");
+  const hasScenario = secLines.some((l) => /^Scenario(?: Outline| Template)?:/i.test(l));
+  const gi = secLines.findIndex((l) => /^Given\b/i.test(l));
+  const wi = secLines.findIndex((l) => /^When\b/i.test(l));
+  const ti = secLines.findIndex((l) => /^Then\b/i.test(l));
+  if (!hasTag || !hasScenario || !(gi >= 0 && wi > gi && ti > wi)) {
+    violations.push(`${rel}: @security scenario is not a real multi-line Gherkin scenario (need @security, Scenario:, and Given/When/Then each on its own line in order). It must be an executable @security scenario per bdd-comprehensive-testing.`);
   }
   // Must be routed from SKILL.md (its path appears in the index).
   if (!skillText.includes(rel)) violations.push(`${rel}: not indexed in SKILL.md (add it to the routing index)`);

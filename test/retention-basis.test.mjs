@@ -21,6 +21,13 @@ function run(map) {
 }
 
 // --- complete maps PASS ------------------------------------------------------
+test("FLAGS a personal entry whose basis is a placeholder (..., soon, tbd), not a real lawful basis (discriminating)", () => {
+  for (const basis of ["...", "soon", "tbd", "xxx", "placeholder"]) {
+    const r = run([{ field: "users.email", class: "restricted", basis, retention: "account life + 30d" }]);
+    assert.equal(r.status, 1, `basis "${basis}" should fail: ` + r.out);
+  }
+});
+
 test("PASSES a personal entry with basis + retention, and an exempt not-personal entry", () => {
   const r = run([
     { field: "users.email", class: "restricted", basis: "contract", retention: "account life + 30d" },

@@ -38,6 +38,11 @@ const FULL = {
 test("PASSES when every criterion has a valid verdict", () => {
   assert.equal(run(FULL).status, 0, run(FULL).out);
 });
+test("FLAGS a pass-manual verdict dated in the future (fabricated sign-off, discriminating)", () => {
+  const r = run({ ...FULL, "1.1.1": { status: "pass-manual", reviewer: "a11y-team", date: "2099-12-31" } });
+  assert.equal(r.status, 1, r.out);
+  assert.match(r.out, /future/i);
+});
 test("PASSES not-applicable with a reason", () => {
   const r = run({ ...FULL, "2.1.1": { status: "not-applicable", note: "static page, no interactive controls" } });
   assert.equal(r.status, 0, r.out);

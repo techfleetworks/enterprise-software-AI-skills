@@ -74,18 +74,23 @@ delete childEnv.NODE_TEST_WORKER_ID;
 // --- mutate one check at a time; its test(s) MUST fail -----------------------
 const backups = new Map(); // path -> original source
 const vacuous = [];
+const baselineFail = [];
 try {
   for (const c of required) {
     const checkPath = join(checksDir, c);
     if (!backups.has(checkPath)) backups.set(checkPath, readFileSync(checkPath, "utf8"));
+    const files = mapped.get(c);
+    const runTests = () => spawnSync(cfg.testCommand[0], [...cfg.testCommand.slice(1), ...files], { stdio: "pipe", encoding: "utf8", env: childEnv });
+
+    // Baseline: the test MUST pass against the REAL check. A test that fails here is always-red or broken
+    // and proves nothing about detection, so discrimination is a PASS->FAIL transition, not merely a failing
+    // mutant. Without this, an always-red test would be certified as "genuinely discriminating".
+    const base = runTests();
+    if (base.error) die(`could not launch test runner "${cfg.testCommand.join(" ")}": ${base.error.message}`);
+    if (base.status !== 0) { baselineFail.push(c); continue; } // not a clean baseline; do not credit, do not mutate
 
     writeFileSync(checkPath, NOOP); // neutralize the check
-    const files = mapped.get(c);
-    const res = spawnSync(cfg.testCommand[0], [...cfg.testCommand.slice(1), ...files], {
-      stdio: "pipe",
-      encoding: "utf8",
-      env: childEnv,
-    });
+    const res = runTests();
     writeFileSync(checkPath, backups.get(checkPath)); // restore immediately so later runs see the real others
 
     if (res.error) die(`could not launch test runner "${cfg.testCommand.join(" ")}": ${res.error.message}`);
@@ -103,17 +108,30 @@ try {
 }
 
 // --- verdict -----------------------------------------------------------------
-if (vacuous.length) {
-  console.error(
-    `[verify-check-discrimination] FAIL - ${vacuous.length} check(s) have a VACUOUS test ` +
-      `(it still passes when the check is a no-op):`
-  );
-  for (const c of vacuous) console.error(`  • ${c}`);
-  console.error(
-    `\nEach listed test asserts nothing tied to its check's detection, so a broken check would ship\n` +
-      `green. Add a fixture that reproduces the real violation and asserts a non-zero exit ` +
-      `(see check-test-patterns.md).`
-  );
+if (baselineFail.length || vacuous.length) {
+  if (baselineFail.length) {
+    console.error(
+      `[verify-check-discrimination] FAIL - ${baselineFail.length} check(s) have a test that does NOT pass ` +
+        `against the real check (always-red or broken; discrimination needs a PASS->FAIL transition):`
+    );
+    for (const c of baselineFail) console.error(`  • ${c}`);
+    console.error(
+      `\nA test that is red even with the real check in place proves nothing about detection. Fix the test so\n` +
+        `it passes on the intact check, then fails on the no-op.`
+    );
+  }
+  if (vacuous.length) {
+    console.error(
+      `[verify-check-discrimination] FAIL - ${vacuous.length} check(s) have a VACUOUS test ` +
+        `(it still passes when the check is a no-op):`
+    );
+    for (const c of vacuous) console.error(`  • ${c}`);
+    console.error(
+      `\nEach listed test asserts nothing tied to its check's detection, so a broken check would ship\n` +
+        `green. Add a fixture that reproduces the real violation and asserts a non-zero exit ` +
+        `(see check-test-patterns.md).`
+    );
+  }
   process.exit(1);
 }
 

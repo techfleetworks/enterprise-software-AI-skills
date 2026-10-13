@@ -52,6 +52,22 @@ test("S3b: emptyCatch still DETECTS a genuinely empty catch (exit 1) — discrim
   assert.match(r.out, /catch block does nothing/);
 });
 
+// Final-pass hardening: the two most natural do-nothing catches used to slip (catch{;} and catch{return;}).
+test("hardening: emptyCatch flags a catch whose body is only an empty statement (discriminating)", () => {
+  const dir = fixture({ config: { builtins: { emptyCatch: true } }, files: { "semi.js": "function f(){ try { g(); } catch (e) { ; } }\n" } });
+  assert.equal(runGate(dir).status, 1, "catch { ; } must fail");
+});
+test("hardening: swallowReturn flags a bare and an empty-value return (discriminating)", () => {
+  for (const body of ["return;", "return null;", "return [];", "return {};", 'return "";', "return 0;"]) {
+    const dir = fixture({ config: { builtins: { swallowReturn: true } }, files: { "sw.js": `function f(){ try { g(); } catch (e) { ${body} } }\n` } });
+    assert.equal(runGate(dir).status, 1, `catch { ${body} } must fail`);
+  }
+});
+test("hardening: swallowReturn does NOT flag a catch that returns a real recovery value (no false positive)", () => {
+  const dir = fixture({ config: { builtins: { swallowReturn: true } }, files: { "ok.js": "function f(){ try { g(); } catch (e) { return computeFallback(e); } }\n" } });
+  assert.equal(runGate(dir).status, 0, "returning a real fallback is recovery, not a swallow");
+});
+
 test("S3a: a rule's message is printed in the report — discriminating", () => {
   const MSG = "route handlers must not import supabase directly; go through a service";
   const dir = fixture({

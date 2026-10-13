@@ -71,9 +71,10 @@ const PII_INDICATORS = [
   /email/, /phone|mobile|telephone/, /\bssn\b|social security/, /passport/, /national id/, /tax id/,
   /\bdob\b|date of birth|birth date|birthday/, /first name|last name|full name|fullname|surname|given name|maiden/,
   /user ?name|nickname|display name|\bhandle\b/,
-  /\baddress\b|street|postcode|post code|\bzip\b|zipcode/, /ip address/, /credit card|card number|\bcvv\b|\biban\b/,
+  /\baddress\b|street|postcode|post code|\bzip\b|zipcode/, /\bip\b|ip addr/, /credit card|card number|\bcvv\b|\biban\b|bank account/,
   /latitude|longitude|\blat\b|\blng\b|coordinates/, /drivers licen[sc]e|driver licen[sc]e/,
   /\bgender\b|ethnicit|\brace\b|religion|biometric|\bhealth\b|medical/,
+  /\bage\b|\bsalary\b|\bincome\b|compensation|\bwages?\b/, /citizenship|nationalit/,
 ];
 const normalize = (name) => name.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 const looksLikePII = (name) => { const n = normalize(name); return PII_INDICATORS.some((re) => re.test(n)); };
