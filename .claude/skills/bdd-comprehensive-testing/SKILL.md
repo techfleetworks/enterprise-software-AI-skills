@@ -420,7 +420,7 @@ ruleset. That is what "structurally impossible to fail" means in practice.
 ## Evidence & skeptical assessment (required)
 
 This skill holds its own output to the repo's evidence discipline (see
-`skeptical-audit/references/evidence-discipline.md`): **every factual or standards claim you make while
+[`skeptical-audit/references/evidence-discipline.md`](../skeptical-audit/references/evidence-discipline.md)): **every factual or standards claim you make while
 applying this skill carries an evidence state, a re-runnable source, and a named limitation** -
 `proven` (a committed, discriminating gate keeps it true) · `observed` (ran this session; command +
 output attached) · `documented` (an authoritative doc says so; URL + date) · `inferred` (from named

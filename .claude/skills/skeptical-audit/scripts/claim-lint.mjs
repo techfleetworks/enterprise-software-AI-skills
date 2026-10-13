@@ -9,7 +9,7 @@
 //   2. CLAIM - assertion-shaped sentences carrying NO evidence state.
 //
 // Evidence states it recognises (case-insensitive, backticks ignored):
-//   observed · inferred · documented · reported · not-assessed / not assessed
+//   proven · observed · inferred · documented · reported · not-assessed / not assessed
 //
 // Exit codes:
 //   0 = clean, OR findings in warn-only mode (no --strict) - prints them, does not block.
@@ -48,7 +48,7 @@ const CLAIM_PATTERNS = [
   /\bcan('?t| not) (happen|fail|occur)\b/i,
 ];
 
-const STATE = /(observed|inferred|documented|reported|not[-\s]assessed)/i;
+const STATE = /(proven|observed|inferred|documented|reported|not[-\s]assessed)/i;
 
 const file = process.argv[2];
 const strict = process.argv.includes("--strict");
@@ -105,7 +105,7 @@ console.log(`claim-lint: ${findings.length} finding(s) in ${file} - ${hedges} he
 for (const f of findings) {
   const why = f.kind === "HEDGE"
     ? `hedge-word "${f.hit}" - cite a measurement or say not-assessed`
-    : `claim "${f.hit}" has no evidence state - tag observed/inferred/documented/reported/not-assessed`;
+    : `claim "${f.hit}" has no evidence state - tag proven/observed/inferred/documented/reported/not-assessed`;
   console.log(`  L${f.n}  [${f.kind}] ${why}`);
   console.log(`         > ${f.line}`);
 }

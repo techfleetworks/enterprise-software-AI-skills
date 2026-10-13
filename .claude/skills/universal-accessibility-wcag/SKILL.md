@@ -195,7 +195,7 @@ still sit on top. Say which is which.
 
 Every "this is accessible / we meet WCAG, 508, and the ADA" statement is a factual claim, so it follows
 the repo's evidence discipline (canonical contract:
-[`skeptical-audit/references/evidence-discipline.md`](../../skeptical-audit/references/evidence-discipline.md)).
+[`skeptical-audit/references/evidence-discipline.md`](../skeptical-audit/references/evidence-discipline.md)).
 A conformance claim is an **evidence ledger**: each criterion is a claim with a state and a re-runnable
 source, never a bare assertion. Hunt the disconfirming case first (which criterion is only assumed to
 pass?) before you sign off.

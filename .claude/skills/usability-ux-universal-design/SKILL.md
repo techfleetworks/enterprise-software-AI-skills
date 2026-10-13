@@ -170,7 +170,7 @@ What enforces this skill instead:
 
 Every "this is usable / intuitive" statement is a factual claim, so it follows the repo's evidence
 discipline (canonical contract:
-[`skeptical-audit/references/evidence-discipline.md`](../../skeptical-audit/references/evidence-discipline.md)).
+[`skeptical-audit/references/evidence-discipline.md`](../skeptical-audit/references/evidence-discipline.md)).
 A usability claim is an **evidence ledger**: each claim has a state and a re-runnable source, and
 "usable" is the one word you may not assert from the designer's own chair. Hunt the disconfirming case
 first (where does a first-time user get stuck?) before you call it intuitive.

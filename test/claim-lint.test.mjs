@@ -31,6 +31,7 @@ function run(fixtureText, args = []) {
 const CLEAN = "# Plan\n\nThis document describes the rollout steps and the people involved.\n";
 const UNTAGGED = "# Report\n\nThe deployment is live and every request is handled.\n"; // claim, no evidence state
 const TAGGED = "# Report\n\nThe deployment is live [observed]: `curl` returned 200 at 12:00 UTC.\n";
+const TAGGED_PROVEN = "# Report\n\nThe deployment is live [proven]: the smoke test returned 200 on every push.\n";
 
 test("clean draft passes (exit 0)", () => {
   assert.equal(run(CLEAN), 0);
@@ -47,6 +48,12 @@ test("untagged claim BLOCKS with --strict (exit 1) — discriminating", () => {
 
 test("evidence-tagged claim passes even with --strict (exit 0)", () => {
   assert.equal(run(TAGGED, ["--strict"]), 0);
+});
+
+// `proven` is the sixth, strongest evidence state; it must be recognized like the others. Before the fix the
+// STATE regex omitted it, so a proven-tagged claim was flagged as untagged and exited 1 here (discriminating).
+test("a 'proven'-tagged claim passes even with --strict (exit 0) - proven is a recognized state", () => {
+  assert.equal(run(TAGGED_PROVEN, ["--strict"]), 0);
 });
 
 // Hedge matching is word-boundary, not substring: these must NOT be flagged as hedges.
