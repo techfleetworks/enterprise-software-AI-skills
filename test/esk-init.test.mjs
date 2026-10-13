@@ -398,6 +398,51 @@ test("a repo version bump is skills drift, and a reconcile re-mirrors + bumps th
   assert.equal(JSON.parse(readFileSync(a.marker, "utf8")).skills.version, "2.0.0");
 });
 
+test("a content change inside an installed skill at the SAME version is drift and is re-mirrored (ADR-0039, discriminating)", () => {
+  // The reported bug: a git pull that edits or ADDS a file inside an already-installed skill, with the package
+  // version unchanged, left the installer reporting "nothing to change" so the new file never reached the target.
+  // This is the exact PR #72 scenario (a new scripts/ file added to judge-arch at version 0.1.0). The pre-fix
+  // code (version/target/missing-top-level-SKILL.md checks only) would FAIL every assertion below.
+  const repo = fakeRepo(["alpha"], "1.0.0");
+  const a = skArea();
+  assert.equal(runSK(repo, a.tgt, a.settings, ["--yes"]).status, 0);
+  assert.ok(existsSync(join(a.tgt, "alpha", "SKILL.md")), "baseline mirror");
+
+  // 1) ADD a new file inside the existing skill, version UNCHANGED (still 1.0.0)
+  const scriptsDir = join(repo, ".claude", "skills", "alpha", "scripts");
+  mkdirSync(scriptsDir, { recursive: true });
+  writeFileSync(join(scriptsDir, "new-tool.mjs"), "// added inside an installed skill, same version\n");
+  let chk = runSK(repo, a.tgt, a.settings, ["--check"]);
+  assert.equal(chk.status, 1, "a same-version content ADD must read as drift: " + chk.out);
+  assert.match(chk.out, /changed in the repo since install/i);
+  assert.equal(runSK(repo, a.tgt, a.settings, ["--yes"]).status, 0);
+  assert.ok(existsSync(join(a.tgt, "alpha", "scripts", "new-tool.mjs")), "the added file must reach the target after reconcile");
+  // and it settles back to a no-op (the fast path is preserved, not removed)
+  assert.match(runSK(repo, a.tgt, a.settings, ["--yes"]).out, /nothing to change/i);
+  assert.equal(runSK(repo, a.tgt, a.settings, ["--check"]).status, 0, "clean after re-mirror");
+
+  // 2) EDIT an existing file inside the skill, version still UNCHANGED
+  writeFileSync(join(repo, ".claude", "skills", "alpha", "SKILL.md"), "---\nname: alpha\ndescription: edited\n---\n# alpha edited\n");
+  chk = runSK(repo, a.tgt, a.settings, ["--check"]);
+  assert.equal(chk.status, 1, "a same-version content EDIT must read as drift: " + chk.out);
+  assert.equal(runSK(repo, a.tgt, a.settings, ["--yes"]).status, 0);
+  assert.match(readFileSync(join(a.tgt, "alpha", "SKILL.md"), "utf8"), /alpha edited/, "the edit must reach the target");
+});
+
+test("the fingerprint ignores skipped subdirs: a change under vendor/node_modules is NOT drift (discriminating)", () => {
+  // The signature must cover exactly what the mirror copies. vendor/ and node_modules/ are skipped by the mirror,
+  // so a change there must not force a re-mirror (that would churn on the gitignored OWASP text that some machines
+  // have fetched and others have not). This pins the signature's skip set to the mirror's skip set.
+  const repo = fakeRepo(["alpha"], "1.0.0");
+  const a = skArea();
+  assert.equal(runSK(repo, a.tgt, a.settings, ["--yes"]).status, 0);
+  const vendorDir = join(repo, ".claude", "skills", "alpha", "vendor");
+  mkdirSync(vendorDir, { recursive: true });
+  writeFileSync(join(vendorDir, "big.txt"), "CC-BY-SA text that only exists on some machines\n");
+  assert.equal(runSK(repo, a.tgt, a.settings, ["--check"]).status, 0, "a change under a skipped subdir must NOT read as drift");
+  assert.match(runSK(repo, a.tgt, a.settings, ["--yes"]).out, /nothing to change/i);
+});
+
 test("an unreadable skills source fails closed and does NOT wipe the mirror (V1, discriminating)", () => {
   const repo = fakeRepo(["alpha", "beta"]);
   const a = skArea();

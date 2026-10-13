@@ -35,6 +35,7 @@ import { dirname, resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 
 function die(msg) { console.error(`[esk-init] FAIL: ${msg}`); process.exit(2); }
 
@@ -100,6 +101,41 @@ function sourceSkillNames() {
   return entries.filter((e) => e.isDirectory() && existsSync(join(repoSkillsDir, e.name, "SKILL.md")))
     .map((e) => e.name).sort();
 }
+// Content fingerprint of one source skill: a sha256 over the sorted (relative-path, file-hash) pairs of every
+// file the mirror would copy, using the SAME skip set as mirrorOneSkill so the signature reflects exactly what
+// lands at the target (the gitignored vendor text and node_modules never move the signature). This is what lets
+// a reconcile notice a content change made INSIDE an installed skill at an UNCHANGED package version (a git pull
+// that edits or adds a file within a skill folder): the version string alone cannot see it. Paths are joined with
+// "/" so the digest is stable across OSes. Read errors fail closed (die), the same rule sourceSkillNames follows,
+// so a transient I/O or dehydrated-OneDrive read is never mistaken for "unchanged" and left un-mirrored.
+function skillSignature(name) {
+  const root = join(repoSkillsDir, name);
+  const parts = [];
+  const walk = (dir, rel) => {
+    let entries;
+    try { entries = readdirSync(dir, { withFileTypes: true }); }
+    catch (e) { die(`cannot read ${dir} while fingerprinting skill ${name} (${e.message}); refusing to run so a read error is never mistaken for unchanged content`); }
+    for (const e of entries.filter((x) => !SKILL_MIRROR_SKIP.has(x.name)).sort((a, b) => (a.name < b.name ? -1 : 1))) {
+      const abs = join(dir, e.name);
+      const r = rel ? `${rel}/${e.name}` : e.name;
+      if (e.isDirectory()) { walk(abs, r); continue; }
+      if (!e.isFile()) continue; // symlinks and specials: mirrorOneSkill copies them, but they carry no content to fingerprint here
+      let buf;
+      try { buf = readFileSync(abs); }
+      catch (err) { die(`cannot read ${abs} while fingerprinting skill ${name} (${err.message}); refusing to run so a read error is never mistaken for unchanged content`); }
+      parts.push(`${r}\0${createHash("sha256").update(buf).digest("hex")}`);
+    }
+  };
+  walk(root, "");
+  return createHash("sha256").update(parts.join("\n")).digest("hex");
+}
+// Signatures for the whole source set, keyed by skill name. Computed once per run where skills are in scope.
+function skillSignatures(names) {
+  const sigs = {};
+  for (const n of names) sigs[n] = skillSignature(n);
+  return sigs;
+}
+
 // Plan skills changes against the marker's record of what WE installed, so a reconcile removes a skill we
 // dropped from the repo but NEVER touches a skill we did not install (a user's own, or another repo's).
 function planSkills(marker) {
@@ -109,7 +145,14 @@ function planSkills(marker) {
   const remove = prev.filter((n) => !src.includes(n));
   const behind = !marker || !marker.skills || marker.skills.version !== version || marker.skills.target !== skillsTarget;
   const missing = src.filter((n) => !existsSync(join(skillsTarget, n, "SKILL.md")));
-  return { mirror: src, remove, missing, behind, changed: behind || remove.length > 0 || missing.length > 0 };
+  // Content drift: compare each source skill's current fingerprint to the one recorded when we last mirrored it.
+  // A skill whose stored signature is absent (a pre-signature marker, or a newly added skill) reads as changed,
+  // so the first reconcile after this fix re-mirrors and records the baseline. This is the fix for a same-version
+  // edit inside an installed skill, which version/target/missing-top-level checks all miss.
+  const sigs = skillSignatures(src);
+  const stored = (marker && marker.skills && marker.skills.signatures) || {};
+  const contentChanged = src.filter((n) => stored[n] !== sigs[n]);
+  return { mirror: src, remove, missing, behind, contentChanged, sigs, changed: behind || remove.length > 0 || missing.length > 0 || contentChanged.length > 0 };
 }
 // Mirror one skill cleanly: remove the target copy, then copy the source minus heavy/ignored subdirs
 // (the gitignored OWASP vendor text, node_modules, .git). The repo is authoritative, so no per-skill
@@ -245,8 +288,17 @@ function assess() {
     else {
       const tgt = marker.skills.target || skillsTarget;
       if (marker.skills.version !== version) problems.push(`mirrored skills (v${marker.skills.version}) are behind the repo version ${version}`);
-      const miss = sourceSkillNames().filter((n) => !existsSync(join(tgt, n, "SKILL.md")));
+      const names = sourceSkillNames();
+      const miss = names.filter((n) => !existsSync(join(tgt, n, "SKILL.md")));
       if (miss.length) problems.push(`skills missing from ${tgt}: ${miss.join(", ")}`);
+      // Same-version content drift: a skill whose current fingerprint differs from the one recorded at mirror
+      // time changed on disk since we installed it (a git pull that edited or added a file inside the folder).
+      // Only present skills are compared here; missing ones are already reported above. A skill with no stored
+      // signature (a marker written before this fix) reads as drift so the next reconcile records the baseline.
+      const stored = marker.skills.signatures || {};
+      const present = names.filter((n) => existsSync(join(tgt, n, "SKILL.md")));
+      const contentChanged = present.filter((n) => stored[n] !== skillSignature(n));
+      if (contentChanged.length) problems.push(`mirrored skills changed in the repo since install (re-mirror needed): ${contentChanged.join(", ")}`);
     }
   }
   const c = canary();
@@ -289,6 +341,7 @@ else {
   for (const a of actions) console.log(`    - ${a}`);
   if (withSkills && skillsPlan.changed) {
     console.log(`    - mirror ${skillsPlan.mirror.length} skill(s) into ${skillsTarget}`);
+    if (skillsPlan.contentChanged && skillsPlan.contentChanged.length) console.log(`    - re-mirror ${skillsPlan.contentChanged.length} skill(s) changed in the repo since install (${skillsPlan.contentChanged.join(", ")})`);
     if (skillsPlan.remove.length) console.log(`    - remove ${skillsPlan.remove.length} skill(s) no longer in the repo (${skillsPlan.remove.join(", ")})`);
   }
   if (fresh) console.log(`    - write the .esk-installed marker (version ${version})`);
@@ -346,7 +399,7 @@ if (withSkills) {
   } catch (e) { die(`skills mirror failed (${e.message}); the hook is installed, re-run \`--yes --skills\` to finish`); }
   const bad = skillsPlan.mirror.filter((n) => !existsSync(join(skillsTarget, n, "SKILL.md")));
   if (bad.length) die(`skills mirror incomplete (no SKILL.md at the target for: ${bad.join(", ")}); re-run \`--yes --skills\``);
-  skillsInstalled = { target: skillsTarget, names: skillsPlan.mirror, version };
+  skillsInstalled = { target: skillsTarget, names: skillsPlan.mirror, version, signatures: skillsPlan.sigs };
 }
 
 // Success: write the marker + the log.
