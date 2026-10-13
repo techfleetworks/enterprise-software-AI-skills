@@ -29,7 +29,15 @@ This repo holds its own changes to the standards it ships. Before you open or up
 1. **Run the mechanical gates locally.** `npm test` must pass and `npm run check:architecture` must exit 0.
 2. **Run a fresh-context `judge-arch` review** of the change, resolve or explicitly waive every finding, and
    append the review to `docs/arch-reviews/log.jsonl`.
-3. **Fill in the PR template checklist.** It is the list CI and reviewers expect.
+3. **Append a skill-application receipt** to `docs/skill-receipts/log.jsonl`: one entry for the change covering
+   every skill (applied or not-applicable), each `applied` entry citing a real skill heading, quoting at least
+   eight exact words from under that heading, and naming files in the change. Run `npm run check:receipt` to
+   confirm it is complete and every quote is a verbatim run from the cited section; add `--changed-list` to
+   also check that the cited files are in the change and that a coupled surface is marked applied. The
+   merge-blocking CI job that passes the diff and base is deferred to the techfleetnetwork release. The gate
+   proves grounding, not that the work is good, so a reviewer still audits it against the diff. See
+   `docs/specs/skill-application-receipt.md`.
+4. **Fill in the PR template checklist.** It is the list CI and reviewers expect.
 
 CI runs the required checks `test (20)`, `test (24)` (the gate-script tests plus `check:architecture`), and
 `routing` (change-type to required-artifact: a new skill needs an ADR, a new gate needs a test). All three

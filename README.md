@@ -357,6 +357,16 @@ are what this repo adds, so the right skill is not just available but required a
 `routing` check (change-type to required-artifact) is what turns "you should have recorded the decision" into
 "this will not merge without the ADR."
 
+On top of that, every change carries a **skill-application receipt** (`docs/skill-receipts/log.jsonl`): one
+entry that covers every skill and, for each one applied, cites a real skill heading, quotes at least eight
+exact words from under that heading, and names the files it shaped. `npm run check:receipt` checks the receipt
+is complete and that each quote is a verbatim run from the cited section (so a fabricated, frontmatter, or
+wrong-section quote is rejected); run it with `--changed-list <the diff>` to also check that the cited files
+are in the change and that a coupled surface is marked applied. A silent skip becomes a failing empty cell.
+None of this proves the work was done well, so a human still reviews it against the diff. The merge-blocking CI
+job that passes the diff and base is deferred to the techfleetnetwork release. See
+[`docs/specs/skill-application-receipt.md`](docs/specs/skill-application-receipt.md) and ADR-0038.
+
 The always-on requirement covers sessions working in this repo. A session rooted outside the repo, or a cloud
 session, needs the one-time installer; the [`always-on/` README](always-on/) has the full per-session
 coverage map. The harness injecting the skill catalog (the first box) is the one part that happens in every

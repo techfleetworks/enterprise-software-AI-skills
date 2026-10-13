@@ -12,6 +12,7 @@
 - [ ] **Evidence ledger.** Factual claims in this PR and in any ADR carry an evidence state, a re-runnable source, and a named limitation (skeptical-audit); nothing is called done, secure, or passing without it.
 - [ ] **ADR for decisions.** Any architectural or schema decision has an ADR under `docs/adr/` in this same change (architectural-decision-records).
 - [ ] **Routed artifacts present.** The kind of change carries its discipline's artifact: a new skill needs an ADR, a new gate script needs a test, and so on. The `routing` check confirms it.
+- [ ] **Skill-application receipt.** `docs/skill-receipts/log.jsonl` has an entry for this change covering every skill (applied or not-applicable); each `applied` entry cites a real skill heading, quotes at least eight exact words from under that heading, and names files in this change. `npm run check:receipt` passes (completeness, anchors, quotes, banner); run it with `--changed-list` to also check diff binding and coupling. This proves grounding, not that the work is good, so review it against the diff.
 
 ## Honest limit
 
