@@ -3,7 +3,7 @@
 //
 // For each SKILL.md it requires (per evidence-discipline.md §5):
 //   (a) a section titled exactly "## Evidence & skeptical assessment (required)",
-//   (b) a link to the canonical contract (evidence-discipline.md),
+//   (b) a link to the canonical contract (evidence-discipline.md) that RESOLVES on disk,
 //   (c) an "evidence ledger" requirement in its Definition of done.
 // Fail-closed. A shrink-only allowlist grandfathers skills not yet retrofitted; names come off it as
 // each skill adopts the contract, so compliance tightens monotonically to 100%.
@@ -13,7 +13,7 @@
 // Exit 0 = every non-allowlisted skill complies. Exit 1 = a gap, or missing input (zero skills, no
 // allowlist file).
 import { readFileSync, readdirSync, existsSync } from "node:fs";
-import { join, resolve, relative, sep } from "node:path";
+import { join, resolve, relative, sep, dirname } from "node:path";
 
 const die = (m) => { console.error(`[check-skill-evidence-contract] FAIL - ${m}`); process.exit(1); };
 
@@ -45,7 +45,7 @@ try { allow = new Set(JSON.parse(readFileSync(allowlistPath, "utf8"))); }
 catch (e) { die(`allowlist is not valid JSON (${e.message}).`); }
 
 const HEADING = /^##\s+Evidence & skeptical assessment \(required\)\s*$/m;
-const CONTRACT = "evidence-discipline.md";
+const CONTRACT_PATH = /[.\w/\\-]*evidence-discipline\.md/g; // any link or path ending in the contract file
 const LEDGER = /evidence ledger/i;
 const idOf = (file) => (relative(root, file.replace(/[/\\]SKILL\.md$/, "")).split(sep).join("/") || ".");
 
@@ -55,13 +55,19 @@ const problems = [];
 for (const f of skillFiles) {
   const id = idOf(f);
   const src = readFileSync(f, "utf8");
-  const ok = HEADING.test(src) && src.includes(CONTRACT) && LEDGER.test(src);
+  // The contract link must RESOLVE, not merely appear as a substring: a broken relative path (for
+  // example one "../" too many after a skills move) otherwise passes a substring check while the link is
+  // dead. Resolve every candidate path against this skill's directory and require at least one to exist.
+  const contractPaths = [...src.matchAll(CONTRACT_PATH)].map((m) => m[0]);
+  const contractResolves = contractPaths.some((p) => existsSync(resolve(dirname(f), p.split("\\").join("/"))));
+  const ok = HEADING.test(src) && contractResolves && LEDGER.test(src);
   if (allow.has(id)) { if (ok) exemptNowCompliant.push(id); continue; }
   required.push(id);
   if (!ok) {
     const miss = [];
     if (!HEADING.test(src)) miss.push("no '## Evidence & skeptical assessment (required)' section");
-    if (!src.includes(CONTRACT)) miss.push("no link to evidence-discipline.md");
+    if (contractPaths.length === 0) miss.push("no link to evidence-discipline.md");
+    else if (!contractResolves) miss.push(`link to evidence-discipline.md does not resolve from this skill: ${contractPaths.join(", ")}`);
     if (!LEDGER.test(src)) miss.push("no 'evidence ledger' in its Definition of done");
     problems.push(`${id}: ${miss.join("; ")}`);
   }

@@ -23,15 +23,18 @@ import {
 
 const root = resolve(process.argv[2] ?? "features");
 const fail = (msg) => { console.error(`[check-bdd-coverage] FAIL - ${msg}`); process.exit(1); };
-const read = (p) => { try { return readFileSync(p, "utf8"); } catch { return null; } };
+// Normalize line endings on read so a Windows checkout (core.autocrlf=true, CRLF on disk) does not read
+// as spurious datastore drift or break the append-only check; the generator emits LF and CI is LF.
+const norm = (s) => (s == null ? s : s.replace(/\r\n/g, "\n"));
+const read = (p) => { try { return norm(readFileSync(p, "utf8")); } catch { return null; } };
 
 const files = findFeatureFiles(root);
 if (files.length === 0) fail(`no .feature files under ${root} (zero-scan; fail closed).`);
 
 // 2 - datastore in sync
 const { records, json, md } = buildIndex(root);
-if (read(join(root, "bdd-index.json")) !== json) fail(`bdd-index.json is missing or out of sync - run bdd-index-generate.mjs ${root}`);
-if (read(join(root, "INDEX.md")) !== md) fail(`INDEX.md is missing or out of sync - run bdd-index-generate.mjs ${root}`);
+if (read(join(root, "bdd-index.json")) !== norm(json)) fail(`bdd-index.json is missing or out of sync - run bdd-index-generate.mjs ${root}`);
+if (read(join(root, "INDEX.md")) !== norm(md)) fail(`INDEX.md is missing or out of sync - run bdd-index-generate.mjs ${root}`);
 
 // 3 - no feature may be happy-path-only
 const byFeature = new Map();

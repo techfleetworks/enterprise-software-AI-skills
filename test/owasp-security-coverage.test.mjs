@@ -7,7 +7,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -15,6 +15,7 @@ import { fileURLToPath } from "node:url";
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const GATE = resolve(REPO, ".claude/skills/owasp-secure-coding-bdd/scripts/check-security-coverage.mjs");
 const REAL_CONFIG = resolve(REPO, ".claude/skills/owasp-secure-coding-bdd/assets/security-coverage.config.json");
+const FEATURES_DIR = resolve(REPO, ".claude/skills/owasp-secure-coding-bdd/assets/example/features");
 
 const SQL_CODE = "const rows = db.query('SELECT id FROM users WHERE name = ' + name);\n";
 const SAFE_CODE = "export const add = (a, b) => a + b;\n";
@@ -107,4 +108,20 @@ test("FAIL CLOSED: an empty config (exit 2)", () => {
   writeFileSync(cfg, JSON.stringify({ rules: [] }));
   const r = run(fixture({ code: SQL_CODE, tag: null, config: cfg }));
   assert.equal(r.status, 2);
+});
+
+// GUARD (the test that was missing, which let the config drift from the scenarios): every requireTag the
+// shipped config demands must actually exist on a @security scenario in the shipped example features. If a
+// requireTag has no matching scenario, an adopter who uses the canonical scenarios gets a false gate failure.
+test("GUARD: every shipped requireTag appears on a scenario in the example features", () => {
+  const cfg = JSON.parse(readFileSync(REAL_CONFIG, "utf8"));
+  const featText = readdirSync(FEATURES_DIR)
+    .filter((f) => f.endsWith(".feature"))
+    .map((f) => readFileSync(join(FEATURES_DIR, f), "utf8"))
+    .join("\n") + "\n"; // trailing sentinel so a tag at the very end of the text still reads as a whole token
+  const required = [...new Set(cfg.rules.flatMap((r) => r.requireTags))];
+  // Match a tag as a whole token (trailing space or newline) so @owasp:session does not falsely match
+  // @owasp:session-management.
+  const missing = required.filter((t) => !(featText.includes(t + " ") || featText.includes(t + "\n")));
+  assert.deepEqual(missing, [], `requireTags with no matching @security scenario in the example features: ${missing.join(", ")}`);
 });

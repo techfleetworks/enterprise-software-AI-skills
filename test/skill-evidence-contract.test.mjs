@@ -13,7 +13,7 @@ const CHECK = resolve(REPO, ".claude/skills/skeptical-audit/scripts/check-skill-
 const COMPLIANT = `# A skill
 
 ## Evidence & skeptical assessment (required)
-See .claude/skills/skeptical-audit/references/evidence-discipline.md for the contract.
+See [the contract](evidence-discipline.md) for the rules.
 
 Definition of done: the evidence ledger is attached.
 `;
@@ -26,6 +26,7 @@ function fixture(skills, allowlist = []) {
     const dir = join(root, ...id.split("/"));
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, "SKILL.md"), ok ? COMPLIANT : NONCOMPLIANT);
+    if (ok) writeFileSync(join(dir, "evidence-discipline.md"), "the contract\n"); // so the contract link resolves
   }
   writeFileSync(join(root, "allow.json"), JSON.stringify(allowlist));
   return root;
@@ -45,6 +46,19 @@ test("FLAGS a non-allowlisted skill missing the contract (discriminating)", () =
 });
 test("grandfathers a non-compliant skill that is on the allowlist", () => {
   assert.equal(run(fixture({ alpha: false }, ["alpha"])).status, 0);
+});
+test("FLAGS a skill whose contract link does not RESOLVE (hardened: resolution, not substring, discriminating)", () => {
+  // Heading + ledger present, and the string "evidence-discipline.md" appears, so the OLD substring check
+  // passed this. The link points nowhere, so the hardened gate must fail it.
+  const root = mkdtempSync(join(tmpdir(), "esc-"));
+  const dir = join(root, "alpha");
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, "SKILL.md"),
+    "# A skill\n\n## Evidence & skeptical assessment (required)\nSee [the contract](../../nowhere/evidence-discipline.md).\n\nDefinition of done: the evidence ledger is attached.\n");
+  writeFileSync(join(root, "allow.json"), "[]");
+  const r = run(root);
+  assert.equal(r.status, 1, r.out);
+  assert.match(r.out, /does not resolve/);
 });
 test("FAILS when an allowlisted skill already complies (shrink-only enforced, discriminating)", () => {
   // You cannot grandfather a skill that already passes — this is what stops the allowlist from being

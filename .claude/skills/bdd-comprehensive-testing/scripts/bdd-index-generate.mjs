@@ -19,10 +19,13 @@ const jsonPath = join(root, "bdd-index.json");
 const mdPath = join(root, "INDEX.md");
 
 if (check) {
-  const read = (p) => { try { return readFileSync(p, "utf8"); } catch { return null; } };
+  // Normalize line endings before comparing: the generator emits LF, but a Windows checkout with
+  // core.autocrlf=true has CRLF on disk, which would otherwise read as spurious drift. CI is LF.
+  const norm = (s) => (s == null ? s : s.replace(/\r\n/g, "\n"));
+  const read = (p) => { try { return norm(readFileSync(p, "utf8")); } catch { return null; } };
   const drift = [];
-  if (read(jsonPath) !== json) drift.push("bdd-index.json");
-  if (read(mdPath) !== md) drift.push("INDEX.md");
+  if (read(jsonPath) !== norm(json)) drift.push("bdd-index.json");
+  if (read(mdPath) !== norm(md)) drift.push("INDEX.md");
   if (drift.length) {
     console.error(`[bdd-index] FAIL - datastore out of sync with the feature files: ${drift.join(", ")}. ` +
       `Run: node bdd-index-generate.mjs ${root}`);

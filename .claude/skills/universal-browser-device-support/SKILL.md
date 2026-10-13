@@ -153,7 +153,7 @@ single linter. Say which properties are gated mechanically and which rest on tes
 
 Every "this works across browsers and devices" statement is a factual claim, so it follows the repo's
 evidence discipline (canonical contract:
-[`skeptical-audit/references/evidence-discipline.md`](../../skeptical-audit/references/evidence-discipline.md)).
+[`skeptical-audit/references/evidence-discipline.md`](../skeptical-audit/references/evidence-discipline.md)).
 Compatibility is an **evidence ledger**: each supported environment is a claim with a state and a
 re-runnable source, never "it looked fine in my browser." Hunt the disconfirming case first (which
 engine or viewport is only assumed to work?) before you sign off.

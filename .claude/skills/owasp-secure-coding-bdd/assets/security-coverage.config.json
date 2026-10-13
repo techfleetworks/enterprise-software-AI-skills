@@ -7,8 +7,8 @@
     { "surface": "jwt", "contentMatch": ["jsonwebtoken", "jwt\\.(sign|verify|decode)", "\\balg\\b\\s*[:=]\\s*['\"]?none", "\\bHS256\\b", "\\bRS256\\b"], "requireTags": ["@owasp:jwt"], "sheets": ["JSON_Web_Token"] },
     { "surface": "file-upload", "contentMatch": ["\\bmulter\\b", "multipart/form-data", "formidable", "busboy", "\\.(saveAs|moveTo)\\s*\\("], "requireTags": ["@owasp:file-upload"], "sheets": ["File_Upload"] },
     { "surface": "ssrf", "contentMatch": ["\\bfetch\\s*\\(\\s*(req|request|user|input|url)", "axios\\.(get|post|request)\\s*\\(", "http\\.request\\s*\\(", "requests\\.(get|post)\\s*\\(", "urllib"], "requireTags": ["@owasp:ssrf"], "sheets": ["Server_Side_Request_Forgery_Prevention"] },
-    { "surface": "session-cookie", "contentMatch": ["set-?cookie", "\\.cookie\\s*\\(", "express-session", "httpOnly", "sameSite"], "requireTags": ["@owasp:session"], "sheets": ["Session_Management", "Cookie_Theft_Mitigation"] },
-    { "surface": "command-injection", "contentMatch": ["child_process", "\\bexec(Sync)?\\s*\\(", "\\bspawn(Sync)?\\s*\\(", "os\\.system\\s*\\(", "subprocess\\.(run|call|Popen)"], "requireTags": ["@owasp:command-injection"], "sheets": ["OS_Command_Injection_Defense"] },
-    { "surface": "deserialization", "contentMatch": ["\\bpickle\\.(load|loads)", "yaml\\.load\\b(?!er)", "ObjectInputStream", "\\bunserialize\\s*\\(", "Marshal\\.load"], "requireTags": ["@owasp:deserialization"], "sheets": ["Deserialization"] }
+    { "surface": "session-cookie", "contentMatch": ["set-?cookie", "\\.cookie\\s*\\(", "express-session", "httpOnly", "sameSite"], "requireTags": ["@owasp:session-management"], "sheets": ["Session_Management", "Cookie_Theft_Mitigation"] },
+    { "surface": "command-injection", "contentMatch": ["child_process", "\\bexec(Sync)?\\s*\\(", "\\bspawn(Sync)?\\s*\\(", "os\\.system\\s*\\(", "subprocess\\.(run|call|Popen)"], "requireTags": ["@owasp:os-command-injection"], "sheets": ["OS_Command_Injection_Defense"] },
+    { "surface": "deserialization", "contentMatch": ["\\bpickle\\.(load|loads)", "yaml\\.load\\b(?!er)", "ObjectInputStream", "\\bunserialize\\s*\\(", "Marshal\\.load"], "requireTags": ["@owasp:insecure-deserialization"], "sheets": ["Deserialization"] }
   ]
 }

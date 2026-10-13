@@ -93,7 +93,7 @@ and no-web forbids (it cannot be silently gutted); a planted em dash in a scoped
 (discriminating). The gate also runs as the `Architecture gate` step in CI via `npm run check:architecture`,
 and the engine's own behavior stays covered by `test/arch-gate.test.mjs`.
 
-Evidence ledger for this decision (per [`skeptical-audit/references/evidence-discipline.md`](../../skeptical-audit/references/evidence-discipline.md); every claim carries a state and a re-runnable source, and none is left `inferred` where it could be measured):
+Evidence ledger for this decision (per [`skeptical-audit/references/evidence-discipline.md`](../../.claude/skills/skeptical-audit/references/evidence-discipline.md); every claim carries a state and a re-runnable source, and none is left `inferred` where it could be measured):
 
 | Claim (falsifiable) | State | Source (re-runnable) | Limitation (not checked) |
 |---|---|---|---|
