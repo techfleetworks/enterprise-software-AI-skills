@@ -127,22 +127,32 @@ verified by launching a cloud session.
 ### The directive is not the skills
 
 These layers deliver the **directive text**, the reminder that names the skills. They do **not** make the
-skill files discoverable. Claude Code discovers skills from `~/.claude/skills`, a project's `.claude/skills`
-(walking up to the repo root), an `--add-dir` directory, enterprise settings, or a plugin, never from an
-arbitrary repo-root folder. This repo currently stores its skills at the root, so they load only where they
-have been installed into `~/.claude/skills` (the per-machine step the `bootstrap` installer performs).
-Relocating them under `.claude/skills/` so a pull makes them load with no install is tracked as its own
-change.
+skill files discoverable; a separate committed location does that. Claude Code discovers skills from
+`~/.claude/skills`, a project's `.claude/skills` (walking up to the repo root), an `--add-dir` directory,
+enterprise settings, or a plugin, never from an arbitrary repo-root folder. This repo commits its skills
+under `.claude/skills/<name>/` (ADR-0028), which is one of those discovery locations, so a session working in
+the repo loads them automatically, with no install, and a cloud single-repo session (which loads the repo's
+committed files) gets them the same way.
+
+One honest limit stays. The committed `.claude/skills/` only reaches a session that runs inside this repo,
+because Claude Code finds a project's skills by walking up from the start directory to the repo root. A
+session rooted above or outside the repo, in another project, or on another machine does not find these
+files (and a `git pull` cannot place anything in another machine's `~/.claude`). For those cases the skills
+need to be in a discovery location the session does reach, such as `~/.claude/skills`. The `bootstrap`
+installer mirrors them there when you pass `--skills`, or you can copy a skill folder out yourself.
 
 ## Turn the directive on in another project or machine
 
-Run the installer, which references this repo (never copies), so pulling this repo updates the
-always-on directive hook for that project too. It wires the directive hook, not the skill files;
-those still need to be in a discovery location such as `~/.claude/skills`:
+Run the installer, which references this repo for the directive (never copies it), so pulling this repo
+updates the always-on directive hook for that project too. By default it wires the directive hook only, not
+the skill files. For a session that runs outside this repo, the skills also need to be in a per-machine
+discovery location such as `~/.claude/skills`; pass `--skills` and the installer mirrors them there too (it
+records what it copied, so re-running it with `--skills` later keeps the mirror current):
 
 ```bash
-node .claude/skills/bootstrap/scripts/esk-init.mjs            # plan only
-node .claude/skills/bootstrap/scripts/esk-init.mjs --yes      # install or reconcile (backs up first)
+node .claude/skills/bootstrap/scripts/esk-init.mjs                  # plan only
+node .claude/skills/bootstrap/scripts/esk-init.mjs --yes            # install or reconcile the hook (backs up first)
+node .claude/skills/bootstrap/scripts/esk-init.mjs --yes --skills   # also mirror the skills into ~/.claude/skills
 ```
 
 For the zero-approval Layer 1 in another project, add one line to that project's own
