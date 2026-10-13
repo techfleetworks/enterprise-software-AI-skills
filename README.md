@@ -96,7 +96,7 @@ uses to decide when to load the skill on its own.
 | Skill | What it does | When it kicks in | Extra files |
 |---|---|---|---|
 | [`enterprise-architecture-standards`](.claude/skills/enterprise-architecture-standards/) | Designs the system and its data with real trade-offs: structure, resilience, and scale. | You design, build, or rework a service, database, API, or system. | 9 refs |
-| [`pattern-selector`](.claude/skills/pattern-selector/) | Picks the design pattern that fits, or none, with the pros, cons, and trade-offs. | You design or rework any feature, class, module, or data flow; "which pattern?" | 5 refs, 1 script |
+| [`pattern-selector`](.claude/skills/pattern-selector/) | Picks the software pattern that fits, or none, with the pros, cons, and trade-offs. | You design or rework any feature, class, module, or data flow; "which pattern?" | 5 refs, 1 script |
 | [`architectural-decision-records`](.claude/skills/architectural-decision-records/) | Writes down why a big choice was made. | You make an important choice: database, framework, contract, or login model. | 5 refs, 2 scripts |
 | [`owasp-secure-coding-bdd`](.claude/skills/owasp-secure-coding-bdd/) | Turns OWASP threat-modeling into runnable `@security` tests. | You touch login, input, sessions, files, APIs, permissions, dependencies, or AI code. | 15 refs |
 | [`bdd-comprehensive-testing`](.claude/skills/bdd-comprehensive-testing/) | Writes every use case and audience as plain-sentence tests, checked on every push. | Any behavior change: build, add, fix, or push. | 4 refs, 5 scripts |
