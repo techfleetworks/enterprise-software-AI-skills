@@ -342,14 +342,16 @@ flowchart TD
     end
 
     subgraph ENF["Enforced: at the outcome, not on trust"]
-      S5 --> E1["Before done or a PR: judge-arch reviews the change in fresh<br/>context against the four questions; findings resolved or waived."]
-      E1 --> E2{"Required CI checks: the test job<br/>(gate-script tests + check:architecture) and routing"}
+      S5 --> E0["Before done or a PR: write the skill-application receipt<br/>(one entry, every skill; each applied one cites a real heading,<br/>quotes 8+ words from it, and names files in the change)."]
+      E0 --> E1["judge-arch reviews the change in fresh context against the<br/>four questions; findings resolved or waived; recorded in the log."]
+      E1 --> E2{"Required CI checks: the test job (gate-script tests +<br/>check:architecture, which also run the dangling-reference check and<br/>the receipt's grounding on the committed log) and routing"}
       E2 -- "a discipline's artifact is missing:<br/>no ADR for a new skill, no test for a new gate,<br/>no @security scenario for an auth change" --> E3["Blocked. The change cannot merge."]
-      E2 -- "every routed artifact present and the review is clean" --> E4["Merges."]
+      E2 -- "every routed artifact present and the gates pass" --> E4["A human reviews the work against the receipt and the diff.<br/>The gates prove it is grounded, not that it is good."]
+      E4 --> E5["Merges."]
     end
 
     style E3 fill:#ffe6e6
-    style E4 fill:#e6ffe6
+    style E5 fill:#e6ffe6
 ```
 
 The selection half is the same mechanism any SKILL.md tool uses; the always-on layer and the enforcement half
