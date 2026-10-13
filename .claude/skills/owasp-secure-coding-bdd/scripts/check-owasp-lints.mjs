@@ -92,7 +92,13 @@ function findingsFor(blanked) {
     const open = blanked.indexOf("(", m.index);
     const end = open >= 0 ? parenSpanEnd(blanked, open) : m.index + 400;
     const span = blanked.slice(open >= 0 ? open : m.index, end);
-    const missing = ["HttpOnly", "Secure", "SameSite"].filter((f) => !new RegExp(f, "i").test(span));
+    // For .cookie()/.setCookie()/.cookies.set() (m[1] defined) the flags live in the options OBJECT as
+    // identifier keys, so strip string literals first: a flag word inside the cookie NAME or value
+    // (e.g. res.cookie('session_secure', t)) must NOT satisfy the check. For the setHeader Set-Cookie form
+    // (m[1] undefined) the flags live inside the header STRING, so test the span as-is.
+    const optionsForm = m[1] !== undefined;
+    const testOn = optionsForm ? span.replace(/'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|`(?:[^`\\]|\\.)*`/g, '""') : span;
+    const missing = ["HttpOnly", "Secure", "SameSite"].filter((f) => !new RegExp(f, "i").test(testOn));
     if (missing.length) out.push({ rule: "cookie-insecure", index: m.index, end, missing });
   }
   SETCOOKIE_STR.lastIndex = 0;

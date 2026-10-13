@@ -11,8 +11,8 @@
     },
     {
       "id": "new-gate-needs-test",
-      "description": "A new gate script is only trustworthy with a discriminating test that proves it detects. Ship the test in the same change (verifiable-quality-gates).",
-      "when": { "added": ["**/scripts/check-*.mjs"] },
+      "description": "A new gate or script is only trustworthy with a discriminating test that proves it detects. Ship the test in the same change (verifiable-quality-gates). Covers every new scripts/*.mjs, not only check-*, so a verify-*/run-*/*-lint gate cannot ship untested; a genuinely untestable scaffold is waived with a reason.",
+      "when": { "added": ["**/scripts/*.mjs"] },
       "requires": [
         { "artifact": "discriminating-test", "changed": ["test/**/*.test.mjs", "**/test/*.test.mjs"], "ownerGate": "verifiable-quality-gates (check-has-test, verify-check-discrimination)", "hint": "add a test under test/ that spawns the new gate and asserts its exit codes on clean and dirty inputs" }
       ]

@@ -37,6 +37,16 @@ const { records, json, md } = buildIndex(root);
 if (read(join(root, "bdd-index.json")) !== norm(json)) fail(`bdd-index.json is missing or out of sync - run bdd-index-generate.mjs ${root}`);
 if (read(join(root, "INDEX.md")) !== norm(md)) fail(`INDEX.md is missing or out of sync - run bdd-index-generate.mjs ${root}`);
 
+// 2b - every scenario must have at least one step (Given/When/Then). A step-less scenario is legal Gherkin but
+// exercises nothing, so it must not count toward audience or category coverage.
+const stepless = [];
+for (const f of files) {
+  const parsed = parseFeature(f);
+  if (parsed.error) continue; // validity is check-gherkin-valid's job
+  for (const s of scenariosOf(parsed, root)) if (!s.steps) stepless.push(`${s.name} (${f})`);
+}
+if (stepless.length) fail(`scenario(s) with no steps (Given/When/Then) exercise nothing: ${stepless.join("; ")}`);
+
 // 3 - no feature may be happy-path-only
 const byFeature = new Map();
 for (const r of records) { if (!byFeature.has(r.feature)) byFeature.set(r.feature, []); byFeature.get(r.feature).push(r); }

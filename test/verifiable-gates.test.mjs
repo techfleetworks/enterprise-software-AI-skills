@@ -75,6 +75,36 @@ test("asserts nothing about the check", () => {});
 `;
 }
 
+// An ALWAYS-RED test: it execs the check (so it is credited) but asserts the WRONG thing, so it fails against
+// the REAL check as well as the no-op. It discriminates nothing - there is no pass→fail transition - and the
+// mutation gate must FLAG it rather than certify it.
+// A COMMENT-ONLY test: it mentions the check name and spawnSync, but only inside comments - no real exec.
+// Raw substring/EXEC scanning would wrongly credit it; stripping comments first must not.
+function commentOnlyExecTest(checkPath) {
+  return `import { test } from "node:test";
+// this comment mentions ${checkPath} and even writes spawnSync( here, but only in a comment.
+/* ${checkPath} spawnSync( still a comment */
+test("asserts nothing and execs nothing real", () => {});
+`;
+}
+
+function alwaysRedTest(checkPath) {
+  return `import { test } from "node:test";
+import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+const CHECK = ${JSON.stringify(checkPath)};
+test("always red", () => {
+  const f = join(mkdtempSync(join(tmpdir(), "t-")), "x");
+  writeFileSync(f, "all clean");
+  // a clean file exits 0, but this demands 1 → fails against the real check AND the no-op.
+  assert.equal(spawnSync(process.execPath, [CHECK, f]).status, 1);
+});
+`;
+}
+
 // Build an isolated fixture: checks/check-foo.mjs + the given test files + config + allowlist.
 // `allowlistValue` overrides the allowlist file contents (to exercise fail-closed shape checks).
 function fixture({ tests = {}, allowlistValue = "[]", omitKey } = {}) {
@@ -118,6 +148,10 @@ test("coverage: FAILS when no test references the check at all (discriminating)"
   const r = runHas(fixture({ tests: {} }));
   assert.equal(r.status, 1);
 });
+test("coverage: does NOT credit a test that mentions the check + spawnSync only in COMMENTS (discriminating)", () => {
+  const r = runHas(fixture({ tests: { "foo.test.mjs": commentOnlyExecTest } }));
+  assert.equal(r.status, 1, (r.stdout || "") + (r.stderr || ""));
+});
 test("coverage: FAILS (shrink-only) when a check that now has a test is still on the allowlist (discriminating)", () => {
   // The check has a good exec-test (credited) AND is on the allowlist. The allowlist is shrink-only, so the
   // gate must FAIL until the stale entry is removed. Old behavior printed a note and exited 0.
@@ -134,6 +168,11 @@ test("mutation: PASSES when the test fails against a no-op check", () => {
 test("mutation: FAILS a vacuous test that still passes against a no-op check (discriminating)", () => {
   const r = runDisc(fixture({ tests: { "foo.test.mjs": vacuousTest } }));
   assert.equal(r.status, 1);
+});
+test("mutation: FLAGS an always-red test that never passes against the real check (baseline, discriminating)", () => {
+  const r = runDisc(fixture({ tests: { "foo.test.mjs": alwaysRedTest } }));
+  assert.equal(r.status, 1, (r.stdout || "") + (r.stderr || ""));
+  assert.match((r.stdout || "") + (r.stderr || ""), /does NOT pass|PASS->FAIL|always-red/i);
 });
 
 // --- shared lib fail-closed (verifiable-lib.loadConfig), proven via BOTH gates ---

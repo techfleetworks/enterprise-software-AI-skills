@@ -53,6 +53,17 @@ test("coverage: FLAGS a cleared cell with no evidence (no silent clears, discrim
   const e = baseEntry(); e.matrix["a.ts"].boundary = { verdict: "cleared", evidence: "" };
   assert.equal(cov(e, "a.ts"), 1);
 });
+test("coverage: FLAGS an all-n/a matrix with no evidence (vacuous full-review bypass, discriminating)", () => {
+  // Hardening: declaring every question n/a for every file with no reason used to certify a full review.
+  const e = baseEntry();
+  for (const q of QS) e.matrix["a.ts"][q] = { verdict: "n/a" };
+  assert.equal(cov(e, "a.ts"), 1);
+});
+test("coverage: an n/a cell WITH a reason still passes (no false positive)", () => {
+  const e = baseEntry();
+  for (const q of QS) e.matrix["a.ts"][q] = { verdict: "n/a", evidence: "pure doc change; no code surface" };
+  assert.equal(cov(e, "a.ts"), 0);
+});
 test("coverage: FLAGS a finding with an out-of-vocabulary severity (discriminating)", () => {
   const e = baseEntry();
   e.matrix["a.ts"].boundary = { verdict: "finding", evidence: "x:1" };

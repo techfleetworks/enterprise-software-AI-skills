@@ -90,6 +90,12 @@ test("FAIL CLOSED: a waiver with an unparseable expires date (exit 2, discrimina
   assert.match(r.out, /unparseable/);
 });
 
+test("FAIL CLOSED: a waiver with a placeholder reason ('tbd') does not suppress a security surface (exit 2, discriminating)", () => {
+  const r = run(fixture({ code: SQL_CODE, tag: null, waivers: [{ tag: "@owasp:sql-injection", reason: "tbd", approvedBy: "mdenner", expires: "2999-01-01" }] }));
+  assert.equal(r.status, 2, r.out);
+  assert.match(r.out, /reason/i);
+});
+
 test("PASS: a scenario whose @security and @owasp tag are on separate lines is still matched", () => {
   const multiLine = "Feature: security\n\n  @security\n  @owasp:sql-injection\n  Scenario: blocked\n    Given a request\n    When an attacker sends a payload\n    Then it is rejected\n";
   const r = run(fixture({ code: SQL_CODE, featureText: multiLine }));

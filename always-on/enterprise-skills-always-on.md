@@ -47,7 +47,10 @@ check:receipt` checks it is complete and that every quote is a verbatim run from
 `--changed-list <the diff>` to also check that the cited files are in the change and that a coupled surface
 is marked applied (the merge-blocking CI job that passes the diff and base is deferred to the techfleetnetwork
 release). None of it proves the work is true or good, so a human must still review it. A silent skip becomes a
-failing empty cell: you cannot claim a skill without showing what you pulled and where.
+failing empty cell: you cannot claim a skill without showing what you pulled and where. There is NO triviality
+exemption: a one-line or copy-only change still ships a receipt. Most skills are legitimately `not-applicable`
+for a small change, but the entry still has to exist and say so; "it is too small to bother" is exactly the
+shortcut this receipt exists to stop.
 
 ## Evidence is mandatory on every claim
 Every factual claim you output carries an **evidence state** (`proven` / `observed` / `inferred` /

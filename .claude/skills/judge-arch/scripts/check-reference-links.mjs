@@ -93,7 +93,7 @@ const existing = new Set(mdFiles.map((f) => path.basename(f).toLowerCase()));
 // A `.md` token: a path/filename of word chars, dot, slash, dash, ending in `.md`, not followed by more word
 // chars (so `foo.md5` is not a hit). The char class excludes `)` and backtick, so `](refs/foo.md)` and
 // `` `foo.md` `` both yield a clean token.
-const TOKEN_RE = /[A-Za-z0-9_./-]+\.md(?![A-Za-z0-9])/g;
+const TOKEN_RE = /[A-Za-z0-9_./-]+\.md(?![A-Za-z0-9])/gi;
 const segs = (token) => token.split("/").filter(Boolean);
 
 const violations = [];

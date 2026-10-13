@@ -31,6 +31,16 @@ const BASE = {
   ],
 };
 
+test("hardening: the REAL routing config requires a test for a NON-check gate script (verify-*/run-*/lint)", () => {
+  const REAL = path.resolve(HERE, "..", ".claude", "skills", "judge-arch", "assets", "routing-rules.config.json");
+  const added = ".claude/skills/x/scripts/verify-foo.mjs"; // not named check-*, used to slip the old glob
+  const bad = run(["--config", REAL, "--changed-list", added, "--added-list", added]);
+  assert.equal(bad.status, 1, bad.out);
+  assert.match(bad.out, /new-gate-needs-test/);
+  const ok = run(["--config", REAL, "--changed-list", added + ",test/foo.test.mjs", "--added-list", added]);
+  assert.equal(ok.status, 0, ok.out);
+});
+
 test("fires + required artifact present -> exit 0", () => {
   const c = tmp(BASE);
   const r = run(["--config", c.p, "--changed-list", "a/SKILL.md,docs/adr/0031-x.md", "--added-list", "a/SKILL.md"]);

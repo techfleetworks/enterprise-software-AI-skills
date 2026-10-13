@@ -46,6 +46,14 @@ test("FAILS when a PII column is not in the map (discriminating)", () => {
   assert.equal(r.status, 1, r.out);
   assert.match(r.out, /users\.phone/);
 });
+test("FLAGS ip/age/salary/citizenship columns (broadened indicators, discriminating)", () => {
+  for (const col of ["client_ip", "ip_addr", "age", "salary", "citizenship"]) {
+    const r = run(`CREATE TABLE t (\n  id int,\n  ${col} text\n);\n`, {});
+    assert.equal(r.status, 1, `${col} should be flagged as PII-looking: ` + r.out);
+    assert.match(r.out, new RegExp(col));
+  }
+});
+
 test("FAILS on an undeclared ADD COLUMN ssn (discriminating)", () => {
   const r = run("ALTER TABLE users ADD COLUMN ssn text;\n", {});
   assert.equal(r.status, 1);

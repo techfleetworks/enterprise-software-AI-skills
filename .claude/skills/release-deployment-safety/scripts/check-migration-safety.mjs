@@ -56,6 +56,12 @@ const RULES = [
     why: "stop writing, stop reading, deploy, THEN drop in a later release (confirm nothing reads it first)." },
   { name: "rename-column", re: /\bRENAME\s+(COLUMN|TO)\b/i,
     why: "a direct rename breaks running old code instantly. Add new → dual-write → backfill → switch → drop old." },
+  // MySQL/MariaDB dialect: CHANGE renames (and may retype) a column; MODIFY retypes one. Both are the
+  // dialect's forms of the destructive rename/type-change above, which the Postgres-shaped rules miss.
+  { name: "mysql-change-column", re: /\bCHANGE\s+(COLUMN\s+)?\S/i,
+    why: "MySQL CHANGE renames a column (breaking old code) and can rewrite its type under lock. Add new → dual-write → backfill → switch → drop old." },
+  { name: "mysql-modify-column", re: /\bMODIFY\s+(COLUMN\s+)?\S/i,
+    why: "MySQL MODIFY changes a column's type in place, rewriting + locking the table and breaking old code. Add a new column → backfill → switch → drop." },
   // `(?!CONSTRAINT\b)` so this fires only on ADD COLUMN … NOT NULL, not on ADD CONSTRAINT … CHECK
   // (col IS NOT NULL) - the latter is the skill's own safe 3-step and is handled by fk-check-not-valid.
   { name: "add-not-null-no-default", re: /\bADD\s+(COLUMN\s+)?(?!CONSTRAINT\b)[^;]*\bNOT\s+NULL\b/i, unless: /\b(DEFAULT|GENERATED|NOT\s+VALID)\b/i,
@@ -117,7 +123,9 @@ for (const f of files) {
   try { text = readFileSync(f, "utf8"); }
   catch (e) { die(`could not read ${f} (${e.message})`); }
   for (const stmt of statements(text)) {
-    const sql = stripComments(stmt.raw);
+    // Strip comments, then blank single-quoted string literals so a DDL keyword inside a string (a DEFAULT or
+    // CHECK value like 'change requested') cannot trip a rule. No rule matches string CONTENT, only keywords.
+    const sql = stripComments(stmt.raw).replace(/'(?:[^']|'')*'/g, "''");
     if (!sql.trim()) continue;
     const ig = ignores(stmt.raw);
     if (ig.all) continue;

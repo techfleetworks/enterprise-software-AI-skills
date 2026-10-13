@@ -74,6 +74,12 @@ test("tags: FLAGS an out-of-vocabulary value (discriminating)", () => {
 test("coverage: passes a complete, in-sync example", () => {
   assert.equal(run(S("check-bdd-coverage.mjs"), [features(VALID)]).status, 0);
 });
+test("coverage: FLAGS a step-less scenario (legal Gherkin but exercises nothing, discriminating)", () => {
+  const withEmpty = VALID + "\n  @audience:customer @usecase:noop @category:edge @quality:functional @severity:low\n  Scenario: a step-less scenario\n";
+  const r = run(S("check-bdd-coverage.mjs"), [features(withEmpty)]);
+  assert.equal(r.status, 1, r.out);
+  assert.match(r.out, /no steps/i);
+});
 test("coverage: FLAGS a happy-path-only feature (discriminating)", () => {
   const happyOnly = `Feature: Widget\n\n  @audience:customer @usecase:create @category:happy @quality:functional @severity:high\n  Scenario: create\n    Given a user\n    When they create\n    Then it exists\n`;
   assert.equal(run(S("check-bdd-coverage.mjs"), [features(happyOnly)]).status, 1);

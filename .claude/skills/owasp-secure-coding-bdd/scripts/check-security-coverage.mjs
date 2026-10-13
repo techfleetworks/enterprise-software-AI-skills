@@ -98,6 +98,11 @@ if (WAIVERS) {
   if (!Array.isArray(w)) die(2, "waivers file must be a JSON array");
   for (const [i, x] of w.entries()) {
     for (const k of ["tag", "reason", "approvedBy", "expires"]) if (!x[k]) die(2, `waiver #${i} missing required field "${k}" (fail closed)`);
+    // A blank/whitespace/"."/"tbd" reason or approver is no decision: a security surface must not be waivable
+    // by a one-char or placeholder reason. Match the bar every other gate in this repo uses.
+    const placeholder = (s) => { const t = String(s).trim(); return t.length < 3 || /^(n\/?a|tbd|tba|todo|fixme|placeholder|soon|later|none|unknown|\?+|-+|\.+|x+)$/i.test(t); };
+    if (placeholder(x.reason)) die(2, `waiver #${i} has a blank, too-short, or placeholder reason (a real reason is required to waive a security surface)`);
+    if (placeholder(x.approvedBy)) die(2, `waiver #${i} has a blank, too-short, or placeholder approvedBy (name a real approver)`);
     const exp = new Date(x.expires);
     // A present-but-unparseable date must fail closed, not become a permanent waiver (NaN comparisons are
     // always false, so `exp < now` would be false and the waiver would silently never expire).

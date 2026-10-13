@@ -33,6 +33,26 @@ function run(spec, cfg = BASE_CFG, { rawXml } = {}) {
   return { status: r.status, out: (r.stdout || "") + (r.stderr || "") };
 }
 
+// --- hardening: commented-out tests and vacuous config ----------------------
+test("FLAGS an ice-cream cone padded with commented-out testcases (discriminating)", () => {
+  const real = `  <testcase classname="${DIRS.e2e}1" name="a" time="0.01"/>\n  <testcase classname="${DIRS.e2e}2" name="b" time="0.01"/>\n`;
+  let commented = "  <!--\n";
+  for (let i = 0; i < 12; i++) commented += `  <testcase classname="${DIRS.unit}${i}" name="u${i}" time="0.01"/>\n`;
+  for (let i = 0; i < 4; i++) commented += `  <testcase classname="${DIRS.integration}${i}" name="g${i}" time="0.01"/>\n`;
+  commented += "  -->\n";
+  const rawXml = `<?xml version="1.0"?>\n<testsuite>\n${real}${commented}</testsuite>\n`;
+  const r = run(null, BASE_CFG, { rawXml });
+  assert.equal(r.status, 1, r.out); // the real shape is 100% e2e; the commented block must not count
+});
+test("a layers-only config does NOT claim on-pyramid; it discloses the pyramid was not enforced (discriminating)", () => {
+  // An 83%-e2e suite used to report "on-pyramid" with no thresholds set. It must not imply enforcement.
+  const cfg = { layers: { unit: ["/unit/"], e2e: ["/e2e/"] } };
+  const r = run([{ layer: "unit", n: 1 }, { layer: "e2e", n: 5 }], cfg);
+  assert.equal(r.status, 0, r.out);
+  assert.match(r.out, /NOT enforced/i);
+  assert.doesNotMatch(r.out, /on-pyramid/);
+});
+
 // --- healthy pyramid passes --------------------------------------------------
 test("PASSES a healthy pyramid (many unit, some integration, few e2e)", () => {
   const r = run([{ layer: "unit", n: 20 }, { layer: "integration", n: 6 }, { layer: "e2e", n: 2 }]);

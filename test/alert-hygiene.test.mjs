@@ -49,6 +49,14 @@ test("PASSES a paging alert on a cause expr that ALSO carries a symptom (discrim
   const yaml = GOOD.replace(/expr: .*/, "expr: cpu_saturation_latency_seconds:p99 > 1");
   assert.equal(run(yaml).status, 0, run(yaml).out);
 });
+test("FLAGS a paging alert on a cause the old 8-token list missed - heap, connection pool (symptom-absence, discriminating)", () => {
+  for (const expr of ["jvm_heap_used_bytes / jvm_heap_max_bytes > 0.9", "db_connections_active / db_connections_max > 0.9"]) {
+    const yaml = GOOD.replace(/expr: .*/, `expr: ${expr}`);
+    const r = run(yaml);
+    assert.equal(r.status, 1, `${expr} should flag cause-based-page: ` + r.out);
+    assert.match(r.out, /cause-based-page/);
+  }
+});
 
 // --- each rule FAILS on its violation (discriminating, one per rule) ---------
 test("FLAGS no-severity (exit 1)", () => {

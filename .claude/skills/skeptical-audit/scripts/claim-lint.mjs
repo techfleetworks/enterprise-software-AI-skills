@@ -23,6 +23,7 @@ import { readFileSync } from "node:fs";
 const HEDGE_WORDS = [
   "essentially", "mostly", "pretty much", "more or less", "basically",
   "should be fine", "should work", "should be", "ought to", "probably",
+  "maybe", "perhaps",
   "likely", "i think", "i believe", "i assume", "presumably", "seems to",
   "seems like", "appears to", "as far as i can tell", "afaik", "i recall",
   "i'm fairly sure", "im fairly sure", "fairly confident", "in theory",
@@ -45,6 +46,8 @@ const CLAIM_PATTERNS = [
   /\b(verified|confirmed|validated|ensured|checked)\b/i,
   /\bthere (is|are) no\b/i, /\bnever (happens|fails|breaks)\b/i,
   /\balways (works|passes|succeeds)\b/i, /\bhandles? (all|every)\b/i,
+  /\bis (tested|reviewed|validated|working)\b/i,
+  /\b(the )?(build|suite|ci|pipeline|deploy\w*|check|gate) (passes|passed|succeeds|succeeded)\b/i,
   /\bcan('?t| not) (happen|fail|occur)\b/i,
 ];
 
@@ -75,9 +78,23 @@ lines.forEach((raw, i) => {
   if (inFence || line === "") return;
   if (line.startsWith(">") || line.startsWith("|") || line.startsWith("#")) return; // quotes/tables/headings
 
-  const hasState = STATE.test(line);
+  // The evidence state may sit on the claim's line OR the next non-blank line (a common ledger layout). Not
+  // looking ahead would false-flag a backed claim whose state is on the adjacent line - and that trains people
+  // to ignore the tool.
+  let nextNonBlank = "";
+  for (let j = i + 1; j < lines.length; j++) { const t = lines[j].trim(); if (t) { nextNonBlank = t; break; } }
+  // Credit the NEXT line's state only when that line is clearly THIS claim's evidence row - a ledger table row
+  // (| ... |), an "Evidence:/Source:" line, or a bracketed [state]. Crediting any line that merely mentions a
+  // state token would silence a claim that happens to sit above an UNRELATED evidence line.
+  const nextIsEvidence = /^\|/.test(nextNonBlank)
+    || /^(evidence|source|proof|state)\b/i.test(nextNonBlank)
+    || /^\[?(proven|observed|inferred|documented|reported|not[-\s]assessed)\]/i.test(nextNonBlank);
+  const hasState = STATE.test(line) || (nextIsEvidence && STATE.test(nextNonBlank));
 
   for (const h of HEDGES) {
+    // "should be removed/added/updated" is an imperative recommendation, not a confidence hedge. Narrow to an
+    // explicit action-verb set so a real soft-confidence hedge ("should be cached/deployed by now") is NOT exempt.
+    if (h.word === "should be" && /\bshould be (removed|added|updated|deleted|renamed|moved|refactored|replaced|dropped|merged|reverted|split|consolidated|extracted|inlined|deprecated)\b/i.test(line)) continue;
     if (h.re.test(line)) {
       findings.push({ n: i + 1, kind: "HEDGE", hit: h.word, line: raw.trim() });
     }

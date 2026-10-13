@@ -153,9 +153,9 @@ const BUILTIN_CHECKS = [
   // unrolled, linear-time form), so a non-empty body fails fast instead of catastrophically
   // backtracking. The prior nested-quantifier form was ReDoS-able (a ~400B catch hung the gate >5s).
   ['emptyCatch', 'catch block does nothing (recover, retry, or report - pick one)',
-    /catch\s*(\([^)]*\))?\s*\{(?:\s|\/\/[^\n]*|\/\*[^*]*\*+(?:[^/*][^*]*\*+)*\/)*\}/g],
-  ['swallowReturn', 'catch swallows the error and returns null/false/undefined',
-    /catch\s*(\([^)]*\))?\s*\{\s*return\s+(?:null|false|undefined)\s*;?\s*\}/g],
+    /catch\s*(\([^)]*\))?\s*\{(?:\s|;|\/\/[^\n]*|\/\*[^*]*\*+(?:[^/*][^*]*\*+)*\/)*\}/g],
+  ['swallowReturn', 'catch swallows the error and returns a bare or empty value (null/false/undefined/[]/{}/0/"")',
+    /catch\s*(\([^)]*\))?\s*\{\s*return\s*(?:null|false|undefined|\[\s*\]|\{\s*\}|0|''|"")?\s*;?\s*\}/g],
   ['keepInSync', 'a "keep in sync" marker - two copies of one fact; give it one owner',
     /keep\s+(?:in|these\s+in|them\s+in|it\s+in)\s+sync/gi],
 ];
