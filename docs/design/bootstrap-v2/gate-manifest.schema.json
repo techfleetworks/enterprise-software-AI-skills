@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/techfleetworks/enterprise-software-AI-skills/gate-manifest.schema.json",
+  "title": "Gate manifest",
+  "description": "The single source of truth for bootstrap-v2 skill-to-CI sync (ADR-0041). A consumer repo commits a gate-manifest.json conforming to this schema; the parity gate, the manifest-driven aggregator, and esk-init genesis all read it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "gates", "aggregator"],
+  "properties": {
+    "version": {
+      "description": "The skills version this repo is pinned to (semver). A repo resolves exactly one effective version from this field.",
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$"
+    },
+    "generatedFrom": {
+      "description": "Optional provenance: the upstream repo@version this manifest was generated from.",
+      "type": "string"
+    },
+    "gates": {
+      "description": "Every gate that must exist in the consumer repo. The manifest is an allow-list: a committed gate script not listed here is unsanctioned and must be rejected.",
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/gate" }
+    },
+    "aggregator": {
+      "description": "The single branch-protection status check all gates feed, so adding/removing a gate never changes the required-check set.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requiredCheck"],
+      "properties": {
+        "requiredCheck": {
+          "description": "The exact status-check context name required in branch protection (e.g. the ruleset's required check).",
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  },
+  "$defs": {
+    "gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "script", "sha256", "test", "lane"],
+      "properties": {
+        "id": {
+          "description": "Identifier for the gate (kebab-case). Must be unique across gates and map to exactly one script; that uniqueness is enforced by the parity gate, not by this schema (JSON Schema cannot express per-property cross-item uniqueness).",
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+        },
+        "origin": {
+          "description": "upstream = governed by the published skills release (whole-manifest provenance hash-compares these); repo-local = a guard the adopter adopted during genesis reconcile, not in the upstream release. Defaults to upstream when omitted.",
+          "type": "string",
+          "enum": ["upstream", "repo-local"]
+        },
+        "skill": {
+          "description": "The skill this gate enforces (its directory name under .claude/skills/). Required in practice for upstream gates; optional because an adopted repo-local guard may enforce no installed skill.",
+          "type": "string",
+          "minLength": 1
+        },
+        "script": {
+          "description": "Repo-relative path to the gate script the consumer repo runs.",
+          "type": "string",
+          "pattern": "^[^\\0]+\\.(mjs|js|sh)$"
+        },
+        "sha256": {
+          "description": "Lowercase hex sha256 of the trusted gate-script content. Drift from this hash is a parity failure.",
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "test": {
+          "description": "Repo-relative path to the gate's discrimination test (verifiable-quality-gates: every gate ships a test that fails when the gate is neutralized).",
+          "type": "string",
+          "minLength": 1
+        },
+        "lane": {
+          "description": "required = feeds the blocking aggregator; advisory = runs and reports but does not block.",
+          "type": "string",
+          "enum": ["required", "advisory"]
+        },
+        "couples": {
+          "description": "File globs that MUST carry this gate: a change touching a matching path must have the gate applied (policy-as-data coupling, as the skill-application receipt uses).",
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

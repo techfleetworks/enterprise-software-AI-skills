@@ -1,0 +1,51 @@
+{
+  "version": "1.0.0",
+  "generatedFrom": "techfleetworks/enterprise-software-AI-skills@1.0.0",
+  "gates": [
+    {
+      "id": "skill-gate-parity",
+      "skill": "judge-arch",
+      "script": "scripts/ci/check-skill-gate-parity.mjs",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000001",
+      "test": "test/skill-gate-parity.test.mjs",
+      "lane": "required"
+    },
+    {
+      "id": "untagged-pii",
+      "skill": "compliance-data-lifecycle",
+      "script": "scripts/ci/check-untagged-pii.mjs",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000002",
+      "test": "test/untagged-pii.test.mjs",
+      "lane": "required",
+      "couples": ["**/migrations/**", "**/*.sql"]
+    },
+    {
+      "id": "no-ua-sniffing",
+      "skill": "universal-browser-device-support",
+      "script": "scripts/ci/check-no-ua-sniffing.mjs",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000003",
+      "test": "test/no-ua-sniffing.test.mjs",
+      "lane": "required",
+      "couples": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"]
+    },
+    {
+      "id": "alert-hygiene",
+      "skill": "sre-operational-readiness",
+      "script": "scripts/ci/check-alert-hygiene.mjs",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000004",
+      "test": "test/alert-hygiene.test.mjs",
+      "lane": "advisory"
+    },
+    {
+      "id": "legacy-auth-importers",
+      "origin": "repo-local",
+      "script": "scripts/ci/check-legacy-auth-importers.mjs",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000005",
+      "test": "test/legacy-auth-importers.test.mjs",
+      "lane": "required"
+    }
+  ],
+  "aggregator": {
+    "requiredCheck": "enterprise-gates"
+  }
+}
