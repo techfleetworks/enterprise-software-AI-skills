@@ -33,6 +33,7 @@ function buildSource({ version = "1.0.0", gates = [{ id: "alpha" }], machinery =
     const tdir = join(root, ".claude", "skills", "bootstrap", "templates");
     mkdirSync(tdir, { recursive: true });
     writeFileSync(join(tdir, "pre-push"), "#!/usr/bin/env node\n// stub hook template\nprocess.exit(0);\n");
+    writeFileSync(join(tdir, "install-hooks.mjs"), "#!/usr/bin/env node\n// stub install-hooks helper\nprocess.exit(0);\n");
   }
   const mkEntry = (e, kind) => {
     const name = `${kind === "machinery" ? "run" : "check"}-${e.id}.mjs`;
@@ -127,6 +128,56 @@ test("GENESIS: sets core.hooksPath to .githooks in a git repo, and does NOT clob
   run(buildSource(), tgt2, ["--yes"]);
   const kept = execFileSync("git", ["-C", tgt2, "config", "--get", "core.hooksPath"], { encoding: "utf8" }).trim();
   assert.equal(kept, ".husky", "an existing core.hooksPath is preserved, not clobbered");
+});
+
+test("GENESIS: adds a package.json prepare script and installs the hook helper (zero-step hook)", () => {
+  const src = buildSource();
+  const tgt = newTarget();
+  writeFileSync(join(tgt, "package.json"), JSON.stringify({ name: "consumer", version: "0.0.0", scripts: { test: "echo hi" } }, null, 2) + "\n");
+  run(src, tgt, ["--yes"]);
+  assert.ok(existsSync(join(tgt, ".githooks", "install-hooks.mjs")), "helper installed");
+  const pkg = JSON.parse(readFileSync(join(tgt, "package.json"), "utf8"));
+  assert.equal(pkg.scripts.prepare, "node .githooks/install-hooks.mjs", "prepare script added");
+  assert.equal(pkg.scripts.test, "echo hi", "existing scripts preserved");
+});
+
+test("GENESIS: degrades safely when package.json is not valid JSON (no crash, no edit, hook still installed)", () => {
+  const src = buildSource();
+  const tgt = newTarget();
+  writeFileSync(join(tgt, "package.json"), "{ not valid json ,,, ");
+  assert.equal(run(src, tgt, ["--yes"]), 0, "genesis still succeeds");
+  assert.equal(readFileSync(join(tgt, "package.json"), "utf8"), "{ not valid json ,,, ", "the malformed file is left untouched");
+  assert.ok(existsSync(join(tgt, ".githooks", "install-hooks.mjs")), "helper still installed");
+});
+
+test("GENESIS: no-op on a package.json whose prepare already runs the helper", () => {
+  const src = buildSource();
+  const tgt = newTarget();
+  const pkg = { name: "c", version: "0.0.0", scripts: { prepare: "node .githooks/install-hooks.mjs && echo hi" } };
+  writeFileSync(join(tgt, "package.json"), JSON.stringify(pkg, null, 2) + "\n");
+  run(src, tgt, ["--yes"]);
+  assert.equal(JSON.parse(readFileSync(join(tgt, "package.json"), "utf8")).scripts.prepare, "node .githooks/install-hooks.mjs && echo hi", "an already-wired prepare is left exactly as is");
+});
+
+test("GENESIS: preserves the package.json indent style when adding prepare", () => {
+  const src = buildSource();
+  const tgt = newTarget();
+  // 4-space indent, no prepare yet.
+  writeFileSync(join(tgt, "package.json"), JSON.stringify({ name: "c", version: "0.0.0" }, null, 4) + "\n");
+  run(src, tgt, ["--yes"]);
+  const text = readFileSync(join(tgt, "package.json"), "utf8");
+  assert.match(text, /\n {4}"/, "4-space indent is preserved, not reformatted to 2-space");
+  assert.equal(JSON.parse(text).scripts.prepare, "node .githooks/install-hooks.mjs");
+});
+
+test("GENESIS: does NOT clobber an existing package.json prepare script", () => {
+  const src = buildSource();
+  const tgt = newTarget();
+  writeFileSync(join(tgt, "package.json"), JSON.stringify({ name: "consumer", version: "0.0.0", scripts: { prepare: "husky" } }, null, 2) + "\n");
+  run(src, tgt, ["--yes"]);
+  const pkg = JSON.parse(readFileSync(join(tgt, "package.json"), "utf8"));
+  assert.equal(pkg.scripts.prepare, "husky", "an existing prepare script is preserved, not clobbered");
+  assert.ok(existsSync(join(tgt, ".githooks", "install-hooks.mjs")), "helper still installed for manual wiring");
 });
 
 test("GENESIS: still bootstraps cleanly when the source ships no hook template", () => {

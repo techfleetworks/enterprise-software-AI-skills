@@ -16,3 +16,4 @@ log.jsonl merge=union
 # The pre-push hook template is a shebang script; it must check out with LF so it runs under the shell
 # that git invokes it with, even on Windows.
 .claude/skills/bootstrap/templates/pre-push text eol=lf
+.claude/skills/bootstrap/templates/install-hooks.mjs text eol=lf

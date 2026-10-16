@@ -81,6 +81,40 @@ test("PRE-PUSH: passes the GATE_* env contract to the gates", () => {
   assert.equal(runHook(repo({ gates: [{ id: "skill-gate-parity", exit: 0, envCheck: true }] })), 0);
 });
 
+// --- the install-hooks helper (arms the hook on npm install) ---
+const HELPER = resolve(process.cwd(), ".claude/skills/bootstrap/templates/install-hooks.mjs");
+const gitInit = (dir) => execFileSync("git", ["init", "-q", dir], { stdio: "pipe" });
+const hooksPath = (dir) => {
+  try { return execFileSync("git", ["-C", dir, "config", "--get", "core.hooksPath"], { encoding: "utf8" }).trim(); } catch { return ""; }
+};
+
+test("INSTALL-HOOKS: arms core.hooksPath in a git repo with no prior value", () => {
+  const dir = mkdtempSync(join(tmpdir(), "ih-")); created.push(dir); gitInit(dir);
+  execFileSync("node", [HELPER], { cwd: dir, stdio: "pipe" });
+  assert.equal(hooksPath(dir), ".githooks");
+});
+
+test("INSTALL-HOOKS: does NOT clobber an existing core.hooksPath", () => {
+  const dir = mkdtempSync(join(tmpdir(), "ih-")); created.push(dir); gitInit(dir);
+  execFileSync("git", ["-C", dir, "config", "core.hooksPath", ".husky"], { stdio: "pipe" });
+  execFileSync("node", [HELPER], { cwd: dir, stdio: "pipe" });
+  assert.equal(hooksPath(dir), ".husky");
+});
+
+test("INSTALL-HOOKS: is a no-op when core.hooksPath is already .githooks", () => {
+  const dir = mkdtempSync(join(tmpdir(), "ih-")); created.push(dir); gitInit(dir);
+  execFileSync("git", ["-C", dir, "config", "core.hooksPath", ".githooks"], { stdio: "pipe" });
+  execFileSync("node", [HELPER], { cwd: dir, stdio: "pipe" });
+  assert.equal(hooksPath(dir), ".githooks");
+});
+
+test("INSTALL-HOOKS: never fails the install outside a git repo", () => {
+  const dir = mkdtempSync(join(tmpdir(), "ih-")); created.push(dir);
+  let code = 0;
+  try { execFileSync("node", [HELPER], { cwd: dir, stdio: "pipe" }); } catch (e) { code = e.status ?? 1; }
+  assert.equal(code, 0);
+});
+
 process.on("exit", () => {
   for (const d of created) {
     try {
