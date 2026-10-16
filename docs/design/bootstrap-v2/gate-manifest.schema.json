@@ -22,6 +22,11 @@
       "minItems": 1,
       "items": { "$ref": "#/$defs/gate" }
     },
+    "machinery": {
+      "description": "Non-gate scripts that genesis also installs and that must stay intact (the aggregator that runs the gates). They are not gates (they do not judge code), but a neutered one would turn enforcement off, so they are hash-checked the same way gates are: the upstream-integrity gate at the source, and the parity and provenance gates in a consumer. Optional.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/machinery" }
+    },
     "aggregator": {
       "description": "The single branch-protection status check all gates feed, so adding/removing a gate never changes the required-check set.",
       "type": "object",
@@ -37,6 +42,18 @@
     }
   },
   "$defs": {
+    "machinery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "skill", "script", "sha256"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+        "skill": { "type": "string", "minLength": 1 },
+        "script": { "type": "string", "pattern": "^[^\\0]+\\.(mjs|js|sh)$" },
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "test": { "type": "string", "minLength": 1 }
+      }
+    },
     "gate": {
       "type": "object",
       "additionalProperties": false,

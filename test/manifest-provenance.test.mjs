@@ -130,6 +130,35 @@ test("PROV: fails CLOSED (2) when GATE_UPSTREAM_FILE is unset (provenance not wi
   assert.equal(code, 2);
 });
 
+test("PROV: FLAGS (1) machinery whose sha256 differs from the published manifest", () => {
+  const g = [gate({ sha256: "b".repeat(64) })];
+  const mach = (hash) => [{ id: "runner", skill: "judge-arch", script: "scripts/ci/run-manifest-gates.mjs", sha256: hash, test: "test/run.test.mjs" }];
+  const committed = JSON.stringify({ version: "1.2.0", gates: g, machinery: mach("c".repeat(64)), aggregator: { requiredCheck: "enterprise-gates" } });
+  const upstream = JSON.stringify({ version: "1.2.0", gates: g, machinery: mach("d".repeat(64)), aggregator: { requiredCheck: "enterprise-gates" } });
+  assert.equal(run(fixture({ committed, upstream })), 1);
+});
+
+test("PROV: FLAGS (1) when published machinery is dropped from the committed manifest", () => {
+  const g = [gate({ sha256: "b".repeat(64) })];
+  const committed = JSON.stringify({ version: "1.2.0", gates: g, aggregator: { requiredCheck: "enterprise-gates" } });
+  const upstream = JSON.stringify({ version: "1.2.0", gates: g, machinery: [{ id: "runner", skill: "judge-arch", script: "scripts/ci/run-manifest-gates.mjs", sha256: "d".repeat(64), test: "test/run.test.mjs" }], aggregator: { requiredCheck: "enterprise-gates" } });
+  assert.equal(run(fixture({ committed, upstream })), 1);
+});
+
+test("PROV: fails CLOSED (2) on a malformed committed machinery entry (sha256 missing)", () => {
+  const g = [gate({ sha256: "b".repeat(64) })];
+  const committed = JSON.stringify({ version: "1.2.0", gates: g, machinery: [{ id: "runner", skill: "judge-arch", script: "scripts/ci/run-manifest-gates.mjs" }], aggregator: { requiredCheck: "enterprise-gates" } });
+  const upstream = JSON.stringify({ version: "1.2.0", gates: g, machinery: [{ id: "runner", skill: "judge-arch", script: "scripts/ci/run-manifest-gates.mjs", sha256: "d".repeat(64), test: "t" }], aggregator: { requiredCheck: "enterprise-gates" } });
+  assert.equal(run(fixture({ committed, upstream })), 2);
+});
+
+test("PROV: FLAGS (1) committed machinery not present in the published manifest (insertion)", () => {
+  const g = [gate({ sha256: "b".repeat(64) })];
+  const committed = JSON.stringify({ version: "1.2.0", gates: g, machinery: [{ id: "rogue", skill: "judge-arch", script: "scripts/ci/run-rogue.mjs", sha256: "c".repeat(64), test: "t" }], aggregator: { requiredCheck: "enterprise-gates" } });
+  const upstream = JSON.stringify({ version: "1.2.0", gates: g, aggregator: { requiredCheck: "enterprise-gates" } });
+  assert.equal(run(fixture({ committed, upstream })), 1);
+});
+
 test("ORIGIN: passes (0) when the upstream repo authors an unreleased version (nothing published yet)", () => {
   const g = [gate()];
   assert.equal(run(fixture({ committed: manifest(g), publishUpstream: false, repo: UPSTREAM })), 0);

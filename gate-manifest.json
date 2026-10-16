@@ -1,0 +1,56 @@
+{
+  "version": "1.0.0",
+  "generatedFrom": "techfleetworks/enterprise-software-AI-skills@1.0.0",
+  "gates": [
+    {
+      "id": "skill-gate-parity",
+      "origin": "upstream",
+      "skill": "judge-arch",
+      "script": "scripts/ci/check-skill-gate-parity.mjs",
+      "sha256": "8b7756f56de94db55aa650aab4968dc3a84271c6d79d9980eca4036897e6a232",
+      "test": "test/skill-gate-parity.test.mjs",
+      "lane": "required",
+      "couples": [
+        "gate-manifest.json",
+        "scripts/ci/check-*.mjs"
+      ]
+    },
+    {
+      "id": "manifest-provenance",
+      "origin": "upstream",
+      "skill": "judge-arch",
+      "script": "scripts/ci/check-manifest-provenance.mjs",
+      "sha256": "efdf77e09c2273e9e3a1988e0b7f6d497ea09f92d165fdcc72a7381853fa7d73",
+      "test": "test/manifest-provenance.test.mjs",
+      "lane": "required",
+      "couples": [
+        "gate-manifest.json"
+      ]
+    },
+    {
+      "id": "bootstrap-presence",
+      "origin": "upstream",
+      "skill": "judge-arch",
+      "script": "scripts/ci/check-bootstrap-presence.mjs",
+      "sha256": "a1396ae28d942514abab59904e427b993b2fb4818bbc132cf94f8994b22e7d39",
+      "test": "test/bootstrap-presence.test.mjs",
+      "lane": "required",
+      "couples": [
+        "gate-manifest.json",
+        ".github/workflows/enterprise-gates.yml"
+      ]
+    }
+  ],
+  "machinery": [
+    {
+      "id": "run-manifest-gates",
+      "skill": "judge-arch",
+      "script": "scripts/ci/run-manifest-gates.mjs",
+      "sha256": "7a5f18fcb68a24938ea0453e3afca95a0c2e8eb011ce2cb8ec9038f403b75804",
+      "test": "test/run-manifest-gates.test.mjs"
+    }
+  ],
+  "aggregator": {
+    "requiredCheck": "enterprise-gates"
+  }
+}

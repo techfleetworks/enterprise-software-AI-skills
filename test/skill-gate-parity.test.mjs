@@ -16,8 +16,12 @@ const GUARD = resolve(process.cwd(), ".claude/skills/judge-arch/scripts/check-sk
 const created = [];
 const sha = (s) => createHash("sha256").update(s).digest("hex");
 
-/** Build a fixture repo. `gates` = [{id, script, content, hash?, test?, writeScript?, writeTest?}]. */
-function fixture({ gates = [], extraScripts = [], omitManifest = false, rawManifest } = {}) {
+/**
+ * Build a fixture repo. `gates` = [{id, script, content, hash?, test?, writeScript?, writeTest?}].
+ * `machinery` = [{id, content, hash?, writeScript?}] writes scripts/ci/run-<id>.mjs and lists it under
+ * the manifest's machinery array.
+ */
+function fixture({ gates = [], machinery = [], extraScripts = [], omitManifest = false, rawManifest } = {}) {
   const root = mkdtempSync(join(tmpdir(), "parity-"));
   created.push(root);
   mkdirSync(join(root, "scripts", "ci"), { recursive: true });
@@ -38,12 +42,17 @@ function fixture({ gates = [], extraScripts = [], omitManifest = false, rawManif
     if (g.omitTestField) delete entry.test;
     manifestGates.push(entry);
   }
+  const manifestMachinery = [];
+  for (const m of machinery) {
+    const rel = m.script ?? `scripts/ci/run-${m.id}.mjs`;
+    if (m.writeScript !== false) writeFileSync(join(root, rel), m.content ?? "// machinery\n");
+    manifestMachinery.push({ id: m.id, skill: "judge-arch", script: rel, sha256: m.hash ?? sha(m.content ?? "// machinery\n"), test: `test/${m.id}.test.mjs` });
+  }
   for (const name of extraScripts) writeFileSync(join(root, "scripts", "ci", name), "// extra\n");
   if (!omitManifest) {
-    writeFileSync(
-      join(root, "gate-manifest.json"),
-      rawManifest ?? JSON.stringify({ version: "1.0.0", gates: manifestGates, aggregator: { requiredCheck: "gate" } }),
-    );
+    const built = { version: "1.0.0", gates: manifestGates, aggregator: { requiredCheck: "gate" } };
+    if (manifestMachinery.length) built.machinery = manifestMachinery;
+    writeFileSync(join(root, "gate-manifest.json"), rawManifest ?? JSON.stringify(built));
   }
   return root;
 }
@@ -109,6 +118,36 @@ test("PARITY: fails CLOSED (2) on a malformed gate entry (script not a string)",
 
 test("PARITY: FLAGS (1) a gate whose script path escapes the repo (path traversal)", () => {
   const root = fixture({ gates: [{ id: "alpha", script: "../../escape.mjs", writeScript: false, writeTest: false }] });
+  assert.equal(run(root), 1);
+});
+
+test("PARITY: passes (0) when a machinery script matches its manifest sha256", () => {
+  const root = fixture({ gates: [{ id: "alpha", content: "// alpha\n" }], machinery: [{ id: "runner", content: "// runner\n" }] });
+  assert.equal(run(root), 0);
+});
+
+test("PARITY: FLAGS (1) a machinery script whose sha256 drifts from the manifest", () => {
+  const root = fixture({ gates: [{ id: "alpha", content: "// alpha\n" }], machinery: [{ id: "runner", content: "// runner\n", hash: sha("DIFFERENT") }] });
+  assert.equal(run(root), 1);
+});
+
+test("PARITY: FLAGS (1) a machinery script that is missing", () => {
+  const root = fixture({ gates: [{ id: "alpha", content: "// alpha\n" }], machinery: [{ id: "runner", content: "// runner\n", writeScript: false }] });
+  assert.equal(run(root), 1);
+});
+
+test("PARITY: fails CLOSED (2) on a malformed machinery entry (sha256 missing)", () => {
+  const root = fixture({ rawManifest: JSON.stringify({ version: "1.0.0", gates: [], machinery: [{ id: "runner", skill: "judge-arch", script: "scripts/ci/run-manifest-gates.mjs" }], aggregator: { requiredCheck: "gate" } }) });
+  assert.equal(run(root), 2);
+});
+
+test("PARITY: FLAGS (1) a machinery script path that escapes the repo (traversal)", () => {
+  const root = fixture({ rawManifest: JSON.stringify({ version: "1.0.0", gates: [], machinery: [{ id: "runner", skill: "judge-arch", script: "../evil.mjs", sha256: "a".repeat(64), test: "t" }], aggregator: { requiredCheck: "gate" } }) });
+  assert.equal(run(root), 1);
+});
+
+test("PARITY: FLAGS (1) a machinery script that uses the gate check- prefix (gate masquerading as machinery)", () => {
+  const root = fixture({ rawManifest: JSON.stringify({ version: "1.0.0", gates: [], machinery: [{ id: "evil", skill: "judge-arch", script: "scripts/ci/check-evil.mjs", sha256: "a".repeat(64), test: "t" }], aggregator: { requiredCheck: "gate" } }) });
   assert.equal(run(root), 1);
 });
 
