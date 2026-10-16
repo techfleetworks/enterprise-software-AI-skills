@@ -80,6 +80,7 @@ any AI tool. They also read fine as plain notes for a person.
 - [Always-on: run every skill on every task](#always-on-run-every-skill-on-every-task)
 - [How a skill gets chosen and enforced](#how-a-skill-gets-chosen-and-enforced)
 - [Set it up and keep it current: the bootstrap](#set-it-up-and-keep-it-current-the-bootstrap)
+- [Three scenarios in plain English](#three-scenarios-in-plain-english)
 - [Adopt the architecture gate, step by step](#adopt-the-architecture-gate-step-by-step)
 - [How the skills fit together](#how-the-skills-fit-together)
 - [Design principles](#design-principles)
@@ -494,6 +495,64 @@ flowchart TD
 > framework.
 
 ---
+
+## Three scenarios in plain English
+
+Here is what actually happens in three everyday moments, each with a left-to-right picture of the flow.
+
+### 1. You pull the skills repo for the first time
+
+You clone or pull the repo. Two committed files do the setup for you: `CLAUDE.md` (which loads the skills
+directive on its own) and `.claude/settings.json` (a hook that loads it for every agent, after a one-time
+trust click). So the next time you start an agent session in the repo, the right skills load
+automatically. Nothing to install. To use the skills from any other folder on your machine, you run the
+bootstrap once.
+
+```mermaid
+flowchart LR
+  A["You clone or pull<br/>the repo"] --> B["Committed CLAUDE.md and<br/>settings hook are already there"]
+  B --> C["You start an agent<br/>session in the repo"]
+  C --> D["The skills directive loads<br/>automatically, no setup"]
+  D --> E["Every relevant skill is<br/>required and applied"]
+  style E fill:#e6ffe6
+```
+
+### 2. You pull the skills repo and already had it
+
+You git pull to get a newer version. Because the setup points at the repo's own files instead of copying
+them somewhere else, the pull itself is the update. Your next session loads the new version automatically.
+Nothing to reinstall, and nothing can quietly fall behind. If you installed the skills into other
+projects, `esk-init --check` flags any that are behind, and a quick reconcile brings them current.
+
+```mermaid
+flowchart LR
+  A["You git pull<br/>a newer version"] --> B["The setup references the<br/>repo's files, never copies them"]
+  B --> C["So the pull itself<br/>is the update"]
+  C --> D["Your next session loads<br/>the current version"]
+  D --> E["Up to date: nothing<br/>reinstalled, nothing stale"]
+  style E fill:#e6ffe6
+```
+
+### 3. You try to change what the repo enforces
+
+Say you edit a gate script to loosen a rule. The system is built so that cannot quietly happen. Your
+pre-push hook runs the offline gates before the push, and the parity gate sees the script no longer
+matches the manifest and stops you. If you push anyway with `--no-verify`, the same gates run in CI as a
+required check and block the merge. The only way a change lands is the honest one: update the manifest to
+match, in a reviewed pull request, and ship it as a new version.
+
+```mermaid
+flowchart LR
+  A["You edit a gate script<br/>to change what is enforced"] --> B{"Pre-push hook:<br/>do the offline gates pass?"}
+  B -- "No: the script no longer<br/>matches the manifest" --> C["Blocked before the push"]
+  B -- "You push with --no-verify" --> D{"CI required check:<br/>do the gates pass?"}
+  D -- "No" --> E["Merge blocked"]
+  C --> F["The only way in: update the<br/>manifest in a reviewed PR,<br/>then ship it as a new version"]
+  E --> F
+  style C fill:#ffe6e6
+  style E fill:#ffe6e6
+  style F fill:#e6ffe6
+```
 
 ## Adopt the architecture gate, step by step
 
