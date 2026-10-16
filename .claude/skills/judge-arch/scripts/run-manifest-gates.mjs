@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-machinery: run-manifest-gates
 /**
  * AGGREGATOR-001 - run every gate the manifest lists, as one check (bootstrap-v2, ADR-0043).
  *

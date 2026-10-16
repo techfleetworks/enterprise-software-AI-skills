@@ -11,8 +11,10 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..", "docs", "design", "bootstrap-v2");
+const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const schema = JSON.parse(readFileSync(resolve(DIR, "gate-manifest.schema.json"), "utf8"));
 const example = JSON.parse(readFileSync(resolve(DIR, "gate-manifest.example.json"), "utf8"));
+const rootManifest = JSON.parse(readFileSync(resolve(REPO, "gate-manifest.json"), "utf8"));
 
 /** Validate `value` against a schema node. Returns an array of error strings ([] = valid). */
 function validate(value, node, root, path = "$") {
@@ -62,6 +64,32 @@ function validate(value, node, root, path = "$") {
 
 test("the example manifest validates against the schema", () => {
   assert.deepEqual(validate(example, schema, schema), []);
+});
+
+test("the committed root gate-manifest.json validates against the schema", () => {
+  assert.deepEqual(validate(rootManifest, schema, schema), []);
+});
+
+test("the schema accepts a machinery entry and discriminates a bad one", () => {
+  const withMach = {
+    version: "1.0.0",
+    gates: [{ id: "x", skill: "s", script: "a.mjs", sha256: "a".repeat(64), test: "t.mjs", lane: "required" }],
+    machinery: [{ id: "runner", skill: "s", script: "r.mjs", sha256: "b".repeat(64), test: "r.test.mjs" }],
+    aggregator: { requiredCheck: "enterprise-gates" },
+  };
+  assert.deepEqual(validate(withMach, schema, schema), [], "a well-formed machinery entry is valid");
+  const badHash = structuredClone(withMach);
+  badHash.machinery[0].sha256 = "nothex";
+  assert.ok(validate(badHash, schema, schema).length, "machinery with a bad sha256 must fail");
+  const extraProp = structuredClone(withMach);
+  extraProp.machinery[0].lane = "required";
+  assert.ok(validate(extraProp, schema, schema).length, "an unexpected property on machinery must fail");
+  const noScript = structuredClone(withMach);
+  delete noScript.machinery[0].script;
+  assert.ok(validate(noScript, schema, schema).length, "machinery missing script must fail");
+  const noSkill = structuredClone(withMach);
+  delete noSkill.machinery[0].skill;
+  assert.ok(validate(noSkill, schema, schema).length, "machinery missing skill must fail (the integrity gate needs it to resolve the source)");
 });
 
 test("the validator itself discriminates: known-bad manifests are rejected", () => {

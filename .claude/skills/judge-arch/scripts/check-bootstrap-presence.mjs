@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-gate: bootstrap-presence
 /**
  * BOOTSTRAP-PRESENCE-001 - a bootstrapped consumer repo must still carry the genesis machinery
  * skeleton (bootstrap-v2, ADR-0045).

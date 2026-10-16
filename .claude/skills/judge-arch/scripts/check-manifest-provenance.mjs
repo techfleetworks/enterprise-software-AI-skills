@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-gate: manifest-provenance
 /**
  * PROVENANCE-001 - a consumer repo's committed gate-manifest.json must match the published upstream
  * release for the version it pins (bootstrap-v2, ADR-0044).
@@ -146,5 +147,31 @@ for (const u of upstream.gates) {
   }
 }
 
+// Machinery (the aggregator and the like) is not a gate, but a neutered one turns enforcement off, so it
+// is held to the published release the same way gates are: same id set, same sha256, none dropped.
+const committedMach = Array.isArray(committed.machinery) ? committed.machinery : [];
+const upstreamMach = Array.isArray(upstream.machinery) ? upstream.machinery : [];
+const upMachById = new Map();
+for (const m of upstreamMach) if (typeof m?.id === "string") upMachById.set(m.id, m);
+const committedMachIds = new Set(committedMach.map((m) => m?.id));
+for (const m of committedMach) {
+  if (typeof m?.id !== "string" || typeof m?.sha256 !== "string") {
+    failClosed(`the committed manifest has a malformed machinery entry (id and sha256 must be strings).`);
+  }
+  const u = upMachById.get(m.id);
+  if (!u) {
+    violations.push(`machinery "${m.id}": committed but not present in the published ${version} manifest (unsanctioned insertion).`);
+    continue;
+  }
+  if (m.sha256 !== u.sha256) {
+    violations.push(`machinery "${m.id}": sha256 ${String(m.sha256).slice(0, 12)}… != published ${String(u.sha256).slice(0, 12)}… (the manifest points at different machinery content than the release).`);
+  }
+}
+for (const u of upstreamMach) {
+  if (typeof u?.id === "string" && !committedMachIds.has(u.id)) {
+    violations.push(`machinery "${u.id}": required by the published ${version} manifest but missing from the committed manifest (published machinery was dropped).`);
+  }
+}
+
 if (violations.length) fail(violations);
-console.log(`✓ check-manifest-provenance: the committed manifest's ${committedUpstream.length} upstream gate(s) match the published ${version} release${isOrigin ? " (origin mode)" : ""}.`);
+console.log(`✓ check-manifest-provenance: the committed manifest's ${committedUpstream.length} upstream gate(s) and ${committedMach.length} machinery entry(ies) match the published ${version} release${isOrigin ? " (origin mode)" : ""}.`);

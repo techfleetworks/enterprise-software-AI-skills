@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-gate: skill-gate-parity
 /**
  * PARITY-001 - a consumer repo's committed CI gates must match its gate-manifest.json (ADR-0041).
  *
@@ -31,7 +32,7 @@
  */
 import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
 import { createHash } from "node:crypto";
-import { resolve, dirname, join, sep } from "node:path";
+import { resolve, dirname, join, sep, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
@@ -94,6 +95,37 @@ for (const gate of manifest.gates) {
     violations.push(`gate "${gate.id}": names no discrimination test (every gate must name one).`);
   } else if (!existsSync(resolve(BASE, gate.test))) {
     violations.push(`gate "${gate.id}": discrimination test ${gate.test} is missing.`);
+  }
+}
+
+// Machinery (the aggregator and the like) is not a gate, but it ships and must not drift: hold each
+// machinery script to its manifest sha256 the same way, and sanction it so the allow-list does not flag
+// it. It carries no discrimination-test requirement here (it is not a gate that judges code).
+for (const mach of Array.isArray(manifest.machinery) ? manifest.machinery : []) {
+  if (typeof mach?.id !== "string" || typeof mach?.script !== "string" || typeof mach?.sha256 !== "string") {
+    failClosed(`${MANIFEST} has a malformed machinery entry (id, script, sha256 must each be a string).`);
+  }
+  const scriptPath = resolve(BASE, mach.script);
+  if (!within(scriptPath)) {
+    violations.push(`machinery "${mach.id}": script ${mach.script} escapes the repo (path traversal).`);
+    continue;
+  }
+  // Machinery is exempt from the per-gate discrimination-test requirement, so a gate must not masquerade
+  // as machinery to skip it: a machinery script may not use the gate "check-" prefix.
+  if (basename(mach.script).startsWith(PREFIX)) {
+    violations.push(`machinery "${mach.id}": script ${mach.script} uses the gate "${PREFIX}" prefix; machinery must not look like a gate (it skips the discrimination-test requirement).`);
+    continue;
+  }
+  sanctioned.add(resolve(scriptPath));
+  if (!existsSync(scriptPath)) {
+    violations.push(`machinery "${mach.id}": script ${mach.script} is missing.`);
+    continue;
+  }
+  const actual = sha256(scriptPath);
+  if (actual !== mach.sha256) {
+    violations.push(
+      `machinery "${mach.id}": ${mach.script} sha256 ${actual.slice(0, 12)}… != manifest ${String(mach.sha256).slice(0, 12)}… (drift/tamper).`,
+    );
   }
 }
 
