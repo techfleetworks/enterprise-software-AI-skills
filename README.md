@@ -13,30 +13,32 @@ good senior engineer uses on a change: how to make it safe, how to test it, how
 to ship it, and why a choice was made.
 
 **What makes this different: the skills don't just sit there and hope. They get
-enforced.** Lots of teams write down good rules. The catch is that a rule you only
-*read* is easy to skip, forget, or say you followed when you really didn't. This
-repo closes that gap in three ways you won't usually find together:
+enforced.** Lots of teams write down good rules. The hard part is that a rule you
+only *read* is easy to skip, forget, or believe you followed when you didn't. In
+our own projects, an AI tool often follows a rule it has only read maybe one time
+out of five. So we built three things that work together to close that gap, and
+you won't usually find them in one place:
 
-**1. It sets itself up.** You don't install anything by hand. The moment you pull
-this repo into a project, the skills and their checks switch themselves on, and
-they stay matched up every time the repo updates. There are no setup steps to
-forget and nothing for each person to wire up on their own machine.
+**1. It sets itself up.** You don't have to install anything by hand. When you pull
+this repo into a project, the skills and their checks turn themselves on, and they
+stay in step every time the repo updates. There's nothing to wire up, and nothing
+to remember.
 
-**2. It makes the AI show its work.** Every time the AI makes a change, it has to
-leave a receipt: which skills it used, the exact lines it followed, and the files
-it touched. If it quietly skips a skill, the receipt comes up empty and that gets
-caught. So "I did it" has to be proven, not taken on faith.
+**2. It asks the AI to show its work.** Each time the AI makes a change, it leaves a
+receipt: which skills it used, the exact lines it followed, and the files it
+touched. If it quietly skips a skill, the receipt comes up short, and that gets
+caught. So "I did it" is something we can check, not something we have to take on
+faith.
 
-**3. Bad code gets stopped before it ships.** Each skill is tied to an automatic
-check that runs when code is handed in. If the work didn't follow the skill, the
-check fails and the change can't go in. A rule with no check is just a suggestion;
-the check is what turns it into a real rule. On top of that, a second reviewer
-looks over every change with fresh eyes, as if seeing it for the first time.
+**3. It catches problems before they go live.** Each skill is paired with an
+automatic check that runs when code is handed in. If the work didn't follow the
+skill, the check doesn't pass, and the change waits until it does. A rule with no
+check is really just a suggestion; the check is what makes it real. A second
+reviewer also reads every change with fresh eyes.
 
-Put simply: the careful, senior-level work happens on *every* change, not just the
-ones an expert happens to look at. And because it installs and updates itself,
-every project and every teammate stays on the same page without anyone having to
-babysit it.
+The payoff is simple: careful, senior-level work happens on *every* change, not only
+the ones an expert happens to see. And because it sets up and updates itself, every
+project and every teammate stays on the same page, with no one left to babysit it.
 
 The 16 skills come in two groups, all under [`.claude/skills/`](.claude/skills/) so a clone
 loads them automatically:
