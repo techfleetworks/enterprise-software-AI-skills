@@ -3,3 +3,12 @@
 # Shell scripts must check out with LF even on Windows, or the bash that runs them
 # (CI and the ADR/ruleset gate tests) fails on CR bytes (`$'\r': command not found`).
 *.sh text eol=lf
+
+# Append-only logs (the skill-application receipt log, the arch-review log) get ONE new line per PR,
+# always at the end. Two PRs open at once therefore collide on that last line every time. `merge=union`
+# is git's built-in driver for exactly this: on a merge it keeps BOTH sides' added lines instead of
+# raising a conflict, so append-only logs never block a PR. It is safe here precisely because these
+# files are append-only (no line is ever edited in place, so there is nothing to mis-merge). GitHub
+# honors this driver when it merges, so the conflicts stop at the source, not just locally.
+# Any file named log.jsonl, in any directory, is one of these logs.
+log.jsonl merge=union
