@@ -12,3 +12,7 @@
 # honors this driver when it merges, so the conflicts stop at the source, not just locally.
 # Any file named log.jsonl, in any directory, is one of these logs.
 log.jsonl merge=union
+
+# The pre-push hook template is a shebang script; it must check out with LF so it runs under the shell
+# that git invokes it with, even on Windows.
+.claude/skills/bootstrap/templates/pre-push text eol=lf

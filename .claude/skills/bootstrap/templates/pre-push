@@ -1,0 +1,67 @@
+#!/usr/bin/env node
+/**
+ * pre-push hook (bootstrap-v2, ADR-0048). A fast LOCAL pre-flight: before a push, run the OFFLINE
+ * enterprise gates so a developer catches a failure in seconds instead of waiting on CI.
+ *
+ * It is MANIFEST-DRIVEN, like every other consumer-side component: it reads gate-manifest.json and runs
+ * each listed gate, EXCEPT the gates that need the network (the provenance gate needs the published
+ * upstream release asset), which stay a CI concern. Because the parity gate is one of the gates it runs,
+ * a manifest gate whose script is missing or drifted is still caught here, not silently skipped.
+ *
+ * This hook is a convenience, NOT the authority. A developer can bypass it with `git push --no-verify`,
+ * and that is fine: the same gates run in CI under the required check, so a bypass is still caught there
+ * (the sync-drift "bypass does not escape CI" scenario). Installed by esk-genesis.
+ */
+import { spawnSync, execSync } from "node:child_process";
+import { existsSync, readFileSync } from "node:fs";
+import { join, resolve, sep } from "node:path";
+
+// Git runs a hook from the repo root, but resolve it explicitly so the gate env is always right.
+let root;
+try {
+  root = execSync("git rev-parse --show-toplevel", { encoding: "utf8" }).trim();
+} catch {
+  root = process.cwd();
+}
+
+// Gates that need the network (the published upstream release asset) are CI-only; everything else in the
+// manifest is offline and runs here. Keyed by gate id so this stays a tiny, stable list.
+const NETWORK_GATES = new Set(["manifest-provenance"]);
+
+const manifestPath = join(root, "gate-manifest.json");
+let manifest;
+try {
+  manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+} catch {
+  // No readable manifest here, so there is nothing to pre-check locally; CI remains the authority.
+  process.exit(0);
+}
+const gates = Array.isArray(manifest?.gates) ? manifest.gates : [];
+const env = {
+  ...process.env,
+  GATE_REPO_ROOT: root,
+  GATE_MANIFEST_FILE: manifestPath,
+  GATE_DIR: join(root, "scripts", "ci"),
+};
+
+const failed = [];
+for (const gate of gates) {
+  if (typeof gate?.id !== "string" || typeof gate?.script !== "string") continue;
+  if (NETWORK_GATES.has(gate.id)) continue; // needs network: CI only
+  const abs = resolve(root, gate.script);
+  // Never run a script that escapes the repo (a tampered manifest must not turn this into arbitrary exec).
+  if (abs !== root && !abs.startsWith(root + sep)) continue;
+  // A manifest gate whose script is absent is left to the parity gate (run here) to flag, not run as a gap.
+  if (!existsSync(abs)) continue;
+  const res = spawnSync(process.execPath, [abs], { stdio: "inherit", env });
+  // A crash or signal (status null) counts as a failure, same as a non-zero exit.
+  if (res.status !== 0) failed.push(gate.id);
+}
+
+if (failed.length) {
+  console.error(`\n✖ pre-push: offline gate(s) failed: ${failed.join(", ")}.`);
+  console.error(`Fix them before pushing, or push with --no-verify to skip this local check.`);
+  console.error(`(CI runs the same gates under the required check, so --no-verify does not escape them.)`);
+  process.exit(1);
+}
+process.exit(0);

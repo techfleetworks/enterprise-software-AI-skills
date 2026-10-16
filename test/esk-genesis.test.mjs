@@ -22,12 +22,18 @@ const sha = (s) => createHash("sha256").update(s).digest("hex");
  * Each gate/machinery script is written under .claude/skills/judge-arch/scripts/ with a marker, and the
  * manifest records the real sha256 so the generator's integrity check passes.
  */
-function buildSource({ version = "1.0.0", gates = [{ id: "alpha" }], machinery = [{ id: "runner" }] } = {}) {
+function buildSource({ version = "1.0.0", gates = [{ id: "alpha" }], machinery = [{ id: "runner" }], omitHookTemplate = false } = {}) {
   const root = mkdtempSync(join(tmpdir(), "gen-src-"));
   created.push(root);
   const sdir = join(root, ".claude", "skills", "judge-arch", "scripts");
   mkdirSync(sdir, { recursive: true });
   mkdirSync(join(root, "test"), { recursive: true });
+  // Ship the pre-push hook template so genesis installs it, matching the real source repo.
+  if (!omitHookTemplate) {
+    const tdir = join(root, ".claude", "skills", "bootstrap", "templates");
+    mkdirSync(tdir, { recursive: true });
+    writeFileSync(join(tdir, "pre-push"), "#!/usr/bin/env node\n// stub hook template\nprocess.exit(0);\n");
+  }
   const mkEntry = (e, kind) => {
     const name = `${kind === "machinery" ? "run" : "check"}-${e.id}.mjs`;
     const body = `// bootstrap-v2-${kind}: ${e.id}\n${e.body ?? "// body\n"}`;
@@ -94,6 +100,41 @@ test("GENESIS: bootstraps a fresh consumer with scripts, tests, manifest, and wo
   assert.deepEqual(m.gates.map((g) => g.id).sort(), ["alpha", "beta"]);
   assert.equal(m.machinery[0].id, "runner");
   assert.equal(m.aggregator.requiredCheck, "enterprise-gates");
+});
+
+test("GENESIS: installs the pre-push hook from the source template", () => {
+  const src = buildSource();
+  const tgt = newTarget();
+  run(src, tgt, ["--yes"]);
+  const hook = join(tgt, ".githooks", "pre-push");
+  assert.ok(existsSync(hook), "the pre-push hook is installed");
+  assert.deepEqual(readFileSync(hook), readFileSync(join(src, ".claude/skills/bootstrap/templates/pre-push")), "hook matches the source template");
+  // A second run is a no-op for the hook (it already exists), so the whole run stays idempotent.
+  assert.equal(run(src, tgt, ["--yes"]), 0);
+});
+
+test("GENESIS: sets core.hooksPath to .githooks in a git repo, and does NOT clobber an existing one", () => {
+  // Fresh git repo with no core.hooksPath: genesis sets it.
+  const tgt = newTarget();
+  execFileSync("git", ["init", "-q", tgt], { stdio: "pipe" });
+  run(buildSource(), tgt, ["--yes"]);
+  const set = execFileSync("git", ["-C", tgt, "config", "--get", "core.hooksPath"], { encoding: "utf8" }).trim();
+  assert.equal(set, ".githooks", "core.hooksPath set on a fresh repo");
+  // A repo that already routes hooks elsewhere: genesis must leave it alone.
+  const tgt2 = newTarget();
+  execFileSync("git", ["init", "-q", tgt2], { stdio: "pipe" });
+  execFileSync("git", ["-C", tgt2, "config", "core.hooksPath", ".husky"], { stdio: "pipe" });
+  run(buildSource(), tgt2, ["--yes"]);
+  const kept = execFileSync("git", ["-C", tgt2, "config", "--get", "core.hooksPath"], { encoding: "utf8" }).trim();
+  assert.equal(kept, ".husky", "an existing core.hooksPath is preserved, not clobbered");
+});
+
+test("GENESIS: still bootstraps cleanly when the source ships no hook template", () => {
+  const src = buildSource({ omitHookTemplate: true });
+  const tgt = newTarget();
+  assert.equal(run(src, tgt, ["--yes"]), 0);
+  assert.ok(existsSync(join(tgt, "gate-manifest.json")), "manifest still written");
+  assert.ok(!existsSync(join(tgt, ".githooks", "pre-push")), "no hook written when the source has no template");
 });
 
 test("GENESIS: copied scripts match the source byte-for-byte", () => {
