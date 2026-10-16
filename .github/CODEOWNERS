@@ -1,0 +1,26 @@
+# Code owners for the enforcement machinery (bootstrap-v2, ADR-0044).
+#
+# This is the human backstop behind the self-protecting gates: a change to the gate scripts, the gate
+# manifest or its schema, the CI workflows, or the always-on directive cannot merge without review from
+# an owner here. The mechanism (base-branch gate execution) is the first line of defense; this file is
+# the second, so weakening enforcement always takes a named owner's sign-off, not just a green check.
+#
+# NOTE: this file only takes effect once the repo's ruleset requires review from code owners on these
+# paths. Committing it is necessary but not sufficient; enabling that rule is a repo-settings change
+# (see ADR-0044), tracked separately from this PR.
+
+# The gate scripts that ARE the enforcement (parity, aggregator, provenance, and the rest).
+/.claude/skills/judge-arch/scripts/   @mdenner1234
+/scripts/ci/                          @mdenner1234
+
+# The source of truth and its contract.
+/gate-manifest.json                   @mdenner1234
+/docs/design/bootstrap-v2/gate-manifest.schema.json   @mdenner1234
+
+# CI workflows: how the gates run (and the base-branch protection that stops a PR neutering them).
+/.github/workflows/                   @mdenner1234
+/.github/CODEOWNERS                   @mdenner1234
+
+# The always-on directive that routes every session through the skills.
+/always-on/                           @mdenner1234
+/CLAUDE.md                            @mdenner1234
