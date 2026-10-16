@@ -10,8 +10,33 @@ Made and kept up by **[Tech Fleet](https://techfleet.org)**.
 This repo holds 16 **skills**. A skill is a short, expert checklist. An AI coding
 tool, or a person, reads it while doing the work. Each skill holds the know-how a
 good senior engineer uses on a change: how to make it safe, how to test it, how
-to ship it, and why a choice was made. With these skills, every change can meet
-the same bar. Not just the changes an expert happens to look at.
+to ship it, and why a choice was made.
+
+**What makes this different: the skills don't just sit there and hope. They get
+enforced.** Lots of teams write down good rules. The catch is that a rule you only
+*read* is easy to skip, forget, or say you followed when you really didn't. This
+repo closes that gap in three ways you won't usually find together:
+
+**1. It sets itself up.** You don't install anything by hand. The moment you pull
+this repo into a project, the skills and their checks switch themselves on, and
+they stay matched up every time the repo updates. There are no setup steps to
+forget and nothing for each person to wire up on their own machine.
+
+**2. It makes the AI show its work.** Every time the AI makes a change, it has to
+leave a receipt: which skills it used, the exact lines it followed, and the files
+it touched. If it quietly skips a skill, the receipt comes up empty and that gets
+caught. So "I did it" has to be proven, not taken on faith.
+
+**3. Bad code gets stopped before it ships.** Each skill is tied to an automatic
+check that runs when code is handed in. If the work didn't follow the skill, the
+check fails and the change can't go in. A rule with no check is just a suggestion;
+the check is what turns it into a real rule. On top of that, a second reviewer
+looks over every change with fresh eyes, as if seeing it for the first time.
+
+Put simply: the careful, senior-level work happens on *every* change, not just the
+ones an expert happens to look at. And because it installs and updates itself,
+every project and every teammate stays on the same page without anyone having to
+babysit it.
 
 The 16 skills come in two groups, all under [`.claude/skills/`](.claude/skills/) so a clone
 loads them automatically:
