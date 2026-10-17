@@ -6,7 +6,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, writeFileSync, mkdirSync, existsSync, readFileSync, readdirSync, rmSync } from "node:fs";
+import { mkdtempSync, writeFileSync, mkdirSync, existsSync, readFileSync, readdirSync, rmSync, cpSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -26,10 +26,149 @@ function runOn(settings, extra, repo = REPO) {
   return { status: r.status, out: (r.stdout || "") + (r.stderr || "") };
 }
 function readJson(p) { return JSON.parse(readFileSync(p, "utf8")); }
+// A standalone skills repo (the always-on files copied from REPO) so the emitter can live UNDER a target.
+function fakeSkillsRepo() {
+  const dir = mkdtempSync(join(tmpdir(), "esk-skills-"));
+  cpSync(join(REPO, "always-on"), join(dir, "always-on"), { recursive: true });
+  writeFileSync(join(dir, "package.json"), JSON.stringify({ name: "skills", version: VERSION }) + "\n");
+  return dir;
+}
+const gitInit = (dir) => spawnSync("git", ["init", "-q", dir], { encoding: "utf8" });
+function ourHookText(settings, event) {
+  const groups = readJson(settings).hooks?.[event] || [];
+  for (const g of groups) for (const h of g.hooks || []) {
+    const s = (h.args || []).map(String).join(" ") + " " + String(h.command || "");
+    if (s.includes("emit-directive.mjs")) return s;
+  }
+  return "";
+}
 function ourHook(settings, event) {
   const groups = readJson(settings).hooks?.[event] || [];
   return groups.some((g) => (g.hooks || []).some((h) => (h.args || []).some((a) => String(a).includes("emit-directive.mjs")) || String(h.command || "").includes("emit-directive.mjs")));
 }
+
+// --- portability: committed hooks must not hardcode a machine path (ADR-0051) ---
+test("writes a portable ${CLAUDE_PROJECT_DIR} hook when the emitter is inside the target repo", () => {
+  const repo = fakeSkillsRepo();
+  const settings = join(repo, ".claude", "settings.json");
+  const r = spawnSync(process.execPath, [ESK, "--repo", repo, "--settings", settings, "--yes"], { encoding: "utf8" });
+  assert.equal(r.status, 0, (r.stdout || "") + (r.stderr || ""));
+  const s = ourHookText(settings, "SessionStart");
+  assert.match(s, /\$\{CLAUDE_PROJECT_DIR\}\/always-on\/emit-directive\.mjs/, "hook uses the portable repo-relative path");
+  assert.doesNotMatch(s, /esk-skills-/, "hook does not contain the machine-specific absolute clone path");
+});
+
+test("REFUSES (2) to write a machine-specific path into a git-tracked settings.json", () => {
+  const target = mkdtempSync(join(tmpdir(), "esk-gitrepo-"));
+  gitInit(target);
+  const settings = join(target, ".claude", "settings.json"); // tracked (no .gitignore)
+  const r = spawnSync(process.execPath, [ESK, "--repo", REPO, "--settings", settings, "--yes"], { encoding: "utf8" });
+  assert.equal(r.status, 2, "must fail closed on the committed-footgun case");
+  assert.match((r.stdout || "") + (r.stderr || ""), /refusing to write a machine-specific/i);
+  assert.equal(existsSync(settings), false, "nothing written when refused");
+});
+
+test("allows a machine-specific path when the settings file is gitignored", () => {
+  const target = mkdtempSync(join(tmpdir(), "esk-gitignored-"));
+  gitInit(target);
+  writeFileSync(join(target, ".gitignore"), ".claude/settings.local.json\n");
+  const settings = join(target, ".claude", "settings.local.json");
+  const r = spawnSync(process.execPath, [ESK, "--repo", REPO, "--settings", settings, "--yes"], { encoding: "utf8" });
+  assert.equal(r.status, 0, (r.stdout || "") + (r.stderr || ""));
+  assert.ok(ourHookText(settings, "SessionStart").includes("emit-directive.mjs"), "hook written to the gitignored local file");
+});
+
+test("--allow-absolute overrides the refusal for a git-tracked settings.json", () => {
+  const target = mkdtempSync(join(tmpdir(), "esk-allowabs-"));
+  gitInit(target);
+  const settings = join(target, ".claude", "settings.json");
+  const r = spawnSync(process.execPath, [ESK, "--repo", REPO, "--settings", settings, "--yes", "--allow-absolute"], { encoding: "utf8" });
+  assert.equal(r.status, 0, (r.stdout || "") + (r.stderr || ""));
+  assert.ok(ourHookText(settings, "SessionStart").includes("emit-directive.mjs"), "hook written under override");
+});
+
+test("--personal NEVER writes a ${CLAUDE_PROJECT_DIR} hook, even when the emitter sits under the target (ADR-0051 F1, discriminating)", () => {
+  // The repo-under-home layout: the settings file is INSIDE the skills repo (so the emitter path-tests as
+  // "under the target"), but --personal means a user-level (~/.claude) install where ${CLAUDE_PROJECT_DIR}
+  // has no meaning and would resolve to a dead path. Personal must therefore get the ABSOLUTE emitter path.
+  // The pre-fix code computed emitterUnderTarget from path containment alone and would write the broken
+  // portable form here; this test fails without the `!personal` guard.
+  const repo = fakeSkillsRepo();
+  const settings = join(repo, ".claude", "settings.json"); // under the repo, but a --personal install
+  const r = spawnSync(process.execPath, [ESK, "--repo", repo, "--settings", settings, "--personal", "--yes"], { encoding: "utf8" });
+  assert.equal(r.status, 0, (r.stdout || "") + (r.stderr || ""));
+  const s = ourHookText(settings, "SessionStart");
+  assert.ok(s.includes("emit-directive.mjs"), "hook installed");
+  assert.doesNotMatch(s, /\$\{CLAUDE_PROJECT_DIR\}/, "a --personal install must NOT use the repo-relative placeholder");
+  assert.ok(s.includes(repo), "a --personal install uses the absolute emitter path");
+});
+
+test("a USER-LEVEL target reached WITHOUT --personal (plain --settings ~/.claude) is also NOT portable (ADR-0051 F1 completeness, discriminating)", () => {
+  // The sibling leak: --personal is just a shortcut for --settings ~/.claude/settings.json. Keying the
+  // portable-vs-absolute decision on the FLAG rather than the TARGET let `--settings <home>/.claude --yes`
+  // (no --personal) write a dead ${CLAUDE_PROJECT_DIR} hook into a user-level file under the repo-under-home
+  // layout. We point the child's homedir() at a fake home (USERPROFILE/HOME) and clone the skills repo UNDER
+  // it, so the emitter path-tests as "under the target". The fix keys on the resolved target == ~/.claude,
+  // so this must get the ABSOLUTE path. Reverting to the flag check writes the placeholder and fails here.
+  const fakeHome = mkdtempSync(join(tmpdir(), "esk-home-"));
+  const repo = join(fakeHome, "skills-clone");
+  cpSync(join(REPO, "always-on"), join(repo, "always-on"), { recursive: true });
+  writeFileSync(join(repo, "package.json"), JSON.stringify({ name: "skills", version: VERSION }) + "\n");
+  const settings = join(fakeHome, ".claude", "settings.json"); // the user-level file, but NO --personal flag
+  const env = { ...process.env, USERPROFILE: fakeHome, HOME: fakeHome };
+  const r = spawnSync(process.execPath, [ESK, "--repo", repo, "--settings", settings, "--yes"], { encoding: "utf8", env });
+  assert.equal(r.status, 0, (r.stdout || "") + (r.stderr || ""));
+  const s = ourHookText(settings, "SessionStart");
+  assert.ok(s.includes("emit-directive.mjs"), "hook installed");
+  assert.doesNotMatch(s, /\$\{CLAUDE_PROJECT_DIR\}/, "a user-level target must NOT use the repo-relative placeholder, even without --personal");
+  assert.ok(s.includes(repo), "a user-level install uses the absolute emitter path");
+});
+
+test("a user-level target whose DRIVE-LETTER CASE differs from homedir() is still NOT portable (ADR-0051 win32 casing, discriminating)", () => {
+  // Windows is case-insensitive and Git Bash emits lowercase drive letters, so settingsDir and ~/.claude can
+  // differ by only `c:` vs `C:`. A plain === would then read the ~/.claude target as "not user-level" and write
+  // a dead ${CLAUDE_PROJECT_DIR} hook. The fix case-folds on win32. This test only means anything on win32
+  // (the bug is win32-only), so it no-ops elsewhere. --repo and --settings share the lowercased drive (so the
+  // emitter path-tests as under the target), while homedir() keeps the OS casing — exactly the leak shape.
+  if (process.platform !== "win32") return;
+  const lc = (p) => p.replace(/^([A-Za-z]):/, (m, d) => d.toLowerCase() + ":");
+  const fakeHome = mkdtempSync(join(tmpdir(), "esk-case-")); // OS casing (upper drive)
+  const repo = join(fakeHome, "skills-clone");
+  cpSync(join(REPO, "always-on"), join(repo, "always-on"), { recursive: true });
+  writeFileSync(join(repo, "package.json"), JSON.stringify({ name: "skills", version: VERSION }) + "\n");
+  const settings = join(fakeHome, ".claude", "settings.json");
+  const env = { ...process.env, USERPROFILE: fakeHome, HOME: fakeHome }; // homedir() keeps upper drive
+  const r = spawnSync(process.execPath, [ESK, "--repo", lc(repo), "--settings", lc(settings), "--yes"], { encoding: "utf8", env });
+  assert.equal(r.status, 0, (r.stdout || "") + (r.stderr || ""));
+  const s = ourHookText(settings, "SessionStart");
+  assert.ok(s.includes("emit-directive.mjs"), "hook installed");
+  assert.doesNotMatch(s, /\$\{CLAUDE_PROJECT_DIR\}/, "a drive-case mismatch must not de-portabilize a user-level target");
+});
+
+test("the committed-footgun DRY RUN prints the plan + a warning and exits 0 (does not refuse until --yes) (ADR-0051 F2)", () => {
+  // The documented default (no --yes) is a dry run. It must preview the plan and warn that --yes would refuse,
+  // not exit 2 out of nowhere. The pre-fix guard ran at module load with no --yes condition and killed the
+  // dry run with exit 2.
+  const target = mkdtempSync(join(tmpdir(), "esk-footgun-plan-"));
+  gitInit(target);
+  const settings = join(target, ".claude", "settings.json"); // tracked
+  const r = spawnSync(process.execPath, [ESK, "--repo", REPO, "--settings", settings], { encoding: "utf8" });
+  const out = (r.stdout || "") + (r.stderr || "");
+  assert.equal(r.status, 0, out);
+  assert.match(out, /dry run/i, "a dry run must still print the plan");
+  assert.match(out, /would REFUSE/i, "the plan must warn that --yes would refuse");
+  assert.equal(existsSync(settings), false, "a dry run writes nothing");
+});
+
+test("--shell powershell also writes the portable ${CLAUDE_PROJECT_DIR} form when the emitter is under the target (ADR-0051 F4)", () => {
+  const repo = fakeSkillsRepo();
+  const settings = join(repo, ".claude", "settings.json");
+  const r = spawnSync(process.execPath, [ESK, "--repo", repo, "--settings", settings, "--shell", "powershell", "--yes"], { encoding: "utf8" });
+  assert.equal(r.status, 0, (r.stdout || "") + (r.stderr || ""));
+  const s = ourHookText(settings, "SessionStart");
+  assert.match(s, /\$\{CLAUDE_PROJECT_DIR\}\/always-on\/emit-directive\.mjs/, "shell-form command must use the portable path");
+  assert.doesNotMatch(s, /esk-skills-/, "shell-form command must not hardcode the machine clone path");
+});
 
 // --- plan (default) writes nothing -------------------------------------------
 test("default mode is a dry run: prints a plan and writes nothing", () => {
