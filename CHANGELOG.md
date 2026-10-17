@@ -3,6 +3,50 @@
 All notable changes to this repository are recorded here. Dates are ISO (YYYY-MM-DD). This project follows
 semantic versioning for the skills library and its gates.
 
+## 1.1.0 - 2026-10-16
+
+Adoption and enforcement hardening. 1.0.0 made the skills required and shown; 1.1.0 makes turning them on, and
+staying current, close to automatic, and makes the installer safe to run against a repo that already has its
+own enforcement. The skills and gates themselves are unchanged; this release is about getting them switched on
+reliably and keeping them from going stale. No action is needed to keep using 1.0.0; upgrade to pick up the
+adoption tooling below.
+
+### Getting protected, with fewer steps
+
+- The installer arms the local pre-push gates with zero extra steps on `npm install`, and this repo now
+  dogfoods that on itself: clone, `npm install`, and your next push runs the fast offline gates locally
+  (ADR-0053). CI stays the authority; the hook is an early-catch convenience.
+- A committed repo hook now travels. `esk-init` writes a portable `${CLAUDE_PROJECT_DIR}` emitter path for a
+  committed, repo-scoped settings file, and refuses to commit a machine-specific path, so a shared hook is not
+  dead on every other clone. The decision is keyed on the resolved user-level target, case-folded on Windows
+  (ADR-0051).
+
+### Staying current
+
+- When a session starts on an install that is behind the repo, the always-on hook now injects a loud,
+  persistent nudge: it states the version gap, explains the benefit, gives the one-step sync command, and asks
+  the agent to relay it and offer to run it. It keeps this up every session (up to a cap, then a quiet
+  one-liner), restarts on a new version, and clears the moment you sync (ADR-0054).
+
+### Safe to adopt, including over an existing system
+
+- `esk-genesis` refuses by default to reconcile against a foreign `gate-manifest.json` (one it did not write),
+  because reconcile would delete gates it does not own. Take one over deliberately with `--adopt-existing`,
+  which backs it up and keeps the existing gates as repo-local, deleting nothing (ADR-0052).
+- `esk-genesis --code-owners "<@user ...>"` scaffolds a `.github/CODEOWNERS` over the enforcement paths
+  (no-clobber, fail-closed on an invalid handle) and prints the one-time ruleset setting to require code-owner
+  review. The `bootstrap` skill now asks the user whether they want it, as an informed choice (ADR-0055).
+- The `bootstrap` skill documents the two installers plainly: `esk-init` turns the directive on for sessions;
+  `esk-genesis` installs the CI gates that block a merge. A fully protected repo runs both.
+
+### Honest limits (unchanged from the design)
+
+- A `git pull` never arms anything by itself; the realistic zero-friction path is one `npm install`. Git runs
+  no code on pull and will not auto-run a cloned repo's hooks, by design.
+- A scaffolded `CODEOWNERS` is necessary but not sufficient: a human still enables the require-code-owner-review
+  ruleset rule, which the installer cannot do. The local pre-push runs the fast offline gates only; the full
+  test suite, routing, and provenance stay CI's job.
+
 ## 1.0.0 - 2026-10-13
 
 First stable release: a vendor-neutral library of enterprise engineering skills for AI coding agents, with the
