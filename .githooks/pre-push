@@ -1,0 +1,46 @@
+#!/usr/bin/env node
+/**
+ * pre-push (self-dogfood, ADR-0053). The enterprise-skills repo runs its OWN fast offline gates locally
+ * before a push, the same early-catch idea the bootstrap-v2 pre-push gives a consumer repo, applied to this
+ * repo itself. Armed with zero steps by .githooks/install-hooks.mjs via the package.json "prepare" script
+ * (ADR-0050), so a fresh clone arms it on `npm install`.
+ *
+ * Why this is repo-specific and NOT the bootstrap-v2 template: that template is manifest-driven and resolves
+ * each gate at scripts/ci/<name>, the CONSUMER layout. This repo is the UPSTREAM; its gates are npm scripts
+ * (check:architecture, check:links, ...) and its gate scripts live under .claude/skills, not scripts/ci. The
+ * template would find no gates here and pass hollow, which is worse than no hook. So this hook runs the repo's
+ * real gate npm scripts instead.
+ *
+ * Scope (honest): it runs the FAST, full-scan offline gates only. The heavy comprehensive test suite
+ * (npm test), the routing gate (which needs the changed-file list), and the network provenance concern stay
+ * CI's job. CI is the authority; this hook is a convenience that catches the common failures in seconds.
+ * Bypass it with `git push --no-verify`; CI still runs these and the full suite under the required checks, so
+ * a bypass does not escape them.
+ *
+ * CommonJS (require, no extension) on purpose: git invokes this file by name, and the repo is not
+ * type=module, so it must parse as CommonJS on every supported Node (20 has no automatic ESM detection).
+ */
+const { spawnSync } = require("node:child_process");
+
+// The repo's fast offline gates, by npm script name. Each must run clean with no arguments (a full scan, no
+// diff context) AND with nothing a fresh clone lacks. check:verbatim is deliberately NOT here: it needs the
+// gitignored vendor/cheatsheets-src/ that only `npm run vendor:owasp` fetches, so on a fresh clone it fails
+// closed and would block every push; it stays CI's job (the owasp-verbatim job vendors first). Likewise the
+// routing gate (needs the changed-file list), the full test suite, and provenance (network) stay CI's. shell:
+// true so the npm launcher resolves on both Windows (npm.cmd) and POSIX; the names are a trusted constant.
+const GATES = ["check:architecture", "check:links", "check:receipt"];
+
+const failed = [];
+for (const g of GATES) {
+  const r = spawnSync(`npm run --silent ${g}`, { stdio: "inherit", shell: true });
+  // A non-zero exit or a crash/signal (status null) both count as a failure.
+  if (r.status !== 0) failed.push(g);
+}
+
+if (failed.length) {
+  console.error(`\n✖ pre-push: gate(s) failed: ${failed.join(", ")}.`);
+  console.error(`Fix them before pushing, or push with --no-verify to skip this local check.`);
+  console.error(`(CI runs these plus the full test suite under the required checks, so --no-verify does not escape them.)`);
+  process.exit(1);
+}
+process.exit(0);

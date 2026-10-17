@@ -16,4 +16,9 @@ log.jsonl merge=union
 # The pre-push hook template is a shebang script; it must check out with LF so it runs under the shell
 # that git invokes it with, even on Windows.
 .claude/skills/bootstrap/templates/pre-push text eol=lf
+
+# This repo's OWN armed hooks (self-dogfood, ADR-0053) are shebang scripts git invokes directly, so they
+# must check out with LF even on Windows or the shell fails on the CR bytes.
+.githooks/pre-push text eol=lf
+.githooks/install-hooks.mjs text eol=lf
 .claude/skills/bootstrap/templates/install-hooks.mjs text eol=lf
