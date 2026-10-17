@@ -1,6 +1,6 @@
 {
-  "version": "1.0.0",
-  "generatedFrom": "techfleetworks/enterprise-software-AI-skills@1.0.0",
+  "version": "1.1.0",
+  "generatedFrom": "techfleetworks/enterprise-software-AI-skills@1.1.0",
   "gates": [
     {
       "id": "skill-gate-parity",
