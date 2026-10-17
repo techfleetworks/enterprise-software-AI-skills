@@ -31,7 +31,7 @@
  * user must act on. 2 = bad usage or an unreadable/unwritable target (fail closed).
  */
 import { readFileSync, writeFileSync, existsSync, copyFileSync, mkdirSync, unlinkSync, readdirSync, rmSync, cpSync, renameSync } from "node:fs";
-import { dirname, resolve, join } from "node:path";
+import { dirname, resolve, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
 import { spawnSync } from "node:child_process";
@@ -77,6 +77,64 @@ const settingsDir = dirname(settingsPath);
 const markerPath = join(settingsDir, ".esk-installed");
 const logPath = join(settingsDir, "ESK-INSTALL-LOG.md");
 const useShell = (opt("--shell") || "").toLowerCase() === "powershell";
+
+// Portability of the hook command: a committed repo settings.json must not hardcode a machine-specific
+// absolute path to the emitter, or every other clone gets a dead hook. If the emitter lives UNDER the
+// target repo (the skills repo itself, or a repo that vendors it), reference it through
+// ${CLAUDE_PROJECT_DIR} so the committed hook travels. Otherwise the only honest paths are a per-machine
+// install (--personal) or writing to a gitignored settings file (--settings). We refuse to write a
+// machine-specific absolute path into a committed repo settings.json unless --allow-absolute is passed.
+const targetRepoRoot = dirname(settingsDir); // <repo> for <repo>/.claude/settings.json
+// A USER-level settings file (~/.claude) is not a repo checkout, so ${CLAUDE_PROJECT_DIR} has no meaning
+// there: a hook written into it runs in EVERY project and the placeholder resolves to each session's own
+// project dir, not this repo. The portable form is ONLY for a committed, repo-scoped settings file; a
+// user-level target always gets the absolute emitter path. This is decided from the actual TARGET, not from
+// the --personal flag: --personal is just a shortcut for --settings ~/.claude/settings.json, and the same
+// dead hook results from spelling that path out, so both must be excluded. Excluding it is load-bearing:
+// when the skills clone itself lives under the home dir (the normal layout), emitter would otherwise test as
+// "under the target" for a ~/.claude install and silently de-portabilize it, and the canary (which runs the
+// raw absolute emitter, not emitterRef) would not catch the dead portable path.
+// Compare paths the way the host filesystem does: Windows is case-insensitive and tools (Git Bash in
+// particular) routinely emit the drive letter in either case, so a plain === on resolve() output can read a
+// ~/.claude target as "not user-level" over nothing but `c:` vs `C:` and re-open the dead-hook path. resolve()
+// normalizes `.`/`..` and separators but never case-folds, so case-fold explicitly on win32. (This closes the
+// casing gap; a symlinked home reached by two different spellings is a separate, rarer case left as a
+// documented limitation, since realpath would throw on a settings dir that does not exist yet.)
+const samePath = (a, b) => (process.platform === "win32" ? a.toLowerCase() === b.toLowerCase() : a === b);
+const userLevel = personal || samePath(resolve(settingsDir), resolve(join(homedir(), ".claude")));
+const emitterUnderTarget = !userLevel && emitter !== targetRepoRoot && emitter.startsWith(targetRepoRoot + sep);
+const emitterRef = emitterUnderTarget ? "${CLAUDE_PROJECT_DIR}/" + relative(targetRepoRoot, emitter).split(sep).join("/") : emitter;
+const allowAbsolute = flag("--allow-absolute");
+// Would the target settings file actually be committed? Only then is a machine-specific path a footgun.
+// In a git work tree and NOT gitignored = committed. Not a git repo, or gitignored (a settings.local.json),
+// or git unavailable = a local/per-machine file, where an absolute path is fine. Best-effort, fail-open to
+// "local" so we never block a legitimate local install.
+function wouldBeCommitted(p) {
+  try {
+    const inRepo = spawnSync("git", ["-C", targetRepoRoot, "rev-parse", "--is-inside-work-tree"], { encoding: "utf8" });
+    if (inRepo.status !== 0 || (inRepo.stdout || "").trim() !== "true") return false;
+    const ignored = spawnSync("git", ["-C", targetRepoRoot, "check-ignore", p], { encoding: "utf8" });
+    return ignored.status !== 0; // check-ignore exit 0 = ignored (safe); non-zero = tracked / would be committed
+  } catch {
+    return false;
+  }
+}
+// The real footgun: committing a machine-specific emitter path into a git-tracked settings.json. The
+// portable ${CLAUDE_PROJECT_DIR} form (emitterUnderTarget) and local/gitignored/personal installs are fine.
+// This is best-effort (shells out to git) and fails open to "local", so it never blocks a legitimate install.
+const committedFootgun = !flag("--check") && !userLevel && !emitterUnderTarget && !allowAbsolute && wouldBeCommitted(settingsPath);
+const footgunGuidance =
+  `  The emitter (${emitter}) is not inside this repo, so a committed hook pointing at it would be a dead hook on\n` +
+  `  every other machine. Choose one:\n` +
+  `    - install per machine:        node ${join("bootstrap", "scripts", "esk-init.mjs")} --personal --yes\n` +
+  `    - write a gitignored file:    --settings ${join(targetRepoRoot, ".claude", "settings.local.json")}\n` +
+  `    - vendor the emitter in the repo, then re-run (the hook becomes a portable \${CLAUDE_PROJECT_DIR} path)\n` +
+  `    - override (not recommended): --allow-absolute`;
+// Refuse only when actually WRITING (--yes). A dry run (the default, no --yes) must still print its plan and
+// exit 0 so you can preview it; the plan carries the same warning below, so the footgun is surfaced either way.
+if (committedFootgun && flag("--yes")) {
+  die(`refusing to write a machine-specific emitter path into the git-tracked ${settingsPath}.\n` + footgunGuidance);
+}
 
 // --- skills mirror (opt-in): copy the repo's .claude/skills/<name>/ into a discovery location -----
 // The committed .claude/skills makes skills load for a session rooted IN this repo (ADR-0028), but a
@@ -179,10 +237,12 @@ function mirrorOneSkill(name) {
 // --- the hook entry we manage ------------------------------------------------
 const EVENTS = ["SessionStart", "SubagentStart"];
 function hookEntry(event) {
+  // emitterRef is the portable ${CLAUDE_PROJECT_DIR} path when the emitter is inside the target repo, so a
+  // committed hook travels; otherwise the (per-machine, --personal) absolute path.
   if (useShell) {
-    return { type: "command", shell: "powershell", command: `node "${emitter}" ${event}`, timeout: 10, statusMessage: "Loading enterprise always-on skills directive" };
+    return { type: "command", shell: "powershell", command: `node "${emitterRef}" ${event}`, timeout: 10, statusMessage: "Loading enterprise always-on skills directive" };
   }
-  return { type: "command", command: "node", args: [emitter, event], timeout: 10, statusMessage: "Loading enterprise always-on skills directive" };
+  return { type: "command", command: "node", args: [emitterRef, event], timeout: 10, statusMessage: "Loading enterprise always-on skills directive" };
 }
 // Recognize OUR hook across versions and forms, including the LEGACY copy-based hook that ran
 // `node -e '...' "$HOME/.claude/enterprise-skills-always-on.md"`. Matching the legacy form too is what
@@ -334,6 +394,8 @@ console.log(`  repo:      ${repoRoot} (version ${version})`);
 console.log(`  settings:  ${settingsPath}${before.existed ? "" : " (will be created)"}`);
 console.log(`  marker:    ${markerPath}${marker ? ` (installed version ${marker.version})` : " (none yet)"}`);
 console.log(`  hook form: ${useShell ? "PowerShell shell form" : "exec form (no shell)"}`);
+// Surface the footgun in the dry run too, so --yes never refuses out of nowhere.
+if (committedFootgun) console.log(`  ! WARNING:  --yes would REFUSE this write (machine-specific emitter path into a git-tracked settings.json).\n` + footgunGuidance);
 if (withSkills) console.log(`  skills:    mirror ${skillsPlan.mirror.length} skill(s) from .claude/skills -> ${skillsTarget}`);
 if (nothingToDo) { console.log(`  result:    already installed and current. Nothing to change.`); }
 else {
