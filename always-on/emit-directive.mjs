@@ -24,9 +24,11 @@
  * with argv[3] or the ESK_DIRECTIVE env var (for a non-sibling layout or a test; the installer relies
  * on the sibling default and does not pass a path).
  */
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { readFileSync, writeFileSync, existsSync, unlinkSync, mkdirSync } from "node:fs";
+import { dirname, resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { homedir } from "node:os";
+import { decideNudge } from "./sync-nudge.mjs";
 
 const MAX = 10000; // Claude Code caps hook additionalContext at 10,000 characters.
 const arg = (process.argv[2] || "").toLowerCase();
@@ -52,6 +54,49 @@ try {
 }
 
 text = clean(text);
+
+// Auto-sync nudge (ADR-0054): on a SESSION start only (never spam every subagent), if the install is behind
+// the repo, prepend a loud encourage-to-sync message so the agent relays it and offers to sync. The decision
+// and the persistent counter live in sync-nudge.mjs; here we only do the file I/O, and the whole thing is
+// best-effort: any failure means no nudge, never a broken directive. Prepended (not appended) so it survives
+// the MAX-length truncation below, which cuts the end.
+function readJson(p) { try { return JSON.parse(readFileSync(p, "utf8")); } catch { return null; } }
+function sessionNudge() {
+  const repoRoot = dirname(here); // always-on/ sits at the repo root, so its parent is the repo root
+  const pkg = readJson(join(repoRoot, "package.json"));
+  const currentVersion = pkg && typeof pkg.version === "string" ? pkg.version : null;
+  if (!currentVersion) return null;
+  // Find the install marker that points at THIS repo: prefer one whose .repo matches, else the user-level one.
+  const candidates = [join(homedir(), ".claude", ".esk-installed"), join(repoRoot, ".claude", ".esk-installed")];
+  let installedVersion = null;
+  for (const c of candidates) {
+    const m = readJson(c);
+    if (!m || typeof m.version !== "string") continue;
+    if (m.repo === repoRoot) { installedVersion = m.version; break; } // the install for THIS repo: authoritative
+    // Fallback ONLY to a legacy marker that names no repo; never trust a marker that names a DIFFERENT repo
+    // (a global install for repo A must not drive a behind/in-sync verdict for an unrelated clone B).
+    if (installedVersion == null && m.repo == null) installedVersion = m.version;
+  }
+  if (installedVersion == null) return null; // not installed via the installer: say nothing
+  const statePath = join(homedir(), ".claude", ".esk-nudge.json");
+  const state = readJson(statePath);
+  const { text: nudge, nextState } = decideNudge({ currentVersion, installedVersion, state });
+  // Persist the counter (best-effort). null nextState means in-sync: clear the file so a later drift restarts.
+  // mkdir first so the counter can advance (and the cap be reached) even on a repo-only install with no ~/.claude.
+  try {
+    if (nextState) { mkdirSync(dirname(statePath), { recursive: true }); writeFileSync(statePath, JSON.stringify(nextState) + "\n"); }
+    else if (existsSync(statePath)) unlinkSync(statePath);
+  } catch { /* cannot persist the counter; still show the nudge this session */ }
+  return nudge;
+}
+// ESK_NUDGE_DISABLE lets a test (or a user) turn the nudge off entirely, so a suite that asserts the exact
+// directive text is not coupled to the ambient install marker (repo-local OR user-level) and its version.
+if (event === "SessionStart" && !missing && !process.env.ESK_NUDGE_DISABLE) {
+  try {
+    const nudge = sessionNudge();
+    if (nudge) text = nudge + "\n\n---\n\n" + text;
+  } catch { /* never let the nudge break the directive */ }
+}
 
 if (missing) {
   process.stderr.write(

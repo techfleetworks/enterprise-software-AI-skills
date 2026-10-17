@@ -14,8 +14,15 @@ import { fileURLToPath } from "node:url";
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const EMIT = resolve(REPO, "always-on/emit-directive.mjs");
 
+// Fully isolate these directive-emission tests from the SessionStart auto-sync nudge (ADR-0054). Redirecting
+// home alone is NOT enough: the nudge also reads the REPO-LOCAL marker (<repoRoot>/.claude/.esk-installed),
+// which is independent of HOME, so after a version bump the nudge would fire and pollute the exact-text
+// assertions here. ESK_NUDGE_DISABLE turns the nudge off at the source (both markers); the empty home is kept
+// so no counter file is ever written during these tests. The nudge's own behavior is covered in
+// emit-directive-nudge.test.mjs, which deliberately leaves ESK_NUDGE_DISABLE unset.
+const NOHOME = mkdtempSync(join(tmpdir(), "emit-nohome-"));
 function run(args, env) {
-  const r = spawnSync(process.execPath, [EMIT, ...args], { encoding: "utf8", env: { ...process.env, ...(env || {}) } });
+  const r = spawnSync(process.execPath, [EMIT, ...args], { encoding: "utf8", env: { ...process.env, USERPROFILE: NOHOME, HOME: NOHOME, ESK_NUDGE_DISABLE: "1", ...(env || {}) } });
   return { status: r.status, out: r.stdout || "", err: r.stderr || "" };
 }
 function ctx(out) { return JSON.parse(out).hookSpecificOutput; }
