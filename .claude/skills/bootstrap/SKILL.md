@@ -54,9 +54,15 @@ enforces them on every pull request. The directive is the honor system that make
 gates are the backstop that does not depend on anyone behaving. A fully protected repo has both.
 
 `esk-genesis` is covered by its own steps in [`always-on/README.md`](../../../always-on/README.md) and the
-root `CONTRIBUTING.md`; its reference file is listed below. It is safe by default (plans first, writes
-nothing without `--yes`) and it keeps a consumer's own gates: a `check-*.mjs` in `scripts/ci/` that the
-upstream does not ship is preserved and recorded as `repo-local`.
+root `CONTRIBUTING.md`; its reference file is listed below. Two things to know before you run it:
+
+- It is safe by default (plans first, writes nothing without `--yes`) and it keeps a consumer's own gates:
+  a `check-*.mjs` in `scripts/ci/` that the upstream does not ship is preserved and recorded as
+  `repo-local`.
+- If the repo already has its **own** `gate-manifest.json` from a different system, `esk-genesis` refuses by
+  default rather than reconcile against it (reconcile would delete gates it did not install). Adopt it
+  deliberately with `--adopt-existing`, which backs the file up and keeps the existing gates as `repo-local`.
+  See ADR-0052.
 
 ## The workflow
 
