@@ -33,7 +33,9 @@
  * Flags: --source <dir> (upstream skills repo; default: resolved from this script's location),
  *        --target <dir> (consumer repo; default: cwd), --yes (apply), --version <x.y.z> (pin override),
  *        --adopt-existing (take over a pre-existing FOREIGN gate-manifest.json: back it up and replace it,
- *        keep its gate scripts as repo-local, delete nothing; without it a foreign manifest is refused).
+ *        keep its gate scripts as repo-local, delete nothing; without it a foreign manifest is refused),
+ *        --code-owners "<@user ...>" (scaffold .github/CODEOWNERS over the enforcement paths, no-clobber, and
+ *        print the one-time ruleset setting to require code-owner review; opt-in, the human backstop decision).
  *
  * Exit: 0 = success / already current (or a clean plan). 1 = a problem the user must act on (e.g. a
  * source hash mismatch). 2 = bad usage or an unreadable/unwritable path (fail closed).
@@ -300,11 +302,53 @@ jobs:
         run: node scripts/ci/run-manifest-gates.mjs
 `;
 
+// Optional CODEOWNERS scaffold (ADR-0055): the human backstop behind the gates. Opt-in via --code-owners
+// "<@owner ...>" because it needs a named owner the installer cannot guess, and it is the point where the
+// bootstrap skill asks the user whether they want code-owner review (sign-off decision D4). It owns exactly
+// the enforcement surfaces, so weakening a gate always takes a named owner's review. No-clobber: an existing
+// CODEOWNERS is never overwritten. Committing it is necessary but NOT sufficient; the repo ruleset must also
+// require code-owner review on these paths, a one-time repo-settings change the installer prints but cannot make.
+const codeOwnersRaw = opt("--code-owners");
+const OWNER_RE = /^@[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})(?:\/[A-Za-z0-9._-]+)?$/; // @user or @org/team
+let codeOwners = [];
+if (typeof codeOwnersRaw === "string") {
+  codeOwners = codeOwnersRaw.split(/[\s,]+/).filter(Boolean);
+  const bad = codeOwners.filter((o) => !OWNER_RE.test(o));
+  if (codeOwners.length === 0) problems.push(`--code-owners was given but no owner was parsed; pass one or more @user / @org/team handles.`);
+  for (const o of bad) problems.push(`--code-owners "${o}" is not a valid owner (expected @user or @org/team); refusing to write it into CODEOWNERS.`);
+}
+const wantCodeowners = codeOwners.length > 0;
+const codeownersPath = join(TARGET, ".github", "CODEOWNERS");
+const codeownersExists = existsSync(codeownersPath);
+// "add" only when requested and absent; "warn-existing" when requested but one is already there (no-clobber).
+const codeownersAction = wantCodeowners ? (codeownersExists ? "warn-existing" : "add") : "none";
+function codeownersBody(owners) {
+  const line = owners.join(" ");
+  return [
+    "# Code owners for the enterprise enforcement machinery (scaffolded by esk-genesis, ADR-0055).",
+    "# A change to these paths cannot merge without a named owner's review, so weakening the gates always",
+    "# takes human sign-off, not just a green check.",
+    "#",
+    "# NOTE: this only takes effect once the repo ruleset REQUIRES review from code owners on these paths.",
+    "# Committing this file is necessary but NOT sufficient; enabling that rule is a one-time repo-settings",
+    "# change (Settings > Rules, or a ruleset with require_code_owner_review on these paths).",
+    "",
+    `/scripts/ci/            ${line}`,
+    `/gate-manifest.json     ${line}`,
+    `/.github/workflows/     ${line}`,
+    `/.github/CODEOWNERS     ${line}`,
+    "",
+  ].join("\n");
+}
+
 // --- is there anything to do? ------------------------------------------------
 const needCopy = (c) => !existsSync(c.to) || sha256(c.from) !== sha256(c.to);
 const pendingCopies = copies.filter(needCopy);
 const manifestChanged = !prior || JSON.stringify(prior) !== JSON.stringify(consumerManifest);
-const nothingToDo = problems.length === 0 && pendingCopies.length === 0 && removals.length === 0 && !manifestChanged && workflowExists && !installHook && !installHelper && prepareAction !== "add";
+// codeownersAction "warn-existing" is also NOT nothing-to-do: the user asked for code-owner coverage and we
+// must still surface the no-clobber advisory (we left their CODEOWNERS alone; confirm it covers the paths),
+// not swallow it behind "already current". Only "none" (no --code-owners) counts as nothing to do here.
+const nothingToDo = problems.length === 0 && pendingCopies.length === 0 && removals.length === 0 && !manifestChanged && workflowExists && !installHook && !installHelper && prepareAction !== "add" && codeownersAction === "none";
 
 // --- print the plan ----------------------------------------------------------
 console.log(`\nEnterprise gates ${fresh ? "genesis" : foreignPrior ? "ADOPT (replacing a foreign manifest)" : "reconcile"} plan`);
@@ -332,6 +376,8 @@ if (prepareAction === "add") console.log(`    - add a package.json "prepare" scr
 if (prepareAction === "warn-existing") console.log(`    - NOTE: package.json already has a "prepare" script; add 'node .githooks/install-hooks.mjs' to it to auto-arm the hook`);
 if (prepareAction === "warn-nopkg") console.log(`    - NOTE: no package.json, so the hook is not auto-armed; run 'git config core.hooksPath .githooks' once per clone`);
 if (prepareAction === "warn-malformed") console.log(`    - NOTE: package.json exists but is not valid JSON (${pkgParseErr}); fix it, then re-run to wire the prepare script. The hook is not auto-armed meanwhile.`);
+if (codeownersAction === "add") console.log(`    - scaffold .github/CODEOWNERS (enforcement paths owned by ${codeOwners.join(" ")}); then enable "require code-owner review" on the ruleset`);
+if (codeownersAction === "warn-existing") console.log(`    - NOTE: .github/CODEOWNERS already exists; leaving it as is. Add the enforcement paths (scripts/ci/, gate-manifest.json, .github/workflows/, .github/CODEOWNERS) owned by ${codeOwners.join(" ")} yourself if they are not covered.`);
 console.log(`  safety:   back up an existing gate-manifest.json first; copies are hash-verified against the manifest.`);
 
 if (!apply) {
@@ -356,6 +402,7 @@ try {
   for (const c of pendingCopies) copyTracked(c.from, c.to);
   if (manifestChanged) writeTracked(consumerManifestPath, JSON.stringify(consumerManifest, null, 2) + "\n");
   if (!workflowExists) writeTracked(workflowPath, WORKFLOW);
+  if (codeownersAction === "add") writeTracked(codeownersPath, codeownersBody(codeOwners)); // no-clobber: only when absent
   if (installHook) {
     copyTracked(hookTemplate, hookPath);
     try { chmodSync(hookPath, 0o755); } catch { /* exec bit is best-effort; git on the consumer may set it */ }
@@ -419,4 +466,13 @@ if (prepareAction === "add") console.log(`A package.json "prepare" script was ad
 else if (prepareAction === "warn-existing") console.log(`Your package.json already has a "prepare" script; add 'node .githooks/install-hooks.mjs' to it so the hook arms on 'npm install'.`);
 else if (prepareAction === "warn-nopkg") console.log(`No package.json here, so the hook is not auto-armed; run 'git config core.hooksPath .githooks' once per clone (or add an equivalent setup step).`);
 else if (prepareAction === "warn-malformed") console.log(`package.json is not valid JSON (${pkgParseErr}); fix it, then re-run so the hook can auto-arm. Until then, run 'git config core.hooksPath .githooks' once per clone.`);
+if (codeownersAction === "add") {
+  console.log(`A .github/CODEOWNERS was scaffolded (enforcement paths owned by ${codeOwners.join(" ")}).`);
+  console.log(`It only takes effect once the repo REQUIRES code-owner review on those paths: enable "Require review from`);
+  console.log(`Code Owners" on the branch ruleset for the default branch (Settings > Rules), or set require_code_owner_review`);
+  console.log(`in the ruleset. Until then a named owner's sign-off is documented but not enforced.`);
+} else if (codeownersAction === "warn-existing") {
+  console.log(`.github/CODEOWNERS already exists; it was left as is. Make sure it covers scripts/ci/, gate-manifest.json,`);
+  console.log(`.github/workflows/, and .github/CODEOWNERS (owned by ${codeOwners.join(" ")}), then require code-owner review on those paths.`);
+}
 process.exit(0);

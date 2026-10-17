@@ -272,6 +272,64 @@ test("GUARD: a manifest WE generated still reconciles normally (the guard does n
   assert.ok(!existsSync(join(tgt, "scripts/ci/check-foo.mjs")), "a dropped gate is still removed on our own manifest");
 });
 
+test("CODE-OWNERS: --code-owners scaffolds .github/CODEOWNERS over the enforcement paths (ADR-0055, discriminating)", () => {
+  const src = buildSource({ gates: [{ id: "alpha" }] });
+  const tgt = newTarget();
+  assert.equal(run(src, tgt, ["--yes", "--code-owners", "@me @org/team"]), 0);
+  const co = join(tgt, ".github", "CODEOWNERS");
+  assert.ok(existsSync(co), "CODEOWNERS must be scaffolded when --code-owners is given");
+  const body = readFileSync(co, "utf8");
+  assert.match(body, /\/scripts\/ci\/\s+@me @org\/team/, "enforcement path owned by the given owners");
+  assert.match(body, /\/gate-manifest\.json\s+@me @org\/team/);
+  assert.match(body, /\/\.github\/workflows\/\s+@me @org\/team/);
+});
+
+test("CODE-OWNERS: absent flag writes NO CODEOWNERS (opt-in, discriminating)", () => {
+  const src = buildSource({ gates: [{ id: "alpha" }] });
+  const tgt = newTarget();
+  assert.equal(run(src, tgt, ["--yes"]), 0);
+  assert.equal(existsSync(join(tgt, ".github", "CODEOWNERS")), false, "CODEOWNERS is opt-in, never written without the flag");
+});
+
+test("CODE-OWNERS: an existing CODEOWNERS is NOT clobbered (no-clobber)", () => {
+  const src = buildSource({ gates: [{ id: "alpha" }] });
+  const tgt = newTarget();
+  mkdirSync(join(tgt, ".github"), { recursive: true });
+  const co = join(tgt, ".github", "CODEOWNERS");
+  writeFileSync(co, "# my own owners\n* @someoneelse\n");
+  assert.equal(run(src, tgt, ["--yes", "--code-owners", "@me"]), 0);
+  assert.equal(readFileSync(co, "utf8"), "# my own owners\n* @someoneelse\n", "an existing CODEOWNERS must be left untouched");
+});
+
+test("CODE-OWNERS: an invalid owner is a BLOCKER and nothing is written (fail closed)", () => {
+  const src = buildSource({ gates: [{ id: "alpha" }] });
+  const tgt = newTarget();
+  const r = runCapture(src, tgt, ["--yes", "--code-owners", "not-an-owner"]);
+  assert.equal(r.code, 1, "an invalid owner must block: " + r.out);
+  assert.match(r.out, /not a valid owner/i);
+  assert.equal(existsSync(join(tgt, ".github", "CODEOWNERS")), false, "nothing written when blocked");
+  assert.equal(existsSync(join(tgt, "gate-manifest.json")), false, "a blocker stops the whole apply");
+});
+
+test("CODE-OWNERS: on an otherwise-current repo with an existing CODEOWNERS, the no-clobber advisory is NOT swallowed (Finding 1)", () => {
+  const src = buildSource({ gates: [{ id: "alpha" }] });
+  const tgt = newTarget();
+  assert.equal(run(src, tgt, ["--yes"]), 0); // genesis once: now current, no CODEOWNERS
+  writeFileSync(join(tgt, ".github", "CODEOWNERS"), "# pre-existing\n* @someoneelse\n");
+  const r = runCapture(src, tgt, ["--code-owners", "@me"]); // dry run on the now-current repo
+  assert.equal(r.code, 0, r.out);
+  assert.doesNotMatch(r.out, /already current\. Nothing to change/i, "must not swallow the request as nothing-to-do");
+  assert.match(r.out, /CODEOWNERS already exists/i, "must surface the no-clobber advisory");
+});
+
+test("CODE-OWNERS: an all-whitespace --code-owners value is a blocker (no owner parsed)", () => {
+  const src = buildSource({ gates: [{ id: "alpha" }] });
+  const tgt = newTarget();
+  const r = runCapture(src, tgt, ["--yes", "--code-owners", "   "]);
+  assert.equal(r.code, 1, "an empty owner list must block: " + r.out);
+  assert.match(r.out, /no owner was parsed/i);
+});
+
 test("RECONCILE: a gate dropped upstream is removed (no orphan)", () => {
   const tgt = newTarget();
   run(buildSource({ version: "1.0.0", gates: [{ id: "alpha" }, { id: "foo" }] }), tgt, ["--yes"]);
