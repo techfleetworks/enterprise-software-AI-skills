@@ -1,6 +1,6 @@
 ---
 name: bootstrap
-description: 'Use to install the enterprise skills into a repo or a machine for the first time, and to keep them current after an update. Turns the always-on hook on so every session and subagent gets the skills, verifies it actually works, and reconciles it after a git pull so the latest version is live. Trigger on "bootstrap," "install the skills," "set up enterprise skills," "onboard this repo," "esk-init," "first-run setup," "the skills are not turned on," "update the skills," or a session notice that the skills are present but not initialized. Pairs with the always-on hook and judge-arch.'
+description: 'Use to install the enterprise skills into a repo or a machine for the first time, and to keep them current after an update. Ships two installers: esk-init turns the always-on hook on so every session and subagent gets the skills (verifies it works, reconciles after a git pull); esk-genesis installs the CI gates into a consumer repo from the upstream manifest so changes cannot merge unless they pass. Trigger on "bootstrap," "install the skills," "set up enterprise skills," "onboard this repo," "esk-init," "esk-genesis," "install the gates," "enforce the skills in CI," "first-run setup," "the skills are not turned on," "update the skills," or a session notice that the skills are present but not initialized. Pairs with the always-on hook and judge-arch.'
 ---
 
 # Bootstrap (enterprise skills install)
@@ -35,6 +35,34 @@ back to it; only a hard process kill mid-swap needs a re-run to heal) that recor
 later reconcile removes a skill you dropped from the repo but never touches a skill you installed yourself.
 If the repo's skills cannot be read (a dehydrated OneDrive folder, a locked ACL), it fails closed rather than
 mistaking that for an empty repo. `--check` then also flags a mirrored skill that is missing or behind.
+
+## Two installers, two jobs
+
+This skill ships two installers. They solve different halves of "the skills are enforced here," and most
+repos want both. Do not reach for one when you need the other.
+
+| | `esk-init.mjs` (the directive) | `esk-genesis.mjs` (the gates) |
+|---|---|---|
+| What it installs | the always-on hook that injects the directive into every session and subagent, and optionally mirrors the skills into `~/.claude/skills/` | the bootstrap-v2 CI gates: each gate script from the upstream manifest, the one required check `enterprise-gates`, and the local pre-push pre-flight |
+| What it makes true | an **agent loads and applies** the skills while it works | a **change cannot merge** unless it passes the gates, and a push is pre-checked locally first |
+| Who it binds | the agent in a session (per session, bypassable) | humans and agents at merge (server-side required check, fail-closed) |
+| Where enforcement lives | `settings.json` hook + the version marker | the consumer's `gate-manifest.json`, `scripts/ci/`, and `.github/workflows/enterprise-gates.yml` |
+| Drift / reconcile | `esk-init --check`, re-run to reconcile | re-run `esk-genesis` to re-sync from the upstream manifest |
+
+The short rule: run `esk-init` so sessions actually pick the skills up, and run `esk-genesis` so the repo
+enforces them on every pull request. The directive is the honor system that makes agents good citizens; the
+gates are the backstop that does not depend on anyone behaving. A fully protected repo has both.
+
+`esk-genesis` is covered by its own steps in [`always-on/README.md`](../../../always-on/README.md) and the
+root `CONTRIBUTING.md`; its reference file is listed below. Two things to know before you run it:
+
+- It is safe by default (plans first, writes nothing without `--yes`) and it keeps a consumer's own gates:
+  a `check-*.mjs` in `scripts/ci/` that the upstream does not ship is preserved and recorded as
+  `repo-local`.
+- If the repo already has its **own** `gate-manifest.json` from a different system, `esk-genesis` refuses by
+  default rather than reconcile against it (reconcile would delete gates it did not install). Adopt it
+  deliberately with `--adopt-existing`, which backs the file up and keeps the existing gates as `repo-local`.
+  See ADR-0052.
 
 ## The workflow
 
@@ -135,7 +163,8 @@ fresh-session check proves that, which is why this skill keeps it as a required 
 
 | Topic | File |
 |---|---|
-| The deterministic installer: plan, apply, verify, reconcile, and the `--check` drift gate | `scripts/esk-init.mjs` |
+| The directive installer: plan, apply, verify, reconcile, and the `--check` drift gate | `scripts/esk-init.mjs` |
+| The gates installer: bootstrap (and reconcile) a consumer's CI gates from the upstream manifest | `scripts/esk-genesis.mjs` |
 | The always-on hook it installs, and the confirm-it-works steps | `../always-on/README.md` |
 
 ## Evidence & skeptical assessment (required)
