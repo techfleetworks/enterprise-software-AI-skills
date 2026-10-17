@@ -64,6 +64,23 @@ root `CONTRIBUTING.md`; its reference file is listed below. Two things to know b
   deliberately with `--adopt-existing`, which backs the file up and keeps the existing gates as `repo-local`.
   See ADR-0052.
 
+### Ask about code-owner review when you set up the gates
+
+When you run `esk-genesis` on a repo, **ask the user** whether they want code-owner review on the enforcement
+paths, and help them decide. This is an opt-in human backstop, so it is their call, not a default.
+
+- What it adds: a named owner must approve any change to the gate scripts, the manifest, the CI workflow, or
+  `CODEOWNERS` itself. So weakening the gates always takes a human sign-off, not just a green check. This is
+  the second line of defense behind the gates.
+- What it costs: it needs a named owner (a person or a team) and one repo-settings change to require
+  code-owner review; it adds a review step to changes that touch those paths.
+- If they say yes: run `esk-genesis --code-owners "@them"` (one or more `@user` or `@org/team` handles). It
+  scaffolds `.github/CODEOWNERS` over the enforcement paths (it never overwrites an existing one) and prints
+  the one-time ruleset setting to turn on. Tell the user that committing the file is necessary but not
+  sufficient: the repo must also **require** code-owner review on those paths, which only they can enable.
+- If they are not sure: it is safe to skip for now and add it later with the same flag; the gates still block
+  merges through the required check. Recommend it for a shared or regulated repo. See ADR-0055.
+
 ## The workflow
 
 ### Step 1: Isolate before a full install
