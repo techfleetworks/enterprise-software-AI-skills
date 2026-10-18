@@ -115,6 +115,18 @@ test("INSTALL-HOOKS: never fails the install outside a git repo", () => {
   assert.equal(code, 0);
 });
 
+test("PRE-PUSH: BLOCKS a failing gate in a REAL git repo (Windows separator regression, discriminating)", () => {
+  // The Windows hollow-pass: `git rev-parse --show-toplevel` returns forward slashes even on Windows, while
+  // resolve(root, gate.script) returns backslashes; before the fix, `abs.startsWith(root + sep)` compared
+  // mismatched separators, so EVERY gate was skipped and the hook exited 0. Here the fixture is a real git
+  // repo, so the hook takes the git-toplevel path (not the cwd fallback). On win32 this reproduces the bug
+  // (old code exits 0 -> this assertion fails); the fix normalizes root so the gate runs and blocks. On POSIX
+  // both separator forms already agree, so it is a valid regression check there.
+  const r = repo({ gates: [{ id: "skill-gate-parity", exit: 1 }] });
+  execFileSync("git", ["init", "-q", r], { stdio: "pipe" });
+  assert.notEqual(runHook(r), 0, "a failing gate in a real git repo must block the push, not hollow-pass");
+});
+
 process.on("exit", () => {
   for (const d of created) {
     try {

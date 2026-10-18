@@ -17,11 +17,16 @@ import { existsSync, readFileSync } from "node:fs";
 import { join, resolve, sep } from "node:path";
 
 // Git runs a hook from the repo root, but resolve it explicitly so the gate env is always right.
+// NORMALIZE with resolve(): `git rev-parse --show-toplevel` returns forward slashes even on Windows
+// (C:/Users/...), while resolve(root, gate.script) below returns native backslashes (C:\Users\...). Without
+// this, `abs.startsWith(root + sep)` compares mismatched separators, the containment check fails for EVERY
+// gate, each one is skipped, and the hook exits 0 having run nothing: a hollow pass on Windows. resolve()
+// puts root in the same separator convention as abs so the containment check works on every platform.
 let root;
 try {
-  root = execSync("git rev-parse --show-toplevel", { encoding: "utf8" }).trim();
+  root = resolve(execSync("git rev-parse --show-toplevel", { encoding: "utf8" }).trim());
 } catch {
-  root = process.cwd();
+  root = resolve(process.cwd());
 }
 
 // Gates that need the network (the published upstream release asset) are CI-only; everything else in the
