@@ -46,7 +46,7 @@
       "id": "run-manifest-gates",
       "skill": "judge-arch",
       "script": "scripts/ci/run-manifest-gates.mjs",
-      "sha256": "d5a20889e3b6dfa1e664b4e900190135659b8a640e773ca6045fad49876a7b55",
+      "sha256": "5ea8f03b2825e51b3aaab1a06b397eb3521eb4e11b57e522fb2c7f7a7e03866d",
       "test": "test/run-manifest-gates.test.mjs"
     }
   ],

@@ -70,6 +70,18 @@ test("the committed root gate-manifest.json validates against the schema", () =>
   assert.deepEqual(validate(rootManifest, schema, schema), []);
 });
 
+test("the schema accepts gate.invoke (string[]) and rejects a non-string element (ADR-0059)", () => {
+  const withInvoke = structuredClone(example);
+  withInvoke.gates[0].invoke = [".", "--changed-list", "a,b"];
+  assert.deepEqual(validate(withInvoke, schema, schema), [], "an array-of-strings invoke must validate");
+  const badElem = structuredClone(example);
+  badElem.gates[0].invoke = ["ok", 1];
+  assert.notEqual(validate(badElem, schema, schema).length, 0, "a non-string invoke element must be rejected");
+  const badType = structuredClone(example);
+  badType.gates[0].invoke = "nope";
+  assert.notEqual(validate(badType, schema, schema).length, 0, "a non-array invoke must be rejected");
+});
+
 test("the schema accepts a machinery entry and discriminates a bad one", () => {
   const withMach = {
     version: "1.0.0",

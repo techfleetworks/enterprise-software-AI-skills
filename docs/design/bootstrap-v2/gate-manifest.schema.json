@@ -98,6 +98,11 @@
           "description": "File globs that MUST carry this gate: a change touching a matching path must have the gate applied (policy-as-data coupling, as the skill-application receipt uses).",
           "type": "array",
           "items": { "type": "string", "minLength": 1 }
+        },
+        "invoke": {
+          "description": "Optional CLI arguments the aggregator passes to the gate script when it runs it (for example, the paths to scan). Each element is passed as a separate argument with no shell, so there is no injection surface. Omit for a gate that needs no arguments (the default). This is how an engineering gate that scans the consumer's code expresses what to scan.",
+          "type": "array",
+          "items": { "type": "string" }
         }
       }
     }
