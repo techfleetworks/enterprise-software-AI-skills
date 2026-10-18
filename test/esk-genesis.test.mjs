@@ -444,7 +444,7 @@ test("CONSUMER-TESTS: copied gate tests run GREEN in a bootstrapped consumer (AD
   const REAL = resolve(process.cwd()); // npm test runs from the repo root
   const tgt = newTarget();
   assert.equal(run(REAL, tgt, ["--yes"]), 0, "genesis from the real repo must succeed");
-  for (const t of ["test/skill-gate-parity.test.mjs", "test/bootstrap-presence.test.mjs"]) {
+  for (const t of ["test/skill-gate-parity.test.mjs", "test/bootstrap-presence.test.mjs", "test/reference-links.test.mjs"]) {
     let status;
     try { execFileSync("node", ["--test", t], { cwd: tgt, stdio: "pipe" }); status = 0; }
     catch (e) { status = e.status ?? 1; }

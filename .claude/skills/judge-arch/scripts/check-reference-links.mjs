@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-gate: reference-links
 // check-reference-links.mjs - fail when a doc points at a reference file that does not exist.
 //
 // The structural guard against a whole class of rot: a skill (or ADR, or README) names a `.md` reference
