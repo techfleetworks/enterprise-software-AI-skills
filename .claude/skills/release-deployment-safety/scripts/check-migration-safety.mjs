@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-gate: migration-safety
 /**
  * check-migration-safety - flag unsafe SQL migration patterns before they ship.
  *
@@ -27,22 +28,54 @@
  * Exit 0 = clean. 1 = one or more unsuppressed unsafe patterns. 2 = bad usage / unreadable input.
  */
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
-import { join, extname } from "node:path";
+import { join, extname, resolve, sep } from "node:path";
 
 function die(msg) { console.error(`[check-migration-safety] FAIL - ${msg}`); process.exit(2); }
 
-const inputs = process.argv.slice(2);
-if (inputs.length === 0) die("no paths given. Usage: check-migration-safety.mjs <file-or-dir>...");
+// --allow-empty: when the aggregator scans a WHOLE consumer tree (an invoke-fixed scope, not a dev-chosen
+// path), a repo with no .sql migrations means "nothing to check" and must PASS. A dev cannot abuse it: invoke
+// lives in the parity/provenance-protected manifest. Without the flag, an explicit path matching nothing still
+// fails closed. --ignore <relpath> (repeatable) skips a dir the gate must never lint (the copied gate infra at
+// scripts/ci); the paths are manifest-locked, so they cannot be widened to hide a real migration.
+const rawArgs = process.argv.slice(2);
+const allowEmpty = rawArgs.includes("--allow-empty");
+const ignorePaths = [];
+const inputs = [];
+for (let i = 0; i < rawArgs.length; i++) {
+  const a = rawArgs[i];
+  if (a === "--allow-empty") continue;
+  if (a === "--ignore") {
+    const v = rawArgs[++i];
+    if (v === undefined) die("--ignore requires a path argument");
+    ignorePaths.push(resolve(process.cwd(), v));
+    continue;
+  }
+  inputs.push(a);
+}
+if (inputs.length === 0) die("no paths given. Usage: check-migration-safety.mjs [--allow-empty] [--ignore <relpath>]... <file-or-dir>...");
+const isIgnored = (abs) => ignorePaths.some((ig) => abs === ig || abs.startsWith(ig + sep));
 
 // --- collect .sql files -------------------------------------------------------
+// Skip the usual non-product dirs AND test directories: a repo's test fixtures may hold an intentionally
+// unsafe migration to exercise this gate, so scanning them would false-positive. Real migrations live outside
+// these (migrations/, db/, ...), matching the no-ua-sniffing / owasp-lints travel pattern.
+const IGNORE_DIRS = new Set(["node_modules", ".git", "dist", "build", "coverage", "vendor", "test", "tests", "__tests__", "spec"]);
 function collect(p) {
   if (!existsSync(p)) die(`path does not exist: ${p}`);
+  if (isIgnored(resolve(process.cwd(), p))) return [];
   const st = statSync(p);
-  if (st.isDirectory()) return readdirSync(p).flatMap((n) => collect(join(p, n)));
+  if (st.isDirectory()) {
+    const base = p.split(/[/\\]/).pop();
+    if (IGNORE_DIRS.has(base)) return [];
+    return readdirSync(p).flatMap((n) => collect(join(p, n)));
+  }
   return extname(p).toLowerCase() === ".sql" ? [p] : [];
 }
 const files = inputs.flatMap(collect);
-if (files.length === 0) die("no .sql files found in the given path(s) (zero-scan - fail closed)");
+if (files.length === 0) {
+  if (allowEmpty) { console.log("[check-migration-safety] OK - no .sql files to scan (--allow-empty; whole-repo scope)."); process.exit(0); }
+  die("no .sql files found in the given path(s) (zero-scan - fail closed)");
+}
 
 // --- rules: each is tested against ONE comment-stripped statement -------------
 // `unless` (when present and found) clears the match - this is what a plain forbidden-regex engine

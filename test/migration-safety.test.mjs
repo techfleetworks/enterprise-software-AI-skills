@@ -4,13 +4,16 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, writeFileSync, mkdirSync } from "node:fs";
+import { mkdtempSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const CHECK = resolve(REPO, ".claude/skills/release-deployment-safety/scripts/check-migration-safety.mjs");
+// Resolve the gate in EITHER layout (upstream .claude/skills/<skill>/scripts, or a consumer's scripts/ci),
+// because this test is copied verbatim into a consumer and must find the gate wherever it lives.
+const UPSTREAM = resolve(REPO, ".claude/skills/release-deployment-safety/scripts/check-migration-safety.mjs");
+const CHECK = [UPSTREAM, resolve(REPO, "scripts/ci/check-migration-safety.mjs")].find((p) => existsSync(p)) ?? UPSTREAM;
 
 function run(sql) {
   const dir = mkdtempSync(join(tmpdir(), "mig-"));
@@ -106,4 +109,49 @@ test("fails closed (exit 2) when a directory has no .sql files", () => {
   mkdirSync(join(dir, "sub"));
   const r = spawnSync(process.execPath, [CHECK, dir], { encoding: "utf8" });
   assert.equal(r.status, 2);
+});
+
+// --- whole-repo travelling scope: --allow-empty + --ignore (ADR-0062) --------
+// When this gate travels into a consumer the aggregator scans the whole tree ("."). A repo with no .sql
+// migrations must PASS (--allow-empty), the gate infra at scripts/ci is skipped (--ignore), and a .sql test
+// fixture with an intentionally unsafe migration must not false-red (IGNORE_DIRS skips test dirs).
+function tree(files) {
+  const dir = mkdtempSync(join(tmpdir(), "mig-tree-"));
+  for (const [rel, src] of Object.entries(files)) {
+    const f = join(dir, rel);
+    mkdirSync(dirname(f), { recursive: true });
+    writeFileSync(f, src);
+  }
+  return dir;
+}
+function runIn(cwd, args) {
+  const r = spawnSync(process.execPath, [CHECK, ...args], { cwd, encoding: "utf8" });
+  return { status: r.status, out: (r.stdout || "") + (r.stderr || "") };
+}
+
+test("--allow-empty makes a repo with no .sql PASS (exit 0)", () => {
+  assert.equal(runIn(tree({ "README.md": "# docs\n" }), ["--allow-empty", "."]).status, 0);
+});
+test("WITHOUT --allow-empty a no-.sql scan still fails closed (exit 2, discriminating)", () => {
+  assert.equal(runIn(tree({ "README.md": "# docs\n" }), ["."]).status, 2);
+});
+test("--ignore scripts/ci skips the gate infra but still scans real migrations", () => {
+  const dir = tree({
+    "scripts/ci/check-migration-safety.mjs": "-- the gate script is not SQL anyway\n",
+    "migrations/001.sql": "ALTER TABLE t ADD COLUMN c text;\n",
+  });
+  assert.equal(runIn(dir, ["--allow-empty", "--ignore", "scripts/ci", "."]).status, 0);
+});
+test("still FLAGS an unsafe migration in product code under whole-repo scope (discriminating)", () => {
+  const dir = tree({ "migrations/002.sql": "DROP TABLE orders;\n" });
+  const r = runIn(dir, ["--allow-empty", "--ignore", "scripts/ci", "."]);
+  assert.equal(r.status, 1, r.out);
+  assert.match(r.out, /drop-table/);
+});
+test("does NOT flag an unsafe migration inside a test/ fixture dir (IGNORE_DIRS, no false positive)", () => {
+  const dir = tree({ "test/fixtures/bad.sql": "DROP TABLE orders;\n", "migrations/ok.sql": "ALTER TABLE t ADD COLUMN c text;\n" });
+  assert.equal(runIn(dir, ["--allow-empty", "--ignore", "scripts/ci", "."]).status, 0);
+});
+test("--ignore with no path argument fails usage (exit 2)", () => {
+  assert.equal(runIn(tree({ "migrations/ok.sql": "ALTER TABLE t ADD COLUMN c text;\n" }), ["--ignore"]).status, 2);
 });

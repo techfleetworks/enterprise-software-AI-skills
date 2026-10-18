@@ -4,13 +4,16 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, writeFileSync, mkdirSync } from "node:fs";
+import { mkdtempSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const CHECK = resolve(REPO, ".claude/skills/sre-operational-readiness/scripts/check-alert-hygiene.mjs");
+// Resolve the gate in EITHER layout (upstream .claude/skills/<skill>/scripts, or a consumer's scripts/ci),
+// because this test is copied verbatim into a consumer and must find the gate wherever it lives.
+const UPSTREAM = resolve(REPO, ".claude/skills/sre-operational-readiness/scripts/check-alert-hygiene.mjs");
+const CHECK = [UPSTREAM, resolve(REPO, "scripts/ci/check-alert-hygiene.mjs")].find((p) => existsSync(p)) ?? UPSTREAM;
 
 function run(yaml) {
   const dir = mkdtempSync(join(tmpdir(), "alert-"));
@@ -165,4 +168,49 @@ test("fails closed (exit 2) when a directory has no .yml/.yaml files", () => {
   mkdirSync(join(dir, "sub"));
   const r = spawnSync(process.execPath, [CHECK, dir], { encoding: "utf8" });
   assert.equal(r.status, 2, r.out);
+});
+
+// --- whole-repo travelling scope: --allow-empty + --ignore (ADR-0062) --------
+// When this gate travels into a consumer the aggregator scans the whole tree ("."). Most repos have .yml
+// (CI workflows, compose) but NO alert rules, so --allow-empty must pass BOTH "no .yml files" AND "no alert
+// blocks in the .yml". The gate infra at scripts/ci is skipped, and a broken alert in a test/ fixture dir
+// must not false-red (IGNORE_DIRS skips test dirs). Real alert rules elsewhere are still enforced.
+function tree(files) {
+  const dir = mkdtempSync(join(tmpdir(), "alert-tree-"));
+  for (const [rel, src] of Object.entries(files)) {
+    const f = join(dir, rel);
+    mkdirSync(dirname(f), { recursive: true });
+    writeFileSync(f, src);
+  }
+  return dir;
+}
+function runIn(cwd, args) {
+  const r = spawnSync(process.execPath, [CHECK, ...args], { cwd, encoding: "utf8" });
+  return { status: r.status, out: (r.stdout || "") + (r.stderr || "") };
+}
+const BAD_ALERT = "groups:\n  - name: x\n    rules:\n      - alert: HighCPU\n        expr: node_cpu_seconds_total > 0.9\n        labels:\n          severity: page\n";
+const GOOD_ALERT = "groups:\n  - name: x\n    rules:\n      - alert: HighErrorRate\n        expr: rate(http_errors_total[5m]) > 0.05\n        labels:\n          severity: page\n        annotations:\n          summary: errors high\n          runbook_url: https://rb/x\n";
+
+test("--allow-empty makes a repo with no .yml PASS (exit 0)", () => {
+  assert.equal(runIn(tree({ "README.md": "# docs\n" }), ["--allow-empty", "."]).status, 0);
+});
+test("--allow-empty makes .yml with NO alert blocks PASS (CI workflow only; exit 0, key travel case)", () => {
+  assert.equal(runIn(tree({ ".github/workflows/ci.yml": "name: ci\non: push\n" }), ["--allow-empty", "."]).status, 0);
+});
+test("WITHOUT --allow-empty a no-alert-block scan still fails closed (exit 2, discriminating)", () => {
+  assert.equal(runIn(tree({ ".github/workflows/ci.yml": "name: ci\non: push\n" }), ["."]).status, 2);
+});
+test("still FLAGS a bad alert in product code under whole-repo scope (discriminating)", () => {
+  const r = runIn(tree({ "monitoring/alerts.yml": BAD_ALERT }), ["--allow-empty", "--ignore", "scripts/ci", "."]);
+  assert.equal(r.status, 1, r.out);
+  assert.match(r.out, /cause-based-page/);
+});
+test("PASSES a well-formed symptom alert under whole-repo scope (no false positive)", () => {
+  assert.equal(runIn(tree({ "monitoring/alerts.yml": GOOD_ALERT }), ["--allow-empty", "--ignore", "scripts/ci", "."]).status, 0);
+});
+test("does NOT flag a bad alert inside a test/ fixture dir (IGNORE_DIRS, no false positive)", () => {
+  assert.equal(runIn(tree({ "test/fixtures/bad.yml": BAD_ALERT, "monitoring/ok.yml": GOOD_ALERT }), ["--allow-empty", "--ignore", "scripts/ci", "."]).status, 0);
+});
+test("--ignore with no path argument fails usage (exit 2)", () => {
+  assert.equal(runIn(tree({ "monitoring/ok.yml": GOOD_ALERT }), ["--ignore"]).status, 2);
 });

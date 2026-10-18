@@ -3,13 +3,16 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, writeFileSync, mkdirSync } from "node:fs";
+import { mkdtempSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const CHECK = resolve(REPO, ".claude/skills/owasp-secure-coding-bdd/scripts/check-owasp-lints.mjs");
+// Resolve the gate in EITHER layout (upstream .claude/skills/<skill>/scripts, or a consumer's scripts/ci),
+// because this test is copied verbatim into a consumer and must find the gate wherever it lives.
+const UPSTREAM = resolve(REPO, ".claude/skills/owasp-secure-coding-bdd/scripts/check-owasp-lints.mjs");
+const CHECK = [UPSTREAM, resolve(REPO, "scripts/ci/check-owasp-lints.mjs")].find((p) => existsSync(p)) ?? UPSTREAM;
 
 function run(code, ext = "js") {
   const dir = mkdtempSync(join(tmpdir(), "owasp-"));

@@ -4,13 +4,16 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, writeFileSync, mkdirSync } from "node:fs";
+import { mkdtempSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const CHECK = resolve(REPO, ".claude/skills/universal-browser-device-support/scripts/check-no-ua-sniffing.mjs");
+// Resolve the gate in EITHER layout (upstream .claude/skills/<skill>/scripts, or a consumer's scripts/ci),
+// because this test is copied verbatim into a consumer and must find the gate wherever it lives.
+const UPSTREAM = resolve(REPO, ".claude/skills/universal-browser-device-support/scripts/check-no-ua-sniffing.mjs");
+const CHECK = [UPSTREAM, resolve(REPO, "scripts/ci/check-no-ua-sniffing.mjs")].find((p) => existsSync(p)) ?? UPSTREAM;
 
 function run(src, ext = "js") {
   const dir = mkdtempSync(join(tmpdir(), "ua-"));

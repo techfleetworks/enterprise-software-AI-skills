@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-gate: alert-hygiene
 /**
  * check-alert-hygiene - flag alert rules that break the SRE alerting discipline before they ship.
  *
@@ -35,22 +36,54 @@
  * Exit 0 = clean. 1 = one or more alerts fail a rule. 2 = bad usage / unreadable input / no alerts.
  */
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
-import { join, extname } from "node:path";
+import { join, extname, resolve, sep } from "node:path";
 
 function die(msg) { console.error(`[check-alert-hygiene] FAIL - ${msg}`); process.exit(2); }
 
-const inputs = process.argv.slice(2);
-if (inputs.length === 0) die("no paths given. Usage: check-alert-hygiene.mjs <file-or-dir>...");
+// --allow-empty: when the aggregator scans a WHOLE consumer tree (an invoke-fixed scope), a repo with no
+// alerting rules means "nothing to check" and must PASS. Most repos have .yml (CI workflows, compose) but NO
+// Prometheus alert rules, so this must pass BOTH "no .yml files" AND "no alert blocks in the .yml files". A dev
+// cannot abuse it: invoke is manifest-locked (parity/provenance). --ignore <relpath> (repeatable) skips a dir
+// the gate must never lint (the copied gate infra at scripts/ci).
+const rawArgs = process.argv.slice(2);
+const allowEmpty = rawArgs.includes("--allow-empty");
+const ignorePaths = [];
+const inputs = [];
+for (let i = 0; i < rawArgs.length; i++) {
+  const a = rawArgs[i];
+  if (a === "--allow-empty") continue;
+  if (a === "--ignore") {
+    const v = rawArgs[++i];
+    if (v === undefined) die("--ignore requires a path argument");
+    ignorePaths.push(resolve(process.cwd(), v));
+    continue;
+  }
+  inputs.push(a);
+}
+if (inputs.length === 0) die("no paths given. Usage: check-alert-hygiene.mjs [--allow-empty] [--ignore <relpath>]... <file-or-dir>...");
+const isIgnored = (abs) => ignorePaths.some((ig) => abs === ig || abs.startsWith(ig + sep));
 
 // --- collect .yml / .yaml files ----------------------------------------------
+// Skip the usual non-product dirs AND test directories: a repo's test fixtures may hold an intentionally
+// broken alert rule to exercise this gate, so scanning them would false-positive. Alert rules live outside
+// these (monitoring/, alerts/, ...), matching the no-ua-sniffing / owasp-lints travel pattern.
+const IGNORE_DIRS = new Set(["node_modules", ".git", "dist", "build", "coverage", "vendor", "test", "tests", "__tests__", "spec"]);
 function collect(p) {
   if (!existsSync(p)) die(`path does not exist: ${p}`);
+  if (isIgnored(resolve(process.cwd(), p))) return [];
   const st = statSync(p);
-  if (st.isDirectory()) return readdirSync(p).flatMap((n) => collect(join(p, n)));
+  if (st.isDirectory()) {
+    const base = p.split(/[/\\]/).pop();
+    if (IGNORE_DIRS.has(base)) return [];
+    return readdirSync(p).flatMap((n) => collect(join(p, n)));
+  }
   return [".yml", ".yaml"].includes(extname(p).toLowerCase()) ? [p] : [];
 }
 const files = inputs.flatMap(collect);
-if (files.length === 0) die("no .yml/.yaml files found in the given path(s) (zero-scan - fail closed)");
+if (files.length === 0) {
+  if (allowEmpty) { console.log("[check-alert-hygiene] OK - no .yml/.yaml files to scan (--allow-empty; whole-repo scope)."); process.exit(0); }
+  die("no .yml/.yaml files found in the given path(s) (zero-scan - fail closed)");
+}
 
 // --- split a file into blocks on `- alert:` / `- record:` markers -------------
 // A block spans from one marker line to the next (or EOF). We lint only `alert` blocks, so a
@@ -146,7 +179,10 @@ for (const f of files) {
   }
 }
 
-if (alertCount === 0) die("no alert blocks found in the given .yml/.yaml file(s) (zero-scan - fail closed; point me at your alerting rules)");
+if (alertCount === 0) {
+  if (allowEmpty) { console.log(`[check-alert-hygiene] OK - no alert blocks in ${files.length} .yml/.yaml file(s) (--allow-empty; whole-repo scope).`); process.exit(0); }
+  die("no alert blocks found in the given .yml/.yaml file(s) (zero-scan - fail closed; point me at your alerting rules)");
+}
 
 if (problems.length) {
   console.error(`[check-alert-hygiene] FAIL - ${problems.length} alert-hygiene problem(s):`);
