@@ -82,6 +82,36 @@
         "scripts/ci",
         "."
       ]
+    },
+    {
+      "id": "migration-safety",
+      "origin": "upstream",
+      "skill": "release-deployment-safety",
+      "script": "scripts/ci/check-migration-safety.mjs",
+      "sha256": "0c2b11bdf1e457f0df638f55f0a9eebc6df1ca212fba0174ba307b3c94c91507",
+      "test": "test/migration-safety.test.mjs",
+      "lane": "required",
+      "invoke": [
+        "--allow-empty",
+        "--ignore",
+        "scripts/ci",
+        "."
+      ]
+    },
+    {
+      "id": "alert-hygiene",
+      "origin": "upstream",
+      "skill": "sre-operational-readiness",
+      "script": "scripts/ci/check-alert-hygiene.mjs",
+      "sha256": "913c51381fc99830da9bd595f962b6c914b19647768722693a86862fb5e8fb75",
+      "test": "test/alert-hygiene.test.mjs",
+      "lane": "required",
+      "invoke": [
+        "--allow-empty",
+        "--ignore",
+        "scripts/ci",
+        "."
+      ]
     }
   ],
   "machinery": [
