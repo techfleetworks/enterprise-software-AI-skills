@@ -102,7 +102,10 @@ const checkEntry = (entry, kind) => {
   } catch (e) {
     failClosed(`cannot read source ${src} for ${kind} "${entry.id}": ${e.message}.`);
   }
-  const actual = createHash("sha256").update(bytes).digest("hex");
+  // Hash LINE-ENDING-STABLY (ADR-0058): normalize CRLF to LF before hashing so the manifest sha matches on
+  // Windows (CRLF working tree) and Linux/CI (LF). The marker match below uses the raw bytes (regex is
+  // line-ending-agnostic), so only the hash is normalized.
+  const actual = createHash("sha256").update(bytes.toString("utf8").replace(/\r\n/g, "\n")).digest("hex");
   if (actual !== entry.sha256) {
     violations.push(`${kind} "${entry.id}": source sha256 ${actual.slice(0, 12)}… != manifest ${String(entry.sha256).slice(0, 12)}… (update the manifest hash in the same commit as the script).`);
   }
