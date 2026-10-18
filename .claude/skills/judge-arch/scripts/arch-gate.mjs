@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-gate: arch-gate
 /**
  * arch-gate.mjs - the deterministic architecture gate.
  *
@@ -35,8 +36,21 @@ const CHANGED_ONLY = flag('--changed');
 const BASELINE = flag('--baseline');
 const MAX_BYTES = 2 * 1024 * 1024;
 const CODE_EXT = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.vue', '.svelte']);
+// Test directories are skipped like the other travelling gates: test files carry intentionally-bad fixtures
+// (an empty catch used as test data) that would false-red the built-in checks. This is unconditional: config
+// can only ADD to the ignore set, so there is no way to re-enable scanning test dirs - the gate does not lint
+// test code. (Consistent with the IGNORE_DIRS of the other travelling gates.)
 const DEFAULT_IGNORE = ['node_modules', 'dist', 'build', 'coverage', '.git', '.next', 'out',
-  '.turbo', 'playwright-report', 'test-results', '.vercel', '.wrangler'];
+  '.turbo', 'playwright-report', 'test-results', '.vercel', '.wrangler',
+  'test', 'tests', '__tests__', 'spec'];
+// --ignore <relpath> (repeatable): skip a directory by its path relative to the scan root. Used for the
+// vendored gate infrastructure (scripts/ci) that travels into a consumer and must not be arch-checked (its
+// scripts use deliberate best-effort catches). The paths live in the manifest invoke, which is
+// parity/provenance-locked, so a consumer cannot widen them to hide its own application code.
+const IGNORE_PATHS = args.reduce((acc, a, i) =>
+  (a === '--ignore' && args[i + 1] && !args[i + 1].startsWith('--')
+    ? [...acc, args[i + 1].replace(/\\/g, '/').replace(/\/+$/, '')] : acc), []);
+const isIgnoredRel = (rel) => IGNORE_PATHS.some((ig) => rel === ig || rel.startsWith(ig + '/'));
 
 function readJson(p, fallback) {
   try { const raw = fs.readFileSync(p, 'utf8'); return JSON.parse(raw.charCodeAt(0) === 0xFEFF ? raw.slice(1) : raw); }
@@ -47,7 +61,14 @@ function readJson(p, fallback) {
   }
 }
 
-const config = readJson(CONFIG_PATH);
+// Config is OPTIONAL with a safe default (bootstrap-v2: this gate travels into consumer repos). When no
+// arch-gate.config.json is present, fall back to {} - which leaves the built-in checks (empty catch,
+// swallowed return, keep-in-sync) ON, so a consumer with no config still gets real tree-wide enforcement
+// rather than a confusing exit 2. A repo that wants custom forbidden-pattern rules commits the config file.
+// Fall back to {} ONLY for the default config path (a config-less consumer). An EXPLICIT --config that fails
+// to resolve still exits 2 (fail closed): a caller who named a config and mistyped it must hear about it, not
+// silently lose their custom rules. This keeps the "cannot be weakened" premise on the explicit path.
+const config = readJson(CONFIG_PATH, flag('--config') ? undefined : {});
 const waivers = readJson(WAIVERS_PATH, []);
 const ignoreDirs = new Set([...DEFAULT_IGNORE, ...(config.ignore || [])]);
 
@@ -110,7 +131,10 @@ function walk(dir, acc) {
   let entries;
   try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return acc; }
   for (const e of entries) {
-    if (e.isDirectory()) { if (!ignoreDirs.has(e.name)) walk(path.join(dir, e.name), acc); }
+    if (e.isDirectory()) {
+      const rel = path.relative(ROOT, path.join(dir, e.name)).split(path.sep).join('/');
+      if (!ignoreDirs.has(e.name) && !isIgnoredRel(rel)) walk(path.join(dir, e.name), acc);
+    }
     else if (e.isFile()) acc.push(path.relative(ROOT, path.join(dir, e.name)).split(path.sep).join('/'));
   }
   return acc;
@@ -181,7 +205,7 @@ if (!files) files = walk(ROOT, []);
 // walk() prunes ignored dirs during the scan, but --changed reads git's file list directly and
 // bypasses that, so apply the same pruning here: skip any file living under an ignored directory
 // (a path segment in `ignore`), plus oversized or deleted files.
-const isIgnoredPath = (f) => f.split('/').some((seg) => ignoreDirs.has(seg));
+const isIgnoredPath = (f) => f.split('/').some((seg) => ignoreDirs.has(seg)) || isIgnoredRel(f);
 files = files.filter((f) => {
   if (isIgnoredPath(f)) return false;
   try { return fs.statSync(path.join(ROOT, f)).size <= MAX_BYTES; }
