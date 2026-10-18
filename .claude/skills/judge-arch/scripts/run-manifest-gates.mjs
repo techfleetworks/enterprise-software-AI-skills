@@ -22,8 +22,10 @@
  *       fails closed, run the parity gate: a missing/escaping script means the repo is out of parity
  *       with the manifest.
  *
- * LIMIT: gates are run with no runtime arguments. A gate that needs inputs (e.g. a changed-file list)
- *        is not yet expressible in the manifest; an `args`/`requires` field is a future schema addition.
+ * ARGS:  a gate may declare `invoke` in the manifest (an array of string CLI args, e.g. the paths to scan);
+ *        the aggregator passes them to the gate script with no shell. A gate with no `invoke` runs with no
+ *        arguments, as before. This is how an engineering gate that scans the consumer's code says what to
+ *        scan (ADR-0059).
  *
  * Exit codes: 0 = all required gates passed; 1 = a required gate failed; 2 = fail-closed.
  * Seams for tests: GATE_MANIFEST_FILE, GATE_RUNNER (override the node binary). Pinned by
@@ -73,9 +75,20 @@ for (const gate of manifest.gates) {
   if (!within(scriptPath) || !existsSync(scriptPath)) {
     failClosed(`gate "${gate.id}": script ${gate.script} is missing or escapes the repo - run the parity gate.`);
   }
+  // Optional per-gate CLI args (schema: gate.invoke): how an engineering gate declares what to scan.
+  // Validate strictly (array of strings, or absent) and fail closed otherwise, so a malformed invoke can
+  // never silently drop the gate's arguments and make it scan nothing. Passed with NO shell, so a value
+  // can never inject a command; and the manifest is itself parity- and provenance-protected.
+  let invokeArgs = [];
+  if (gate.invoke !== undefined) {
+    if (!Array.isArray(gate.invoke) || gate.invoke.some((a) => typeof a !== "string")) {
+      failClosed(`gate "${gate.id}": invoke must be an array of strings when present (got ${JSON.stringify(gate.invoke)}).`);
+    }
+    invokeArgs = gate.invoke;
+  }
   const runner = gate.script.endsWith(".sh") ? "bash" : NODE;
-  console.log(`\n── gate: ${gate.id} (${gate.lane}) ──`);
-  const res = spawnSync(runner, [scriptPath], { stdio: "inherit" });
+  console.log(`\n── gate: ${gate.id} (${gate.lane})${invokeArgs.length ? " " + invokeArgs.join(" ") : ""} ──`);
+  const res = spawnSync(runner, [scriptPath, ...invokeArgs], { stdio: "inherit" });
   const code = res.status === null ? 1 : res.status; // signal/crash → treat as failure
   summary.push({ id: gate.id, lane: gate.lane, code });
   if (code !== 0) (gate.lane === "required" ? requiredFailures : advisoryFailures).push(gate.id);

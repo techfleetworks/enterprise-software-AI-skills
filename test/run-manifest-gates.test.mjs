@@ -90,6 +90,29 @@ test("AGG: fails CLOSED (2) when a required gate's lane is unknown (would silent
   assert.equal(run(fixture({ gates: [{ id: "a", exit: 1, lane: "requird" }] })), 2);
 });
 
+// gate.invoke: the aggregator passes declared CLI args to the gate (ADR-0059). The fixture gate exits 0
+// ONLY if it received the arg "SCAN_ME", so a passing run proves the arg was actually delivered.
+function invokeFixture(invoke) {
+  const root = mkdtempSync(join(tmpdir(), "agg-invoke-"));
+  created.push(root);
+  mkdirSync(join(root, "scripts", "ci"), { recursive: true });
+  writeFileSync(join(root, "scripts/ci/check-needs-arg.mjs"), 'process.exit(process.argv.includes("SCAN_ME") ? 0 : 1);\n');
+  const gate = { id: "needs-arg", script: "scripts/ci/check-needs-arg.mjs", sha256: "0".repeat(64), test: "test/needs-arg.test.mjs", lane: "required" };
+  if (invoke !== undefined) gate.invoke = invoke;
+  writeFileSync(join(root, "gate-manifest.json"), JSON.stringify({ version: "1.0.0", gates: [gate], aggregator: { requiredCheck: "gate" } }));
+  return root;
+}
+
+test("AGG: passes gate.invoke args to the gate (discriminating)", () => {
+  assert.equal(run(invokeFixture(["SCAN_ME"])), 0, "the gate must receive its invoke arg");
+  assert.equal(run(invokeFixture(undefined)), 1, "without invoke the gate does not get the arg and fails (proves invoke is really passed, not ignored)");
+});
+
+test("AGG: fails closed (2) on a malformed invoke (not an array of strings)", () => {
+  assert.equal(run(invokeFixture("SCAN_ME")), 2, "a string invoke must fail closed, never be silently dropped (which would make the gate scan nothing)");
+  assert.equal(run(invokeFixture([1, 2])), 2, "non-string invoke elements must fail closed");
+});
+
 process.on("exit", () => {
   for (const d of created) {
     try {
