@@ -127,6 +127,36 @@
         "--ignore",
         ".githooks"
       ]
+    },
+    {
+      "id": "untagged-pii",
+      "origin": "upstream",
+      "skill": "compliance-data-lifecycle",
+      "script": "scripts/ci/check-untagged-pii.mjs",
+      "sha256": "9de05deca43cadf4eeeaa3f460b2da9df7de38c0aa9df038056b4b1e0297a336",
+      "test": "test/untagged-pii.test.mjs",
+      "lane": "required",
+      "invoke": [
+        "--allow-empty",
+        "--ignore",
+        "scripts/ci",
+        "--map",
+        "data-map.json",
+        "."
+      ]
+    },
+    {
+      "id": "retention-basis",
+      "origin": "upstream",
+      "skill": "compliance-data-lifecycle",
+      "script": "scripts/ci/check-retention-basis.mjs",
+      "sha256": "7488e1c78a5824bebe2685c8c649394a45251d9797ca69945b735f4b5b5d27b0",
+      "test": "test/retention-basis.test.mjs",
+      "lane": "required",
+      "invoke": [
+        "--map",
+        "data-map.json"
+      ]
     }
   ],
   "machinery": [

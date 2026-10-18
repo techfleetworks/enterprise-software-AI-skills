@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-gate: untagged-pii
 /**
  * check-untagged-pii - fail when a PII-looking schema column is not classified in the data map.
  *
@@ -27,24 +28,39 @@
  * flagging - the map is where the truth is recorded.
  */
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
-import { join, extname, resolve } from "node:path";
+import { join, extname, resolve, sep } from "node:path";
 
 function die(msg) { console.error(`[check-untagged-pii] FAIL - ${msg}`); process.exit(2); }
 
-const args = process.argv.slice(2);
-const mapIdx = args.indexOf("--map");
-if (mapIdx === -1 || !args[mapIdx + 1]) die("missing --map <data-map.json>");
-const mapPath = resolve(args[mapIdx + 1]);
-const paths = args.filter((_, i) => i !== mapIdx && i !== mapIdx + 1);
-if (paths.length === 0) die("no schema paths given. Usage: check-untagged-pii.mjs --map data-map.json <paths...>");
+// --map is OPTIONAL with a safe default (bootstrap-v2: this gate travels into consumer repos). An ABSENT map
+// (the consumer has not created data-map.json yet) is treated as EMPTY, which makes every PII-looking column
+// undeclared and therefore flagged - the "declare your PII" red that forces the inventory to exist. This is
+// strict-by-default, not fail-open: a missing map yields MORE findings, never fewer. --allow-empty lets a
+// whole-repo scan with no .sql pass; --ignore <relpath> skips the vendored gate infra (scripts/ci). All of
+// these live in the manifest invoke, which is parity/provenance-locked.
+const rawArgs = process.argv.slice(2);
+const allowEmpty = rawArgs.includes("--allow-empty");
+const ignorePaths = [];
+let mapPath = null;
+const paths = [];
+for (let i = 0; i < rawArgs.length; i++) {
+  const a = rawArgs[i];
+  if (a === "--allow-empty") continue;
+  if (a === "--map") { const v = rawArgs[++i]; if (v === undefined) die("--map requires a path argument"); mapPath = resolve(v); continue; }
+  if (a === "--ignore") { const v = rawArgs[++i]; if (v === undefined) die("--ignore requires a path argument"); ignorePaths.push(resolve(process.cwd(), v)); continue; }
+  paths.push(a);
+}
+if (paths.length === 0) die("no schema paths given. Usage: check-untagged-pii.mjs [--allow-empty] [--ignore <relpath>]... [--map data-map.json] <paths...>");
+const isIgnored = (abs) => ignorePaths.some((ig) => abs === ig || abs.startsWith(ig + sep));
 
 const CLASSES = new Set(["public", "internal", "confidential", "restricted", "not-personal"]);
 
-// --- load + validate the data map --------------------------------------------
-if (!existsSync(mapPath)) die(`data map not found: ${mapPath}`);
-let rawMap;
-try { rawMap = JSON.parse(readFileSync(mapPath, "utf8")); }
-catch (e) { die(`data map is not valid JSON (${e.message})`); }
+// --- load + validate the data map (absent = empty; present-but-malformed = fail closed) -------------
+let rawMap = [];
+if (mapPath && existsSync(mapPath)) {
+  try { rawMap = JSON.parse(readFileSync(mapPath, "utf8")); }
+  catch (e) { die(`data map is not valid JSON (${e.message})`); }
+}
 
 const declared = new Map(); // normalized field key -> class
 function declare(field, cls) {
@@ -124,14 +140,26 @@ function collectColumns(sql, file) {
 }
 
 // --- gather .sql files -------------------------------------------------------
+// Skip the usual non-product dirs AND test directories: a repo's test fixtures may hold an intentionally
+// PII-named column to exercise this gate, so scanning them would false-positive. Real schema lives outside
+// these (migrations/, db/, ...), matching the no-ua-sniffing / owasp-lints travel pattern.
+const IGNORE_DIRS = new Set(["node_modules", ".git", "dist", "build", "coverage", "vendor", "test", "tests", "__tests__", "spec"]);
 function collect(p) {
   if (!existsSync(p)) die(`path does not exist: ${p}`);
-  return statSync(p).isDirectory()
-    ? readdirSync(p).flatMap((n) => collect(join(p, n)))
-    : extname(p).toLowerCase() === ".sql" ? [p] : [];
+  if (isIgnored(resolve(process.cwd(), p))) return [];
+  const st = statSync(p);
+  if (st.isDirectory()) {
+    const base = p.split(/[/\\]/).pop();
+    if (IGNORE_DIRS.has(base)) return [];
+    return readdirSync(p).flatMap((n) => collect(join(p, n)));
+  }
+  return extname(p).toLowerCase() === ".sql" ? [p] : [];
 }
 const files = paths.flatMap(collect);
-if (files.length === 0) die("no .sql files found in the given path(s) (zero-scan - fail closed)");
+if (files.length === 0) {
+  if (allowEmpty) { console.log("[check-untagged-pii] OK - no .sql files to scan (--allow-empty; whole-repo scope)."); process.exit(0); }
+  die("no .sql files found in the given path(s) (zero-scan - fail closed)");
+}
 
 // --- check every PII-looking column is declared ------------------------------
 const problems = [];
@@ -149,7 +177,7 @@ for (const f of files) {
 }
 
 if (problems.length) {
-  console.error(`[check-untagged-pii] FAIL - ${problems.length} PII-looking column(s) not in the data map (${mapPath}):`);
+  console.error(`[check-untagged-pii] FAIL - ${problems.length} PII-looking column(s) not in the data map (${mapPath || "no data-map.json declared - create one and classify these columns"}):`);
   for (const p of problems) console.error(`  • ${p.file}:${p.line}  ${p.field}`);
   console.error(`\nClassify each in the data map (public|internal|confidential|restricted), or - if it is not personal\n` +
     `data despite the name - declare it as "not-personal" to record that decision.`);

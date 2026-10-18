@@ -4,13 +4,16 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, writeFileSync, mkdirSync } from "node:fs";
+import { mkdtempSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const CHECK = resolve(REPO, ".claude/skills/compliance-data-lifecycle/scripts/check-untagged-pii.mjs");
+// Resolve the gate in EITHER layout (upstream .claude/skills/<skill>/scripts, or a consumer's scripts/ci),
+// because this test is copied verbatim into a consumer and must find the gate wherever it lives.
+const UPSTREAM = resolve(REPO, ".claude/skills/compliance-data-lifecycle/scripts/check-untagged-pii.mjs");
+const CHECK = [UPSTREAM, resolve(REPO, "scripts/ci/check-untagged-pii.mjs")].find((p) => existsSync(p)) ?? UPSTREAM;
 
 function run(sql, map) {
   const dir = mkdtempSync(join(tmpdir(), "pii-"));
@@ -110,17 +113,56 @@ test("rejects a bare not-personal key so it can't blanket-exempt another table's
 test("fails closed (exit 2) on an invalid class in the map", () => {
   assert.equal(run(USERS, { "users.email": "secret-sauce", "users.phone": "restricted" }).status, 2);
 });
-test("fails closed (exit 2) when the map file is missing", () => {
-  const dir = mkdtempSync(join(tmpdir(), "pii-nomap-"));
+test("a map file present but malformed JSON still fails closed (exit 2, discriminating)", () => {
+  const dir = mkdtempSync(join(tmpdir(), "pii-badmap-"));
   const sqlFile = join(dir, "s.sql");
   writeFileSync(sqlFile, USERS);
-  const r = spawnSync(process.execPath, [CHECK, "--map", join(dir, "nope.json"), sqlFile], { encoding: "utf8" });
+  writeFileSync(join(dir, "data-map.json"), "{ not json");
+  const r = spawnSync(process.execPath, [CHECK, "--map", join(dir, "data-map.json"), sqlFile], { encoding: "utf8" });
   assert.equal(r.status, 2);
 });
-test("fails closed (exit 2) when no .sql files are found", () => {
+test("fails closed (exit 2) when no .sql files are found and --allow-empty is NOT given", () => {
   const dir = mkdtempSync(join(tmpdir(), "pii-empty-"));
   mkdirSync(join(dir, "sub"));
   writeFileSync(join(dir, "data-map.json"), "{}");
   const r = spawnSync(process.execPath, [CHECK, "--map", join(dir, "data-map.json"), join(dir, "sub")], { encoding: "utf8" });
   assert.equal(r.status, 2);
+});
+
+// --- optional map + whole-repo travel (ADR-0064) -----------------------------
+// --map is OPTIONAL: an absent map is treated as EMPTY, which makes a PII-looking column undeclared and
+// therefore FLAGGED (the "declare your PII" red). This is strict-by-default, never fail-open. --allow-empty
+// lets a repo with no .sql pass; --ignore skips the vendored gate infra. Paths are manifest-locked.
+function tree(files) {
+  const dir = mkdtempSync(join(tmpdir(), "pii-tree-"));
+  for (const [rel, src] of Object.entries(files)) {
+    const f = join(dir, rel);
+    mkdirSync(dirname(f), { recursive: true });
+    writeFileSync(f, src);
+  }
+  return dir;
+}
+function runIn(cwd, args) {
+  const r = spawnSync(process.execPath, [CHECK, ...args], { cwd, encoding: "utf8" });
+  return { status: r.status, out: (r.stdout || "") + (r.stderr || "") };
+}
+test("optional map: an ABSENT map flags undeclared PII (exit 1, strict-by-default not fail-open; discriminating)", () => {
+  const dir = tree({ "migrations/001.sql": USERS });
+  const r = runIn(dir, ["--allow-empty", "--ignore", "scripts/ci", "--map", "data-map.json", "."]);
+  assert.equal(r.status, 1, r.out);
+  assert.match(r.out, /users\.email/);
+});
+test("--allow-empty makes a repo with no .sql PASS (exit 0)", () => {
+  assert.equal(runIn(tree({ "README.md": "# docs\n" }), ["--allow-empty", "--map", "data-map.json", "."]).status, 0);
+});
+test("--ignore scripts/ci skips the gate infra but still scans real schema (discriminating)", () => {
+  const dir = tree({
+    "scripts/ci/check-untagged-pii.mjs": "CREATE TABLE t (\n  email text\n);\n", // vendored infra: skipped
+    "migrations/001.sql": "CREATE TABLE ok (\n  id int\n);\n",
+  });
+  assert.equal(runIn(dir, ["--allow-empty", "--ignore", "scripts/ci", "--map", "data-map.json", "."]).status, 0);
+});
+test("does NOT flag a PII column inside a test/ fixture dir (IGNORE_DIRS, no false positive)", () => {
+  const dir = tree({ "test/fixtures/bad.sql": USERS, "migrations/ok.sql": "CREATE TABLE ok (\n  id int\n);\n" });
+  assert.equal(runIn(dir, ["--allow-empty", "--ignore", "scripts/ci", "--map", "data-map.json", "."]).status, 0);
 });
