@@ -1,6 +1,6 @@
 {
-  "version": "1.1.0",
-  "generatedFrom": "techfleetworks/enterprise-software-AI-skills@1.1.0",
+  "version": "1.2.0",
+  "generatedFrom": "techfleetworks/enterprise-software-AI-skills@1.2.0",
   "gates": [
     {
       "id": "skill-gate-parity",
@@ -38,6 +38,19 @@
       "couples": [
         "gate-manifest.json",
         ".github/workflows/enterprise-gates.yml"
+      ]
+    },
+    {
+      "id": "reference-links",
+      "origin": "upstream",
+      "skill": "judge-arch",
+      "script": "scripts/ci/check-reference-links.mjs",
+      "sha256": "3aff2f92dd7a4be563ac8d932e54fb8e52d0e759923856708b29bd510c3c851d",
+      "test": "test/reference-links.test.mjs",
+      "lane": "required",
+      "invoke": [
+        "--root",
+        "."
       ]
     }
   ],
