@@ -10,6 +10,9 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { tmpdir } from "node:os";
 
+// The aggregator is MACHINERY, and esk-genesis copies machinery SCRIPTS but not machinery TESTS (only gate
+// tests travel to a consumer). So this test stays upstream-only and resolves the aggregator at its upstream
+// path; no consumer-layout fallback is needed (unlike the gate tests, ADR-0057).
 const AGG = resolve(process.cwd(), ".claude/skills/judge-arch/scripts/run-manifest-gates.mjs");
 const created = [];
 

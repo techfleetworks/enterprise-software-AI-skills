@@ -9,11 +9,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, writeFileSync, rmSync, existsSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { tmpdir } from "node:os";
 
-const GUARD = resolve(process.cwd(), ".claude/skills/judge-arch/scripts/check-manifest-provenance.mjs");
+// Locate the gate in EITHER layout (upstream .claude/skills/<skill>/scripts, or a consumer's scripts/ci),
+// because this test is copied verbatim into a consumer and must find the gate wherever it lives.
+const GUARD_UPSTREAM = resolve(process.cwd(), ".claude/skills/judge-arch/scripts/check-manifest-provenance.mjs");
+const GUARD = [GUARD_UPSTREAM, resolve(process.cwd(), "scripts/ci/check-manifest-provenance.mjs")].find((p) => existsSync(p)) ?? GUARD_UPSTREAM;
 const UPSTREAM = "techfleetworks/enterprise-software-AI-skills";
 const created = [];
 

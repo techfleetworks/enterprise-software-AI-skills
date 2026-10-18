@@ -7,12 +7,16 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { resolve, join } from "node:path";
 import { tmpdir } from "node:os";
 
-const GUARD = resolve(process.cwd(), ".claude/skills/judge-arch/scripts/check-skill-gate-parity.mjs");
+// Locate the gate in EITHER layout: the upstream repo (.claude/skills/<skill>/scripts) or a consumer that
+// esk-genesis bootstrapped (scripts/ci). This test file is copied verbatim into a consumer, so it must find
+// the gate wherever it lives; a hardcoded upstream path makes every copied gate test fail in a consumer.
+const UPSTREAM = resolve(process.cwd(), ".claude/skills/judge-arch/scripts/check-skill-gate-parity.mjs");
+const GUARD = [UPSTREAM, resolve(process.cwd(), "scripts/ci/check-skill-gate-parity.mjs")].find((p) => existsSync(p)) ?? UPSTREAM;
 const created = [];
 const sha = (s) => createHash("sha256").update(s).digest("hex");
 
