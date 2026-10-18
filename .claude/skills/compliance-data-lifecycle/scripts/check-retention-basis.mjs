@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-gate: retention-basis
 /**
  * check-retention-basis - fail when a personal-data entry in the data map has no lawful basis or no
  * retention period.
@@ -33,13 +34,18 @@ function die(msg) { console.error(`[check-retention-basis] FAIL - ${msg}`); proc
 
 const args = process.argv.slice(2);
 const mapIdx = args.indexOf("--map");
-if (mapIdx === -1 || !args[mapIdx + 1]) die("missing --map <data-map.json>. Usage: check-retention-basis.mjs --map data-map.json");
-const mapPath = resolve(args[mapIdx + 1]);
+const mapPath = (mapIdx !== -1 && args[mapIdx + 1]) ? resolve(args[mapIdx + 1]) : null;
 
-if (!existsSync(mapPath)) die(`data map not found: ${mapPath}`);
-let rawMap;
-try { rawMap = JSON.parse(readFileSync(mapPath, "utf8")); }
-catch (e) { die(`data map is not valid JSON (${e.message})`); }
+// The data map is OPTIONAL with a safe default (bootstrap-v2: this gate travels into consumer repos). With no
+// map - or a map the consumer has not created yet - there are no declared personal entries, so there is
+// nothing to check and the gate passes. check-untagged-pii is the gate that FORCES undeclared PII to be
+// declared; once a field is in the map, THIS gate requires it to carry a lawful basis and a retention period.
+// A map file that IS present but is malformed JSON still fails closed (a real error, not an absent map).
+let rawMap = [];
+if (mapPath && existsSync(mapPath)) {
+  try { rawMap = JSON.parse(readFileSync(mapPath, "utf8")); }
+  catch (e) { die(`data map is not valid JSON (${e.message})`); }
+}
 
 const CLASSES = new Set(["public", "internal", "confidential", "restricted", "not-personal"]);
 // A value that records no real decision. Mirrors the "reason must be real" bar used by the other gates.
