@@ -9,13 +9,16 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { writeFileSync, mkdtempSync, chmodSync, readFileSync } from "node:fs";
+import { writeFileSync, mkdtempSync, chmodSync, readFileSync, existsSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const CHECK = resolve(REPO, ".claude/skills/judge-arch/scripts/arch-gate.mjs");
+// Resolve the gate in EITHER layout (upstream .claude/skills/<skill>/scripts, or a consumer's scripts/ci),
+// because this test is copied verbatim into a consumer and must find the gate wherever it lives.
+const UPSTREAM = resolve(REPO, ".claude/skills/judge-arch/scripts/arch-gate.mjs");
+const CHECK = [UPSTREAM, resolve(REPO, "scripts/ci/arch-gate.mjs")].find((p) => existsSync(p)) ?? UPSTREAM;
 
 // Create a fixture dir; `files` maps relative name -> contents (config/waivers written as JSON).
 function fixture({ config, waivers, files = {} }) {
@@ -137,4 +140,67 @@ test("Finding C: arch-gate reports (does not silently skip) an unreadable existi
   chmodSync(victim, 0o644); // restore so the throwaway fixture can be cleaned up
   assert.match(r.out, /could not read[^\n]*locked\.mjs/i,
     "an unreadable but present code file must produce a WARNING, not a silent skip");
+});
+
+// --- optional config: the gate travels into consumers with a safe default (ADR-0063) -------------
+// With NO arch-gate.config.json present, the gate falls back to {} with the built-ins ON, so a consumer that
+// has not written a config still gets real tree-wide enforcement rather than a confusing exit 2. These tests
+// write NO config file (unlike fixture(), which always writes one) and run the gate with cwd there.
+function noConfigDir(files) {
+  const dir = mkdtempSync(join(tmpdir(), "arch-gate-noconfig-"));
+  for (const [name, body] of Object.entries(files)) writeFileSync(join(dir, name), body);
+  return dir;
+}
+test("optional config: NO config file present → built-ins still DETECT an empty catch (exit 1, discriminating)", () => {
+  const r = runGate(noConfigDir({ "a.js": EMPTY_CATCH }));
+  assert.equal(r.status, 1, r.out);
+  assert.match(r.out, /emptyCatch/, "the built-in empty-catch check must still fire with no config");
+});
+test("optional config: NO config file + clean code → PASS (exit 0, not fail-closed exit 2)", () => {
+  const r = runGate(noConfigDir({ "clean.js": "export const x = 1;\n" }));
+  assert.equal(r.status, 0, r.out);
+});
+test("optional config: NO config + no code files → PASS (exit 0, travels into a config-less consumer)", () => {
+  const r = runGate(noConfigDir({ "README.md": "# docs\n" }));
+  assert.equal(r.status, 0, r.out);
+});
+test("optional config: an EXPLICIT --config that is missing still fails closed (exit 2), not a silent {} fallback", () => {
+  // The {} fallback is ONLY for the default path (a config-less consumer). A caller who names a config and
+  // mistypes it must hear about it, not silently lose their custom rules - the gate cannot be weakened.
+  const r = runGate(noConfigDir({ "clean.js": "export const x = 1;\n" }), ["--config", "does-not-exist.json"]);
+  assert.equal(r.status, 2, r.out);
+});
+
+// --- --ignore <relpath>: skip the vendored gate infra (scripts/ci) without an evasion hole -----------
+// The manifest invoke passes "--ignore scripts/ci --ignore .githooks" so the copied gate/hook machinery
+// (which uses deliberate best-effort catches) is not arch-checked. The path is cwd-anchored, so a decoy dir
+// named scripts/ci elsewhere in the tree is still scanned. invoke is provenance-frozen (a consumer cannot
+// widen it). These prove the skip is real and precise.
+function nestedDir(files) {
+  const dir = mkdtempSync(join(tmpdir(), "arch-gate-ign-"));
+  for (const [rel, body] of Object.entries(files)) {
+    const f = join(dir, rel);
+    mkdirSync(dirname(f), { recursive: true });
+    writeFileSync(f, body);
+  }
+  return dir;
+}
+test("--ignore scripts/ci skips the vendored gate infra but still flags product code (discriminating)", () => {
+  const dir = nestedDir({
+    "scripts/ci/arch-gate.mjs": "function f(){ try { g(); } catch (e) {} }\n", // vendored infra: must be skipped
+    "src/clean.js": "export const x = 1;\n",
+  });
+  assert.equal(runGate(dir, ["--ignore", "scripts/ci"]).status, 0, "scripts/ci must be skipped");
+});
+test("--ignore scripts/ci does NOT suppress an empty catch in product code (discriminating)", () => {
+  const dir = nestedDir({ "src/bad.js": "function g(){ try { h(); } catch (e) {} }\n" });
+  const r = runGate(dir, ["--ignore", "scripts/ci"]);
+  assert.equal(r.status, 1, r.out);
+  assert.match(r.out, /emptyCatch/);
+});
+test("--ignore scripts/ci is cwd-anchored: a decoy src/scripts/ci is still scanned (anti-evasion)", () => {
+  const dir = nestedDir({ "src/scripts/ci/sneaky.js": "function g(){ try { h(); } catch (e) {} }\n" });
+  const r = runGate(dir, ["--ignore", "scripts/ci"]);
+  assert.equal(r.status, 1, r.out);
+  assert.match(r.out, /sneaky\.js/);
 });

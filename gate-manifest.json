@@ -112,6 +112,21 @@
         "scripts/ci",
         "."
       ]
+    },
+    {
+      "id": "arch-gate",
+      "origin": "upstream",
+      "skill": "judge-arch",
+      "script": "scripts/ci/arch-gate.mjs",
+      "sha256": "24ad18d6fc7800c9d556b0069211b42aa757952f75f2ec6343944429750c14ac",
+      "test": "test/arch-gate.test.mjs",
+      "lane": "required",
+      "invoke": [
+        "--ignore",
+        "scripts/ci",
+        "--ignore",
+        ".githooks"
+      ]
     }
   ],
   "machinery": [
