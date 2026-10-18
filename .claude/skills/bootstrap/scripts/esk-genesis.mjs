@@ -218,7 +218,7 @@ const consumerManifest = {
   version,
   generatedFrom: `${upstreamRepo}@${version}`,
   gates: [
-    ...upstreamGates.map((g) => ({ id: g.id, origin: "upstream", skill: g.skill, script: g.script, sha256: g.sha256, test: g.test, lane: g.lane, ...(g.couples ? { couples: g.couples } : {}) })),
+    ...upstreamGates.map((g) => ({ id: g.id, origin: "upstream", skill: g.skill, script: g.script, sha256: g.sha256, test: g.test, lane: g.lane, ...(g.invoke ? { invoke: g.invoke } : {}), ...(g.couples ? { couples: g.couples } : {}) })),
     ...repoLocal.map((r) => ({ id: r.id, origin: "repo-local", script: r.script, sha256: r.sha256, test: r.test, lane: r.lane })),
   ],
   ...(srcMachinery.length ? { machinery: srcMachinery.map((m) => ({ id: m.id, skill: m.skill, script: m.script, sha256: m.sha256, test: m.test })) } : {}),

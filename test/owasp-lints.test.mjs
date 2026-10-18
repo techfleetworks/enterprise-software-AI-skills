@@ -106,3 +106,54 @@ test("ignores a non-code file (e.g. .md) — zero-scan fail closed", () => {
   const r = spawnSync(process.execPath, [CHECK, dir], { encoding: "utf8" });
   assert.equal(r.status, 2); // no code files → zero-scan
 });
+
+// --- whole-repo travelling scope: --allow-empty + --ignore -------------------
+// When the gate travels into a consumer the aggregator scans the whole tree ("."), which always contains the
+// copied gate infra under scripts/ci (whose own scripts carry insecure-cookie / alg:none examples) and may be
+// empty of source. These flags make that scope safe: --allow-empty passes a genuinely empty scan, --ignore
+// skips ONLY the resolved gate-infra dir, and the paths are manifest-locked so a dev cannot widen them.
+function tree(files) {
+  const dir = mkdtempSync(join(tmpdir(), "owasp-tree-"));
+  for (const [rel, src] of Object.entries(files)) {
+    const f = join(dir, rel);
+    mkdirSync(dirname(f), { recursive: true });
+    writeFileSync(f, src);
+  }
+  return dir;
+}
+function runIn(cwd, args) {
+  const r = spawnSync(process.execPath, [CHECK, ...args], { cwd, encoding: "utf8" });
+  return { status: r.status, out: (r.stdout || "") + (r.stderr || "") };
+}
+
+test("--allow-empty makes a zero-source scan PASS (exit 0) instead of failing closed", () => {
+  assert.equal(runIn(tree({ "README.md": "# docs\n" }), ["--allow-empty", "."]).status, 0);
+});
+test("WITHOUT --allow-empty a zero-source scan still fails closed (exit 2, discriminating)", () => {
+  assert.equal(runIn(tree({ "README.md": "# docs\n" }), ["."]).status, 2);
+});
+test("--ignore scripts/ci skips the gate infra but still scans product code", () => {
+  const dir = tree({
+    "scripts/ci/check-owasp-lints.mjs": "const o = { algorithms: ['none'] }; // the gate's own docstring\n",
+    "src/clean.js": "export const x = 1;\n",
+  });
+  assert.equal(runIn(dir, ["--allow-empty", "--ignore", "scripts/ci", "."]).status, 0);
+});
+test("--ignore does NOT suppress a violation in product code (discriminating)", () => {
+  const dir = tree({
+    "scripts/ci/gate.mjs": "const o = { algorithms: ['none'] };\n",
+    "src/bad.js": "const o = { algorithms: ['none'] };\n",
+  });
+  const r = runIn(dir, ["--allow-empty", "--ignore", "scripts/ci", "."]);
+  assert.equal(r.status, 1, r.out);
+  assert.match(r.out, /src[\\/]bad\.js/);
+});
+test("--ignore is anchored at cwd: a decoy src/scripts/ci is NOT skipped (anti-evasion)", () => {
+  const dir = tree({ "src/scripts/ci/sneaky.js": "const o = { algorithms: ['none'] };\n" });
+  const r = runIn(dir, ["--allow-empty", "--ignore", "scripts/ci", "."]);
+  assert.equal(r.status, 1, r.out);
+  assert.match(r.out, /sneaky\.js/);
+});
+test("--ignore with no path argument fails usage (exit 2)", () => {
+  assert.equal(runIn(tree({ "src/clean.js": "export const x = 1;\n" }), ["--ignore"]).status, 2);
+});

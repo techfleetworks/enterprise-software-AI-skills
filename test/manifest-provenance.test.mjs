@@ -27,6 +27,7 @@ const gate = (over = {}) => ({
   test: `test/${over.id ?? "alpha"}.test.mjs`,
   lane: over.lane ?? "required",
   ...(over.origin ? { origin: over.origin } : {}),
+  ...("invoke" in over ? { invoke: over.invoke } : {}),
 });
 
 const manifest = (gates, version = "1.2.0") => JSON.stringify({ version, gates, aggregator: { requiredCheck: "gate" } });
@@ -94,6 +95,39 @@ test("PROV: FLAGS (1) a published gate dropped from the committed manifest", () 
 test("PROV: does NOT flag a repo-local gate absent from the published manifest (no false positive)", () => {
   const committed = [gate({ id: "alpha" }), gate({ id: "local-only", origin: "repo-local" })];
   const upstream = [gate({ id: "alpha" })];
+  assert.equal(run(fixture({ committed: manifest(committed), upstream: manifest(upstream) })), 0);
+});
+
+// --- invoke binding (ADR-0061): the scan scope/args are provenance-protected, so a consumer cannot edit
+// invoke to make a gate skip its own product code and still pass. This is the bypass the subagent found. ---
+test("PROV: FLAGS (1) a gate whose invoke was edited to skip product code (--ignore src vs the released --ignore scripts/ci)", () => {
+  const committed = [gate({ invoke: ["--allow-empty", "--ignore", "src", "."] })];
+  const upstream = [gate({ invoke: ["--allow-empty", "--ignore", "scripts/ci", "."] })];
+  assert.equal(run(fixture({ committed: manifest(committed), upstream: manifest(upstream) })), 1);
+});
+
+test("PROV: FLAGS (1) a gate whose invoke was edited to --ignore . (whole tree skipped)", () => {
+  const committed = [gate({ invoke: ["--allow-empty", "--ignore", ".", "."] })];
+  const upstream = [gate({ invoke: ["--allow-empty", "--ignore", "scripts/ci", "."] })];
+  assert.equal(run(fixture({ committed: manifest(committed), upstream: manifest(upstream) })), 1);
+});
+
+test("PROV: FLAGS (1) a gate that DROPPED the published invoke (gate then runs with no scope)", () => {
+  const committed = [gate({})]; // no invoke
+  const upstream = [gate({ invoke: ["--allow-empty", "--ignore", "scripts/ci", "."] })];
+  assert.equal(run(fixture({ committed: manifest(committed), upstream: manifest(upstream) })), 1);
+});
+
+test("PROV: FLAGS (1) a gate that ADDED an invoke the release does not have", () => {
+  const committed = [gate({ invoke: ["--ignore", "."] })];
+  const upstream = [gate({})]; // no invoke
+  assert.equal(run(fixture({ committed: manifest(committed), upstream: manifest(upstream) })), 1);
+});
+
+test("PROV: passes (0) when invoke matches the published release exactly (no false positive)", () => {
+  const inv = ["--allow-empty", "--ignore", "scripts/ci", "."];
+  const committed = [gate({ sha256: "b".repeat(64), invoke: inv })];
+  const upstream = [gate({ sha256: "b".repeat(64), invoke: inv })];
   assert.equal(run(fixture({ committed: manifest(committed), upstream: manifest(upstream) })), 0);
 });
 

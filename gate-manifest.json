@@ -20,7 +20,7 @@
       "origin": "upstream",
       "skill": "judge-arch",
       "script": "scripts/ci/check-manifest-provenance.mjs",
-      "sha256": "0383a6e399c357aa72ef4713d161cd7ca72cd7d8ea8a71aa2824410179bc3155",
+      "sha256": "06756dfd29db425806f3ab4fb4964e7408bf854c129997593837f2b7b3695069",
       "test": "test/manifest-provenance.test.mjs",
       "lane": "required",
       "couples": [
@@ -50,6 +50,36 @@
       "lane": "required",
       "invoke": [
         "--root",
+        "."
+      ]
+    },
+    {
+      "id": "no-ua-sniffing",
+      "origin": "upstream",
+      "skill": "universal-browser-device-support",
+      "script": "scripts/ci/check-no-ua-sniffing.mjs",
+      "sha256": "bc6385e38f9ae0a97837123b5ac935b0f36e953802ba6564fedcc52cdc2172ee",
+      "test": "test/no-ua-sniffing.test.mjs",
+      "lane": "required",
+      "invoke": [
+        "--allow-empty",
+        "--ignore",
+        "scripts/ci",
+        "."
+      ]
+    },
+    {
+      "id": "owasp-lints",
+      "origin": "upstream",
+      "skill": "owasp-secure-coding-bdd",
+      "script": "scripts/ci/check-owasp-lints.mjs",
+      "sha256": "cffc31a43c1cc4e486eed427e476d286c8c7451553e37855aa7a876e219b2186",
+      "test": "test/owasp-lints.test.mjs",
+      "lane": "required",
+      "invoke": [
+        "--allow-empty",
+        "--ignore",
+        "scripts/ci",
         "."
       ]
     }
