@@ -67,7 +67,10 @@ const SOURCE = resolve(opt("--source") || findSkillsRepo(dirname(fileURLToPath(i
 const TARGET = resolve(opt("--target") || process.cwd());
 const apply = flag("--yes");
 
-const sha256 = (file) => createHash("sha256").update(readFileSync(file)).digest("hex");
+// Hash LINE-ENDING-STABLY (ADR-0058): normalize CRLF to LF before hashing, so a source script verifies
+// against the manifest the same on Windows (CRLF) and Linux/CI (LF). Copy verification still holds (both
+// sides normalized), and an adopted repo-local gate's recorded sha is the stable LF hash.
+const sha256 = (file) => createHash("sha256").update(readFileSync(file, "utf8").replace(/\r\n/g, "\n")).digest("hex");
 
 // --- read and validate the upstream source manifest ---------------------------
 const srcManifestPath = join(SOURCE, "gate-manifest.json");

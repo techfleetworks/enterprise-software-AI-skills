@@ -7,12 +7,16 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { resolve, join } from "node:path";
 import { tmpdir } from "node:os";
 
-const GUARD = resolve(process.cwd(), ".claude/skills/judge-arch/scripts/check-skill-gate-parity.mjs");
+// Locate the gate in EITHER layout: the upstream repo (.claude/skills/<skill>/scripts) or a consumer that
+// esk-genesis bootstrapped (scripts/ci). This test file is copied verbatim into a consumer, so it must find
+// the gate wherever it lives; a hardcoded upstream path makes every copied gate test fail in a consumer.
+const UPSTREAM = resolve(process.cwd(), ".claude/skills/judge-arch/scripts/check-skill-gate-parity.mjs");
+const GUARD = [UPSTREAM, resolve(process.cwd(), "scripts/ci/check-skill-gate-parity.mjs")].find((p) => existsSync(p)) ?? UPSTREAM;
 const created = [];
 const sha = (s) => createHash("sha256").update(s).digest("hex");
 
@@ -159,6 +163,19 @@ test("PARITY: fails CLOSED (2) when the manifest is missing", () => {
 test("PARITY: fails CLOSED (2) when the manifest is not a manifest (no gates array)", () => {
   const root = fixture({ rawManifest: JSON.stringify({ version: "1.0.0" }) });
   assert.equal(run(root), 2);
+});
+
+test("PARITY: hashes line-ending-stably — a CRLF script verifies against the LF-normalized manifest sha (ADR-0058, discriminating)", () => {
+  // The manifest sha must match a script whether it is checked out CRLF (Windows) or LF (Linux/CI). The
+  // manifest records the LF-normalized hash; parity normalizes before hashing, so both line-ending forms of
+  // the SAME content verify against it. Before the fix, parity hashed raw bytes, so a CRLF checkout produced
+  // a different hash than the LF-based manifest and failed (the bug that broke every gate on CI).
+  const body = "// gate\r\nexport const value = 1;\r\n"; // CRLF content
+  const normHash = createHash("sha256").update(body.replace(/\r\n/g, "\n")).digest("hex"); // LF-normalized sha
+  // CRLF working tree (Windows): must PASS against the normalized manifest sha. Reverting the fix fails here.
+  assert.equal(run(fixture({ gates: [{ id: "crlf", content: body, hash: normHash }] })), 0, "a CRLF script must verify against the LF-normalized manifest hash");
+  // LF working tree (Linux/CI): the SAME manifest sha must also pass.
+  assert.equal(run(fixture({ gates: [{ id: "lf", content: body.replace(/\r\n/g, "\n"), hash: normHash }] })), 0, "an LF script must verify against the same normalized hash");
 });
 
 process.on("exit", () => {

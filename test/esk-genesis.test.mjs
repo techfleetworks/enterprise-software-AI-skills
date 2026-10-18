@@ -436,6 +436,22 @@ test("GENESIS: fails CLOSED (2) when the source has no manifest", () => {
   assert.equal(run(src, newTarget(), ["--yes"]), 2);
 });
 
+test("CONSUMER-TESTS: copied gate tests run GREEN in a bootstrapped consumer (ADR-0057, discriminating)", () => {
+  // Genesis the REAL skills repo into a fresh consumer, then run a copied gate test IN the consumer. Its
+  // GUARD must resolve to the consumer layout (scripts/ci), not the upstream path, or it fails. Before the
+  // fix the copied test hardcoded the upstream path and failed in every consumer; this is the proof it does
+  // not anymore. node --test needs no deps here (the gate tests use only node builtins).
+  const REAL = resolve(process.cwd()); // npm test runs from the repo root
+  const tgt = newTarget();
+  assert.equal(run(REAL, tgt, ["--yes"]), 0, "genesis from the real repo must succeed");
+  for (const t of ["test/skill-gate-parity.test.mjs", "test/bootstrap-presence.test.mjs"]) {
+    let status;
+    try { execFileSync("node", ["--test", t], { cwd: tgt, stdio: "pipe" }); status = 0; }
+    catch (e) { status = e.status ?? 1; }
+    assert.equal(status, 0, `copied ${t} must pass in the consumer (GUARD resolves to scripts/ci)`);
+  }
+});
+
 process.on("exit", () => {
   for (const d of created) {
     try {
