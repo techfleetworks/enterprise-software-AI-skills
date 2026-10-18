@@ -13,7 +13,8 @@
  * HOW:  Reads the committed manifest and the published upstream manifest (a local file the CI workflow
  *       downloaded from the release asset gate-manifest.json on tag v<version>), and compares the
  *       upstream-origin gates: every committed upstream gate must appear in the published manifest with
- *       the SAME id, sha256 and lane, and no published gate may be missing from the committed manifest.
+ *       the SAME id, sha256, lane and invoke (scan scope/args), and no published gate may be missing from
+ *       the committed manifest.
  *       repo-local gates (origin "repo-local", adopted at genesis) are not governed by upstream and are
  *       ignored here. It reads and compares only; it makes NO network calls and executes nothing - the
  *       download is the workflow's job (like the OWASP verbatim gate, which vendors its source first),
@@ -65,6 +66,16 @@ const fail = (lines) => {
   console.error("✖ check-manifest-provenance: the committed manifest does not match the published upstream release:");
   for (const l of lines) console.error(`   • ${l}`);
   process.exit(1);
+};
+
+// Two invoke arg-lists are equal when both are absent, or both are string arrays with the same elements in
+// the same order. invoke fixes what a gate scans (e.g. "--ignore <dir>"), so a consumer that edits it could
+// make a gate skip its own product code and still pass; binding invoke to the published release closes that
+// bypass, the same way the sha256 check binds the gate's content.
+const sameInvoke = (a, b) => {
+  if (a === undefined && b === undefined) return true;
+  if (!Array.isArray(a) || !Array.isArray(b)) return false;
+  return a.length === b.length && a.every((x, i) => x === b[i]);
 };
 
 const readManifest = (file, label) => {
@@ -138,6 +149,9 @@ for (const g of committedUpstream) {
   }
   if ((g.lane ?? "required") !== (u.lane ?? "required")) {
     violations.push(`gate "${g.id}": lane "${g.lane}" != published lane "${u.lane}" (a required upstream gate cannot be downgraded locally).`);
+  }
+  if (!sameInvoke(g.invoke, u.invoke)) {
+    violations.push(`gate "${g.id}": invoke ${JSON.stringify(g.invoke ?? null)} != published invoke ${JSON.stringify(u.invoke ?? null)} (the manifest changed the gate's scan scope/args from the release - editing invoke can make the gate skip product code).`);
   }
 }
 

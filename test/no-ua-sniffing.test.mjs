@@ -98,3 +98,58 @@ test("fails closed (exit 2) when a directory has no JS/TS files", () => {
   const r = spawnSync(process.execPath, [CHECK, dir], { encoding: "utf8" });
   assert.equal(r.status, 2, r.out);
 });
+
+// --- whole-repo travelling scope: --allow-empty + --ignore -------------------
+// When the gate travels into a consumer, the aggregator scans the whole tree ("."), which is empty of
+// source on some repos and always contains the copied gate infra under scripts/ci. These flags make that
+// scope work without a hole: --allow-empty passes a genuinely empty scan, --ignore skips ONLY the resolved
+// gate-infra dir, and the paths are manifest-locked so a dev cannot widen them to hide product code.
+function tree(files) {
+  const dir = mkdtempSync(join(tmpdir(), "ua-tree-"));
+  for (const [rel, src] of Object.entries(files)) {
+    const f = join(dir, rel);
+    mkdirSync(dirname(f), { recursive: true });
+    writeFileSync(f, src);
+  }
+  return dir;
+}
+function runIn(cwd, args) {
+  const r = spawnSync(process.execPath, [CHECK, ...args], { cwd, encoding: "utf8" });
+  return { status: r.status, out: (r.stdout || "") + (r.stderr || "") };
+}
+
+test("--allow-empty makes a zero-source scan PASS (exit 0) instead of failing closed", () => {
+  const dir = tree({ "README.md": "# docs only\n" });
+  assert.equal(runIn(dir, ["--allow-empty", "."]).status, 0);
+});
+test("WITHOUT --allow-empty a zero-source scan still fails closed (exit 2, discriminating)", () => {
+  const dir = tree({ "README.md": "# docs only\n" });
+  assert.equal(runIn(dir, ["."]).status, 2);
+});
+test("--ignore scripts/ci skips the gate infra but still scans product code", () => {
+  const dir = tree({
+    "scripts/ci/check-no-ua-sniffing.mjs": "const ua = navigator.userAgent; // the gate's own docstring has brand names\n",
+    "src/clean.js": "export const x = 1;\n",
+  });
+  const r = runIn(dir, ["--allow-empty", "--ignore", "scripts/ci", "."]);
+  assert.equal(r.status, 0, r.out);
+});
+test("--ignore does NOT suppress a violation in product code (discriminating)", () => {
+  const dir = tree({
+    "scripts/ci/gate.mjs": "const ua = navigator.userAgent;\n",
+    "src/bad.js": "if (navigator.userAgent.includes('Chrome')) legacy();\n",
+  });
+  const r = runIn(dir, ["--allow-empty", "--ignore", "scripts/ci", "."]);
+  assert.equal(r.status, 1, r.out);
+  assert.match(r.out, /src[\\/]bad\.js/);
+});
+test("--ignore is anchored at cwd: a decoy src/scripts/ci is NOT skipped (anti-evasion)", () => {
+  const dir = tree({ "src/scripts/ci/sneaky.js": "const ua = navigator.userAgent;\n" });
+  const r = runIn(dir, ["--allow-empty", "--ignore", "scripts/ci", "."]);
+  assert.equal(r.status, 1, r.out);
+  assert.match(r.out, /sneaky\.js/);
+});
+test("--ignore with no path argument fails usage (exit 2)", () => {
+  const dir = tree({ "src/clean.js": "export const x = 1;\n" });
+  assert.equal(runIn(dir, ["--ignore"]).status, 2);
+});

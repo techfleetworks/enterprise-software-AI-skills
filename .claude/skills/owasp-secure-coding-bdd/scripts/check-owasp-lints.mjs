@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-gate: owasp-lints
 /**
  * check-owasp-lints - fail on two high-signal, low-false-positive secure-coding mistakes.
  *
@@ -26,18 +27,42 @@
  * Exit 0 = clean. 1 = one or more findings. 2 = bad usage / unreadable input.
  */
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
-import { join, extname } from "node:path";
+import { join, extname, resolve, sep } from "node:path";
 
 function die(msg) { console.error(`[check-owasp-lints] FAIL - ${msg}`); process.exit(2); }
 
-const inputs = process.argv.slice(2);
-if (inputs.length === 0) die("no paths given. Usage: check-owasp-lints.mjs <file-or-dir>...");
+// --allow-empty: a whole-repo (invoke-fixed) scan that finds no source files means "nothing to check" and
+// must PASS; a dev cannot abuse it (invoke is manifest-locked). Without it, an explicit empty path fails closed.
+// --ignore <relpath> (repeatable): skip a directory the gate must never lint - the gate infrastructure
+// itself (scripts/ci), whose own scripts carry insecure-cookie / JWT examples in docstrings. The paths are
+// fixed in the manifest `invoke` (parity/provenance-protected), so a dev cannot widen them to hide code.
+const rawArgs = process.argv.slice(2);
+const allowEmpty = rawArgs.includes("--allow-empty");
+const ignorePaths = [];
+const inputs = [];
+for (let i = 0; i < rawArgs.length; i++) {
+  const a = rawArgs[i];
+  if (a === "--allow-empty") continue;
+  if (a === "--ignore") {
+    const v = rawArgs[++i];
+    if (v === undefined) die("--ignore requires a path argument");
+    ignorePaths.push(resolve(process.cwd(), v));
+    continue;
+  }
+  inputs.push(a);
+}
+if (inputs.length === 0) die("no paths given. Usage: check-owasp-lints.mjs [--allow-empty] [--ignore <relpath>]... <file-or-dir>...");
+const isIgnored = (abs) => ignorePaths.some((ig) => abs === ig || abs.startsWith(ig + sep));
 
 const CODE_EXT = new Set([".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".py", ".go", ".rb", ".java", ".php", ".cs"]);
-const IGNORE_DIRS = new Set(["node_modules", ".git", "dist", "build", "coverage", "out", ".next", "vendor"]);
+// Skip the usual non-product dirs AND test directories: test files carry intentional bad patterns (a fixture
+// may set an insecure cookie on purpose to test the gate), so scanning them false-positives. Product code
+// lives outside these; this matches standard linter behavior and the node_modules/dist skips above.
+const IGNORE_DIRS = new Set(["node_modules", ".git", "dist", "build", "coverage", "out", ".next", "vendor", "test", "tests", "__tests__", "spec"]);
 
 function collect(p) {
   if (!existsSync(p)) die(`path does not exist: ${p}`);
+  if (isIgnored(resolve(process.cwd(), p))) return [];
   const st = statSync(p);
   if (st.isDirectory()) {
     const base = p.split(/[\\/]/).pop();
@@ -47,7 +72,10 @@ function collect(p) {
   return CODE_EXT.has(extname(p).toLowerCase()) ? [p] : [];
 }
 const files = inputs.flatMap(collect);
-if (files.length === 0) die("no source files found in the given path(s) (zero-scan - fail closed)");
+if (files.length === 0) {
+  if (allowEmpty) { console.log("[check-owasp-lints] OK - no source files to scan (--allow-empty; whole-repo scope)."); process.exit(0); }
+  die("no source files found in the given path(s) (zero-scan - fail closed)");
+}
 
 // Blank out comments (keep length + newlines so offsets/lines stay aligned) for RULE matching.
 // Ignore directives are read from the RAW text first, so blanking comments never hides them.

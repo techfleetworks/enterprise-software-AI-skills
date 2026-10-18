@@ -43,7 +43,7 @@ function buildSource({ version = "1.0.0", gates = [{ id: "alpha" }], machinery =
     const testRel = `test/${e.id}.test.mjs`;
     writeFileSync(join(root, testRel), "// test\n");
     const entry = { id: e.id, script, sha256: sha(body), test: testRel };
-    if (kind === "gate") { entry.origin = "upstream"; entry.skill = "judge-arch"; entry.lane = "required"; }
+    if (kind === "gate") { entry.origin = "upstream"; entry.skill = "judge-arch"; entry.lane = "required"; if (e.invoke) entry.invoke = e.invoke; }
     else { entry.skill = "judge-arch"; }
     return entry;
   };
@@ -197,6 +197,20 @@ test("GENESIS: copied scripts match the source byte-for-byte", () => {
   const from = readFileSync(join(src, ".claude/skills/judge-arch/scripts/check-alpha.mjs"));
   const to = readFileSync(join(tgt, "scripts/ci/check-alpha.mjs"));
   assert.deepEqual(to, from);
+});
+
+test("GENESIS: preserves a gate's invoke args in the consumer manifest (engineering gates travel, ADR-0061)", () => {
+  // Regression: genesis rebuilt each gate object field-by-field and silently DROPPED invoke, so a
+  // travelling engineering gate ran in the consumer with no path args (fail-closed or wrong scope) even
+  // though the aggregator supports invoke. Without the preserved args, the gate cannot scan the consumer.
+  const src = buildSource({ gates: [{ id: "scoped", invoke: ["--allow-empty", "--ignore", "scripts/ci", "."] }, { id: "plain" }] });
+  const tgt = newTarget();
+  assert.equal(run(src, tgt, ["--yes"]), 0);
+  const m = readManifest(tgt);
+  const scoped = m.gates.find((g) => g.id === "scoped");
+  const plain = m.gates.find((g) => g.id === "plain");
+  assert.deepEqual(scoped.invoke, ["--allow-empty", "--ignore", "scripts/ci", "."], "invoke must survive into the consumer manifest");
+  assert.equal(plain.invoke, undefined, "a gate with no invoke stays invoke-free (no spurious field)");
 });
 
 test("GENESIS: a dry run (no --yes) writes nothing", () => {

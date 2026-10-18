@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-gate: no-ua-sniffing
 /**
  * check-no-ua-sniffing - fail when code branches on the browser's user-agent instead of detecting a
  * feature.
@@ -29,17 +30,42 @@
  * Exit 0 = no unsuppressed UA sniffing. 1 = one or more findings. 2 = bad usage / unreadable / no files.
  */
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
-import { join, extname } from "node:path";
+import { join, extname, resolve, sep } from "node:path";
 
 function die(msg) { console.error(`[check-no-ua-sniffing] FAIL - ${msg}`); process.exit(2); }
 
-const inputs = process.argv.slice(2);
-if (inputs.length === 0) die("no paths given. Usage: check-no-ua-sniffing.mjs <file-or-dir>...");
+// --allow-empty: when the aggregator scans the WHOLE repo (an invoke-fixed scope, not a dev-chosen path),
+// zero matching files means "nothing to check" and must PASS. A dev cannot abuse it (invoke lives in the
+// parity/provenance-protected manifest). Without the flag, an explicit path matching nothing still fails closed.
+// --ignore <relpath> (repeatable): skip a directory the gate must never lint - the gate infrastructure
+// itself (scripts/ci), which legitimately contains UA strings in its own docstring. The paths are fixed in
+// the manifest `invoke` (parity/provenance-protected), so a dev cannot widen them to hide product code.
+const rawArgs = process.argv.slice(2);
+const allowEmpty = rawArgs.includes("--allow-empty");
+const ignorePaths = [];
+const inputs = [];
+for (let i = 0; i < rawArgs.length; i++) {
+  const a = rawArgs[i];
+  if (a === "--allow-empty") continue;
+  if (a === "--ignore") {
+    const v = rawArgs[++i];
+    if (v === undefined) die("--ignore requires a path argument");
+    ignorePaths.push(resolve(process.cwd(), v));
+    continue;
+  }
+  inputs.push(a);
+}
+if (inputs.length === 0) die("no paths given. Usage: check-no-ua-sniffing.mjs [--allow-empty] [--ignore <relpath>]... <file-or-dir>...");
+const isIgnored = (abs) => ignorePaths.some((ig) => abs === ig || abs.startsWith(ig + sep));
 
 const EXTS = new Set([".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"]);
-const IGNORE_DIRS = new Set(["node_modules", ".git", "dist", "build", "coverage", "vendor"]);
+// Skip the usual non-product dirs AND test directories: test files carry intentional patterns (a fixture may
+// use navigator.userAgent on purpose to test a fallback), so scanning them produces false positives. Product
+// code lives outside these; this matches standard linter behavior and the node_modules/dist skips above.
+const IGNORE_DIRS = new Set(["node_modules", ".git", "dist", "build", "coverage", "vendor", "test", "tests", "__tests__", "spec"]);
 function collect(p) {
   if (!existsSync(p)) die(`path does not exist: ${p}`);
+  if (isIgnored(resolve(process.cwd(), p))) return [];
   const st = statSync(p);
   if (st.isDirectory()) {
     const base = p.split(/[/\\]/).pop();
@@ -49,7 +75,10 @@ function collect(p) {
   return EXTS.has(extname(p).toLowerCase()) ? [p] : [];
 }
 const files = inputs.flatMap(collect);
-if (files.length === 0) die("no JS/TS source files found in the given path(s) (zero-scan - fail closed)");
+if (files.length === 0) {
+  if (allowEmpty) { console.log("[check-no-ua-sniffing] OK - no JS/TS source files to scan (--allow-empty; whole-repo scope)."); process.exit(0); }
+  die("no JS/TS source files found in the given path(s) (zero-scan - fail closed)");
+}
 
 const UA_API = /\bnavigator\s*\.\s*(userAgent|vendor|appVersion|platform|userAgentData)\b/;
 const BRAND = /\b(MSIE|Trident|Edge|Edg|EdgA|EdgiOS|Chrome|Chromium|CriOS|Firefox|FxiOS|Safari|OPR|Opera|Gecko|WebKit|Windows NT|Macintosh|iPhone|iPad|Android)\b/;
