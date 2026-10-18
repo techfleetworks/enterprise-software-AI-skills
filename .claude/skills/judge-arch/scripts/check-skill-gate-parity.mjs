@@ -63,7 +63,10 @@ if (!manifest || typeof manifest !== "object" || !Array.isArray(manifest.gates))
   failClosed(`${MANIFEST} is not a gate manifest (no gates array). Refusing to pass.`);
 }
 
-const sha256 = (file) => createHash("sha256").update(readFileSync(file)).digest("hex");
+// Hash LINE-ENDING-STABLY (ADR-0058): normalize CRLF to LF before hashing, so a script hashes the same on
+// Windows (CRLF working tree) and Linux/CI (LF). Without this, the manifest sha256 matches on only one
+// platform and the gate fails on the other (a CRLF-hashed manifest fails every LF/CI checkout).
+const sha256 = (file) => createHash("sha256").update(readFileSync(file, "utf8").replace(/\r\n/g, "\n")).digest("hex");
 const violations = [];
 const sanctioned = new Set();
 
