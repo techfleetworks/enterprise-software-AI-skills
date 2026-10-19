@@ -3,7 +3,7 @@
 All notable changes to this repository are recorded here. Dates are ISO (YYYY-MM-DD). This project follows
 semantic versioning for the skills library and its gates.
 
-## 1.2.0 - Unreleased
+## 1.2.0 - 2026-10-18
 
 The engineering gates travel. 1.1.0 made turning the always-on directive on, and staying current, close to
 automatic. 1.2.0 makes the **checks themselves travel into a repo that adopts them and enforce in that repo's
@@ -40,6 +40,25 @@ travelling gates.
 
 - The provenance gate now compares each gate's scan scope (`invoke`), not just its content hash and lane,
   against the published release, so a consumer cannot narrow what a gate scans and still pass (ADR-0061).
+
+### Turning enforcement on (not just running)
+
+- The gates run on every pull request, but they only BLOCK a merge once an admin requires the `enterprise-gates`
+  check in branch protection. Nothing in a repo can turn that admin-only setting on, so the always-on hook now
+  injects a loud, every-session nudge in a consumer whose gates are advisory, telling the agent to tell the
+  human to turn enforcement on (`scripts/apply-ruleset.sh`), cleared on intent + confirm (a committed ruleset
+  that requires the check, active and on the default branch, plus the applied-marker the script writes).
+  `esk-genesis` scaffolds the ruleset and travels the apply script, so turning it on is one admin command
+  (ADR-0066).
+
+### Honest coverage, and every test runs
+
+- A coverage map (`docs/coverage-map.md`) records how each of the 16 skills is enforced: six travel as CI
+  gates, four have a local gate that needs consumer input, two have repo-self gates, and four are human
+  judgment. A test keeps the map from drifting (ADR-0067).
+- A guard now fails if any test file is not wired into `npm test`, after three test files (the per-gate matrix,
+  the enforcement nudge, and the coverage map) were found not running in the required CI job. They run now, and
+  the guard prevents a test from ever again being silently skipped (ADR-0067).
 
 ### What does not travel, on purpose
 
