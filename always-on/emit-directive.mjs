@@ -24,11 +24,12 @@
  * with argv[3] or the ESK_DIRECTIVE env var (for a non-sibling layout or a test; the installer relies
  * on the sibling default and does not pass a path).
  */
-import { readFileSync, writeFileSync, existsSync, unlinkSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, unlinkSync, mkdirSync, readdirSync } from "node:fs";
 import { dirname, resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
 import { decideNudge } from "./sync-nudge.mjs";
+import { decideEnforcementNudge, rulesetRequires } from "./enforcement-nudge.mjs";
 
 const MAX = 10000; // Claude Code caps hook additionalContext at 10,000 characters.
 const arg = (process.argv[2] || "").toLowerCase();
@@ -89,12 +90,52 @@ function sessionNudge() {
   } catch { /* cannot persist the counter; still show the nudge this session */ }
   return nudge;
 }
-// ESK_NUDGE_DISABLE lets a test (or a user) turn the nudge off entirely, so a suite that asserts the exact
+// Enforcement nudge (ADR-0066): on a SESSION start, if this is a consumer whose travelling gates RUN but are
+// not yet REQUIRED by branch protection, prepend a loud nudge to turn enforcement on. Signals are local files
+// (the enterprise-gates workflow, the committed ruleset(s), the applied-marker); the decision and the counter
+// live in enforcement-nudge.mjs. Best-effort: any failure means no nudge, never a broken directive.
+function enforcementNudge() {
+  const repoRoot = dirname(here); // always-on/ sits at the repo root, so its parent is the repo root
+  // Installed-as-consumer signal: the genesis-scaffolded workflow is present. The origin repo does not have it.
+  const installed = existsSync(join(repoRoot, ".github", "workflows", "enterprise-gates.yml"));
+  if (!installed) return null;
+  const manifest = readJson(join(repoRoot, "gate-manifest.json"));
+  const requiredCheck = manifest && manifest.aggregator && typeof manifest.aggregator.requiredCheck === "string"
+    ? manifest.aggregator.requiredCheck : "enterprise-gates";
+  // Does any committed ruleset require the check?
+  const rulesetsDir = join(repoRoot, ".github", "rulesets");
+  const rulesets = [];
+  try {
+    for (const name of readdirSync(rulesetsDir)) {
+      if (!name.endsWith(".json")) continue;
+      const obj = readJson(join(rulesetsDir, name));
+      if (obj) rulesets.push(obj);
+    }
+  } catch { /* no rulesets dir: treated as "not required" */ }
+  const rulesetRequiresCheck = rulesetRequires(rulesets, requiredCheck);
+  const applied = existsSync(join(repoRoot, ".github", ".esk-enforcement-applied"));
+  const statePath = join(repoRoot, ".claude", ".esk-enforcement-nudge.json");
+  const state = readJson(statePath);
+  const { text: nudge, nextState } = decideEnforcementNudge({ installed, rulesetRequiresCheck, applied, requiredCheck, state });
+  try {
+    if (nextState) { mkdirSync(dirname(statePath), { recursive: true }); writeFileSync(statePath, JSON.stringify(nextState) + "\n"); }
+    else if (existsSync(statePath)) unlinkSync(statePath);
+  } catch { /* cannot persist the counter; still show the nudge this session */ }
+  return nudge;
+}
+
+// ESK_NUDGE_DISABLE lets a test (or a user) turn the nudges off entirely, so a suite that asserts the exact
 // directive text is not coupled to the ambient install marker (repo-local OR user-level) and its version.
 if (event === "SessionStart" && !missing && !process.env.ESK_NUDGE_DISABLE) {
   try {
     const nudge = sessionNudge();
     if (nudge) text = nudge + "\n\n---\n\n" + text;
+  } catch { /* never let the nudge break the directive */ }
+  // Prepended AFTER the sync nudge, so the enforcement nudge appears FIRST: a security gap outranks a version
+  // gap, and being first means it survives the MAX-length truncation that trims the end.
+  try {
+    const enudge = enforcementNudge();
+    if (enudge) text = enudge + "\n\n---\n\n" + text;
   } catch { /* never let the nudge break the directive */ }
 }
 
