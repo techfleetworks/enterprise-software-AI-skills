@@ -164,8 +164,15 @@
       "id": "run-manifest-gates",
       "skill": "judge-arch",
       "script": "scripts/ci/run-manifest-gates.mjs",
-      "sha256": "5ea8f03b2825e51b3aaab1a06b397eb3521eb4e11b57e522fb2c7f7a7e03866d",
+      "sha256": "666cc1b32db9c65ec29f4227b258ff6044294d365f7bb09026126af29bc8c714",
       "test": "test/run-manifest-gates.test.mjs"
+    },
+    {
+      "id": "gate-matrix",
+      "skill": "judge-arch",
+      "script": "scripts/ci/gate-matrix.mjs",
+      "sha256": "fe5dca95698ccfd68b4654ba369fa6723741648a529140946bf44fd39acda537",
+      "test": "test/gate-matrix.test.mjs"
     }
   ],
   "aggregator": {

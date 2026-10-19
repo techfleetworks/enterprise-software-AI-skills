@@ -59,12 +59,25 @@ if (manifest.gates.length === 0) {
   failClosed(`${MANIFEST} lists zero gates - enforcement would be silently off.`);
 }
 
+// --only <id>: run a SINGLE gate by id, reusing every per-gate safeguard below (within-repo, invoke
+// validation, lane handling, fail-closed). The per-skill CI matrix (gate-matrix.mjs) uses this to give one
+// check line per gate; the matrix is generated from this same manifest, so a gate with no matching id means
+// the matrix is out of sync and we fail closed rather than silently skip it.
+const onlyIdx = process.argv.indexOf("--only");
+const ONLY = onlyIdx !== -1 ? process.argv[onlyIdx + 1] : null;
+let gatesToRun = manifest.gates;
+if (onlyIdx !== -1) {
+  if (!ONLY) failClosed("--only requires a gate id");
+  gatesToRun = manifest.gates.filter((g) => g?.id === ONLY);
+  if (gatesToRun.length === 0) failClosed(`--only "${ONLY}": no gate with that id in the manifest (the per-gate matrix is out of sync).`);
+}
+
 const within = (p) => p === BASE || p.startsWith(BASE + sep);
 const requiredFailures = [];
 const advisoryFailures = [];
 const summary = [];
 
-for (const gate of manifest.gates) {
+for (const gate of gatesToRun) {
   if (typeof gate?.id !== "string" || typeof gate?.script !== "string") {
     failClosed(`${MANIFEST} has a malformed gate entry (id/script must be strings).`);
   }
