@@ -386,6 +386,27 @@ test("GENESIS: the scaffolded workflow sets the env so the copied gates resolve 
   assert.match(yml, /GATE_UPSTREAM_REPO:/);
 });
 
+test("GENESIS: the scaffolded workflow is a per-skill matrix with one required summary check (ADR-0065)", () => {
+  const src = buildSource({ gates: [{ id: "alpha" }, { id: "beta" }] });
+  const tgt = newTarget();
+  run(src, tgt, ["--yes"]);
+  const yml = readFileSync(join(tgt, ".github/workflows/enterprise-gates.yml"), "utf8");
+  // setup job emits the matrix from the manifest (not a hand-listed one, so it can't drift)
+  assert.match(yml, /gate-matrix\.mjs/, "setup must generate the matrix from the manifest");
+  assert.match(yml, /gates:\s*\$\{\{ steps\.matrix\.outputs\.gates \}\}/);
+  assert.match(yml, /matrix:\s*\n\s*gate:\s*\$\{\{ fromJSON\(needs\.setup\.outputs\.gates\) \}\}/);
+  // per-gate run uses --only and runs the gate's discrimination test in the consumer
+  assert.match(yml, /run-manifest-gates\.mjs --only "\$\{\{ matrix\.gate \}\}"/);
+  assert.match(yml, /node --test "\$t"/);
+  // the single required check needs every matrix job and is green only if they all passed
+  assert.match(yml, /enterprise-gates:\s*\n\s*needs:\s*\[setup, gate\]/);
+  assert.match(yml, /needs\.gate\.result/);
+  // the matrix is emitted with a BARE assignment so a gate-matrix failure fails the step; the swallowing
+  // echo-command-substitution pattern (which masks the exit under bash -eo pipefail) must NOT be used.
+  assert.match(yml, /gates=\$\(node scripts\/ci\/gate-matrix\.mjs\)/);
+  assert.doesNotMatch(yml, /echo "gates=\$\(node/);
+});
+
 // NOTE: these traversal tests use a script/skill whose basename resolves to a source file that EXISTS
 // with a matching sha, so the ONLY thing that can block the install is the containment guard. If the
 // guard were removed, the file would copy OUTSIDE the target and the run would exit 0 - so the test
@@ -458,7 +479,7 @@ test("CONSUMER-TESTS: copied gate tests run GREEN in a bootstrapped consumer (AD
   const REAL = resolve(process.cwd()); // npm test runs from the repo root
   const tgt = newTarget();
   assert.equal(run(REAL, tgt, ["--yes"]), 0, "genesis from the real repo must succeed");
-  for (const t of ["test/skill-gate-parity.test.mjs", "test/bootstrap-presence.test.mjs", "test/reference-links.test.mjs", "test/no-ua-sniffing.test.mjs", "test/owasp-lints.test.mjs", "test/migration-safety.test.mjs", "test/alert-hygiene.test.mjs", "test/arch-gate.test.mjs", "test/untagged-pii.test.mjs", "test/retention-basis.test.mjs"]) {
+  for (const t of ["test/skill-gate-parity.test.mjs", "test/manifest-provenance.test.mjs", "test/bootstrap-presence.test.mjs", "test/reference-links.test.mjs", "test/no-ua-sniffing.test.mjs", "test/owasp-lints.test.mjs", "test/migration-safety.test.mjs", "test/alert-hygiene.test.mjs", "test/arch-gate.test.mjs", "test/untagged-pii.test.mjs", "test/retention-basis.test.mjs"]) {
     let status;
     try { execFileSync("node", ["--test", t], { cwd: tgt, stdio: "pipe" }); status = 0; }
     catch (e) { status = e.status ?? 1; }

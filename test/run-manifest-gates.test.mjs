@@ -58,6 +58,32 @@ test("AGG: passes (0) when only an advisory gate fails (non-blocking)", () => {
   assert.equal(run(fixture({ gates: [{ id: "a", exit: 0, lane: "required" }, { id: "b", exit: 1, lane: "advisory" }] })), 0);
 });
 
+// --- --only <id>: run a single gate for the per-skill CI matrix (P5a) ------------------------------
+function runArgs(root, args) {
+  try {
+    execFileSync("node", [AGG, ...args], { stdio: "pipe", env: { ...process.env, GATE_MANIFEST_FILE: join(root, "gate-manifest.json") } });
+    return 0;
+  } catch (e) {
+    return e.status ?? 1;
+  }
+}
+test("AGG --only: runs ONLY the named gate - passes when that gate passes even though another would fail", () => {
+  const root = fixture({ gates: [{ id: "a", exit: 0 }, { id: "b", exit: 1 }] });
+  assert.equal(runArgs(root, ["--only", "a"]), 0, "only a ran (passed); b's failure must be ignored");
+});
+test("AGG --only: FAILS (1) when the named gate fails (discriminating)", () => {
+  const root = fixture({ gates: [{ id: "a", exit: 0 }, { id: "b", exit: 1 }] });
+  assert.equal(runArgs(root, ["--only", "b"]), 1);
+});
+test("AGG --only: fails CLOSED (2) on an unknown gate id (matrix out of sync with the manifest)", () => {
+  const root = fixture({ gates: [{ id: "a", exit: 0 }] });
+  assert.equal(runArgs(root, ["--only", "ghost"]), 2);
+});
+test("AGG --only: fails CLOSED (2) when no id is given", () => {
+  const root = fixture({ gates: [{ id: "a", exit: 0 }] });
+  assert.equal(runArgs(root, ["--only"]), 2);
+});
+
 test("AGG: fails CLOSED (2) when the manifest is missing", () => {
   assert.equal(run(fixture({ gates: [{ id: "a", exit: 0 }], omitManifest: true })), 2);
 });
