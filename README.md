@@ -40,6 +40,14 @@ The payoff is simple: careful, senior-level work happens on *every* change, not 
 the ones an expert happens to see. And because it sets up and updates itself, every
 project and every teammate stays on the same page, with no one left to babysit it.
 
+> **New in v1.2: the checks travel.** Before, a project that adopted these skills got
+> the reminders and a few self-protection checks, but no automatic checks on its *own*
+> code. Now the engineering checks install into any repo that adopts them and run in that
+> repo's CI, so adopting the skills *enforces* them, not just suggests them. One check
+> line per gate, a single required check behind them, and a setup that can't be quietly
+> weakened. Full details in [The checks travel to any repo (v1.2)](#the-checks-travel-to-any-repo-v12),
+> and the release notes are in [CHANGELOG.md](CHANGELOG.md).
+
 The 16 skills come in two groups, all under [`.claude/skills/`](.claude/skills/) so a clone
 loads them automatically:
 
@@ -80,6 +88,7 @@ any AI tool. They also read fine as plain notes for a person.
 - [Always-on: run every skill on every task](#always-on-run-every-skill-on-every-task)
 - [How a skill gets chosen and enforced](#how-a-skill-gets-chosen-and-enforced)
 - [Set it up and keep it current: the bootstrap](#set-it-up-and-keep-it-current-the-bootstrap)
+- [The checks travel to any repo (v1.2)](#the-checks-travel-to-any-repo-v12)
 - [Three scenarios in plain English](#three-scenarios-in-plain-english)
 - [Adopt the architecture gate, step by step](#adopt-the-architecture-gate-step-by-step)
 - [How the skills fit together](#how-the-skills-fit-together)
@@ -489,10 +498,67 @@ flowchart TD
 > though: a session rooted outside the repo loads the skills only after the per-machine installer mirrors
 > them into `~/.claude/skills`, and a cloud multi-repo session does not read `~/.claude` at all. The coverage
 > map is in the
-> [`always-on/` README](always-on/#what-each-path-actually-covers). The broader artifact
-> scaffolding (asking for audiences and SLOs, baselining existing debt, turning on the other
-> gates) is the next phase and plugs into the same plan, consent, backup, verify, and record
-> framework.
+> [`always-on/` README](always-on/#what-each-path-actually-covers). Turning on the engineering
+> gates in an adopting repo (not just the directive) shipped in v1.2 through a second installer,
+> `esk-genesis`, described in the next section; it plugs into the same plan, consent, backup, verify,
+> and record framework.
+
+---
+
+## The checks travel to any repo (v1.2)
+
+The bootstrap above turns on the **directive** (the always-on reminder to apply the skills). v1.2 adds the
+other half: the **engineering checks themselves travel into a repo that adopts them and run in that repo's
+CI**, so a skill is not just read, it is enforced on the adopting project's own code. A second installer,
+`esk-genesis`, does this; `esk-init` (above) turns the directive on, and a fully protected repo runs both.
+
+```bash
+node .claude/skills/bootstrap/scripts/esk-genesis.mjs            # plan only, writes nothing
+node .claude/skills/bootstrap/scripts/esk-genesis.mjs --yes      # install the gates + workflow (backs up first)
+```
+
+### How it works
+
+- **A manifest is the single source of truth.** `gate-manifest.json` lists every gate: its script, a
+  content hash, and how to run it. `esk-genesis` copies the gate scripts into the consumer's `scripts/ci/`,
+  copies the manifest, and scaffolds one GitHub workflow. Nothing is hand-wired.
+- **One required check, drift-proof.** The workflow runs every gate the manifest lists and rolls them up into
+  a single required check (`enterprise-gates`). Because it runs *whatever the manifest lists*, adding or
+  removing a gate never needs a branch-protection change.
+- **One check line per gate.** The workflow shows each gate as its own check line, generated from the
+  manifest, so a reviewer sees at a glance which one failed. (Some skills own more than one gate, so there are
+  more gate lines than skills.) The per-gate lines are for visibility; the single summary check is the one that
+  blocks a merge.
+- **Two layers, same scripts.** The same gate scripts run in a **local pre-push hook** (a fast early catch,
+  which you can skip with `--no-verify` and which is armed once per clone) and in **GitHub CI** (the
+  authority, which cannot be skipped). Every check is offline except one (provenance, below), which needs the
+  network and so runs only in CI.
+- **It cannot be quietly weakened.** The provenance gate compares the committed manifest, including each
+  gate's content hash and its scan scope, against the published release. A consumer that edits a gate or
+  narrows what it scans fails provenance. The consumer's CI also runs each gate's own discrimination test, so
+  a gate that was hollowed out to always pass is caught there too.
+
+### Which checks travel, and why
+
+Not every skill can be a mechanical check. A check becomes a travelling CI gate only if all five are true: it
+reads files committed in the repo (not a report produced only when tests run); it is safe when there is
+nothing to check (a repo with no database files just passes); it needs no hand-written setup to be useful (or
+an empty default is still correct); its data travels with it (no separate file the installer leaves behind);
+and it checks code, not a judgment call. Run through that test, the checks sort into four groups:
+
+| Group | Count | Why |
+|---|---|---|
+| **Travel as CI gates** | 8 | Pass all five. `reference-links`, `no-ua-sniffing`, `owasp-lints`, `migration-safety`, `alert-hygiene`, `arch-gate`, `untagged-pii`, `retention-basis`. |
+| **Protect the gate system itself** | 3 | Always run: `skill-gate-parity`, `manifest-provenance`, `bootstrap-presence`. They keep the gate set from being tampered with or dropped. |
+| **Stay local only** | 2 | The accessibility conformance check needs a human-authored record; the test-shape check needs a live test report. Teams run these where they apply. |
+| **Human judgment** | ~half the skills | Big design choices, pattern selection, operational readiness, honest self-review. No computer check is possible, so a person reviews them. |
+
+This is deliberate and stated plainly: the gates cover the floors that can be checked by machine, and the
+judgment work stays with human review. A green board means the floors held, not that the work is good.
+
+> The full technical design (the manifest schema, the aggregator, provenance, and the genesis/reconcile flow)
+> is in [`docs/design/bootstrap-v2/`](docs/design/bootstrap-v2/), and the decisions behind it are the ADRs
+> numbered 0047 and 0056 through 0065 in [`docs/adr/`](docs/adr/).
 
 ---
 

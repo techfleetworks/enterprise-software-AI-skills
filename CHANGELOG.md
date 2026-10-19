@@ -3,6 +3,58 @@
 All notable changes to this repository are recorded here. Dates are ISO (YYYY-MM-DD). This project follows
 semantic versioning for the skills library and its gates.
 
+## 1.2.0 - Unreleased
+
+The engineering gates travel. 1.1.0 made turning the always-on directive on, and staying current, close to
+automatic. 1.2.0 makes the **checks themselves travel into a repo that adopts them and enforce in that repo's
+CI**, so adopting the skills enforces them on the project's own code instead of only reminding an agent to
+follow them. No action is needed to keep using 1.1.0; adopt a consumer repo with `esk-genesis` to pick up the
+travelling gates.
+
+### The gates travel to consumers
+
+- Eight engineering gates now install into an adopting repo and run in its CI, up from zero:
+  `reference-links`, `no-ua-sniffing`, `owasp-lints`, `migration-safety`, `alert-hygiene`, `arch-gate`,
+  `untagged-pii`, and `retention-basis`. `esk-genesis` copies the gate scripts and the manifest into the
+  consumer and scaffolds one GitHub workflow; `gate-manifest.json` is the single source of truth for what runs
+  (ADR-0059, 0060, 0061, 0062, 0063, 0064).
+- Gates declare how they scan through a manifest `invoke` field, so a gate that needs arguments (a scan scope,
+  a data map) travels with them (ADR-0059). The code-scan gates skip the vendored gate infrastructure and test
+  fixtures without opening an evasion hole (ADR-0061).
+- `arch-gate` travels with an optional config and a safe default: a config-less consumer still gets the
+  built-in checks (ADR-0063). The PII and retention gates travel with an optional data map whose empty default
+  is strict for undeclared PII and a no-op for retention, so you cannot delete the map to silence both
+  (ADR-0064).
+
+### Visible, and drift-proof
+
+- One CI check line per gate, generated from the manifest, with a single required summary check behind them
+  (`enterprise-gates`) that is green only if every gate passed. Adding or removing a gate never needs a
+  branch-protection change (ADR-0065).
+- The same gate scripts run in a local pre-push hook (a fast, skippable early catch) and in CI (the
+  authority). Only the provenance gate, which needs the network to fetch the published release, is CI-only.
+- The consumer's own CI runs each gate's discrimination test, so a gate hollowed out to always pass is caught
+  in the adopting repo, not only upstream (ADR-0065).
+
+### Cannot be quietly weakened
+
+- The provenance gate now compares each gate's scan scope (`invoke`), not just its content hash and lane,
+  against the published release, so a consumer cannot narrow what a gate scans and still pass (ADR-0061).
+
+### What does not travel, on purpose
+
+- The accessibility conformance check and the test-shape check stay local: one needs a human-authored
+  conformance record, the other a live test report, and neither can be safely defaulted. About half the
+  skills are judgment work (design choices, pattern selection, operational readiness) with no mechanical gate;
+  those stay with human review. This is documented in the README and the coverage map.
+
+### Fixes found while building
+
+- The installer was dropping each gate's scan arguments, so travelling gates ran on nothing in a consumer;
+  fixed and regression-tested (ADR-0061). A Windows pre-push hook passed while running zero gates (ADR-0056),
+  and a line-ending bug broke the gate hashes on Linux CI (ADR-0058); both fixed. Consumer gate-test paths now
+  resolve in either layout (ADR-0057).
+
 ## 1.1.0 - 2026-10-16
 
 Adoption and enforcement hardening. 1.0.0 made the skills required and shown; 1.1.0 makes turning them on, and

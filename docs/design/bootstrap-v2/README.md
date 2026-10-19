@@ -10,20 +10,24 @@ A skeptical audit of the first draft caught that half of it described **agent be
 deterministic, observable outcomes (a gate's exit code, a PR's merge state, a file's presence or
 hash) are real BDD. So the spec is split:
 
-- **`features/*.feature`** — deterministic **system BDD**. Every scenario has a concrete input and a
+- **`features/*.feature`**: deterministic **system BDD**. Every scenario has a concrete input and a
   real red path. These are the ones that become gated tests. Actors are the CI gates, the manifest,
   the files, and branch protection, never "the agent."
-- **`agent-acceptance-evals.md`** — the **agent-behavior** criteria (propose genesis, warn on skew,
+- **`agent-acceptance-evals.md`**: the **agent-behavior** criteria (propose genesis, warn on skew,
   draft an invariant). These are validated by eval and human judgment, not by a green/red gate. They
   are listed honestly as evals, not disguised as tests.
 
-## Status: spec, not yet executable
+## Status: built in v1.2 (release pending)
 
-These scenarios describe a system that is not built yet, so they live under `docs/design/` rather
-than the top-level gated `features/` directory. The repo's BDD gates require scenarios in `features/`
-to actually run; shipping un-executable scenarios there would force fake, always-green step
-definitions, the exact vacuous pattern this program exists to kill. Each file **graduates** into the
-gated `features/` directory, with real step definitions, as its implementation PR lands.
+As of v1.2 the core of this spec is built and dogfooded in this repo (the 1.2.0 tag is not cut yet). The manifest, the aggregator, provenance, and the
+genesis/reconcile flow all exist, and eight engineering gates plus three self-protection gates travel into a
+consumer and run in its CI, surfaced as one check line per gate behind a single required summary check. See
+the README section "The checks travel to any repo (v1.2)" and ADRs 0047 and 0056 through 0065.
+
+These scenarios still live under `docs/design/` rather than the top-level gated `features/` directory. The
+repo's BDD gates require scenarios in `features/` to actually run; a scenario graduates into the gated
+`features/` directory, with real step definitions, as its executable coverage lands. The split below (system
+BDD vs agent-behavior evals) still holds.
 
 ## The files
 
