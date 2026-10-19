@@ -67,6 +67,25 @@ fresh session receives the directive.
 `args`. If yours does not, the command will not run; use the "Confirm it works" step
 and the PowerShell fallback. Check with `node --version` and `claude --version`.
 
+## The enforcement nudge (consumers)
+
+The same emitter carries a second, separate nudge (`enforcement-nudge.mjs`, ADR-0066), for a repo that
+**adopted the travelling gates** with `esk-genesis`. The gates run on every pull request once the workflow is
+scaffolded, but they only **block a merge** once an admin requires the `enterprise-gates` check in branch
+protection. Nothing in a repo can turn branch protection on (GitHub makes it admin-only, on purpose), so the
+emitter does the next best thing: on every session, if the repo is in that advisory state, it prepends a loud
+nudge telling the agent to tell the human to turn enforcement on (run `scripts/apply-ruleset.sh`), and keeps
+at it until it is wired. It is the enforcement sibling of the sync nudge: loud for a capped number of
+sessions, then a persistent quiet one-liner, cleared when enforcement is in place.
+
+It fires only in a consumer (the `enterprise-gates` workflow is present), never in this upstream repo, and it
+clears on a local **intent + confirm** signal: a committed ruleset under `.github/rulesets/` that requires the
+check **and** the `.github/.esk-enforcement-applied` marker that `apply-ruleset.sh` writes on success. Honest
+limit, the same one `test/required-checks.test.mjs` states: that proves the ruleset was committed and applied,
+not that GitHub is live-enforcing it this second (live verification needs an admin API call and is out of
+scope). The nudge drives the human hard; it cannot force an admin-only setting, so it makes skipping it a
+loud, repeated choice instead of a silent one.
+
 ## How this repo stays always-on, and why a pull keeps everyone current
 
 This repo turns itself on for anyone who works in it, with two committed layers that a

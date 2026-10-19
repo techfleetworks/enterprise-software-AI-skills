@@ -228,6 +228,29 @@ const consumerManifest = {
 const workflowPath = join(TARGET, ".github", "workflows", "enterprise-gates.yml");
 const workflowExists = existsSync(workflowPath);
 
+// Scaffold a branch ruleset that REQUIRES the enterprise-gates check (ADR-0066), so a consumer has the
+// source-of-truth to apply with scripts/apply-ruleset.sh, and travel that script so applying it is one admin
+// command. The gates RUN once the workflow is scaffolded, but they only BLOCK a merge once this ruleset is
+// applied; the always-on enforcement nudge keeps asking until it is. No-clobber on the ruleset (a consumer may
+// already protect its branch); apply-ruleset.sh travels and stays current like the gate scripts.
+const requiredCheck = src.aggregator?.requiredCheck || "enterprise-gates";
+const rulesetPath = join(TARGET, ".github", "rulesets", "enterprise-gates.json");
+const rulesetExists = existsSync(rulesetPath);
+const RULESET = JSON.stringify({
+  name: "enterprise-gates",
+  target: "branch",
+  enforcement: "active",
+  conditions: { ref_name: { include: ["~DEFAULT_BRANCH"], exclude: [] } },
+  rules: [
+    { type: "deletion" },
+    { type: "non_fast_forward" },
+    { type: "required_status_checks", parameters: { strict_required_status_checks_policy: true, required_status_checks: [{ context: requiredCheck }] } },
+  ],
+}, null, 2) + "\n";
+const applyScriptSrc = join(SOURCE, "scripts", "apply-ruleset.sh");
+const applyScriptDst = join(TARGET, "scripts", "apply-ruleset.sh");
+const installApplyScript = existsSync(applyScriptSrc) && (!existsSync(applyScriptDst) || sha256(applyScriptSrc) !== sha256(applyScriptDst));
+
 // The pre-push hook (a fast local pre-flight). Installed from the source template, if the source ships
 // one, into the consumer's .githooks/pre-push; git finds it once core.hooksPath is set (below). Optional
 // so a source without the template still bootstraps cleanly.
@@ -405,7 +428,7 @@ const manifestChanged = !prior || JSON.stringify(prior) !== JSON.stringify(consu
 // codeownersAction "warn-existing" is also NOT nothing-to-do: the user asked for code-owner coverage and we
 // must still surface the no-clobber advisory (we left their CODEOWNERS alone; confirm it covers the paths),
 // not swallow it behind "already current". Only "none" (no --code-owners) counts as nothing to do here.
-const nothingToDo = problems.length === 0 && pendingCopies.length === 0 && removals.length === 0 && !manifestChanged && workflowExists && !installHook && !installHelper && prepareAction !== "add" && codeownersAction === "none";
+const nothingToDo = problems.length === 0 && pendingCopies.length === 0 && removals.length === 0 && !manifestChanged && workflowExists && rulesetExists && !installApplyScript && !installHook && !installHelper && prepareAction !== "add" && codeownersAction === "none";
 
 // --- print the plan ----------------------------------------------------------
 console.log(`\nEnterprise gates ${fresh ? "genesis" : foreignPrior ? "ADOPT (replacing a foreign manifest)" : "reconcile"} plan`);
@@ -427,6 +450,8 @@ for (const r of removals) console.log(`    - remove dropped upstream gate ${r.sc
 for (const r of repoLocal) console.log(`    - preserve repo-local gate ${r.script} (recorded as adopted${r.hasTest ? "" : "; WARNING: no test at " + r.test + " - parity will flag it until you add one"})`);
 if (manifestChanged) console.log(`    - ${prior ? "update" : "write"} gate-manifest.json (pin ${version})`);
 if (!workflowExists) console.log(`    - scaffold .github/workflows/enterprise-gates.yml (the single required check)`);
+if (!rulesetExists) console.log(`    - scaffold .github/rulesets/enterprise-gates.json (requires the "${requiredCheck}" check; apply it with scripts/apply-ruleset.sh to BLOCK merges)`);
+if (installApplyScript) console.log(`    - ${existsSync(applyScriptDst) ? "update" : "install"} scripts/apply-ruleset.sh (one admin command to turn enforcement on)`);
 if (installHook) console.log(`    - install the pre-push hook (.githooks/pre-push) and point core.hooksPath at it`);
 if (installHelper) console.log(`    - install the hook auto-arm helper (.githooks/install-hooks.mjs)`);
 if (prepareAction === "add") console.log(`    - add a package.json "prepare" script so the hook arms on npm install`);
@@ -459,6 +484,11 @@ try {
   for (const c of pendingCopies) copyTracked(c.from, c.to);
   if (manifestChanged) writeTracked(consumerManifestPath, JSON.stringify(consumerManifest, null, 2) + "\n");
   if (!workflowExists) writeTracked(workflowPath, WORKFLOW);
+  if (!rulesetExists) writeTracked(rulesetPath, RULESET); // no-clobber: only when absent
+  if (installApplyScript) {
+    copyTracked(applyScriptSrc, applyScriptDst);
+    try { chmodSync(applyScriptDst, 0o755); } catch { /* exec bit is best-effort; git on the consumer may set it */ }
+  }
   if (codeownersAction === "add") writeTracked(codeownersPath, codeownersBody(codeOwners)); // no-clobber: only when absent
   if (installHook) {
     copyTracked(hookTemplate, hookPath);

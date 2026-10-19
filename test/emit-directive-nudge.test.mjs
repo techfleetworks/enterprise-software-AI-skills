@@ -23,9 +23,24 @@ function fakeRepo(version) {
   mkdirSync(join(root, "always-on"), { recursive: true });
   copyFileSync(join(REPO, "always-on", "emit-directive.mjs"), join(root, "always-on", "emit-directive.mjs"));
   copyFileSync(join(REPO, "always-on", "sync-nudge.mjs"), join(root, "always-on", "sync-nudge.mjs"));
+  // emit-directive.mjs imports enforcement-nudge.mjs too, so the copy must ship with it.
+  copyFileSync(join(REPO, "always-on", "enforcement-nudge.mjs"), join(root, "always-on", "enforcement-nudge.mjs"));
   writeFileSync(join(root, "always-on", "enterprise-skills-always-on.md"), "Enterprise engineering skills, always on.\nThis is a stub directive for the test.");
   writeFileSync(join(root, "package.json"), JSON.stringify({ name: "fake", version }) + "\n");
   return { root, emit: join(root, "always-on", "emit-directive.mjs") };
+}
+
+// Turn a fake repo into a "consumer" with the enforcement signals (ADR-0066): the enterprise-gates workflow,
+// a manifest, optionally a committed ruleset that requires the check, and optionally the applied-marker.
+function makeConsumer(root, { ruleset = false, applied = false } = {}) {
+  mkdirSync(join(root, ".github", "workflows"), { recursive: true });
+  writeFileSync(join(root, ".github", "workflows", "enterprise-gates.yml"), "name: enterprise-gates\n");
+  writeFileSync(join(root, "gate-manifest.json"), JSON.stringify({ version: "1.2.0", gates: [], aggregator: { requiredCheck: "enterprise-gates" } }) + "\n");
+  if (ruleset) {
+    mkdirSync(join(root, ".github", "rulesets"), { recursive: true });
+    writeFileSync(join(root, ".github", "rulesets", "enterprise-gates.json"), JSON.stringify({ name: "enterprise-gates", enforcement: "active", conditions: { ref_name: { include: ["~DEFAULT_BRANCH"], exclude: [] } }, rules: [{ type: "required_status_checks", parameters: { required_status_checks: [{ context: "enterprise-gates" }] } }] }) + "\n");
+  }
+  if (applied) writeFileSync(join(root, ".github", ".esk-enforcement-applied"), JSON.stringify({ appliedAt: "2026-10-18T00:00:00Z" }) + "\n");
 }
 // A fake home, optionally with a marker pointing at a given repo root and version.
 function fakeHome(marker) {
@@ -96,6 +111,42 @@ test("a marker for a DIFFERENT repo does not drive this repo's nudge (Finding 2)
   const home = fakeHome({ version: "0.0.1", repo: "/some/other/repo" });
   const { ctx } = emit(e, "SessionStart", home);
   assert.doesNotMatch(ctx, /OUT OF DATE/, "a marker naming a different repo must be ignored");
+});
+
+// --- enforcement nudge (ADR-0066) integration through the emitter ------------------------------------
+// ESK_NUDGE_DISABLE off so the enforcement nudge can run; the sync nudge stays quiet because no install marker
+// is present (fakeHome with no marker). These prove the emitter reads the local signals and prepends the nudge.
+test("ENFORCEMENT: a consumer whose gates run but are not required gets the loud nudge (discriminating)", () => {
+  const { root, emit: e } = fakeRepo("1.2.0");
+  makeConsumer(root, { ruleset: false, applied: false });
+  const { ctx } = emit(e, "SessionStart", fakeHome(), { ESK_NUDGE_DISABLE: "" });
+  assert.match(ctx, /do NOT block merges/, "advisory consumer must get the enforcement nudge");
+  assert.match(ctx, /apply-ruleset\.sh/);
+  assert.match(ctx, /Enterprise engineering skills/, "the directive still follows the nudge");
+});
+test("ENFORCEMENT: clears once a committed ruleset requires the check AND it was applied", () => {
+  const { root, emit: e } = fakeRepo("1.2.0");
+  makeConsumer(root, { ruleset: true, applied: true });
+  const { ctx } = emit(e, "SessionStart", fakeHome(), { ESK_NUDGE_DISABLE: "" });
+  assert.doesNotMatch(ctx, /do NOT block merges/, "enforced consumer must not get the nudge");
+});
+test("ENFORCEMENT: a committed ruleset without the applied-marker still nudges (intent is not enough)", () => {
+  const { root, emit: e } = fakeRepo("1.2.0");
+  makeConsumer(root, { ruleset: true, applied: false });
+  const { ctx } = emit(e, "SessionStart", fakeHome(), { ESK_NUDGE_DISABLE: "" });
+  assert.match(ctx, /has NOT been applied/, "committed-but-not-applied must still nudge");
+});
+test("ENFORCEMENT: does NOT fire in a non-consumer repo (no enterprise-gates workflow)", () => {
+  const { emit: e } = fakeRepo("1.2.0"); // no makeConsumer: no workflow
+  const { ctx } = emit(e, "SessionStart", fakeHome(), { ESK_NUDGE_DISABLE: "" });
+  assert.doesNotMatch(ctx, /do NOT block merges/, "a repo without the gates workflow must not get the nudge");
+});
+test("ENFORCEMENT: a SubagentStart does not get the enforcement nudge (no subagent spam)", () => {
+  const { root, emit: e } = fakeRepo("1.2.0");
+  makeConsumer(root, { ruleset: false, applied: false });
+  const { ctx } = emit(e, "SubagentStart", fakeHome(), { ESK_NUDGE_DISABLE: "" });
+  assert.doesNotMatch(ctx, /do NOT block merges/, "subagents must not get the enforcement nudge");
+  assert.match(ctx, /Enterprise engineering skills/);
 });
 
 process.on("exit", () => {
