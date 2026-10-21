@@ -3,6 +3,31 @@
 All notable changes to this repository are recorded here. Dates are ISO (YYYY-MM-DD). This project follows
 semantic versioning for the skills library and its gates.
 
+## 1.2.2 - 2026-10-21
+
+A bugfix release for the v1.2.1 upgrade path. v1.2.1 told existing consumers to re-run `esk-genesis` to pick
+up its fixes, but two of the three fixes never reached an existing consumer, because `esk-genesis` wrote the
+two files that carry them only when they were absent. No gate behavior changes; the gate set is identical to
+1.2.1. Existing consumers should re-run `esk-genesis` (now it actually refreshes those files).
+
+### Fixed
+
+- **`esk-genesis` now refreshes the files it owns on upgrade, not only on first install.** The pre-push hook
+  and `enterprise-gates.yml` were no-clobber (written only when absent), so v1.2.1's hook fix (forwarding each
+  gate's `invoke`) and workflow fix (the `GATE_DIR` discrimination-test step) never reached a repo that already
+  had those files. They now install when absent OR when the on-disk copy differs from the current source, the
+  same refresh the gate scripts and `apply-ruleset.sh` already use. The `install-hooks.mjs` helper refreshes the
+  same way. Files a consumer is expected to customize (the ruleset JSON, `CODEOWNERS`) stay no-clobber on
+  purpose (ADR-0069).
+
+### Added
+
+- **A consumer-lifecycle test** (`test/consumer-lifecycle.test.mjs`) stands up a real consumer, makes its hook
+  and workflow stale, re-runs `esk-genesis`, and asserts both are refreshed. It is a discrimination test: it
+  fails if `esk-genesis` reverts to no-clobber on those files. This is the first step toward the standing
+  consumer-lifecycle harness ADR-0068 flagged as missing, since every consumer-install bug so far has lived in
+  the existing-consumer path that the origin self-dogfood never exercises (ADR-0069).
+
 ## 1.2.1 - 2026-10-20
 
 A bugfix release for three problems found installing 1.2.0 into a consumer repo that also vendors the skills
