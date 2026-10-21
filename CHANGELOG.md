@@ -3,6 +3,31 @@
 All notable changes to this repository are recorded here. Dates are ISO (YYYY-MM-DD). This project follows
 semantic versioning for the skills library and its gates.
 
+## 1.2.1 - 2026-10-20
+
+A bugfix release for three problems found installing 1.2.0 into a consumer repo that also vendors the skills
+under `.claude/skills/` (issue #112). All three are consumer-install correctness fixes; 1.2.0 consumers should
+re-run `esk-genesis` to pick them up. No gate behavior changes for a repo that does not vendor the skills.
+
+### Fixed
+
+- **The pre-push hook now passes each gate's `invoke` arguments.** The hook ran every offline gate with no
+  arguments, so the gates that scan by CLI path (`reference-links`, `no-ua-sniffing`, `owasp-lints`,
+  `migration-safety`, `alert-hygiene`, `untagged-pii`) failed locally with a wrong root or "no paths given",
+  while CI (which runs them through the aggregator) passed. The hook now validates and forwards `gate.invoke`
+  the same way the aggregator does, and fails closed on a malformed `invoke`. A new hook test proves a gate
+  that needs its arguments gets them, and blocks when they are dropped (ADR-0068).
+- **The code-scan gates no longer flag a vendored copy of themselves.** A consumer that vendors the skills
+  carries the gate scripts a second time under `.claude/skills/`, whose own docstrings contain the very
+  patterns the gates look for (a `navigator.userAgent` read, an `alg:none` example). The published `invoke`
+  for the five content-scan gates now also skips `.claude/skills`, the same exemption the copied gate
+  infrastructure at `scripts/ci` already gets (ADR-0061). Vendored skills are not product code (ADR-0068).
+- **Each gate's discrimination test now exercises the `scripts/ci` copy CI actually runs.** When the skills
+  are vendored, both a `.claude/skills` copy and the `scripts/ci` copy exist; the test resolved the
+  `.claude/skills` copy first, so the consumer's "discrimination test" step tested the wrong file. The tests
+  now prefer the `scripts/ci` copy (via `GATE_DIR`, which the workflow now sets on that step) and assert which
+  copy they ran (ADR-0068).
+
 ## 1.2.0 - 2026-10-18
 
 The engineering gates travel. 1.1.0 made turning the always-on directive on, and staying current, close to

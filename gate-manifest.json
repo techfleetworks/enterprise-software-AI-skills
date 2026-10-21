@@ -1,6 +1,6 @@
 {
-  "version": "1.2.0",
-  "generatedFrom": "techfleetworks/enterprise-software-AI-skills@1.2.0",
+  "version": "1.2.1",
+  "generatedFrom": "techfleetworks/enterprise-software-AI-skills@1.2.1",
   "gates": [
     {
       "id": "skill-gate-parity",
@@ -65,6 +65,8 @@
         "--allow-empty",
         "--ignore",
         "scripts/ci",
+        "--ignore",
+        ".claude/skills",
         "."
       ]
     },
@@ -80,6 +82,8 @@
         "--allow-empty",
         "--ignore",
         "scripts/ci",
+        "--ignore",
+        ".claude/skills",
         "."
       ]
     },
@@ -95,6 +99,8 @@
         "--allow-empty",
         "--ignore",
         "scripts/ci",
+        "--ignore",
+        ".claude/skills",
         "."
       ]
     },
@@ -110,6 +116,8 @@
         "--allow-empty",
         "--ignore",
         "scripts/ci",
+        "--ignore",
+        ".claude/skills",
         "."
       ]
     },
@@ -140,6 +148,8 @@
         "--allow-empty",
         "--ignore",
         "scripts/ci",
+        "--ignore",
+        ".claude/skills",
         "--map",
         "data-map.json",
         "."

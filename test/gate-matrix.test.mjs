@@ -12,7 +12,18 @@ import { fileURLToPath } from "node:url";
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 // Resolve in either layout (upstream, or a consumer's scripts/ci) - copied verbatim into consumers.
 const UPSTREAM = resolve(REPO, ".claude/skills/judge-arch/scripts/gate-matrix.mjs");
-const CHECK = [UPSTREAM, resolve(REPO, "scripts/ci/gate-matrix.mjs")].find((p) => existsSync(p)) ?? UPSTREAM;
+// Resolve the gate to the copy CI actually runs, not a vendored .claude/skills copy (issue #112). A consumer
+// keeps the gate at scripts/ci/gate-matrix.mjs (its GATE_DIR path, which the workflow sets); vendoring the skills also
+// drops a copy under .claude/skills that must NOT be the one tested. Prefer the GATE_DIR copy; fall back to the
+// upstream skill copy (this repo has no scripts/ci).
+const CI_DIR = process.env.GATE_DIR || resolve(REPO, "scripts/ci");
+const CONSUMER = resolve(CI_DIR, "gate-matrix.mjs");
+const CHECK = [CONSUMER, UPSTREAM].find((p) => existsSync(p)) ?? UPSTREAM;
+test("gate resolution: tests the scripts/ci (GATE_DIR) copy CI runs, not a vendored .claude/skills copy (issue #112)", () => {
+  // In a consumer that vendors the skills both copies exist; the discrimination test must exercise the
+  // scripts/ci copy the aggregator runs. Upstream has no scripts/ci, so this is a no-op pass there.
+  if (existsSync(CONSUMER)) assert.equal(CHECK, CONSUMER, "must test the scripts/ci (GATE_DIR) gate, not the .claude/skills copy");
+});
 
 function run(manifest) {
   const dir = mkdtempSync(join(tmpdir(), "gm-"));

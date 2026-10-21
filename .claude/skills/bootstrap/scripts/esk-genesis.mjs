@@ -361,7 +361,11 @@ jobs:
       # Run the gate's discrimination test IN the consumer, so a copied gate that was neutered (made
       # vacuous) is caught here, not just upstream. The manifest guarantees each gate ships a test, and
       # genesis copies it; a missing test file is therefore a real problem, so fail rather than skip.
+      # GATE_DIR points the test at the gate copy CI actually runs (scripts/ci), so a repo that ALSO vendors
+      # the skills under .claude/skills does not accidentally exercise that copy instead (issue #112).
       - name: Run \${{ matrix.gate }} discrimination test
+        env:
+          GATE_DIR: \${{ github.workspace }}/scripts/ci
         run: |
           t="test/\${{ matrix.gate }}.test.mjs"
           if [ ! -f "$t" ]; then echo "missing discrimination test $t (gate may be unverified)"; exit 1; fi

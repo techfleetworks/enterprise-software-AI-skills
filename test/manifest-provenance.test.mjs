@@ -16,7 +16,18 @@ import { tmpdir } from "node:os";
 // Locate the gate in EITHER layout (upstream .claude/skills/<skill>/scripts, or a consumer's scripts/ci),
 // because this test is copied verbatim into a consumer and must find the gate wherever it lives.
 const GUARD_UPSTREAM = resolve(process.cwd(), ".claude/skills/judge-arch/scripts/check-manifest-provenance.mjs");
-const GUARD = [GUARD_UPSTREAM, resolve(process.cwd(), "scripts/ci/check-manifest-provenance.mjs")].find((p) => existsSync(p)) ?? GUARD_UPSTREAM;
+// Resolve the gate to the copy CI actually runs, not a vendored .claude/skills copy (issue #112). A consumer
+// keeps the gate at scripts/ci/check-manifest-provenance.mjs (its GATE_DIR path, which the workflow sets); vendoring the skills also
+// drops a copy under .claude/skills that must NOT be the one tested. Prefer the GATE_DIR copy; fall back to the
+// upstream skill copy (this repo has no scripts/ci).
+const CI_DIR = process.env.GATE_DIR || resolve(process.cwd(), "scripts/ci");
+const CONSUMER = resolve(CI_DIR, "check-manifest-provenance.mjs");
+const GUARD = [CONSUMER, GUARD_UPSTREAM].find((p) => existsSync(p)) ?? GUARD_UPSTREAM;
+test("gate resolution: tests the scripts/ci (GATE_DIR) copy CI runs, not a vendored .claude/skills copy (issue #112)", () => {
+  // In a consumer that vendors the skills both copies exist; the discrimination test must exercise the
+  // scripts/ci copy the aggregator runs. Upstream has no scripts/ci, so this is a no-op pass there.
+  if (existsSync(CONSUMER)) assert.equal(GUARD, CONSUMER, "must test the scripts/ci (GATE_DIR) gate, not the .claude/skills copy");
+});
 const UPSTREAM = "techfleetworks/enterprise-software-AI-skills";
 const created = [];
 

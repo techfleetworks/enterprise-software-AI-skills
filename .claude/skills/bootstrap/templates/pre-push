@@ -58,7 +58,21 @@ for (const gate of gates) {
   if (abs !== root && !abs.startsWith(root + sep)) continue;
   // A manifest gate whose script is absent is left to the parity gate (run here) to flag, not run as a gap.
   if (!existsSync(abs)) continue;
-  const res = spawnSync(process.execPath, [abs], { stdio: "inherit", env });
+  // Pass the gate's declared CLI args (gate.invoke, ADR-0059): how an engineering gate says what to scan
+  // (e.g. "." plus the --ignore paths). This MIRRORS the aggregator's schema (run-manifest-gates.mjs, the
+  // source of truth): invoke is an array of strings or absent, validated strictly and FAIL-CLOSED otherwise,
+  // because a gate that silently loses its args would scan nothing and pass hollow. Without this the offline
+  // gates ran argument-free here and failed (no paths given / wrong root), unlike CI which runs them via the
+  // aggregator. Passed with no shell, and invoke is parity/provenance-protected, so a value cannot inject.
+  let invokeArgs = [];
+  if (gate.invoke !== undefined) {
+    if (!Array.isArray(gate.invoke) || gate.invoke.some((a) => typeof a !== "string")) {
+      console.error(`\n✖ pre-push: gate "${gate.id}" has a malformed invoke (must be an array of strings); failing closed.`);
+      process.exit(1);
+    }
+    invokeArgs = gate.invoke;
+  }
+  const res = spawnSync(process.execPath, [abs, ...invokeArgs], { stdio: "inherit", env });
   // A crash or signal (status null) counts as a failure, same as a non-zero exit.
   if (res.status !== 0) failed.push(gate.id);
 }

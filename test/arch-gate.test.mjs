@@ -18,7 +18,18 @@ const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 // Resolve the gate in EITHER layout (upstream .claude/skills/<skill>/scripts, or a consumer's scripts/ci),
 // because this test is copied verbatim into a consumer and must find the gate wherever it lives.
 const UPSTREAM = resolve(REPO, ".claude/skills/judge-arch/scripts/arch-gate.mjs");
-const CHECK = [UPSTREAM, resolve(REPO, "scripts/ci/arch-gate.mjs")].find((p) => existsSync(p)) ?? UPSTREAM;
+// Resolve the gate to the copy CI actually runs, not a vendored .claude/skills copy (issue #112). A consumer
+// keeps the gate at scripts/ci/arch-gate.mjs (its GATE_DIR path, which the workflow sets); vendoring the skills also
+// drops a copy under .claude/skills that must NOT be the one tested. Prefer the GATE_DIR copy; fall back to the
+// upstream skill copy (this repo has no scripts/ci).
+const CI_DIR = process.env.GATE_DIR || resolve(REPO, "scripts/ci");
+const CONSUMER = resolve(CI_DIR, "arch-gate.mjs");
+const CHECK = [CONSUMER, UPSTREAM].find((p) => existsSync(p)) ?? UPSTREAM;
+test("gate resolution: tests the scripts/ci (GATE_DIR) copy CI runs, not a vendored .claude/skills copy (issue #112)", () => {
+  // In a consumer that vendors the skills both copies exist; the discrimination test must exercise the
+  // scripts/ci copy the aggregator runs. Upstream has no scripts/ci, so this is a no-op pass there.
+  if (existsSync(CONSUMER)) assert.equal(CHECK, CONSUMER, "must test the scripts/ci (GATE_DIR) gate, not the .claude/skills copy");
+});
 
 // Create a fixture dir; `files` maps relative name -> contents (config/waivers written as JSON).
 function fixture({ config, waivers, files = {} }) {
