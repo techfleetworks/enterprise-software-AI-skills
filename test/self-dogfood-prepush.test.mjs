@@ -11,10 +11,11 @@ import { tmpdir } from "node:os";
 
 const REPO = resolve(process.cwd());
 const HOOK = resolve(REPO, ".githooks/pre-push");
-// The gates the hook runs, mirrored here so the fixture defines the same script names. If the hook's list
-// and this list drift, the "all pass" test still exercises whatever the hook runs (stubs cover every name
-// the hook could call because we stub exactly these), and the "one fails" test pins blocking behavior.
-const GATES = ["check:architecture", "check:links", "check:receipt"];
+// The gates the hook runs come from the repo's self-checks.json (ADR-0071), the SAME single source the hook
+// itself reads, so this fixture stubs exactly the scripts the hook will invoke and the two can never drift.
+// (That self-checks.json stays in parity with package.json is guarded by test/self-check-parity.test.mjs.)
+const selfChecks = JSON.parse(readFileSync(resolve(REPO, "self-checks.json"), "utf8"));
+const GATES = Object.keys(selfChecks.checks).filter((k) => selfChecks.checks[k].local === true);
 const created = [];
 
 // A throwaway npm package whose gate scripts are stubs. failing: a gate name to make exit 1 (others exit 0).

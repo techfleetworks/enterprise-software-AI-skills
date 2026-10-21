@@ -3,6 +3,22 @@
 All notable changes to this repository are recorded here. Dates are ISO (YYYY-MM-DD). This project follows
 semantic versioning for the skills library and its gates.
 
+## 1.3.0 - 2026-10-21
+
+One source of truth for the repo's own gates, so the local pre-push and CI cannot silently diverge. A new
+minor (a new parity capability, not a bugfix); no change to the travelling gate set, so a consumer sees no new
+required check.
+
+### Added
+
+- **`self-checks.json` + a parity gate.** The repo's own `check:*` gates are now declared in one committed
+  file that classifies each as `local` (runs in the pre-push) or CI-only (with a stated reason). The pre-push
+  hook reads it and runs the local gates (failing closed if it is missing or malformed) instead of a hardcoded
+  list, and `test/self-check-parity.test.mjs` (part of `npm test`) fails if a `check:*` script is added
+  without being classified, if a classification names a script that does not exist, or if the hook stops
+  sourcing its list from the file. So the local pre-push and CI can never silently diverge. Discriminating:
+  adding an unclassified `check:*` turns the parity test red (ADR-0071).
+
 ## 1.2.2 - 2026-10-21
 
 A bugfix release for the v1.2.1 upgrade path. v1.2.1 told existing consumers to re-run `esk-genesis` to pick

@@ -1,0 +1,16 @@
+{
+  "_comment": "Single source of truth for THIS repo's own check:* gates and where each one runs. The local pre-push hook (.githooks/pre-push) reads this file to pick the gates it runs before a push; test/self-check-parity.test.mjs fails if a check:* script in package.json is not classified here (or a classification names a script that does not exist), so the local pre-push and CI can never silently diverge. A check is `local:true` if it is safe and complete to run on a fresh clone with no arguments; `local:false` checks are CI-only and must say why.",
+  "checks": {
+    "check:architecture": { "local": true },
+    "check:links": { "local": true },
+    "check:receipt": { "local": true },
+    "check:verbatim": {
+      "local": false,
+      "reason": "needs the gitignored vendored OWASP source that only `npm run vendor:owasp` fetches; on a fresh clone it fails closed, so it would block every local push. CI vendors first (the owasp-verbatim job)."
+    },
+    "check:routing": {
+      "local": false,
+      "reason": "needs the PR's changed-file list (--changed-list/--added-list), which only exists in CI from the diff; a full-scan local run has no change set to route."
+    }
+  }
+}
