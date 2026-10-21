@@ -27,12 +27,17 @@ function repo({ gates = [], omitManifest = false } = {}) {
   for (const g of gates) {
     const rel = `scripts/ci/check-${g.id}.mjs`;
     if (g.writeScript !== false) {
-      const body = g.envCheck
-        ? `if(!process.env.GATE_MANIFEST_FILE||!process.env.GATE_DIR||!process.env.GATE_REPO_ROOT)process.exit(9);process.exit(${g.exit ?? 0});\n`
-        : `process.exit(${g.exit ?? 0});\n`;
+      // envCheck: exit 9 unless the GATE_* env is set. expectArg: exit 7 unless that arg was received (proves
+      // the hook delivers gate.invoke, ADR-0059). Otherwise exit g.exit (default 0).
+      let body;
+      if (g.envCheck) body = `if(!process.env.GATE_MANIFEST_FILE||!process.env.GATE_DIR||!process.env.GATE_REPO_ROOT)process.exit(9);process.exit(${g.exit ?? 0});\n`;
+      else if (g.expectArg !== undefined) body = `if(!process.argv.slice(2).includes(${JSON.stringify(g.expectArg)}))process.exit(7);process.exit(${g.exit ?? 0});\n`;
+      else body = `process.exit(${g.exit ?? 0});\n`;
       writeFileSync(join(root, rel), body);
     }
-    manifestGates.push({ id: g.id, origin: "upstream", skill: "judge-arch", script: rel, sha256: "0".repeat(64), test: `test/${g.id}.test.mjs`, lane: "required" });
+    // invoke is written verbatim when present (an array for the real case, or a malformed value to prove
+    // the hook fails closed). Omitted otherwise, exactly as a gate with no args.
+    manifestGates.push({ id: g.id, origin: "upstream", skill: "judge-arch", script: rel, sha256: "0".repeat(64), test: `test/${g.id}.test.mjs`, lane: "required", ...(g.invoke !== undefined ? { invoke: g.invoke } : {}) });
   }
   if (!omitManifest) {
     writeFileSync(join(root, "gate-manifest.json"), JSON.stringify({ version: "1.0.0", gates: manifestGates, aggregator: { requiredCheck: "enterprise-gates" } }));
@@ -79,6 +84,23 @@ test("PRE-PUSH: passes the GATE_* env contract to the gates", () => {
   // The stub exits 9 unless GATE_MANIFEST_FILE/GATE_DIR/GATE_REPO_ROOT are all set. A pass proves the hook
   // set the env; if the hook stopped passing the env, this test would go red.
   assert.equal(runHook(repo({ gates: [{ id: "skill-gate-parity", exit: 0, envCheck: true }] })), 0);
+});
+
+test("PRE-PUSH: delivers each gate's invoke args (ADR-0059), so a gate that scans a path actually gets it", () => {
+  // The stub exits 7 unless it receives "." in argv. A pass proves the hook passed gate.invoke; before the
+  // fix the hook ran gates with no args and this would go red (exactly the issue #112 regression).
+  assert.equal(runHook(repo({ gates: [{ id: "no-ua-sniffing", exit: 0, expectArg: ".", invoke: ["--allow-empty", "--ignore", "scripts/ci", "."] }] })), 0);
+});
+
+test("PRE-PUSH: a gate needing its invoke args BLOCKS when they are dropped (discriminating)", () => {
+  // Same stub (exits 7 without "."), but no invoke in the manifest: the hook must run it arg-less, the gate
+  // fails, and the push is blocked. This is the failure the old hook turned into a hollow pass.
+  assert.notEqual(runHook(repo({ gates: [{ id: "no-ua-sniffing", exit: 0, expectArg: "." }] })), 0);
+});
+
+test("PRE-PUSH: FAILS CLOSED on a malformed invoke (never silently drops a gate's args)", () => {
+  // A non-array invoke must block, not be silently ignored (which would run the gate arg-less and scan nothing).
+  assert.notEqual(runHook(repo({ gates: [{ id: "no-ua-sniffing", exit: 0, invoke: "scripts/ci" }] })), 0);
 });
 
 // --- the install-hooks helper (arms the hook on npm install) ---

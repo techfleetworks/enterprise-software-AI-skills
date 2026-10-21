@@ -16,7 +16,18 @@ import { tmpdir } from "node:os";
 // esk-genesis bootstrapped (scripts/ci). This test file is copied verbatim into a consumer, so it must find
 // the gate wherever it lives; a hardcoded upstream path makes every copied gate test fail in a consumer.
 const UPSTREAM = resolve(process.cwd(), ".claude/skills/judge-arch/scripts/check-skill-gate-parity.mjs");
-const GUARD = [UPSTREAM, resolve(process.cwd(), "scripts/ci/check-skill-gate-parity.mjs")].find((p) => existsSync(p)) ?? UPSTREAM;
+// Resolve the gate to the copy CI actually runs, not a vendored .claude/skills copy (issue #112). A consumer
+// keeps the gate at scripts/ci/check-skill-gate-parity.mjs (its GATE_DIR path, which the workflow sets); vendoring the skills also
+// drops a copy under .claude/skills that must NOT be the one tested. Prefer the GATE_DIR copy; fall back to the
+// upstream skill copy (this repo has no scripts/ci).
+const CI_DIR = process.env.GATE_DIR || resolve(process.cwd(), "scripts/ci");
+const CONSUMER = resolve(CI_DIR, "check-skill-gate-parity.mjs");
+const GUARD = [CONSUMER, UPSTREAM].find((p) => existsSync(p)) ?? UPSTREAM;
+test("gate resolution: tests the scripts/ci (GATE_DIR) copy CI runs, not a vendored .claude/skills copy (issue #112)", () => {
+  // In a consumer that vendors the skills both copies exist; the discrimination test must exercise the
+  // scripts/ci copy the aggregator runs. Upstream has no scripts/ci, so this is a no-op pass there.
+  if (existsSync(CONSUMER)) assert.equal(GUARD, CONSUMER, "must test the scripts/ci (GATE_DIR) gate, not the .claude/skills copy");
+});
 const created = [];
 const sha = (s) => createHash("sha256").update(s).digest("hex");
 
