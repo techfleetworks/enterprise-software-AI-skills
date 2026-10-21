@@ -71,6 +71,9 @@ const apply = flag("--yes");
 // against the manifest the same on Windows (CRLF) and Linux/CI (LF). Copy verification still holds (both
 // sides normalized), and an adopted repo-local gate's recorded sha is the stable LF hash.
 const sha256 = (file) => createHash("sha256").update(readFileSync(file, "utf8").replace(/\r\n/g, "\n")).digest("hex");
+// Same LF-stable hash for an in-memory string (the generated workflow), so a byte-identical workflow on disk
+// is left alone and a stale one IS detected and refreshed on upgrade (ADR-0069).
+const sha256str = (s) => createHash("sha256").update(String(s).replace(/\r\n/g, "\n")).digest("hex");
 
 // --- read and validate the upstream source manifest ---------------------------
 const srcManifestPath = join(SOURCE, "gate-manifest.json");
@@ -258,14 +261,17 @@ const hookTemplate = join(SOURCE, ".claude", "skills", "bootstrap", "templates",
 const hookPath = join(TARGET, ".githooks", "pre-push");
 const hookAvailable = existsSync(hookTemplate);
 const hookExists = existsSync(hookPath);
-const installHook = hookAvailable && !hookExists;
+// Refresh on upgrade: install when absent OR when the on-disk hook differs from the current template, the same
+// refresh the gate scripts and apply-ruleset.sh get. No-clobber here was the v1.2.0->1.2.1 bug: a fixed hook
+// never reached an existing consumer (ADR-0069). The ruleset JSON and CODEOWNERS stay no-clobber on purpose.
+const installHook = hookAvailable && (!hookExists || sha256(hookTemplate) !== sha256(hookPath));
 
 // The install-hooks helper + a package.json "prepare" script arm the pre-push hook on `npm install`, so a
 // fresh clone needs zero manual `git config` (ADR-0050). Optional: only if the source ships the helper.
 const helperTemplate = join(SOURCE, ".claude", "skills", "bootstrap", "templates", "install-hooks.mjs");
 const helperPath = join(TARGET, ".githooks", "install-hooks.mjs");
 const helperAvailable = existsSync(helperTemplate);
-const installHelper = helperAvailable && !existsSync(helperPath);
+const installHelper = helperAvailable && (!existsSync(helperPath) || sha256(helperTemplate) !== sha256(helperPath));
 // Decide the package.json "prepare" wiring (no-clobber): add it only if there is a package.json with no
 // prepare script; if a prepare exists without the helper, warn; if no package.json, warn (non-npm repo).
 const pkgPath = join(TARGET, "package.json");
@@ -432,7 +438,11 @@ const manifestChanged = !prior || JSON.stringify(prior) !== JSON.stringify(consu
 // codeownersAction "warn-existing" is also NOT nothing-to-do: the user asked for code-owner coverage and we
 // must still surface the no-clobber advisory (we left their CODEOWNERS alone; confirm it covers the paths),
 // not swallow it behind "already current". Only "none" (no --code-owners) counts as nothing to do here.
-const nothingToDo = problems.length === 0 && pendingCopies.length === 0 && removals.length === 0 && !manifestChanged && workflowExists && rulesetExists && !installApplyScript && !installHook && !installHelper && prepareAction !== "add" && codeownersAction === "none";
+// The workflow is generated and esk-genesis-owned (its header says "Re-run esk-genesis to keep it current"),
+// so refresh it when the on-disk copy differs from what we would generate now - the refresh that lets a
+// workflow fix (e.g. v1.2.1's GATE_DIR discrimination-test step) reach an existing consumer on upgrade (ADR-0069).
+const workflowChanged = !workflowExists || sha256str(WORKFLOW) !== sha256(workflowPath);
+const nothingToDo = problems.length === 0 && pendingCopies.length === 0 && removals.length === 0 && !manifestChanged && !workflowChanged && rulesetExists && !installApplyScript && !installHook && !installHelper && prepareAction !== "add" && codeownersAction === "none";
 
 // --- print the plan ----------------------------------------------------------
 console.log(`\nEnterprise gates ${fresh ? "genesis" : foreignPrior ? "ADOPT (replacing a foreign manifest)" : "reconcile"} plan`);
@@ -453,11 +463,11 @@ for (const c of pendingCopies) console.log(`    - copy ${c.label}`);
 for (const r of removals) console.log(`    - remove dropped upstream gate ${r.script}${r.test ? ` and ${r.test}` : ""}`);
 for (const r of repoLocal) console.log(`    - preserve repo-local gate ${r.script} (recorded as adopted${r.hasTest ? "" : "; WARNING: no test at " + r.test + " - parity will flag it until you add one"})`);
 if (manifestChanged) console.log(`    - ${prior ? "update" : "write"} gate-manifest.json (pin ${version})`);
-if (!workflowExists) console.log(`    - scaffold .github/workflows/enterprise-gates.yml (the single required check)`);
+if (workflowChanged) console.log(`    - ${workflowExists ? "update" : "scaffold"} .github/workflows/enterprise-gates.yml (the single required check)`);
 if (!rulesetExists) console.log(`    - scaffold .github/rulesets/enterprise-gates.json (requires the "${requiredCheck}" check; apply it with scripts/apply-ruleset.sh to BLOCK merges)`);
 if (installApplyScript) console.log(`    - ${existsSync(applyScriptDst) ? "update" : "install"} scripts/apply-ruleset.sh (one admin command to turn enforcement on)`);
-if (installHook) console.log(`    - install the pre-push hook (.githooks/pre-push) and point core.hooksPath at it`);
-if (installHelper) console.log(`    - install the hook auto-arm helper (.githooks/install-hooks.mjs)`);
+if (installHook) console.log(`    - ${hookExists ? "update" : "install"} the pre-push hook (.githooks/pre-push)${hookExists ? "" : " and point core.hooksPath at it"}`);
+if (installHelper) console.log(`    - ${existsSync(helperPath) ? "update" : "install"} the hook auto-arm helper (.githooks/install-hooks.mjs)`);
 if (prepareAction === "add") console.log(`    - add a package.json "prepare" script so the hook arms on npm install`);
 if (prepareAction === "warn-existing") console.log(`    - NOTE: package.json already has a "prepare" script; add 'node .githooks/install-hooks.mjs' to it to auto-arm the hook`);
 if (prepareAction === "warn-nopkg") console.log(`    - NOTE: no package.json, so the hook is not auto-armed; run 'git config core.hooksPath .githooks' once per clone`);
@@ -487,7 +497,7 @@ try {
   if (prior) copyFileSync(consumerManifestPath, consumerManifestPath + ".esk.bak");
   for (const c of pendingCopies) copyTracked(c.from, c.to);
   if (manifestChanged) writeTracked(consumerManifestPath, JSON.stringify(consumerManifest, null, 2) + "\n");
-  if (!workflowExists) writeTracked(workflowPath, WORKFLOW);
+  if (workflowChanged) writeTracked(workflowPath, WORKFLOW);
   if (!rulesetExists) writeTracked(rulesetPath, RULESET); // no-clobber: only when absent
   if (installApplyScript) {
     copyTracked(applyScriptSrc, applyScriptDst);
@@ -551,8 +561,8 @@ try {
 
 console.log(`\n[esk-genesis] OK: ${fresh ? "bootstrapped" : "reconciled"} ${TARGET} to ${upstreamRepo}@${version}.`);
 console.log(`Next: commit these files, then an admin makes "${consumerManifest.aggregator.requiredCheck}" a required status check so the gates block merges.`);
-if (!workflowExists) console.log(`A workflow was scaffolded; review it before committing.`);
-if (installHook) console.log(`A pre-push hook was installed (.githooks/pre-push); it runs the offline gates before each push.`);
+if (workflowChanged) console.log(`The enterprise-gates.yml workflow was ${workflowExists ? "updated" : "scaffolded"}; review it before committing.`);
+if (installHook) console.log(`The pre-push hook (.githooks/pre-push) was ${hookExists ? "updated" : "installed"}; it runs the offline gates before each push.`);
 if (prepareAction === "add") console.log(`A package.json "prepare" script was added, so every clone arms the hook automatically on 'npm install'. Zero per-clone setup.`);
 else if (prepareAction === "warn-existing") console.log(`Your package.json already has a "prepare" script; add 'node .githooks/install-hooks.mjs' to it so the hook arms on 'npm install'.`);
 else if (prepareAction === "warn-nopkg") console.log(`No package.json here, so the hook is not auto-armed; run 'git config core.hooksPath .githooks' once per clone (or add an equivalent setup step).`);
