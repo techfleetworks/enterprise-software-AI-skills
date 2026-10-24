@@ -6,7 +6,7 @@ as a routing pointer so a search for "transport layer protection" still lands so
 
 Use the Transport Layer Security sheet for transport-protection controls:
 
-- In this skill: [Transport Layer Security](references/cheatsheets/Transport_Layer_Security.md)
+- In this skill: [Transport Layer Security](Transport_Layer_Security.md)
 - On OWASP: <https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html>
 
 ## Sources

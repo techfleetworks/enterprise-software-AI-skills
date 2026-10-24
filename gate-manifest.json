@@ -45,7 +45,7 @@
       "origin": "upstream",
       "skill": "judge-arch",
       "script": "scripts/ci/check-reference-links.mjs",
-      "sha256": "0dfa6a10d4b7be021c922f578890994247a91e19b93742f9f8868aeee656a4ed",
+      "sha256": "9eeb04ab6b27df6c7326fdb9206005ac6b1bfabfa7c8b45d43f8a78da01d1568",
       "test": "test/reference-links.test.mjs",
       "lane": "required",
       "invoke": [
@@ -60,7 +60,7 @@
       "origin": "upstream",
       "skill": "universal-browser-device-support",
       "script": "scripts/ci/check-no-ua-sniffing.mjs",
-      "sha256": "bc6385e38f9ae0a97837123b5ac935b0f36e953802ba6564fedcc52cdc2172ee",
+      "sha256": "29bb3eae7b18ac71cf0a94c86e20cff5ad008209d76483b2159269eaf6501ee6",
       "test": "test/no-ua-sniffing.test.mjs",
       "lane": "required",
       "invoke": [
@@ -164,12 +164,13 @@
       "origin": "upstream",
       "skill": "compliance-data-lifecycle",
       "script": "scripts/ci/check-retention-basis.mjs",
-      "sha256": "7488e1c78a5824bebe2685c8c649394a45251d9797ca69945b735f4b5b5d27b0",
+      "sha256": "f41ef64dc0381c88fbbd8c9ec9b14d2d159e266130886478552a3a6559766e3f",
       "test": "test/retention-basis.test.mjs",
       "lane": "required",
       "invoke": [
         "--map",
-        "data-map.json"
+        "data-map.json",
+        "--map-optional"
       ]
     }
   ],

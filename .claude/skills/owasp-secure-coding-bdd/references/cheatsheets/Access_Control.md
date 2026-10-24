@@ -7,7 +7,7 @@ a search for "access control" still lands somewhere useful.
 Use the Authorization sheet for all access-control controls (enforce every request server side, deny by default,
 check ownership on every object reference, and so on):
 
-- In this skill: [Authorization](references/cheatsheets/Authorization.md)
+- In this skill: [Authorization](Authorization.md)
 - On OWASP: <https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html>
 
 ## Sources

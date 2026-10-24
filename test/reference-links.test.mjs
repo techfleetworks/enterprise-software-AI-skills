@@ -5,7 +5,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, writeFileSync, existsSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, existsSync, chmodSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -157,4 +157,75 @@ test("ISSUE-118: a dangling link OUTSIDE the ignored dir is still flagged", () =
   const r = spawnSync(process.execPath, [GATE, "--root", root, "--ignore", "skills"], { encoding: "utf8" });
   assert.equal(r.status, 1, "a dangling link outside the ignored dir must still be caught");
   assert.match((r.stdout || "") + (r.stderr || ""), /gone\.md/);
+});
+
+// --- ISSUE-147: a Markdown link target resolves relative to the citer, case-sensitively -----------------
+// Before the fix a link target was matched only by lowercased basename, so a dangling link to
+// docs/missing/README.md passed as soon as ANY readme.md existed anywhere in the tree. Now a `](path)` target
+// resolves from the citing file's folder. Each "fails" case is discriminating: reverting re-passes it.
+test("ISSUE-147: a dangling link target FAILS even when another file shares its basename elsewhere (exit 1)", () => {
+  const root = tree({
+    "index.md": "See the [missing guide](docs/missing/README.md).\n",
+    "other/readme.md": "# unrelated, different case, elsewhere\n",
+  });
+  const r = run(root);
+  assert.equal(r.status, 1, (r.stdout || "") + (r.stderr || ""));
+  assert.match((r.stdout || "") + (r.stderr || ""), /README\.md/);
+});
+test("ISSUE-147: a same-case basename elsewhere does not clear a dangling link target (exit 1)", () => {
+  const root = tree({
+    "index.md": "See the [missing guide](docs/missing/README.md).\n",
+    "other/README.md": "# unrelated\n",
+  });
+  assert.equal(run(root).status, 1, "a README.md elsewhere must not satisfy a link to docs/missing/README.md");
+});
+test("ISSUE-147: a link target that DOES resolve relative to the citer passes (exit 0)", () => {
+  const root = tree({
+    "index.md": "See the [guide](docs/real/guide.md).\n",
+    "docs/real/guide.md": "# here\n",
+  });
+  assert.equal(run(root).status, 0, (run(root).stdout || "") + (run(root).stderr || ""));
+});
+test("ISSUE-147: a `](x.md)` shown INSIDE backticks is example text, not a live link (basename rule) (exit 0, discriminating)", () => {
+  // A doc about link hygiene shows link syntax inside backticks. That must NOT be resolved as a live link; it
+  // falls back to the lenient basename rule. Reverting the backtick-skip resolves `guide.md` from the citer's
+  // folder (where it does not exist) and fails — so this case is discriminating. (This is the regression that
+  // the fresh-context review caught on this PR's own ADR.)
+  const root = tree({
+    "doc.md": "Write a Markdown link as `](guide.md)` inline.\n",
+    "deep/guide.md": "# exists by basename, elsewhere\n",
+  });
+  assert.equal(run(root).status, 0, (run(root).stdout || "") + (run(root).stderr || ""));
+});
+
+// --- ISSUE-121: GATE_REPO_ROOT is honoured, and an unreadable file fails closed ------------------------
+test("ISSUE-121a: GATE_REPO_ROOT is used as the root when no --root is given (discriminating)", () => {
+  // The dangling link lives under the dir named by GATE_REPO_ROOT; the default script-relative root would scan
+  // the skills repo instead and miss it. Reverting (env ignored) scans elsewhere and this passes → test fails.
+  const root = tree({ "a.md": "see `gone.md`." });
+  const r = spawnSync(process.execPath, [GATE], { env: { ...process.env, GATE_REPO_ROOT: root }, encoding: "utf8" });
+  assert.equal(r.status, 1, (r.stdout || "") + (r.stderr || ""));
+  assert.match((r.stdout || "") + (r.stderr || ""), /gone\.md/);
+});
+test("ISSUE-121a: an explicit --root overrides GATE_REPO_ROOT", () => {
+  const good = tree({ "a.md": "see `b.md`.", "b.md": "x" });
+  const bad = tree({ "a.md": "see `gone.md`." });
+  const r = spawnSync(process.execPath, [GATE, "--root", good], { env: { ...process.env, GATE_REPO_ROOT: bad }, encoding: "utf8" });
+  assert.equal(r.status, 0, "explicit --root wins over the env\n" + (r.stdout || "") + (r.stderr || ""));
+});
+test("ISSUE-121b: an unreadable .md file fails the gate CLOSED (exit 2) — coverage unproven", () => {
+  // Portable guard: chmod 000 enforces on POSIX (Linux CI as a non-root user); on Windows (or as root) the OS
+  // does not make the file unreadable, so the case cannot be exercised here and is honestly skipped. The fix
+  // still ships and is proven on CI. Without the fix, an unreadable file is silently skipped and counted clean.
+  const root = tree({ "a.md": "see `b.md`.", "b.md": "x", "locked.md": "# locked\n" });
+  const locked = join(root, "locked.md");
+  let enforced = false;
+  try {
+    chmodSync(locked, 0o000);
+    try { readFileSync(locked, "utf8"); } catch { enforced = true; }
+  } catch { /* chmod not permitted on this platform */ }
+  if (!enforced) return; // honest skip; Linux CI enforces it
+  const r = run(root);
+  chmodSync(locked, 0o644); // restore so temp cleanup can remove it
+  assert.equal(r.status, 2, (r.stdout || "") + (r.stderr || ""));
 });
