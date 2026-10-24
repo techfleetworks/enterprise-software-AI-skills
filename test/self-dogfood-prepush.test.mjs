@@ -57,6 +57,17 @@ test("SELF-DOGFOOD: the zero-step arming is wired (prepare -> install-hooks, hoo
   assert.ok(existsSync(join(REPO, ".githooks/install-hooks.mjs")), ".githooks/install-hooks.mjs must exist");
 });
 
+test("SELF-DOGFOOD: the repo's .githooks/install-hooks.mjs is byte-identical to the shipped template (no hand-sync drift)", () => {
+  // The repo dogfoods its own copy (.githooks/install-hooks.mjs) while esk-genesis ships the template
+  // (.claude/skills/bootstrap/templates/install-hooks.mjs) into consumers. They are two copies of one logic;
+  // a gate must keep them identical, or the repo could dogfood stale arming logic while shipping different
+  // logic to consumers and CI would stay green ("two copies always disagree eventually"). Discriminating:
+  // editing one copy without the other turns this red.
+  const dogfood = readFileSync(join(REPO, ".githooks/install-hooks.mjs"), "utf8");
+  const template = readFileSync(join(REPO, ".claude/skills/bootstrap/templates/install-hooks.mjs"), "utf8");
+  assert.equal(dogfood, template, "the repo's .githooks/install-hooks.mjs must stay byte-identical to the shipped template");
+});
+
 process.on("exit", () => {
   for (const d of created) { try { rmSync(d, { recursive: true, force: true }); } catch { /* best-effort */ } }
 });
