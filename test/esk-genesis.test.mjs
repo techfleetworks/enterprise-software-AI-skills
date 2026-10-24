@@ -446,6 +446,29 @@ test("GENESIS: the scaffolded workflow is a per-skill matrix with one required s
   assert.doesNotMatch(yml, /echo "gates=\$\(node/);
 });
 
+test("GENESIS ISSUE-120: the workflow runs parity/provenance DIRECTLY, not through the runner they verify (discriminating)", () => {
+  const src = buildSource();
+  const tgt = newTarget();
+  run(src, tgt, ["--yes"]);
+  const yml = readFileSync(join(tgt, ".github/workflows/enterprise-gates.yml"), "utf8");
+  // skill-gate-parity / manifest-provenance must be invoked via their own script, so a no-op run-manifest-gates
+  // cannot make them pass vacuously. Reverting the case (running them through the runner) removes this.
+  assert.match(yml, /skill-gate-parity\|manifest-provenance\)/, "parity+provenance must be a distinct case");
+  assert.match(yml, /node scripts\/ci\/check-\$\{\{ matrix\.gate \}\}\.mjs/, "they must run their own check- script directly");
+  // other gates still go through the aggregator with --only
+  assert.match(yml, /run-manifest-gates\.mjs --only "\$\{\{ matrix\.gate \}\}"/);
+});
+
+test("GENESIS ISSUE-125: only the manifest-provenance job fetches the upstream manifest (discriminating)", () => {
+  const src = buildSource();
+  const tgt = newTarget();
+  run(src, tgt, ["--yes"]);
+  const yml = readFileSync(join(tgt, ".github/workflows/enterprise-gates.yml"), "utf8");
+  // The fetch step is gated so a transient github.com error cannot red a gate job that never reads the file.
+  assert.match(yml, /- name: Fetch upstream manifest for provenance\n\s*if: matrix\.gate == 'manifest-provenance'/, "the fetch step must be gated to the provenance job");
+  assert.match(yml, /curl -sSL --retry 3 --retry-all-errors/, "the fetch should retry a transient error");
+});
+
 // NOTE: these traversal tests use a script/skill whose basename resolves to a source file that EXISTS
 // with a matching sha, so the ONLY thing that can block the install is the containment guard. If the
 // guard were removed, the file would copy OUTSIDE the target and the run would exit 0 - so the test
