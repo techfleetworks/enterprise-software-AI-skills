@@ -134,9 +134,13 @@ function changedFiles() {
   return files.size ? [...files] : null;
 }
 
+// Scan errors (an unreadable dir or file) make the scan INCOMPLETE; arch-gate must then fail closed (exit 2),
+// never report PASS on a tree it could not fully read (#149). ENOENT (a path vanished mid-scan) is not an error.
+const scanErrors = [];
 function walk(dir, acc) {
   let entries;
-  try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return acc; }
+  try { entries = fs.readdirSync(dir, { withFileTypes: true }); }
+  catch (e) { if (e.code !== 'ENOENT') scanErrors.push(`cannot read directory ${path.relative(ROOT, dir) || '.'}: ${e.message}`); return acc; }
   for (const e of entries) {
     if (e.isDirectory()) {
       const rel = path.relative(ROOT, path.join(dir, e.name)).split(path.sep).join('/');
@@ -177,23 +181,34 @@ const rules = (config.rules || []).map((r) => ({
 // rule name -> human-readable fix guidance, surfaced once per rule-group in the report (byRule loop).
 const ruleMessages = new Map((config.rules || []).filter((r) => r.message).map((r) => [r.name, r.message]));
 
-const builtins = Object.assign({ emptyCatch: true, swallowReturn: true, keepInSync: true }, config.builtins || {});
+const builtins = Object.assign({ emptyCatch: true, swallowReturn: true, keepInSync: true, emptyExcept: true }, config.builtins || {});
 const BUILTIN_CHECKS = [
   // Body = any run of whitespace / line-comments / block-comments, then the closing brace.
   // Each alternative is anchored and consumes deterministically (the block-comment sub-pattern is the
   // unrolled, linear-time form), so a non-empty body fails fast instead of catastrophically
   // backtracking. The prior nested-quantifier form was ReDoS-able (a ~400B catch hung the gate >5s).
-  ['emptyCatch', 'catch block does nothing (recover, retry, or report - pick one)',
-    /catch\s*(\([^)]*\))?\s*\{(?:\s|;|\/\/[^\n]*|\/\*[^*]*\*+(?:[^/*][^*]*\*+)*\/)*\}/g],
+  // Matches BOTH an empty statement-catch `catch (e) {}` AND an empty promise arrow handler
+  // `.catch(() => {})` / `.catch(e => {})` / `.catch(async () => {})` (#124). The empty-body sub-pattern is the
+  // same unrolled, linear-time form on both alternatives, so a non-empty body fails fast (ReDoS-safe).
+  ['emptyCatch', 'catch does nothing (recover, retry, or report - pick one); applies to catch blocks and .catch() arrow handlers',
+    /catch\s*(?:\([^)]*\))?\s*\{(?:\s|;|\/\/[^\n]*|\/\*[^*]*\*+(?:[^/*][^*]*\*+)*\/)*\}|\.catch\s*\(\s*(?:async\s*)?(?:\([^)]*\)|[\w$]+)\s*=>\s*\{(?:\s|;|\/\/[^\n]*|\/\*[^*]*\*+(?:[^/*][^*]*\*+)*\/)*\}\s*\)/g],
   ['swallowReturn', 'catch swallows the error and returns a bare or empty value (null/false/undefined/[]/{}/0/"")',
     /catch\s*(\([^)]*\))?\s*\{\s*return\s*(?:null|false|undefined|\[\s*\]|\{\s*\}|0|''|"")?\s*;?\s*\}/g],
   ['keepInSync', 'a "keep in sync" marker - two copies of one fact; give it one owner',
     /keep\s+(?:in|these\s+in|them\s+in|it\s+in)\s+sync/gi],
 ];
+
+// Python built-ins (run on .py files). The JS/TS built-ins above would otherwise pass a Python-only tree
+// silently (#146). Kept minimal and linear-time; mirrors the error-handling line of the grep battery.
+const PY_EXT = new Set(['.py']);
+const PY_BUILTIN_CHECKS = [
+  ['emptyExcept', 'an except that does nothing (except: pass) - handle the error or re-raise',
+    /except\b[^\n:]*:[ \t]*(?:#[^\n]*)?(?:\r?\n[ \t]+)?pass\b/g],
+];
 // A builtin's rule NAME is its stable short key (emptyCatch / swallowReturn / keepInSync), not its prose
 // label, so a waiver matches on a key that never changes and the label is surfaced as the fix message.
 // Rewording or de-dashing a label can no longer break a waiver (the regression this prevents).
-for (const [key, label] of BUILTIN_CHECKS) ruleMessages.set(key, label);
+for (const [key, label] of [...BUILTIN_CHECKS, ...PY_BUILTIN_CHECKS]) ruleMessages.set(key, label);
 
 const matches = (regexes, file) => regexes.some((re) => re.test(file));
 const violations = [];
@@ -216,21 +231,37 @@ const isIgnoredPath = (f) => f.split('/').some((seg) => ignoreDirs.has(seg)) || 
 files = files.filter((f) => {
   if (isIgnoredPath(f)) return false;
   try { return fs.statSync(path.join(ROOT, f)).size <= MAX_BYTES; }
-  catch (e) { if (e.code !== 'ENOENT') console.error(`arch-gate: cannot stat ${f} (${e.message}); not scanned`); return false; }
+  catch (e) { if (e.code !== 'ENOENT') scanErrors.push(`cannot stat ${f}: ${e.message}`); return false; }
 });
 
+let evaluated = 0, evaluatedCode = 0;
 for (const file of files) {
   const ext = path.extname(file);
   const applicableRules = rules.filter((r) => matches(r.include, file) && !matches(r.exclude, file));
-  const runBuiltins = CODE_EXT.has(ext) && !ignoreDirs.has(file.split('/')[0]);
-  if (!applicableRules.length && !runBuiltins) continue;
+  const topSeg = file.split('/')[0];
+  const isJs = CODE_EXT.has(ext) && !ignoreDirs.has(topSeg);
+  const isPy = PY_EXT.has(ext) && !ignoreDirs.has(topSeg);
+  if (!applicableRules.length && !isJs && !isPy) continue;
   let content;
-  // The file passed the stat filter, so a read failure here is a real problem, not a deleted file -
-  // report it loudly (don't swallow) so an un-scanned file can't ship with no diagnostic.
+  // The file passed the stat filter, so a read failure here is a real problem, not a deleted file - record it
+  // as a scan error so the gate fails closed (an un-scanned file must never ship with a silent PASS, #149).
   try { content = fs.readFileSync(path.join(ROOT, file), 'utf8'); }
-  catch (e) { console.error(`arch-gate: WARNING - could not read ${file} (${e.message}); it was NOT scanned`); continue; }
+  // A real read error (permissions, IO) makes the scan incomplete -> fail closed. But a vanished file (ENOENT)
+  // is a benign stat/read TOCTOU race (a concurrent editor/build/git op deleted it after the stat filter), so
+  // it is tolerated, exactly as the readdir and stat sites above do (#149, review fix).
+  catch (e) { if (e.code !== 'ENOENT') scanErrors.push(`could not read ${file}: ${e.message}`); continue; }
+  evaluated++;
+  if (isJs || isPy) evaluatedCode++;
   for (const r of applicableRules) for (const re of r.forbid) record(r.name, file, content, re);
-  if (runBuiltins) for (const [key, , re] of BUILTIN_CHECKS) if (builtins[key]) record(key, file, content, re);
+  if (isJs) for (const [key, , re] of BUILTIN_CHECKS) if (builtins[key]) record(key, file, content, re);
+  if (isPy) for (const [key, , re] of PY_BUILTIN_CHECKS) if (builtins[key]) record(key, file, content, re);
+}
+
+// Fail closed on an incomplete scan: if any path could not be read, do not proceed to a verdict (#149).
+if (scanErrors.length) {
+  console.error(`\narch-gate: FAIL CLOSED - ${scanErrors.length} path(s) could not be read, so the scan is INCOMPLETE and cannot report PASS:`);
+  for (const s of scanErrors) console.error(`  ! ${s}`);
+  process.exit(2);
 }
 
 const active = violations.filter((v) => !v.waived);
@@ -258,7 +289,12 @@ if (BASELINE) {
 const byRule = new Map();
 for (const v of active) { if (!byRule.has(v.rule)) byRule.set(v.rule, []); byRule.get(v.rule).push(v); }
 
-console.log(`\narch-gate - scanned ${files.length} file(s)${CHANGED_ONLY ? ' (changed only)' : ''}\n`);
+console.log(`\narch-gate - evaluated ${evaluated} of ${files.length} file(s) (${evaluatedCode} with code checks)${CHANGED_ONLY ? ' (changed only)' : ''}\n`);
+// A tree that has files but ran NO code-level check (e.g. a language the built-ins do not cover) must say so,
+// not silently report a clean PASS (#146). Built-ins cover JS/TS plus Python.
+if (evaluatedCode === 0 && files.length > 0) {
+  console.error(`arch-gate: WARNING - 0 code files evaluated (built-in code checks cover ${[...CODE_EXT, ...PY_EXT].join(', ')}); no code-level enforcement ran on this tree.`);
+}
 if (!rules.length && !Object.values(builtins).some(Boolean)) {
   console.log('arch-gate: no rules configured and all built-ins off - nothing to enforce.');
   process.exit(0);

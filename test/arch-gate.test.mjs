@@ -63,7 +63,7 @@ test("S3b: emptyCatch still DETECTS a genuinely empty catch (exit 1) — discrim
   const dir = fixture({ config: { builtins: { emptyCatch: true } }, files: { "empty.js": EMPTY_CATCH } });
   const r = runGate(dir);
   assert.equal(r.status, 1, "an empty catch should fail the gate");
-  assert.match(r.out, /catch block does nothing/);
+  assert.match(r.out, /catch does nothing/);
 });
 
 // Final-pass hardening: the two most natural do-nothing catches used to slip (catch{;} and catch{return;}).
@@ -131,7 +131,7 @@ test("builtin rule NAME is the stable short id, not the prose label (a label rew
   const r = runGate(dir);
   assert.equal(r.status, 1);
   assert.match(r.out, /emptyCatch/, "violations group under the stable short id");
-  assert.match(r.out, /catch block does nothing/, "the prose label is still shown as the fix message");
+  assert.match(r.out, /catch does nothing/, "the prose label is still shown as the fix message");
 });
 
 // Finding C (docs/arch-reviews/log.jsonl): a file that is present and stat-able but UNREADABLE must
@@ -240,4 +240,45 @@ test("ISSUE-142: config.ignore and --ignore skip an anchored path (.claude/skill
   mkdirSync(join(dir3, "src", ".claude", "skills"), { recursive: true });
   writeFileSync(join(dir3, "src", ".claude", "skills", "evil.js"), emptyCatch);
   assert.equal(runGate(dir3).status, 1, "a decoy src/.claude/skills must still be scanned (anchored ignore)");
+});
+
+// ISSUE-124: emptyCatch must also flag an empty PROMISE arrow handler `.catch(() => {})`, not only `catch {}`.
+test("ISSUE-124: emptyCatch flags an empty .catch() arrow handler, passes a non-empty one", () => {
+  const bad = fixture({ config: { builtins: { emptyCatch: true } }, files: { "p.js": "doThing().catch(() => {});\n" } });
+  assert.equal(runGate(bad).status, 1, "empty .catch(() => {}) must be flagged");
+  const bad2 = fixture({ config: { builtins: { emptyCatch: true } }, files: { "p.js": "doThing().catch((e) => {});\n" } });
+  assert.equal(runGate(bad2).status, 1, "empty .catch((e) => {}) must be flagged");
+  const ok = fixture({ config: { builtins: { emptyCatch: true } }, files: { "p.js": "doThing().catch((e) => { report(e); });\n" } });
+  assert.equal(runGate(ok).status, 0, "a .catch with a real body must pass (no false positive)");
+});
+
+// ISSUE-127: the summary reports files EVALUATED, not merely walked - a non-code-heavy tree does not inflate it.
+test("ISSUE-127: summary reports evaluated count, not the walked total", () => {
+  const dir = fixture({ config: { builtins: { emptyCatch: true } }, files: { "a.js": "ok();\n", "b.md": "x", "c.txt": "y", "d.json": "{}" } });
+  assert.match(runGate(dir).out, /evaluated 1 of/, "only the .js is evaluated; the count must not be the walked total");
+});
+
+// ISSUE-146: built-ins cover Python (except: pass), and a tree with no code files warns rather than passing silent.
+test("ISSUE-146: a Python except: pass is flagged, with its fix hint printed", () => {
+  const dir = fixture({ config: { builtins: { emptyExcept: true } }, files: { "m.py": "try:\n    risky()\nexcept Exception:\n    pass\n" } });
+  const r = runGate(dir);
+  assert.equal(r.status, 1, "Python except: pass must be flagged");
+  assert.match(r.out, /handle the error or re-raise/, "the emptyExcept fix hint must print (PY_BUILTIN_CHECKS registered in ruleMessages)");
+});
+test("ISSUE-146: a tree with files but no code warns (0 code files evaluated), not a silent PASS", () => {
+  const dir = fixture({ config: { builtins: { emptyCatch: true } }, files: { "readme.md": "x", "notes.txt": "y" } });
+  assert.match(runGate(dir).out, /0 code files evaluated/i, "a no-code tree must warn, not silently PASS");
+});
+
+// ISSUE-149: an unreadable file makes the scan INCOMPLETE -> fail closed (exit 2), never a silent PASS.
+test("ISSUE-149: an unreadable code file fails the gate closed (exit 2)", (t) => {
+  const dir = fixture({ config: { builtins: { emptyCatch: true } }, files: { "x.js": "ok();\n" } });
+  const target = join(dir, "x.js");
+  try { chmodSync(target, 0); } catch { /* ignore */ }
+  let readable = true;
+  try { readFileSync(target, "utf8"); } catch { readable = false; }
+  if (readable) { t.skip("this platform ignores 0-perms (Windows); CI/Linux enforces the unreadable case"); return; }
+  const r = runGate(dir);
+  assert.equal(r.status, 2, "an unreadable file must fail closed (exit 2), not PASS");
+  assert.match(r.out, /FAIL CLOSED/, "must report that it failed closed");
 });

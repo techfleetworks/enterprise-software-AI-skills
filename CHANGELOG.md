@@ -24,6 +24,25 @@ closed and match on anchored paths, and adds the CI harness that keeps the whole
 - **The judge-arch discrimination fixture moved off `data/` (a commonly gitignored dir) to `domain/`, and the
   discriminate script now reports a missing fixture distinctly instead of blaming arch-gate (#126).**
 
+### Added (vendored-consumer CI harness, ADR-0073)
+
+- **A standing harness that runs the gates on the documented vendoring layout, upstream, before release
+  (#133).** It builds a repo that vendors the skills under `.claude/skills/` (a Python + npm consumer), runs
+  `esk-genesis`, then runs every scaffolded gate green and a representative discrimination test in that layout.
+  A change that breaks a vendoring consumer now turns the upstream suite red. Proven to discriminate (reverting
+  the arch-gate fix makes it fail). This is the structural guard that keeps the whole consumer-install bug class
+  from recurring.
+- **The harness strips `NODE_TEST_CONTEXT` from child `node --test` runs (#119),** so a neutered copied gate
+  test can no longer false-pass; a vacuity guard fails if the stripping regresses.
+
+### Hardened (arch-gate detection + reporting, ADR-0074)
+
+- **arch-gate now fails closed on an unreadable path (#149)** instead of reporting PASS on a tree it could not
+  fully read, **reports `evaluated X of Y` files (#127)** rather than the walked total, **covers Python**
+  (`except: pass`) and **warns when zero code files were evaluated (#146)**, and **`emptyCatch` now flags an
+  empty `.catch(() => {})` arrow handler (#124)**, not only a `catch {}` block. Each pinned by a discrimination
+  test.
+
 ## 1.3.0 - 2026-10-21
 
 One source of truth for the repo's own gates, so the local pre-push and CI cannot silently diverge. A new

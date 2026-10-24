@@ -128,7 +128,7 @@
       "origin": "upstream",
       "skill": "judge-arch",
       "script": "scripts/ci/arch-gate.mjs",
-      "sha256": "ec2b68448183a81017402a2408f43d7bbc12d0fef1a1918c27c372c3678f25f6",
+      "sha256": "8385faf6534ae8c1fcdeb57c9c57acd0017265001dccbe6ce6f19a11ce1fd320",
       "test": "test/arch-gate.test.mjs",
       "lane": "required",
       "invoke": [
