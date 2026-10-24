@@ -86,6 +86,24 @@ closed and match on anchored paths, and adds the CI harness that keeps the whole
 - Each fix is pinned by a discrimination test; none of these files is a manifest-tracked gate, so no
   sha/provenance change.
 
+### Hardened (esk-init skills mirror never deletes local content, ADR-0078)
+
+- **A reconcile no longer silently deletes local content under a mirrored skill (#130).** `esk-init --skills`
+  now re-mirrors only the skills whose source actually changed (not all of them), and before replacing a skill
+  whose installed copy has local changes on disk it backs the copy up to a timestamped `<skill>.esk-local-*`
+  folder and lists it in the plan, instead of discarding it; if the backup cannot be written it stops rather than
+  replace-and-lose.
+- **`--check --skills` now fingerprints the installed TARGET,** so a mirrored skill whose on-disk copy drifted
+  from what was installed (a stale or hand-edited copy) is reported as drift instead of passing — and that drift
+  is self-healing: `--yes --skills` (the remedy `--check` prints) re-mirrors the drifted skill, backing up any
+  local change, so the next `--check` is green.
+- **The guarantee holds across the upgrade transition** (a fresh-context review caught this as a silent-data-loss
+  hole): the backup decision is baseline-agnostic, so the first reconcile after upgrading from a marker that
+  recorded no signatures still backs up a diverged target rather than deleting it. A present-but-unreadable target
+  stops the run rather than being replaced blindly.
+- esk-init is the bootstrap installer, not a manifest gate, so no sha/provenance change. Each fix is pinned by a
+  discrimination test.
+
 ## 1.3.0 - 2026-10-21
 
 One source of truth for the repo's own gates, so the local pre-push and CI cannot silently diverge. A new

@@ -6,7 +6,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, writeFileSync, mkdirSync, existsSync, readFileSync, readdirSync, rmSync, cpSync } from "node:fs";
+import { mkdtempSync, writeFileSync, mkdirSync, existsSync, readFileSync, readdirSync, rmSync, cpSync, chmodSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -639,4 +639,110 @@ test("ISSUE-138: --check canary runs the configured entry and catches a broken e
   const r = runOn(settings, ["--check"], repo);
   assert.equal(r.status, 1, "a broken configured hook command must fail the canary");
   assert.match(r.out, /hook command/, "the drift must name the configured hook command");
+});
+
+// --- ISSUE-130: a reconcile never silently deletes local content under a mirrored skill, re-mirrors only -----
+// changed skills, and --check --skills sees a drifted TARGET copy.
+function skillsSource(names) {
+  const dir = mkdtempSync(join(tmpdir(), "esk-skillsrc-"));
+  cpSync(join(REPO, "always-on"), join(dir, "always-on"), { recursive: true }); // a REAL emitter so the canary passes
+  writeFileSync(join(dir, "package.json"), JSON.stringify({ name: "skills", version: VERSION }) + "\n");
+  for (const n of names) {
+    mkdirSync(join(dir, ".claude", "skills", n), { recursive: true });
+    writeFileSync(join(dir, ".claude", "skills", n, "SKILL.md"), `---\nname: ${n}\n---\n# ${n}\n`);
+  }
+  return dir;
+}
+function installSkills(src, target) {
+  const settings = join(src, ".claude", "settings.json");
+  const r = spawnSync(process.execPath, [ESK, "--repo", src, "--settings", settings, "--yes", "--skills", "--skills-target", target], { encoding: "utf8" });
+  return { status: r.status, out: (r.stdout || "") + (r.stderr || ""), settings };
+}
+
+test("ISSUE-130: a CLEAN, source-unchanged skill is left untouched (no spurious backup) when a DIFFERENT skill changes", () => {
+  // Only beta's source changes; alpha is a clean mirror and its source is unchanged. alpha must NOT be re-mirrored
+  // or backed up - a reconcile touches only what changed, and the backup path must never fire for a clean target
+  // (that would be noise and would mean clean/stale copies are mis-read as diverged). A diverged skill IS backed
+  // up and re-mirrored - that is covered by the next test and the pre-signature test.
+  const src = skillsSource(["alpha", "beta"]);
+  const target = mkdtempSync(join(tmpdir(), "esk-tgt-"));
+  assert.equal(installSkills(src, target).status, 0);
+  writeFileSync(join(src, ".claude", "skills", "beta", "SKILL.md"), "---\nname: beta\n---\n# beta changed\n"); // only beta's source changes
+  const r = installSkills(src, target);
+  assert.equal(r.status, 0, r.out);
+  assert.equal(readdirSync(target).filter((n) => n.startsWith("alpha.esk-local-")).length, 0, "a clean, unchanged skill must not get a spurious backup: " + r.out);
+  assert.match(readFileSync(join(target, "alpha", "SKILL.md"), "utf8"), /#\s*alpha/, "alpha's content stays its clean source");
+});
+
+test("ISSUE-130: a local file inside a skill that IS re-mirrored is BACKED UP, not deleted (discriminating)", () => {
+  const src = skillsSource(["alpha", "beta"]);
+  const target = mkdtempSync(join(tmpdir(), "esk-tgt-"));
+  assert.equal(installSkills(src, target).status, 0);
+  writeFileSync(join(target, "alpha", "LOCAL-notes.md"), "team notes\n");                                       // local addition inside alpha
+  writeFileSync(join(src, ".claude", "skills", "alpha", "SKILL.md"), "---\nname: alpha\n---\n# alpha changed\n"); // alpha's source changes -> alpha is re-mirrored
+  const r = installSkills(src, target);
+  assert.equal(r.status, 0, r.out);
+  assert.match(readFileSync(join(target, "alpha", "SKILL.md"), "utf8"), /alpha changed/, "alpha was re-mirrored to the new source");
+  const backups = readdirSync(target).filter((n) => n.startsWith("alpha.esk-local-"));
+  assert.equal(backups.length, 1, "the diverged target must be backed up before replacing: " + r.out);
+  assert.ok(existsSync(join(target, backups[0], "LOCAL-notes.md")), "the local file must be preserved in the backup");
+});
+
+test("ISSUE-130: --check --skills reports a mirrored skill whose TARGET copy drifted from what was installed (discriminating)", () => {
+  const src = skillsSource(["alpha", "beta"]);
+  const target = mkdtempSync(join(tmpdir(), "esk-tgt-"));
+  const { settings } = installSkills(src, target);
+  const checkArgs = [ESK, "--repo", src, "--settings", settings, "--check", "--skills", "--skills-target", target];
+  assert.equal(spawnSync(process.execPath, checkArgs, { encoding: "utf8" }).status, 0, "clean install must pass --check --skills");
+  writeFileSync(join(target, "alpha", "SKILL.md"), "---\nname: alpha\n---\n# a stale/older copy\n"); // target drifts; source unchanged
+  const r = spawnSync(process.execPath, checkArgs, { encoding: "utf8" });
+  const out = (r.stdout || "") + (r.stderr || "");
+  assert.equal(r.status, 1, "a drifted TARGET copy must be reported, not read as OK: " + out);
+  assert.match(out, /on disk differ|alpha/, out);
+});
+
+// --- ISSUE-130 review findings: the data-loss guarantee must hold on the transitions the first cut missed ----
+test("ISSUE-130 (review F1): first reconcile after a PRE-SIGNATURE marker backs up local content, not delete it (discriminating)", () => {
+  const src = skillsSource(["alpha", "beta"]);
+  const target = mkdtempSync(join(tmpdir(), "esk-tgt-"));
+  installSkills(src, target);
+  // Simulate an install from a version that recorded skills.names but NOT skills.signatures (every earlier install).
+  const markerPath = join(src, ".claude", ".esk-installed");
+  const m = JSON.parse(readFileSync(markerPath, "utf8"));
+  delete m.skills.signatures;
+  writeFileSync(markerPath, JSON.stringify(m, null, 2));
+  writeFileSync(join(target, "alpha", "LOCAL-notes.md"), "team notes\n"); // local addition; SOURCE unchanged
+  const r = installSkills(src, target);
+  assert.equal(r.status, 0, r.out);
+  const backups = readdirSync(target).filter((n) => n.startsWith("alpha.esk-local-"));
+  assert.equal(backups.length, 1, "a pre-signature reconcile must back up the diverged target (no baseline to compare): " + r.out);
+  assert.ok(existsSync(join(target, backups[0], "LOCAL-notes.md")), "the local file must be preserved in the backup");
+});
+
+test("ISSUE-130 (review F2): --check --skills drift is cleared by --yes (self-healing, discriminating)", () => {
+  const src = skillsSource(["alpha", "beta"]);
+  const target = mkdtempSync(join(tmpdir(), "esk-tgt-"));
+  const { settings } = installSkills(src, target);
+  const checkArgs = [ESK, "--repo", src, "--settings", settings, "--check", "--skills", "--skills-target", target];
+  writeFileSync(join(target, "alpha", "SKILL.md"), "---\nname: alpha\n---\n# hand-edited\n"); // target drifts; source unchanged
+  assert.equal(spawnSync(process.execPath, checkArgs, { encoding: "utf8" }).status, 1, "a drifted target must be reported red");
+  assert.equal(installSkills(src, target).status, 0, "--yes must succeed");
+  assert.equal(spawnSync(process.execPath, checkArgs, { encoding: "utf8" }).status, 0, "--yes must CLEAR the drift (the gate's own remedy must work)");
+  assert.ok(readdirSync(target).some((n) => n.startsWith("alpha.esk-local-")), "the hand-edit must have been backed up, not lost");
+});
+
+test("ISSUE-130 (review F3): a present-but-unreadable target STOPS the reconcile instead of replacing it", () => {
+  // Portable guard: chmod 000 enforces on POSIX (Linux CI as a non-root user); on Windows/root it is a no-op, so
+  // the case cannot be exercised here and is honestly skipped. The die still ships and is proven on CI.
+  const src = skillsSource(["alpha"]);
+  const target = mkdtempSync(join(tmpdir(), "esk-tgt-"));
+  installSkills(src, target);
+  writeFileSync(join(src, ".claude", "skills", "alpha", "SKILL.md"), "---\nname: alpha\n---\n# changed\n"); // force a reconcile of alpha
+  const alphaDir = join(target, "alpha");
+  let enforced = false;
+  try { chmodSync(alphaDir, 0o000); try { readdirSync(alphaDir); } catch { enforced = true; } } catch { /* chmod not permitted here */ }
+  if (!enforced) { try { chmodSync(alphaDir, 0o755); } catch { /* best-effort */ } return; } // honest skip
+  const r = installSkills(src, target);
+  try { chmodSync(alphaDir, 0o755); } catch { /* best-effort: restore so cleanup can remove it */ }
+  assert.notEqual(r.status, 0, "an unreadable target must stop the run, not be replaced blindly: " + r.out);
 });
