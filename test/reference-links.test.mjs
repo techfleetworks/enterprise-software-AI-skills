@@ -5,13 +5,20 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const GATE = resolve(REPO, ".claude/skills/judge-arch/scripts/check-reference-links.mjs");
+// Resolve the gate the way CI runs it: a vendoring consumer keeps the gate at scripts/ci (its GATE_DIR path,
+// which the workflow sets) AND drops a copy under .claude/skills that must NOT be the one tested. Prefer the
+// GATE_DIR / scripts-ci copy; fall back to the upstream skill copy (this repo has no scripts/ci). This is the
+// same 3-way resolution the other 10 gate tests got in 1.2.1; reference-links was the one left behind (#117).
+const UPSTREAM = resolve(REPO, ".claude/skills/judge-arch/scripts/check-reference-links.mjs");
+const CI_DIR = process.env.GATE_DIR || resolve(process.cwd(), "scripts/ci");
+const CONSUMER = resolve(CI_DIR, "check-reference-links.mjs");
+const GATE = [CONSUMER, UPSTREAM].find((p) => existsSync(p)) ?? UPSTREAM;
 
 // Build an isolated tree: a map of relative-path -> file contents. Returns the root dir.
 function tree(files) {
@@ -24,6 +31,12 @@ function tree(files) {
   return root;
 }
 const run = (root) => spawnSync(process.execPath, [GATE, "--root", root], { encoding: "utf8" });
+
+test("gate resolution: tests the scripts/ci (GATE_DIR) copy CI runs, not a vendored .claude/skills copy (#117, #112)", () => {
+  // In a consumer that vendors the skills both copies exist; the discrimination test must exercise the
+  // scripts/ci copy the aggregator runs. Upstream has no scripts/ci, so this is a no-op pass there.
+  if (existsSync(CONSUMER)) assert.equal(GATE, CONSUMER, "must test the scripts/ci (GATE_DIR) gate, not the .claude/skills copy");
+});
 
 test("PASSES when every referenced .md exists", () => {
   const root = tree({ "a.md": "see `b.md` for more.", "b.md": "hello" });
@@ -123,4 +136,25 @@ test("fails closed (exit 2) on a malformed config", () => {
 test("the real repository has no dangling references", () => {
   const r = spawnSync(process.execPath, [GATE], { encoding: "utf8" });
   assert.equal(r.status, 0, (r.stdout || "") + (r.stderr || ""));
+});
+
+// ISSUE-118: --ignore <dir> skips that dir as CITERS (its docs are not evaluated) but still INDEXES it as link
+// targets, so a vendored skills tree does not red the gate yet a consumer doc may point into it.
+test("ISSUE-118: --ignore skips a dir as citers but still indexes it as targets", () => {
+  const root = tree({
+    "doc.md": "see `vendored.md` for details.",                    // points INTO the ignored tree (must resolve)
+    "skills/x/vendored.md": "I link to `nope.md`, which is missing.", // dangling link INSIDE the ignored tree
+  });
+  const r = spawnSync(process.execPath, [GATE, "--root", root, "--ignore", "skills"], { encoding: "utf8" });
+  assert.equal(r.status, 0, "ignored-tree docs are not scanned, and are still indexed as targets\n" + (r.stdout || "") + (r.stderr || ""));
+  const r2 = spawnSync(process.execPath, [GATE, "--root", root], { encoding: "utf8" });
+  assert.equal(r2.status, 1, "without --ignore the dangling link inside the tree is caught (discriminating)");
+  assert.match((r2.stdout || "") + (r2.stderr || ""), /nope\.md/);
+});
+
+test("ISSUE-118: a dangling link OUTSIDE the ignored dir is still flagged", () => {
+  const root = tree({ "doc.md": "see `gone.md`.", "skills/x/real.md": "ok" });
+  const r = spawnSync(process.execPath, [GATE, "--root", root, "--ignore", "skills"], { encoding: "utf8" });
+  assert.equal(r.status, 1, "a dangling link outside the ignored dir must still be caught");
+  assert.match((r.stdout || "") + (r.stderr || ""), /gone\.md/);
 });

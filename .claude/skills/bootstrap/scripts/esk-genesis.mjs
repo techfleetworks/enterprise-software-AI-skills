@@ -224,7 +224,11 @@ const consumerManifest = {
     ...upstreamGates.map((g) => ({ id: g.id, origin: "upstream", skill: g.skill, script: g.script, sha256: g.sha256, test: g.test, lane: g.lane, ...(g.invoke ? { invoke: g.invoke } : {}), ...(g.couples ? { couples: g.couples } : {}) })),
     ...repoLocal.map((r) => ({ id: r.id, origin: "repo-local", script: r.script, sha256: r.sha256, test: r.test, lane: r.lane })),
   ],
-  ...(srcMachinery.length ? { machinery: srcMachinery.map((m) => ({ id: m.id, skill: m.skill, script: m.script, sha256: m.sha256, test: m.test })) } : {}),
+  // Machinery entries carry NO `test` field in the consumer manifest: esk-genesis copies gate tests but not
+  // machinery tests (they are not in the gate matrix and never run in a consumer), so naming them would point
+  // at files that do not exist (#128). Provenance compares machinery by id + sha256 only, so omitting test is
+  // provenance-safe.
+  ...(srcMachinery.length ? { machinery: srcMachinery.map((m) => ({ id: m.id, skill: m.skill, script: m.script, sha256: m.sha256 })) } : {}),
   aggregator: { requiredCheck: src.aggregator?.requiredCheck || "enterprise-gates" },
 };
 

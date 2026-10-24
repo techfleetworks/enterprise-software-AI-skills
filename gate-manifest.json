@@ -1,6 +1,6 @@
 {
-  "version": "1.3.0",
-  "generatedFrom": "techfleetworks/enterprise-software-AI-skills@1.3.0",
+  "version": "1.3.1",
+  "generatedFrom": "techfleetworks/enterprise-software-AI-skills@1.3.1",
   "gates": [
     {
       "id": "skill-gate-parity",
@@ -45,12 +45,14 @@
       "origin": "upstream",
       "skill": "judge-arch",
       "script": "scripts/ci/check-reference-links.mjs",
-      "sha256": "3aff2f92dd7a4be563ac8d932e54fb8e52d0e759923856708b29bd510c3c851d",
+      "sha256": "0dfa6a10d4b7be021c922f578890994247a91e19b93742f9f8868aeee656a4ed",
       "test": "test/reference-links.test.mjs",
       "lane": "required",
       "invoke": [
         "--root",
-        "."
+        ".",
+        "--ignore",
+        ".claude/skills"
       ]
     },
     {
@@ -126,14 +128,16 @@
       "origin": "upstream",
       "skill": "judge-arch",
       "script": "scripts/ci/arch-gate.mjs",
-      "sha256": "24ad18d6fc7800c9d556b0069211b42aa757952f75f2ec6343944429750c14ac",
+      "sha256": "ec2b68448183a81017402a2408f43d7bbc12d0fef1a1918c27c372c3678f25f6",
       "test": "test/arch-gate.test.mjs",
       "lane": "required",
       "invoke": [
         "--ignore",
         "scripts/ci",
         "--ignore",
-        ".githooks"
+        ".githooks",
+        "--ignore",
+        ".claude/skills"
       ]
     },
     {

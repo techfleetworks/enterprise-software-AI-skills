@@ -38,6 +38,16 @@ let rootStat;
 try { rootStat = fs.statSync(ROOT); } catch (e) { die(2, `cannot stat --root ${ROOT}: ${e.message}`); }
 if (!rootStat.isDirectory()) die(2, `--root ${ROOT} is not a directory (fail closed).`);
 
+// --ignore <relpath> (repeatable): a directory, anchored to --root, whose own docs are NOT scanned as citers
+// but ARE still indexed as link targets. Used for a vendored skills tree (.claude/skills) that travels into a
+// consumer: its docs must not be flagged, yet a consumer doc may legitimately point at a vendored .md. Anchored,
+// so a decoy like src/.claude/skills elsewhere is still scanned. The path lives in the manifest invoke
+// (parity/provenance-locked), so a consumer cannot widen it to hide its own dangling links (#118).
+const ignorePaths = args.reduce((acc, a, i) =>
+  (a === "--ignore" && args[i + 1] && !args[i + 1].startsWith("--")
+    ? [...acc, args[i + 1].replace(/\\/g, "/").replace(/\/+$/, "")] : acc), []);
+const isIgnoredRel = (rel) => ignorePaths.some((ig) => rel === ig || rel.startsWith(ig + "/"));
+
 // Directories we never scan, index, or resolve a token into: build output, vendored third-party text,
 // sibling git worktrees, the git dir, the OS temp dir, and the deliberately-broken fixtures the tests spawn.
 const IGNORE_DIRS = new Set(["node_modules", ".git", "vendor", "worktrees", "discriminate-fixtures", "fixtures", "tmp"]);
@@ -89,7 +99,13 @@ walk(ROOT, mdFiles);
 
 // The set of `.md` basenames that exist anywhere in the tree. Existence is checked by basename because the
 // repo's cross-skill references are prose pointers ("owasp's `foo.md`"), not paths resolvable from the citer.
+// EVERY .md is indexed as a target, including those under an --ignore path, so a doc that correctly points at
+// a file in the ignored (e.g. vendored) tree is not falsely flagged.
 const existing = new Set(mdFiles.map((f) => path.basename(f).toLowerCase()));
+
+// Scan as CITERS only the files NOT under an --ignore path: the vendored skills tree is indexed above, but its
+// own docs are not evaluated for dangling links here (#118).
+const citers = mdFiles.filter((f) => !isIgnoredRel(path.relative(ROOT, f).replace(/\\/g, "/")));
 
 // A `.md` token: a path/filename of word chars, dot, slash, dash, ending in `.md`, not followed by more word
 // chars (so `foo.md5` is not a hit). The char class excludes `)` and backtick, so `](refs/foo.md)` and
@@ -98,7 +114,7 @@ const TOKEN_RE = /[A-Za-z0-9_./-]+\.md(?![A-Za-z0-9])/gi;
 const segs = (token) => token.split("/").filter(Boolean);
 
 const violations = [];
-for (const file of mdFiles) {
+for (const file of citers) {
   let text;
   try { text = fs.readFileSync(file, "utf8"); } catch { continue; }
   const rawLines = text.split(/\r?\n/);
@@ -148,5 +164,5 @@ if (violations.length) {
   console.error(`\nFix: repoint each to an existing file; if it is a deliberate example, add 'link-check:ignore' on that line; if it is a filename adopters create, add it to reference-links.config.json.\n`);
   process.exit(1);
 }
-console.log(`check-reference-links PASS. Scanned ${mdFiles.length} Markdown file(s); every referenced .md exists.`);
+console.log(`check-reference-links PASS. Scanned ${citers.length} Markdown file(s)${ignorePaths.length ? ` (indexed ${mdFiles.length}; ${mdFiles.length - citers.length} under --ignore scanned as targets only)` : ""}; every referenced .md exists.`);
 process.exit(0);
