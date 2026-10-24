@@ -7,7 +7,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, copyFileSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -103,38 +103,96 @@ test("PRE-PUSH: FAILS CLOSED on a malformed invoke (never silently drops a gate'
   assert.notEqual(runHook(repo({ gates: [{ id: "no-ua-sniffing", exit: 0, invoke: "scripts/ci" }] })), 0);
 });
 
+// --- ISSUE-122: a present-but-broken manifest fails CLOSED, so a push can't slip past by corrupting it ------
+// Before the fix the hook exited 0 on a corrupt or gates-less manifest (running nothing), so a push that also
+// corrupted the manifest got past a gate the hook otherwise blocks. Each case is discriminating: reverting the
+// fix makes the hook exit 0. (An ABSENT manifest stays exit 0 — the documented convenience case, covered above.)
+test("ISSUE-122: a PRESENT but unparseable manifest fails closed (non-zero), not a silent exit 0", () => {
+  const root = repo({ gates: [{ id: "skill-gate-parity", exit: 0 }] });
+  writeFileSync(join(root, "gate-manifest.json"), '{ "version": "1.0.0", "gates": [ \n'); // truncated JSON
+  assert.notEqual(runHook(root), 0);
+});
+test("ISSUE-122: a manifest with no gates array fails closed (non-zero)", () => {
+  const root = repo({ gates: [{ id: "skill-gate-parity", exit: 0 }] });
+  writeFileSync(join(root, "gate-manifest.json"), JSON.stringify({ version: "1.0.0" }));
+  assert.notEqual(runHook(root), 0);
+});
+test("ISSUE-122: a manifest with an empty gates array fails closed (non-zero)", () => {
+  const root = repo({ gates: [{ id: "skill-gate-parity", exit: 0 }] });
+  writeFileSync(join(root, "gate-manifest.json"), JSON.stringify({ version: "1.0.0", gates: [] }));
+  assert.notEqual(runHook(root), 0);
+});
+
 // --- the install-hooks helper (arms the hook on npm install) ---
 const HELPER = resolve(process.cwd(), ".claude/skills/bootstrap/templates/install-hooks.mjs");
 const gitInit = (dir) => execFileSync("git", ["init", "-q", dir], { stdio: "pipe" });
 const hooksPath = (dir) => {
   try { return execFileSync("git", ["-C", dir, "config", "--get", "core.hooksPath"], { encoding: "utf8" }).trim(); } catch { return ""; }
 };
+// Run the helper the way it actually SHIPS: copied to <root>/.githooks/install-hooks.mjs and run with cwd=root
+// (what `npm run prepare` does). The helper locates its package root from its own path, so this layout is what
+// its #143 root-check and #131 no-clobber checks see. `from` lets a test run it from a DIFFERENT working dir to
+// exercise the nested-repo case.
+function armFrom(pkgRoot, cwd = pkgRoot) {
+  mkdirSync(join(pkgRoot, ".githooks"), { recursive: true });
+  const dst = join(pkgRoot, ".githooks", "install-hooks.mjs");
+  copyFileSync(HELPER, dst);
+  let code = 0;
+  try { execFileSync("node", [dst], { cwd, stdio: "pipe" }); } catch (e) { code = e.status ?? 1; }
+  return code;
+}
 
 test("INSTALL-HOOKS: arms core.hooksPath in a git repo with no prior value", () => {
   const dir = mkdtempSync(join(tmpdir(), "ih-")); created.push(dir); gitInit(dir);
-  execFileSync("node", [HELPER], { cwd: dir, stdio: "pipe" });
+  armFrom(dir);
   assert.equal(hooksPath(dir), ".githooks");
 });
 
 test("INSTALL-HOOKS: does NOT clobber an existing core.hooksPath", () => {
   const dir = mkdtempSync(join(tmpdir(), "ih-")); created.push(dir); gitInit(dir);
   execFileSync("git", ["-C", dir, "config", "core.hooksPath", ".husky"], { stdio: "pipe" });
-  execFileSync("node", [HELPER], { cwd: dir, stdio: "pipe" });
+  armFrom(dir);
   assert.equal(hooksPath(dir), ".husky");
 });
 
 test("INSTALL-HOOKS: is a no-op when core.hooksPath is already .githooks", () => {
   const dir = mkdtempSync(join(tmpdir(), "ih-")); created.push(dir); gitInit(dir);
   execFileSync("git", ["-C", dir, "config", "core.hooksPath", ".githooks"], { stdio: "pipe" });
-  execFileSync("node", [HELPER], { cwd: dir, stdio: "pipe" });
+  armFrom(dir);
   assert.equal(hooksPath(dir), ".githooks");
 });
 
 test("INSTALL-HOOKS: never fails the install outside a git repo", () => {
   const dir = mkdtempSync(join(tmpdir(), "ih-")); created.push(dir);
-  let code = 0;
-  try { execFileSync("node", [HELPER], { cwd: dir, stdio: "pipe" }); } catch (e) { code = e.status ?? 1; }
-  assert.equal(code, 0);
+  assert.equal(armFrom(dir), 0);
+});
+
+// ISSUE-143: run from a package nested inside ANOTHER repo (no .git of its own). The helper must NOT write the
+// enclosing repo's core.hooksPath. Discriminating: reverting the root-check sets the outer repo's config.
+test("ISSUE-143: does NOT set core.hooksPath on an enclosing repo when run from a nested package", () => {
+  const parent = mkdtempSync(join(tmpdir(), "ih-parent-")); created.push(parent); gitInit(parent);
+  const pkg = join(parent, "pkg"); mkdirSync(pkg, { recursive: true }); // pkg has no .git of its own
+  const code = armFrom(pkg, pkg); // helper at parent/pkg/.githooks, run from pkg -> git finds the enclosing parent repo
+  assert.equal(code, 0, "never fails the install");
+  assert.equal(hooksPath(parent), "", "the enclosing repository's core.hooksPath must stay unset");
+});
+
+// ISSUE-131: a repo using the pre-commit framework (.pre-commit-config.yaml) must keep its hooks. Setting
+// core.hooksPath would disable them repo-wide. Discriminating: reverting the guard sets .githooks.
+test("ISSUE-131: does NOT set core.hooksPath when a .pre-commit-config.yaml is present", () => {
+  const dir = mkdtempSync(join(tmpdir(), "ih-pc-")); created.push(dir); gitInit(dir);
+  writeFileSync(join(dir, ".pre-commit-config.yaml"), "repos: []\n");
+  armFrom(dir);
+  assert.equal(hooksPath(dir), "", "a pre-commit repo's core.hooksPath must stay unset");
+});
+
+// ISSUE-131: an existing non-sample hook in .git/hooks means the consumer already uses git hooks; arming
+// core.hooksPath would stop git running them. Discriminating: reverting the guard sets .githooks.
+test("ISSUE-131: does NOT set core.hooksPath when a real hook already exists in .git/hooks", () => {
+  const dir = mkdtempSync(join(tmpdir(), "ih-eh-")); created.push(dir); gitInit(dir);
+  writeFileSync(join(dir, ".git", "hooks", "pre-commit"), "#!/bin/sh\nexit 0\n");
+  armFrom(dir);
+  assert.equal(hooksPath(dir), "", "a repo with an existing .git/hooks hook must keep core.hooksPath unset");
 });
 
 test("PRE-PUSH: BLOCKS a failing gate in a REAL git repo (Windows separator regression, discriminating)", () => {

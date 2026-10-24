@@ -70,6 +70,22 @@ closed and match on anchored paths, and adds the CI harness that keeps the whole
 - Three gate scripts changed content, so their manifest `sha256` is recomputed; `retention-basis` also changed
   its `invoke`. Each fix is pinned by a discrimination test.
 
+### Hardened (hook arming never disables existing hooks; pre-push fails closed, ADR-0077)
+
+- **`install-hooks.mjs` arms only at the repository root (#143).** Run from a package nested inside another
+  repository, it no longer writes that enclosing repo's `core.hooksPath`; it compares the repo top-level with
+  its own package root and changes nothing if they differ.
+- **Arming never disables a consumer's existing hooks (#131).** Both `install-hooks.mjs` and `esk-genesis` now
+  leave `core.hooksPath` unset when a `.pre-commit-config.yaml` or a real `.git/hooks` hook is present (setting
+  it is repo-wide and would stop those hooks running), and print how to arm the pre-push hook without clobbering.
+- **Non-npm consumers get correct arming guidance (#139).** `esk-genesis` prints the pre-commit route for a
+  pre-commit repo and the `git config` command otherwise, and names that the setting is repo-wide.
+- **The pre-push hook fails closed on a broken manifest (#122).** An absent manifest still passes (the
+  documented case), but a present-but-unparseable, gates-less, or zero-gates manifest now exits 1, mirroring the
+  CI runner, so a push cannot slip a violation past the hook by also corrupting the manifest.
+- Each fix is pinned by a discrimination test; none of these files is a manifest-tracked gate, so no
+  sha/provenance change.
+
 ## 1.3.0 - 2026-10-21
 
 One source of truth for the repo's own gates, so the local pre-push and CI cannot silently diverge. A new

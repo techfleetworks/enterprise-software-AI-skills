@@ -147,6 +147,30 @@ test("GENESIS: sets core.hooksPath to .githooks in a git repo, and does NOT clob
   assert.equal(kept, ".husky", "an existing core.hooksPath is preserved, not clobbered");
 });
 
+test("GENESIS ISSUE-131: does NOT set core.hooksPath when the target uses the pre-commit framework", () => {
+  // Setting core.hooksPath is repo-wide and makes git stop running hooks in .git/hooks, so a pre-commit-framework
+  // consumer (.pre-commit-config.yaml) would lose its hooks. Genesis must leave it unset and print guidance.
+  // Discriminating: reverting the #131 guard sets .githooks here.
+  const tgt = newTarget();
+  execFileSync("git", ["init", "-q", tgt], { stdio: "pipe" });
+  writeFileSync(join(tgt, ".pre-commit-config.yaml"), "repos: []\n");
+  run(buildSource(), tgt, ["--yes"]);
+  // git exits 1 (empty) when core.hooksPath is unset; the catch keeps it "".
+  let val = "";
+  try { val = execFileSync("git", ["-C", tgt, "config", "--get", "core.hooksPath"], { encoding: "utf8" }).trim(); } catch { val = ""; }
+  assert.equal(val, "", "a pre-commit consumer's core.hooksPath must stay unset");
+});
+
+test("GENESIS ISSUE-131: does NOT set core.hooksPath when the target already has a real .git/hooks hook", () => {
+  const tgt = newTarget();
+  execFileSync("git", ["init", "-q", tgt], { stdio: "pipe" });
+  writeFileSync(join(tgt, ".git", "hooks", "pre-commit"), "#!/bin/sh\nexit 0\n");
+  run(buildSource(), tgt, ["--yes"]);
+  let val = "";
+  try { val = execFileSync("git", ["-C", tgt, "config", "--get", "core.hooksPath"], { encoding: "utf8" }).trim(); } catch { val = ""; }
+  assert.equal(val, "", "a consumer with an existing .git/hooks hook must keep core.hooksPath unset");
+});
+
 test("GENESIS: adds a package.json prepare script and installs the hook helper (zero-step hook)", () => {
   const src = buildSource();
   const tgt = newTarget();
