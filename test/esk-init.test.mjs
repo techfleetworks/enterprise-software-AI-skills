@@ -746,3 +746,26 @@ test("ISSUE-130 (review F3): a present-but-unreadable target STOPS the reconcile
   try { chmodSync(alphaDir, 0o755); } catch { /* best-effort: restore so cleanup can remove it */ }
   assert.notEqual(r.status, 0, "an unreadable target must stop the run, not be replaced blindly: " + r.out);
 });
+
+// --- ISSUE-140: --help / -h print usage and exit 0; an unknown flag (typo) is rejected, not silently ignored ---
+test("ISSUE-140: --help prints usage and exits 0 without acting", () => {
+  const r = spawnSync(process.execPath, [ESK, "--help"], { encoding: "utf8" });
+  assert.equal(r.status, 0, (r.stdout || "") + (r.stderr || ""));
+  assert.match(r.stdout, /Usage:/);
+});
+test("ISSUE-140: a typo'd flag (--persnal) is rejected with exit 2, not fallen back to repo scope", () => {
+  const dir = mkdtempSync(join(tmpdir(), "esk-help-"));
+  const r = spawnSync(process.execPath, [ESK, "--repo", REPO, "--settings", join(dir, ".claude", "settings.json"), "--persnal", "--yes"], { encoding: "utf8" });
+  assert.equal(r.status, 2, "an unknown flag must fail closed, so a scope typo can't silently pick the wrong target");
+  assert.match((r.stdout || "") + (r.stderr || ""), /unknown flag/);
+});
+
+test("ISSUE-140: the documented --dry-run alias is still accepted (plan mode, exit 0, writes nothing)", () => {
+  // esk-init's header documents --dry-run as a no-op alias for the default plan mode; the unknown-flag guard
+  // must not reject it (judge-arch finding). Discriminating: dropping --dry-run from KNOWN makes this exit 2.
+  const dir = mkdtempSync(join(tmpdir(), "esk-dry-"));
+  const settings = join(dir, ".claude", "settings.json");
+  const r = spawnSync(process.execPath, [ESK, "--repo", REPO, "--settings", settings, "--dry-run"], { encoding: "utf8" });
+  assert.equal(r.status, 0, (r.stdout || "") + (r.stderr || ""));
+  assert.equal(existsSync(settings), false, "--dry-run must write nothing (it is the plan-only default)");
+});

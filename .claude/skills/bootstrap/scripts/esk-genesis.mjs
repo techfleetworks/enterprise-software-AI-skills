@@ -51,6 +51,20 @@ const flag = (n) => args.includes(n);
 const opt = (n) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : undefined; };
 const die = (msg) => { console.error(`[esk-genesis] FAIL: ${msg}`); process.exit(2); };
 
+// --- usage + unknown-flag guard, before any work (#140) ----------------------------------------------------
+const USAGE = `esk-genesis - install/reconcile the enterprise CI gates into a consumer repo from the upstream manifest.
+Usage: node esk-genesis.mjs [--source <skills-repo>] [--target <repo>] [--yes] [--code-owners "@a @b"]
+                            [--version <x.y.z>] [--adopt-existing]
+  no --yes = plan only (dry run); --yes = apply. --source defaults to this skills repo, --target to the cwd.`;
+if (flag("--help") || flag("-h")) { console.log(USAGE); process.exit(0); }
+{
+  // Reject an unknown --flag so a typo cannot silently change behavior. --opt values are paths/owners/versions
+  // (never --prefixed), so this only catches real typos.
+  const KNOWN = new Set(["--source", "--target", "--yes", "--code-owners", "--version", "--adopt-existing", "--help"]);
+  const unknown = args.filter((a) => a.startsWith("--") && !KNOWN.has(a));
+  if (unknown.length) die(`unknown flag(s): ${unknown.join(", ")}. Run with --help for usage.`);
+}
+
 // True when the target repo already has a non-sample hook installed in its effective hooks dir ($GIT_DIR/hooks,
 // resolved via git so it is correct for a worktree or submodule). Used so arming core.hooksPath does not
 // silently disable hooks the consumer already relies on (#131). Best-effort: any error means "cannot tell", false.

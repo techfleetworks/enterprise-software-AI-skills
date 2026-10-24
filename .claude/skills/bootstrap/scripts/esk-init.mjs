@@ -45,6 +45,21 @@ const args = process.argv.slice(2);
 const flag = (n) => args.includes(n);
 const opt = (n) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : undefined; };
 
+// --- usage + unknown-flag guard, before any work (#140) ----------------------------------------------------
+const USAGE = `esk-init - turn the enterprise always-on hook on for this repo or machine, and reconcile it.
+Usage: node esk-init.mjs [--check] [--yes] [--personal] [--skills] [--skills-target <dir>]
+                         [--repo <dir>] [--settings <path>] [--shell powershell] [--allow-absolute]
+  no action flag = plan only (dry run); --check = report drift (exit 1 on drift); --yes = apply.
+  --personal installs into ~/.claude; --skills also mirrors the repo's skills; -h / --help shows this.`;
+if (flag("--help") || flag("-h")) { console.log(USAGE); process.exit(0); }
+{
+  // Reject an unknown --flag so a typo (e.g. --persnal for --personal) cannot silently fall back to a different
+  // scope or mode. Values of --opt flags are paths/shell names (never --prefixed), so this only catches real typos.
+  const KNOWN = new Set(["--check", "--yes", "--personal", "--skills", "--skills-target", "--repo", "--settings", "--shell", "--allow-absolute", "--dry-run", "--help"]);
+  const unknown = args.filter((a) => a.startsWith("--") && !KNOWN.has(a));
+  if (unknown.length) die(`unknown flag(s): ${unknown.join(", ")}. Run with --help for usage.`);
+}
+
 // Resolve the repo root by walking up from this script to the dir that holds the always-on files, so it
 // works wherever the bootstrap skill sits (the repo root, or nested under .claude/skills/). A hardcoded
 // number of "../" segments breaks the moment the skill is moved; this does not. --repo overrides it.

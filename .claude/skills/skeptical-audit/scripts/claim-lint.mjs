@@ -53,10 +53,16 @@ const CLAIM_PATTERNS = [
 
 const STATE = /(proven|observed|inferred|documented|reported|not[-\s]assessed)/i;
 
-const file = process.argv[2];
-const strict = process.argv.includes("--strict");
+const argv = process.argv.slice(2);
+// #140: -h/--help prints usage and exits 0; an unknown --flag is rejected (so a typo cannot be ignored).
+const USAGE = "usage: node claim-lint.mjs <file.md> [--strict]\n  default: warn-only (prints findings, exits 0); --strict exits 1 on findings (use in CI).";
+if (argv.includes("--help") || argv.includes("-h")) { console.log(USAGE); process.exit(0); }
+const unknown = argv.filter((a) => a.startsWith("--") && a !== "--strict" && a !== "--help");
+if (unknown.length) { console.error(`claim-lint: unknown flag(s): ${unknown.join(", ")}\n${USAGE}`); process.exit(2); }
+const file = argv.find((a) => !a.startsWith("-"));
+const strict = argv.includes("--strict");
 if (!file) {
-  console.error("usage: node claim-lint.mjs <file.md> [--strict]");
+  console.error(USAGE);
   process.exit(2);
 }
 

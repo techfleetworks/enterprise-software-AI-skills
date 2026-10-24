@@ -128,6 +128,14 @@ closed and match on anchored paths, and adds the CI harness that keeps the whole
 - The two gate scripts that gained the check (parity, provenance) have their manifest `sha256` recomputed; the
   manifest gains `testSha256` on every gate. Each fix is pinned by a discrimination test.
 
+### Fixed (command-line tools recognize --help and reject an unknown flag, ADR-0081)
+
+- **`--help` / `-h` now prints usage and exits 0 on `esk-init`, `esk-genesis`, `check-skill-receipt` and
+  `claim-lint` (#140),** instead of running an install plan or a check.
+- **An unknown `--flag` is now rejected with exit 2** on all four, so a typo (for example `esk-init --persnal`,
+  a misspelling of `--personal`) can no longer be silently ignored and fall back to a different scope or mode.
+- CLI scripts, not manifest gates, so no sha/provenance change. Each behavior is pinned by a discrimination test.
+
 ## 1.3.0 - 2026-10-21
 
 One source of truth for the repo's own gates, so the local pre-push and CI cannot silently diverge. A new
