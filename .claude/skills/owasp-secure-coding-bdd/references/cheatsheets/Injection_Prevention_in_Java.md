@@ -7,7 +7,7 @@ somewhere useful.
 
 Use the Java Security sheet for Java injection-prevention controls:
 
-- In this skill: [Java Security](references/cheatsheets/Java_Security.md)
+- In this skill: [Java Security](Java_Security.md)
 - On OWASP: <https://cheatsheetseries.owasp.org/cheatsheets/Java_Security_Cheat_Sheet.html>
 
 ## Sources

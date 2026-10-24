@@ -8,12 +8,18 @@
  * lawful basis for every processing of personal data, and Article 5(1)(e) (storage limitation)
  * requires that personal data be kept no longer than necessary. The same obligations recur in the US
  * state laws and other regimes (minimization + retention limits). This gate reads the committed data
- * map (the one `check-untagged-pii.mjs` already enforces exists) and requires every entry that is NOT
+ * map (the one `check-untagged-pii.mjs` drives you to declare, though that gate only forces a map when the
+ * repo has `.sql` files - so do not rely on it for an ORM-only repo) and requires every entry that is NOT
  * `not-personal` to declare a non-empty `basis` (or `lawfulBasis`) and a non-empty `retention`, so you
  * cannot classify a personal column and then never decide why you hold it or when it is deleted.
  * Dependency-free (Node built-ins), vendor-neutral.
  *
- *   node check-retention-basis.mjs --map data-map.json
+ *   node check-retention-basis.mjs --map data-map.json [--map-optional]
+ *
+ * --map is required. With --map-optional (the published CI invoke), a map that does not exist yet passes
+ * VACUOUSLY with a distinct "no data map" line (a consumer may not have declared personal data yet). WITHOUT
+ * --map-optional, an explicit --map to a missing file fails closed (exit 2), so a mistyped or wrong path can
+ * never read as a completed check.
  *
  * The data map is the same JSON `check-untagged-pii.mjs` reads: an array of
  * [{"field":"users.email","class":"restricted","basis":"contract","retention":"account life + 30d"}]
@@ -25,7 +31,9 @@
  * A placeholder (empty, `n/a`, `tbd`, `todo`, `?`, `none`, `unknown`, or under 3 characters) does NOT
  * count as a decision, the same way a reason-less waiver does not count elsewhere in this repo.
  *
- * Exit 0 = every personal entry has a basis and a retention. 1 = one or more gaps. 2 = bad usage / IO.
+ * Exit 0 = every personal entry has a basis and a retention (or a vacuous pass: no map, with --map-optional).
+ * 1 = one or more gaps. 2 = bad usage (no --map, or an explicit --map to a missing file without --map-optional)
+ * or IO (malformed JSON).
  */
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
@@ -34,18 +42,33 @@ function die(msg) { console.error(`[check-retention-basis] FAIL - ${msg}`); proc
 
 const args = process.argv.slice(2);
 const mapIdx = args.indexOf("--map");
-const mapPath = (mapIdx !== -1 && args[mapIdx + 1]) ? resolve(args[mapIdx + 1]) : null;
+const mapArg = mapIdx !== -1 ? args[mapIdx + 1] : undefined;
+const mapOptional = args.includes("--map-optional");
 
-// The data map is OPTIONAL with a safe default (bootstrap-v2: this gate travels into consumer repos). With no
-// map - or a map the consumer has not created yet - there are no declared personal entries, so there is
-// nothing to check and the gate passes. check-untagged-pii is the gate that FORCES undeclared PII to be
-// declared; once a field is in the map, THIS gate requires it to carry a lawful basis and a retention period.
-// A map file that IS present but is malformed JSON still fails closed (a real error, not an absent map).
-let rawMap = [];
-if (mapPath && existsSync(mapPath)) {
-  try { rawMap = JSON.parse(readFileSync(mapPath, "utf8")); }
-  catch (e) { die(`data map is not valid JSON (${e.message})`); }
+// --map is REQUIRED: this gate exists to check a data map, so a run with no map checked nothing and is bad
+// usage (exit 2), as the header says. The published CI invoke always passes --map, so this only bites a
+// manual or mistyped invocation. (#145)
+if (mapIdx === -1 || mapArg === undefined || mapArg.startsWith("--")) {
+  die("no --map <path> given. Usage: check-retention-basis.mjs --map <data-map.json> [--map-optional]");
 }
+const mapPath = resolve(mapArg);
+
+// --map-optional (set in the published CI invoke): a map that does not exist YET is "nothing to check" and
+// passes VACUOUSLY with a distinct, machine-readable line, because this gate travels into consumer repos that
+// may not have declared any personal data. Without --map-optional, an EXPLICIT --map to a file that is not
+// there fails CLOSED (exit 2) - a mistyped or wrong path must never read as a completed check, the same way
+// arch-gate fails closed on an explicit missing --config. A map that IS present but is malformed JSON always
+// fails closed. (#145)
+let rawMap = [];
+if (!existsSync(mapPath)) {
+  if (mapOptional) {
+    console.log(`[check-retention-basis] OK [vacuous] - no data map at ${mapArg}; nothing to check (create one, in the object form, to declare personal data).`);
+    process.exit(0);
+  }
+  die(`data map not found at ${mapArg} (fail closed). Pass the correct --map path, or --map-optional if a missing map should pass vacuously.`);
+}
+try { rawMap = JSON.parse(readFileSync(mapPath, "utf8")); }
+catch (e) { die(`data map is not valid JSON (${e.message})`); }
 
 const CLASSES = new Set(["public", "internal", "confidential", "restricted", "not-personal"]);
 // A value that records no real decision. Mirrors the "reason must be real" bar used by the other gates.

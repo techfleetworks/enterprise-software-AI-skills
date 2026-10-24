@@ -6,7 +6,7 @@ routing pointer so a search for "TLS cipher string" still lands somewhere useful
 
 Use the Transport Layer Security sheet for cipher-suite choice and TLS configuration controls:
 
-- In this skill: [Transport Layer Security](references/cheatsheets/Transport_Layer_Security.md)
+- In this skill: [Transport Layer Security](Transport_Layer_Security.md)
 - On OWASP: <https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html>
 
 ## Sources
