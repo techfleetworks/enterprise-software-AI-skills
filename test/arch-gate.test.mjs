@@ -215,3 +215,29 @@ test("--ignore scripts/ci is cwd-anchored: a decoy src/scripts/ci is still scann
   assert.equal(r.status, 1, r.out);
   assert.match(r.out, /sneaky\.js/);
 });
+
+// ISSUE-142: a config.ignore ENTRY THAT IS A PATH (.claude/skills) must skip that anchored subtree, and the
+// --ignore flag must too; a violation in product code is still caught. Before #142 a config path-ignore was a
+// silent no-op (ignoreDirs matched single segment names only), so a vendoring consumer's arch-gate went red.
+test("ISSUE-142: config.ignore and --ignore skip an anchored path (.claude/skills), product code still caught", () => {
+  const emptyCatch = "export function f(){ try { g(); } catch (e) {} }\n";
+  // (a) config.ignore as a PATH skips the vendored subtree -> PASS
+  const dir = fixture({ config: { ignore: [".claude/skills"], builtins: { emptyCatch: true } } });
+  mkdirSync(join(dir, ".claude", "skills", "judge-arch"), { recursive: true });
+  writeFileSync(join(dir, ".claude", "skills", "judge-arch", "v.js"), emptyCatch);
+  assert.equal(runGate(dir).status, 0, "config.ignore path must skip .claude/skills: " + runGate(dir).out);
+  // (b) the same violation in product code is still caught -> FAIL (gate not blinded)
+  writeFileSync(join(dir, "prod.js"), emptyCatch);
+  assert.equal(runGate(dir).status, 1, "an empty catch in product code must still be caught");
+  // (c) the --ignore flag form also skips it, anchored
+  const dir2 = fixture({ config: { builtins: { emptyCatch: true } } });
+  mkdirSync(join(dir2, ".claude", "skills"), { recursive: true });
+  writeFileSync(join(dir2, ".claude", "skills", "v.js"), emptyCatch);
+  assert.equal(runGate(dir2, ["--ignore", ".claude/skills"]).status, 0, "--ignore .claude/skills must skip it");
+  // (d) ANTI-EVASION: the ignore is ANCHORED, so a DECOY src/.claude/skills elsewhere is still scanned and
+  // caught - a consumer cannot smuggle product code under a same-named nested path.
+  const dir3 = fixture({ config: { ignore: [".claude/skills"], builtins: { emptyCatch: true } } });
+  mkdirSync(join(dir3, "src", ".claude", "skills"), { recursive: true });
+  writeFileSync(join(dir3, "src", ".claude", "skills", "evil.js"), emptyCatch);
+  assert.equal(runGate(dir3).status, 1, "a decoy src/.claude/skills must still be scanned (anchored ignore)");
+});

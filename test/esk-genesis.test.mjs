@@ -105,6 +105,21 @@ test("GENESIS: bootstraps a fresh consumer with scripts, tests, manifest, and wo
   assert.equal(m.aggregator.requiredCheck, "enterprise-gates");
 });
 
+// ISSUE-128: genesis copies gate tests but NOT machinery tests (machinery is not in the gate matrix and never
+// runs in a consumer), so the consumer manifest must NOT name a machinery `test` file - naming one points at a
+// file that does not exist. The source machinery entry HAS a test field (mkEntry), so this is discriminating.
+test("GENESIS: consumer manifest machinery entries carry no uninstalled test field (#128)", () => {
+  const src = buildSource({ machinery: [{ id: "runner" }] });
+  const tgt = newTarget();
+  assert.equal(run(src, tgt, ["--yes"]), 0);
+  const m = readManifest(tgt);
+  assert.ok(Array.isArray(m.machinery) && m.machinery.length > 0, "machinery present in the consumer manifest");
+  for (const e of m.machinery) {
+    assert.equal(e.test, undefined, `machinery "${e.id}" must not name a test file genesis never installs (#128)`);
+    assert.ok(!existsSync(join(tgt, "test", `${e.id}.test.mjs`)), `machinery test for "${e.id}" is indeed not installed`);
+  }
+});
+
 test("GENESIS: installs the pre-push hook from the source template", () => {
   const src = buildSource();
   const tgt = newTarget();

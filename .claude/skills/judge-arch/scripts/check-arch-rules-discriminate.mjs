@@ -29,6 +29,15 @@ try { planted = JSON.parse(readFileSync(plantedPath, "utf8")); }
 catch (e) { die(`planted.json is not valid JSON: ${e.message}`); }
 if (!Array.isArray(planted) || planted.length === 0) die("planted.json must be a non-empty array of fixture files.");
 
+// Each planted fixture file MUST exist before we can require arch-gate to flag it. If one is missing, the
+// fault is the fixture set (e.g. a consumer's .gitignore dropped it), NOT arch-gate - report that distinctly
+// instead of blaming the gate for a "slip-through" (#126). Fixture dirs deliberately avoid common ignore
+// names (data/, tmp/, dist/) so a vendoring consumer does not silently drop them.
+const absent = planted.filter((f) => !existsSync(join(fixtures, f)));
+if (absent.length) die(`planted fixture file(s) missing from ${fixtures}: ${absent.join(", ")} - the fixture ` +
+  `set is incomplete (a .gitignore entry such as data/ or tmp/ may have dropped them). This is NOT an arch-gate ` +
+  `miss; restore the fixtures, then re-run.`);
+
 const res = spawnSync(process.execPath, [archGate], { cwd: fixtures, encoding: "utf8" });
 const out = (res.stdout || "") + (res.stderr || "");
 if (res.error) die(`could not run arch-gate: ${res.error.message}`);

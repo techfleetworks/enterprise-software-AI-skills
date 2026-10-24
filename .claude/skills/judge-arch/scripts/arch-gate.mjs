@@ -47,10 +47,9 @@ const DEFAULT_IGNORE = ['node_modules', 'dist', 'build', 'coverage', '.git', '.n
 // vendored gate infrastructure (scripts/ci) that travels into a consumer and must not be arch-checked (its
 // scripts use deliberate best-effort catches). The paths live in the manifest invoke, which is
 // parity/provenance-locked, so a consumer cannot widen them to hide its own application code.
-const IGNORE_PATHS = args.reduce((acc, a, i) =>
+const cliIgnorePaths = args.reduce((acc, a, i) =>
   (a === '--ignore' && args[i + 1] && !args[i + 1].startsWith('--')
     ? [...acc, args[i + 1].replace(/\\/g, '/').replace(/\/+$/, '')] : acc), []);
-const isIgnoredRel = (rel) => IGNORE_PATHS.some((ig) => rel === ig || rel.startsWith(ig + '/'));
 
 function readJson(p, fallback) {
   try { const raw = fs.readFileSync(p, 'utf8'); return JSON.parse(raw.charCodeAt(0) === 0xFEFF ? raw.slice(1) : raw); }
@@ -70,7 +69,15 @@ function readJson(p, fallback) {
 // silently lose their custom rules. This keeps the "cannot be weakened" premise on the explicit path.
 const config = readJson(CONFIG_PATH, flag('--config') ? undefined : {});
 const waivers = readJson(WAIVERS_PATH, []);
-const ignoreDirs = new Set([...DEFAULT_IGNORE, ...(config.ignore || [])]);
+// config.ignore entries may be a bare directory NAME (matched at any depth) or an anchored relative PATH
+// (one that contains "/", e.g. ".claude/skills"). A path entry joins the --ignore anchored list that
+// isIgnoredRel checks; a bare name joins ignoreDirs. Before #142 a path entry silently did nothing, because
+// ignoreDirs matched single segment names only, so a consumer's `ignore: [".claude/skills"]` was a no-op.
+const configIgnore = (Array.isArray(config.ignore) ? config.ignore : [])
+  .map((s) => String(s).replace(/\\/g, '/').replace(/\/+$/, ''));
+const ignoreDirs = new Set([...DEFAULT_IGNORE, ...configIgnore.filter((s) => !s.includes('/'))]);
+const IGNORE_PATHS = [...cliIgnorePaths, ...configIgnore.filter((s) => s.includes('/'))];
+const isIgnoredRel = (rel) => IGNORE_PATHS.some((ig) => rel === ig || rel.startsWith(ig + '/'));
 
 // Waivers are the ONLY bypass, so each must be explicit, attributed, and expiring - never forever.
 // Reject (exit 2, fail-closed) any waiver missing a required field or carrying an unparseable expiry.

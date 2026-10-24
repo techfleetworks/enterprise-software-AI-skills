@@ -3,6 +3,27 @@
 All notable changes to this repository are recorded here. Dates are ISO (YYYY-MM-DD). This project follows
 semantic versioning for the skills library and its gates.
 
+## 1.3.1 - 2026-10-23
+
+A consumer-install correctness release: a batch of issues (#117–#153) from a real consumer that adopts the
+skills with `esk-genesis` and vendors them under `.claude/skills/` showed the gates were never exercised
+end to end on that layout. This release makes a vendoring consumer install green, hardens the gates to fail
+closed and match on anchored paths, and adds the CI harness that keeps the whole class from recurring.
+
+### Fixed (vendoring install, ADR-0072)
+
+- **arch-gate no longer fails a vendoring consumer (#142).** Its published `invoke` now skips `.claude/skills`
+  (anchored), and `config.ignore` accepts anchored relative paths, not only bare directory names, so a consumer
+  can ignore a path and a path entry is no longer a silent no-op. Product-code violations are still caught.
+- **reference-links no longer fails a vendoring consumer (#118).** It gains an anchored `--ignore <dir>` that
+  skips a directory's docs as citers while still indexing them as link targets; the published `invoke` skips
+  `.claude/skills`.
+- **reference-links's discrimination test gets the three-way `GATE_DIR` resolution (#117)** the other ten gate
+  tests already had, so it runs in a consumer and tests the `scripts/ci` copy CI runs.
+- **The consumer manifest no longer names machinery test files that `esk-genesis` never installs (#128).**
+- **The judge-arch discrimination fixture moved off `data/` (a commonly gitignored dir) to `domain/`, and the
+  discriminate script now reports a missing fixture distinctly instead of blaming arch-gate (#126).**
+
 ## 1.3.0 - 2026-10-21
 
 One source of truth for the repo's own gates, so the local pre-push and CI cannot silently diverge. A new

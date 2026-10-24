@@ -129,3 +129,14 @@ test("discriminate: a no-op arch-gate FAILS the gate (vacuous mechanical layer, 
   const r = spawnSync(process.execPath, [DISC, "--arch-gate", stub], { encoding: "utf8" });
   assert.equal(r.status, 1);
 });
+test("discriminate: a MISSING planted fixture reports a fixture error, not an arch-gate miss (#126)", () => {
+  // A consumer that gitignores data/ (etc.) can drop a fixture file; the gate must then blame the fixture set,
+  // not arch-gate for a "slip-through". planted.json names a file that does not exist on disk.
+  const dir = mkdtempSync(join(tmpdir(), "disc-fx-"));
+  writeFileSync(join(dir, "planted.json"), JSON.stringify(["ghost/missing.ts"]));
+  const r = spawnSync(process.execPath, [DISC, "--fixtures", dir], { encoding: "utf8" });
+  const out = (r.stdout || "") + (r.stderr || "");
+  assert.equal(r.status, 1, out);
+  assert.match(out, /missing from|incomplete/i, "must report a missing-fixture error");
+  assert.doesNotMatch(out, /did not flag/i, "must NOT blame arch-gate for a slip-through when the fixture is absent");
+});
