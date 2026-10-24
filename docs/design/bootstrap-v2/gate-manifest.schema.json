@@ -89,6 +89,11 @@
           "type": "string",
           "minLength": 1
         },
+        "testSha256": {
+          "description": "Lowercase hex sha256 (LF-normalized) of the gate's discrimination-test content. Pins the TEST, not just its path, so replacing a committed test with a hollow always-pass one is a parity/provenance failure the same way a drifted gate script is. Present on every upstream gate (the upstream-integrity gate enforces it at the source; provenance holds a consumer to the release's value).",
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
         "lane": {
           "description": "required = feeds the blocking aggregator; advisory = runs and reports but does not block.",
           "type": "string",

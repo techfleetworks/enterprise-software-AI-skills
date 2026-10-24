@@ -39,6 +39,7 @@ const gate = (over = {}) => ({
   lane: over.lane ?? "required",
   ...(over.origin ? { origin: over.origin } : {}),
   ...("invoke" in over ? { invoke: over.invoke } : {}),
+  ...("testSha256" in over ? { testSha256: over.testSha256 } : {}),
 });
 
 const manifest = (gates, version = "1.2.0") => JSON.stringify({ version, gates, aggregator: { requiredCheck: "gate" } });
@@ -89,6 +90,24 @@ test("PROV: FLAGS (1) a required gate downgraded to advisory locally", () => {
   const committed = [gate({ lane: "advisory" })];
   const upstream = [gate({ lane: "required" })];
   assert.equal(run(fixture({ committed: manifest(committed), upstream: manifest(upstream) })), 1);
+});
+
+test("PROV ISSUE-123: FLAGS (1) a gate whose testSha256 differs from the published manifest (hollowed test)", () => {
+  const committed = [gate({ testSha256: "c".repeat(64) })];
+  const upstream = [gate({ testSha256: "d".repeat(64) })];
+  assert.equal(run(fixture({ committed: manifest(committed), upstream: manifest(upstream) })), 1);
+});
+
+test("PROV ISSUE-123: FLAGS (1) a gate that DROPS testSha256 the release pins (undefined != present)", () => {
+  const committed = [gate({})]; // no testSha256
+  const upstream = [gate({ testSha256: "d".repeat(64) })]; // release pins one
+  assert.equal(run(fixture({ committed: manifest(committed), upstream: manifest(upstream) })), 1);
+});
+
+test("PROV ISSUE-123: passes (0) when committed testSha256 matches the release", () => {
+  const committed = [gate({ testSha256: "e".repeat(64) })];
+  const upstream = [gate({ testSha256: "e".repeat(64) })];
+  assert.equal(run(fixture({ committed: manifest(committed), upstream: manifest(upstream) })), 0);
 });
 
 test("PROV: FLAGS (1) an upstream-origin gate not present in the published manifest (insertion)", () => {
