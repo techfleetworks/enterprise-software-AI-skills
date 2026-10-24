@@ -32,9 +32,13 @@ machine, not only from a session rooted in this repo. That is the global, any-fo
 `git pull` alone cannot do it because git cannot write another machine's `~/.claude`. The mirror is a clean
 per-skill copy (written to a temp, then swapped in by moving the existing copy aside so a failed swap rolls
 back to it; only a hard process kill mid-swap needs a re-run to heal) that records what it installed, so a
-later reconcile removes a skill you dropped from the repo but never touches a skill you installed yourself.
+later reconcile removes a skill you dropped from the repo but never touches a skill you installed yourself. A
+reconcile re-mirrors only the skills whose source actually changed (not all of them), and if a mirrored skill's
+folder has local changes on disk (a file you added or edited inside it) it is BACKED UP to a timestamped
+`<skill>.esk-local-*` copy before it is replaced, never silently discarded; the plan lists any such skill first.
 If the repo's skills cannot be read (a dehydrated OneDrive folder, a locked ACL), it fails closed rather than
-mistaking that for an empty repo. `--check` then also flags a mirrored skill that is missing or behind.
+mistaking that for an empty repo. `--check --skills` flags a mirrored skill that is missing, behind the repo, or
+whose installed copy on disk has drifted from what was mirrored (a stale or hand-edited copy).
 
 ## Two installers, two jobs
 

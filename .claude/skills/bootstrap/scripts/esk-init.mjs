@@ -166,13 +166,16 @@ function sourceSkillNames() {
 // that edits or adds a file within a skill folder): the version string alone cannot see it. Paths are joined with
 // "/" so the digest is stable across OSes. Read errors fail closed (die), the same rule sourceSkillNames follows,
 // so a transient I/O or dehydrated-OneDrive read is never mistaken for "unchanged" and left un-mirrored.
-function skillSignature(name) {
-  const root = join(repoSkillsDir, name);
+// Core walk: a sha256 over the sorted (relative-path, file-hash) pairs under `root`, using the SAME skip set as
+// mirrorOneSkill. THROWS on a read error (the caller decides whether that is fatal). Used against both the repo
+// source (skillSignature) and the installed target (targetSignature), so an untouched mirror of a source hashes
+// to the SAME value as that source, and any added/edited file inside the target changes it.
+function signatureOf(root, label) {
   const parts = [];
   const walk = (dir, rel) => {
     let entries;
     try { entries = readdirSync(dir, { withFileTypes: true }); }
-    catch (e) { die(`cannot read ${dir} while fingerprinting skill ${name} (${e.message}); refusing to run so a read error is never mistaken for unchanged content`); }
+    catch (e) { throw new Error(`cannot read ${dir} while fingerprinting ${label} (${e.message})`); }
     for (const e of entries.filter((x) => !SKILL_MIRROR_SKIP.has(x.name)).sort((a, b) => (a.name < b.name ? -1 : 1))) {
       const abs = join(dir, e.name);
       const r = rel ? `${rel}/${e.name}` : e.name;
@@ -180,12 +183,42 @@ function skillSignature(name) {
       if (!e.isFile()) continue; // symlinks and specials: mirrorOneSkill copies them, but they carry no content to fingerprint here
       let buf;
       try { buf = readFileSync(abs); }
-      catch (err) { die(`cannot read ${abs} while fingerprinting skill ${name} (${err.message}); refusing to run so a read error is never mistaken for unchanged content`); }
+      catch (err) { throw new Error(`cannot read ${abs} while fingerprinting ${label} (${err.message})`); }
       parts.push(`${r}\0${createHash("sha256").update(buf).digest("hex")}`);
     }
   };
   walk(root, "");
   return createHash("sha256").update(parts.join("\n")).digest("hex");
+}
+// Content fingerprint of one SOURCE skill (the repo's .claude/skills/<name>). A read error fails closed (die),
+// the same rule sourceSkillNames follows, so a transient I/O or dehydrated-OneDrive read is never mistaken for
+// "unchanged" and left un-mirrored. This is what lets a reconcile notice a content change made INSIDE an
+// installed skill at an UNCHANGED package version (a git pull that edits a file within a skill folder).
+function skillSignature(name) {
+  try { return signatureOf(join(repoSkillsDir, name), `skill ${name}`); }
+  catch (e) { die(`${e.message}; refusing to run so a read error is never mistaken for unchanged content`); }
+}
+// Content fingerprint of an installed TARGET skill folder, comparable to its recorded source signature. Returns
+// null when the target is absent or unreadable (a condition to REPORT, not a reason to abort), so the drift
+// check and the pre-replace backup can tell "target diverged from what we mirrored" from "nothing there". (#130)
+function targetSignature(dir) {
+  if (!existsSync(dir)) return null;
+  try { return signatureOf(dir, "mirrored skill"); } catch { return null; }
+}
+// Classify an installed TARGET skill folder against what we would install (newSourceSig) and what we recorded at
+// mirror time (recordedSig, which is null for a marker written before signatures were tracked). Returns:
+//   "absent"     - nothing installed there (safe to mirror).
+//   "unreadable" - present but cannot be read (a locked ACL / transient I/O): we cannot verify or back it up.
+//   "diverged"   - its content differs from BOTH the new source and the recorded baseline, so replacing it would
+//                  lose content. With NO baseline (pre-signature marker, recordedSig null) any target that is not
+//                  already the clean new source counts as diverged, so a first-reconcile-after-upgrade never
+//                  deletes a pre-existing local edit it has no record of (#130, review finding 1).
+//   "clean"      - identical to the new source, or a clean stale mirror of exactly what we recorded: safe to replace.
+function classifyTarget(dir, newSourceSig, recordedSig) {
+  if (!existsSync(dir)) return "absent";
+  const sig = targetSignature(dir);
+  if (sig === null) return "unreadable";
+  return (sig !== newSourceSig && sig !== recordedSig) ? "diverged" : "clean";
 }
 // Signatures for the whole source set, keyed by skill name. Computed once per run where skills are in scope.
 function skillSignatures(names) {
@@ -197,7 +230,7 @@ function skillSignatures(names) {
 // Plan skills changes against the marker's record of what WE installed, so a reconcile removes a skill we
 // dropped from the repo but NEVER touches a skill we did not install (a user's own, or another repo's).
 function planSkills(marker) {
-  if (!withSkills) return { mirror: [], remove: [], changed: false };
+  if (!withSkills) return { mirror: [], remove: [], all: [], localChanges: [], changed: false };
   const src = sourceSkillNames();
   const prev = marker && marker.skills && Array.isArray(marker.skills.names) ? marker.skills.names : [];
   const remove = prev.filter((n) => !src.includes(n));
@@ -210,7 +243,17 @@ function planSkills(marker) {
   const sigs = skillSignatures(src);
   const stored = (marker && marker.skills && marker.skills.signatures) || {};
   const contentChanged = src.filter((n) => stored[n] !== sigs[n]);
-  return { mirror: src, remove, missing, behind, contentChanged, sigs, changed: behind || remove.length > 0 || missing.length > 0 || contentChanged.length > 0 };
+  // Classify each installed target once (baseline-agnostic, so a pre-signature marker is handled: see classifyTarget).
+  const cls = {};
+  for (const n of src) cls[n] = classifyTarget(join(skillsTarget, n), sigs[n], stored[n] ?? null);
+  const localChanges = src.filter((n) => cls[n] === "diverged"); // carry user content; backed up before replacing
+  const unreadable = src.filter((n) => cls[n] === "unreadable");  // cannot verify/back up: the apply path stops
+  // Re-mirror the skills that need it: missing from the target, source changed since we recorded it, OR a target
+  // whose installed copy DRIFTED from what we recorded (so `--yes` can re-mirror it and clear the drift `--check`
+  // reports - self-healing, review finding 2). A clean/unchanged skill is left untouched, so a one-byte edit in
+  // one skill never rewrites (and never risks the local content of) another. A new target makes all "missing". (#130)
+  const mirror = [...new Set([...missing, ...contentChanged, ...localChanges, ...unreadable])];
+  return { mirror, remove, missing, behind, contentChanged, localChanges, unreadable, all: src, sigs, changed: behind || remove.length > 0 || mirror.length > 0 };
 }
 // Mirror one skill cleanly: remove the target copy, then copy the source minus heavy/ignored subdirs
 // (the gitignored OWASP vendor text, node_modules, .git). The repo is authoritative, so no per-skill
@@ -386,6 +429,15 @@ function assess() {
       const present = names.filter((n) => existsSync(join(tgt, n, "SKILL.md")));
       const contentChanged = present.filter((n) => stored[n] !== skillSignature(n));
       if (contentChanged.length) problems.push(`mirrored skills changed in the repo since install (re-mirror needed): ${contentChanged.join(", ")}`);
+      // #130: classify the TARGET too (baseline-agnostic, so a pre-signature marker is covered), so a mirrored
+      // skill whose on-disk content drifted - a local edit, an older/different copy, or an unreadable folder - is
+      // REPORTED, not read as OK. The repo check above catches "the source moved ahead"; this catches "the
+      // installed copy drifted". `--yes --skills` re-mirrors these (backing up any local change), so it self-heals.
+      const targetDrift = present.filter((n) => {
+        const c = classifyTarget(join(tgt, n), skillSignature(n), stored[n] ?? null);
+        return c === "diverged" || c === "unreadable";
+      });
+      if (targetDrift.length) problems.push(`mirrored skills on disk differ from what was installed (local change, stale/other copy, or unreadable); re-run \`--yes --skills\` to re-mirror them (any local change is backed up first): ${targetDrift.join(", ")}`);
     }
   }
   const c = canary();
@@ -435,8 +487,9 @@ else {
   console.log(`  changes:`);
   for (const a of actions) console.log(`    - ${a}`);
   if (withSkills && skillsPlan.changed) {
-    console.log(`    - mirror ${skillsPlan.mirror.length} skill(s) into ${skillsTarget}`);
-    if (skillsPlan.contentChanged && skillsPlan.contentChanged.length) console.log(`    - re-mirror ${skillsPlan.contentChanged.length} skill(s) changed in the repo since install (${skillsPlan.contentChanged.join(", ")})`);
+    if (skillsPlan.mirror.length) console.log(`    - mirror ${skillsPlan.mirror.length} skill(s) into ${skillsTarget}${skillsPlan.contentChanged && skillsPlan.contentChanged.length ? ` (changed in the repo since install: ${skillsPlan.contentChanged.join(", ")})` : ""}`);
+    if (skillsPlan.localChanges && skillsPlan.localChanges.length) console.log(`    - ! ${skillsPlan.localChanges.length} of those has LOCAL changes on disk and will be BACKED UP (not deleted) before replacing: ${skillsPlan.localChanges.join(", ")}`);
+    if (skillsPlan.unreadable && skillsPlan.unreadable.length) console.log(`    - ! ${skillsPlan.unreadable.length} mirrored skill(s) cannot be read and will STOP the run until moved aside: ${skillsPlan.unreadable.join(", ")}`);
     if (skillsPlan.remove.length) console.log(`    - remove ${skillsPlan.remove.length} skill(s) no longer in the repo (${skillsPlan.remove.join(", ")})`);
   }
   if (fresh) console.log(`    - write the .esk-installed marker (version ${version})`);
@@ -483,10 +536,28 @@ if (!c.ok) restore(`canary failed (${c.why})`);
 // Skills mirror (opt-in), after the hook is verified. The repo is authoritative and foreign skills are
 // never named, so no backup is needed; a failed copy is fixed by re-running --yes --skills.
 let skillsInstalled = null;
+const skillBackups = [];
 if (withSkills) {
+  const backupStamp = new Date().toISOString().replace(/[:.]/g, "-"); // filesystem-safe suffix for any backup dir
+  const stored = (marker && marker.skills && marker.skills.signatures) || {};
   try {
     if (!existsSync(skillsTarget)) mkdirSync(skillsTarget, { recursive: true });
-    for (const name of skillsPlan.mirror) mirrorOneSkill(name);
+    for (const name of skillsPlan.mirror) {
+      // #130: never let a reconcile silently delete user content under the target. Classify the installed copy
+      // against the new source AND the recorded baseline (baseline-agnostic, so a pre-signature marker is covered):
+      //  - "unreadable": present but cannot be read -> STOP rather than replace blindly (review finding 3).
+      //  - "diverged":   carries content that differs from both -> back it up before replacing (never discard).
+      //  - "clean"/"absent": identical to the new source, a clean stale mirror, or nothing there -> replace freely.
+      const tgtDir = join(skillsTarget, name);
+      const c = classifyTarget(tgtDir, skillsPlan.sigs[name], stored[name] ?? null);
+      if (c === "unreadable") die(`mirrored skill "${name}" exists at ${tgtDir} but could not be read, so it cannot be verified or backed up; not replacing it. Move it aside and re-run \`--yes --skills\``);
+      if (c === "diverged") {
+        const backupDir = `${tgtDir}.esk-local-${backupStamp}`;
+        try { cpSync(tgtDir, backupDir, { recursive: true }); skillBackups.push({ name, dir: backupDir }); }
+        catch (e) { die(`mirrored skill "${name}" has local changes but its backup could not be written (${e.message}); not replacing it. Move ${tgtDir} aside and re-run \`--yes --skills\``); }
+      }
+      mirrorOneSkill(name);
+    }
     for (const name of skillsPlan.remove) {
       if (!/^[^/\\]+$/.test(name) || name === "." || name === "..") continue; // only ever delete a plain child of the target
       rmSync(join(skillsTarget, name), { recursive: true, force: true });
@@ -494,7 +565,10 @@ if (withSkills) {
   } catch (e) { die(`skills mirror failed (${e.message}); the hook is installed, re-run \`--yes --skills\` to finish`); }
   const bad = skillsPlan.mirror.filter((n) => !existsSync(join(skillsTarget, n, "SKILL.md")));
   if (bad.length) die(`skills mirror incomplete (no SKILL.md at the target for: ${bad.join(", ")}); re-run \`--yes --skills\``);
-  skillsInstalled = { target: skillsTarget, names: skillsPlan.mirror, version, signatures: skillsPlan.sigs };
+  if (skillBackups.length) console.error(`[esk-init] note: ${skillBackups.length} mirrored skill(s) had local changes and were backed up before replacing: ${skillBackups.map((b) => `${b.name} -> ${b.dir}`).join("; ")}`);
+  // Record the FULL installed set (not just what was re-mirrored this run) so the next reconcile's remove/compare
+  // logic sees every skill we own, and store every source signature as the new baseline. (#130)
+  skillsInstalled = { target: skillsTarget, names: skillsPlan.all, version, signatures: skillsPlan.sigs };
 }
 
 // Success: write the marker + the log.
