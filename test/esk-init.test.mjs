@@ -594,3 +594,49 @@ test("an unreadable skills source fails closed and does NOT wipe the mirror (V1,
   assert.ok(existsSync(join(a.tgt, "alpha", "SKILL.md")), "alpha must NOT be wiped by a source read error");
   assert.ok(existsSync(join(a.tgt, "beta", "SKILL.md")), "beta must NOT be wiped by a source read error");
 });
+
+// --- PR4: --check / canary truthfulness (#135, #136, #137, #138) -------------------------------------------
+
+// #137: the drift fix-command names the REAL script path and the scope it checked, not bootstrap/scripts/...
+test("ISSUE-137: --check drift prints the real esk-init path and the scope checked", () => {
+  const r = run(["--check"]); // fresh (uninstalled) target -> drift
+  assert.equal(r.status, 1);
+  assert.match(r.out, /skills[/\\]bootstrap[/\\]scripts[/\\]esk-init\.mjs/, "fix command must use the real .claude/skills path");
+  assert.match(r.out, /repo \(\.\/\.claude\) scope|personal \(~\/\.claude\) scope/, "must name the scope it checked");
+});
+
+// #136: --check from a DIFFERENT clone than the hook was installed from reports drift (not a false OK).
+test("ISSUE-136: --check from a clone the hook does not point at reports drift", () => {
+  const { settings } = run(["--yes"]);             // installs from REPO; marker.repo = REPO
+  const other = fakeSkillsRepo();                   // a different clone
+  const r = runOn(settings, ["--check"], other);   // --check as if from the other clone
+  assert.equal(r.status, 1, "must drift when the hook points at a different clone");
+  assert.match(r.out, /different clone/);
+});
+
+// #135: --check reports drift when this clone has uncommitted always-on/ edits (unreleased text would ship).
+test("ISSUE-135: --check reports drift on uncommitted always-on/ edits", (t) => {
+  if (spawnSync("git", ["--version"]).status !== 0) { t.skip("git unavailable"); return; }
+  const repo = fakeSkillsRepo();
+  gitInit(repo);
+  spawnSync("git", ["-C", repo, "add", "-A"]);
+  spawnSync("git", ["-C", repo, "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"]);
+  const settings = join(repo, ".claude", "settings.json");
+  assert.equal(runOn(settings, ["--yes"], repo).status, 0, "install should succeed on a clean clone");
+  const em = join(repo, "always-on", "emit-directive.mjs");
+  writeFileSync(em, readFileSync(em, "utf8") + "\n// dirty-for-test\n"); // harmless; emitter still works
+  const r = runOn(settings, ["--check"], repo);
+  assert.equal(r.status, 1, "uncommitted always-on/ edits must drift");
+  assert.match(r.out, /uncommitted changes under always-on/);
+});
+
+// #138: the canary runs the CONFIGURED hook entry, so a broken emitter the entry points at is caught by --check.
+test("ISSUE-138: --check canary runs the configured entry and catches a broken emitter", () => {
+  const repo = fakeSkillsRepo();
+  const settings = join(repo, ".claude", "settings.json");
+  assert.equal(runOn(settings, ["--yes"], repo).status, 0, "install should succeed");
+  writeFileSync(join(repo, "always-on", "emit-directive.mjs"), "process.exit(3);\n"); // break the configured hook target
+  const r = runOn(settings, ["--check"], repo);
+  assert.equal(r.status, 1, "a broken configured hook command must fail the canary");
+  assert.match(r.out, /hook command/, "the drift must name the configured hook command");
+});

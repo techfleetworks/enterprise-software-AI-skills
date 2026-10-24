@@ -314,14 +314,25 @@ function withHooks(obj) {
 // invokes the hook in a real session (settings shape willing); that end-to-end proof is the manual
 // "open a fresh session and ask it to quote the directive" step the report prints.
 function canary() {
-  const r = spawnSync(process.execPath, [emitter, "SessionStart"], { encoding: "utf8" });
-  if (r.status !== 0) return { ok: false, why: `emitter exited ${r.status}` };
+  // Run the hook EXACTLY as configured (the entry's command/args or shell form), not the installer's own Node
+  // against the raw emitter path. Otherwise --check stays green even when the WRITTEN entry's command cannot
+  // start (a bad binary, a dead portable path) - the very thing the canary exists to catch (#138). Claude Code
+  // expands ${CLAUDE_PROJECT_DIR}; we expand it to the target repo root to run the entry faithfully here.
+  // In either form the hook ultimately runs `node <emitterRef> SessionStart`. Run exactly that: `node` from PATH
+  // (as Claude Code does, NOT the installer's own process.execPath) against the expanded emitterRef, so a dead
+  // command or a dead portable path is caught (#138) - without depending on a shell binary (powershell) that may
+  // be absent on the host running --check (N2). Claude Code expands ${CLAUDE_PROJECT_DIR}; we expand to the
+  // target repo root to reproduce the entry faithfully.
+  const expand = (s) => s.replace("${CLAUDE_PROJECT_DIR}", targetRepoRoot);
+  const r = spawnSync("node", [expand(emitterRef), "SessionStart"], { encoding: "utf8" });
+  if (r.error) return { ok: false, why: `the hook's node command could not start (${r.error.code || r.error.message})` };
+  if (r.status !== 0) return { ok: false, why: `the configured hook command exited ${r.status}` };
   try {
     const parsed = JSON.parse(r.stdout || "");
     const ctx = parsed?.hookSpecificOutput?.additionalContext || "";
-    if (!ctx.includes("Enterprise engineering skills")) return { ok: false, why: "emitter output did not contain the directive" };
+    if (!ctx.includes("Enterprise engineering skills")) return { ok: false, why: "the hook command's output did not contain the directive" };
     return { ok: true };
-  } catch (e) { return { ok: false, why: `emitter output was not valid JSON (${e.message})` }; }
+  } catch (e) { return { ok: false, why: `the hook command's output was not valid JSON (${e.message})` }; }
 }
 
 function readMarker() {
@@ -343,6 +354,22 @@ function assess() {
   const marker = readMarker();
   if (!marker) problems.push("no .esk-installed marker");
   else if (marker.version !== version) problems.push(`installed version ${marker.version} is behind the repo version ${version}`);
+  // #136: the hook runs the clone it was installed from (marker.repo). If --check runs from a DIFFERENT clone,
+  // the hook does not point here, so reporting OK would misreport THIS clone's wiring.
+  if (marker && marker.repo && !samePath(resolve(marker.repo), repoRoot)) {
+    problems.push(`the installed hook was set up from a different clone (${marker.repo}), not this one (${repoRoot}); re-run --yes here to point it at this clone`);
+  }
+  // #135: an install pointing at this clone serves its always-on/ content to every session, so uncommitted
+  // directive edits here mean unreleased text is being served. Checked only when this clone is a git repo.
+  try {
+    const top = spawnSync("git", ["-C", repoRoot, "rev-parse", "--is-inside-work-tree"], { encoding: "utf8" });
+    if (top.status === 0 && (top.stdout || "").trim() === "true") {
+      const dirty = spawnSync("git", ["-C", repoRoot, "status", "--porcelain", "always-on"], { encoding: "utf8" });
+      if (dirty.status === 0 && (dirty.stdout || "").trim()) {
+        problems.push(`this clone has uncommitted changes under always-on/ - an install pointing here would serve unreleased directive text to every session; commit or stash them`);
+      }
+    }
+  } catch { /* git unavailable: skip this check */ }
   if (withSkills || (marker && marker.skills)) {
     if (!marker || !marker.skills) problems.push("skills were not mirrored (no skills record in the marker); run --yes --skills");
     else {
@@ -372,9 +399,15 @@ const mode = flag("--check") ? "check" : flag("--yes") ? "apply" : "plan";
 if (mode === "check") {
   const { problems } = assess();
   if (problems.length) {
-    console.error(`[esk-init] drift: the always-on hook is not installed/current here:`);
+    console.error(`[esk-init] drift: the always-on hook is not installed/current for ${settingsPath} (marker ${markerPath}):`);
     for (const p of problems) console.error("  • " + p);
-    console.error(`Run \`node ${join("bootstrap", "scripts", "esk-init.mjs")} --yes\` (or the bootstrap skill) to fix.`);
+    const selfRel = relative(process.cwd(), join(here, "esk-init.mjs")).split(sep).join("/");
+    // Echo the user's OWN flags so --settings/--repo/--shell/--skills-target/--personal/--skills are preserved
+    // and the fix acts on the SAME target, minus --check, plus --yes (#137).
+    const fixArgs = process.argv.slice(2).filter((a) => a !== "--check");
+    if (!fixArgs.includes("--yes")) fixArgs.push("--yes");
+    console.error(`Run \`node ${selfRel} ${fixArgs.join(" ")}\` (or the bootstrap skill) to fix.`);
+    console.error(`(This checked the ${userLevel ? "personal (~/.claude)" : "repo (./.claude)"} scope; pass --personal to check a personal install.)`);
     process.exit(1);
   }
   console.log(`[esk-init] OK:always-on hook installed, current (v${version}), and emitting. Target: ${settingsPath}`);

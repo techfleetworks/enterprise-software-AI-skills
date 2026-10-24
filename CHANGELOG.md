@@ -43,6 +43,15 @@ closed and match on anchored paths, and adds the CI harness that keeps the whole
   empty `.catch(() => {})` arrow handler (#124)**, not only a `catch {}` block. Each pinned by a discrimination
   test.
 
+### Hardened (esk-init --check truthfulness, ADR-0075)
+
+- **`esk-init --check` and its canary now tell the truth about the real installed state.** The canary runs the
+  hook entry **as configured** (not the installer's own Node against the raw emitter), so a hook command that
+  cannot start fails `--check` (#138); `--check` reports drift when the hook points at a **different clone**
+  than the one it runs in (#136) and when this clone has **uncommitted `always-on/` edits** that would serve
+  unreleased directive text (#135); and the drift message prints the **real** `esk-init.mjs` path with the
+  user's scope flags and names the scope it checked (#137). Each pinned by a discrimination test.
+
 ## 1.3.0 - 2026-10-21
 
 One source of truth for the repo's own gates, so the local pre-push and CI cannot silently diverge. A new
