@@ -105,6 +105,34 @@ test("a targeted ignore for a DIFFERENT rule does NOT suppress (discriminating)"
   assert.match(r.out, /ua-api/);
 });
 
+// --- ISSUE-153: multi-line block-comment (JSDoc) prose is not scanned as code --------------------------
+// Before the fix the comment stripper worked one line at a time, so a `navigator.userAgent` mentioned in JSDoc
+// prose (` * ... navigator.userAgent ...`) was scanned as code and flagged. Now block-comment state is tracked,
+// so prose inside /** ... */ is never a hit. Each "not flagged" case is discriminating: reverting to the
+// single-line strip re-flags the prose; the "still flagged" cases prove the fix does not hide real code.
+test("ISSUE-153: a navigator.userAgent mention in multi-line JSDoc prose is NOT flagged (exit 0)", () => {
+  const r = run("/**\n * Logs navigator.userAgent for support tickets; no branching on it.\n */\nexport const x = 1;\n");
+  assert.equal(r.status, 0, r.out);
+});
+test("ISSUE-153: a brand-string test shown in JSDoc prose is NOT flagged (exit 0)", () => {
+  const r = run("/**\n * We never do if (ua.indexOf('MSIE')); we feature-detect instead.\n */\nexport const x = 1;\n");
+  assert.equal(r.status, 0, r.out);
+});
+test("ISSUE-153: a JSDoc block carrying a ` * ua-sniff:ignore` directive line passes (exit 0)", () => {
+  const r = run("/**\n * ua-sniff:ignore documentation only, not a read\n * Logs navigator.userAgent for support tickets.\n */\nexport const x = 1;\n");
+  assert.equal(r.status, 0, r.out);
+});
+test("ISSUE-153: a REAL sniff in code right after a one-line /** */ block is still flagged (exit 1)", () => {
+  const r = run("/** reads the UA below */\nconst ua = navigator.userAgent;\n");
+  assert.equal(r.status, 1, r.out);
+  assert.match(r.out, /ua-api/);
+});
+test("ISSUE-153: code AFTER a block-comment close on the SAME line is still scanned (exit 1)", () => {
+  const r = run("/* preamble */ const ua = navigator.userAgent;\n");
+  assert.equal(r.status, 1, r.out);
+  assert.match(r.out, /ua-api/);
+});
+
 // --- fail closed on zero scan ------------------------------------------------
 test("fails closed (exit 2) when a directory has no JS/TS files", () => {
   const dir = mkdtempSync(join(tmpdir(), "ua-empty-"));

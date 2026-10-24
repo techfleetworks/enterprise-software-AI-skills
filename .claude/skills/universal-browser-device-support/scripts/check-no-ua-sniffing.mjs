@@ -21,11 +21,14 @@
  * suppressed with an inline comment on the flagged line or the line directly above it:
  *   // ua-sniff:ignore <reason>              (suppress every rule for that line)
  *   // ua-sniff:ignore=ua-api <reason>       (suppress one rule for that line)
- * The reason is REQUIRED (an unexplained ignore does not suppress), mirroring the repo's other gates.
+ * Inside a JSDoc/block comment the line-above form may be written ` * ua-sniff:ignore <reason>` or
+ * ` * // ua-sniff:ignore <reason>`. The reason is REQUIRED (an unexplained ignore does not suppress),
+ * mirroring the repo's other gates.
  *
  * Scope (honest): this catches the sniffing *surface*; it cannot prove a feature-detection fallback is
- * correct (that is for judge-arch and tests). It is a line/regex linter, not a JS parser, so it errs
- * toward over-flagging; use the inline ignore for a reviewed exception.
+ * correct (that is for judge-arch and tests). It is a line/regex linter, not a JS parser: it tracks
+ * multi-line block-comment state so comment prose is not scanned, but it does not parse strings, so a
+ * `//` or `/*` inside a string literal truncates that line. Use the inline ignore for a reviewed exception.
  *
  * Exit 0 = no unsuppressed UA sniffing. 1 = one or more findings. 2 = bad usage / unreadable / no files.
  */
@@ -84,11 +87,44 @@ const UA_API = /\bnavigator\s*\.\s*(userAgent|vendor|appVersion|platform|userAge
 const BRAND = /\b(MSIE|Trident|Edge|Edg|EdgA|EdgiOS|Chrome|Chromium|CriOS|Firefox|FxiOS|Safari|OPR|Opera|Gecko|WebKit|Windows NT|Macintosh|iPhone|iPad|Android)\b/;
 const TESTOP = /\.(test|match|exec|indexOf|includes|search|startsWith)\s*\(|[=!]==?\s*['"]|['"]\s*[=!]==?/;
 
-// Strip comments from a line for CODE matching (so a brand token in a comment is not flagged).
-const stripComments = (s) => s.replace(/\/\*.*?\*\//g, " ").replace(/\/\/.*$/, " ");
+// Build the CODE text of each line with multi-line block-comment state, so prose inside a /** ... */ (or any
+// /* ... */) block is NEVER scanned as code - only a brand token in ACTUAL code is a hit. A single-line strip
+// (the old behavior) left JSDoc prose lines looking like code and flagged them (#153). This is a line/regex
+// linter, not a JS parser: strings are not tracked, so a `//` or `/*` inside a string truncates a line the
+// same way the old single-line stripper did (it errs toward stripping, i.e. toward a false negative in a
+// string, never a false positive on comment prose).
+function codeLines(lines) {
+  const out = [];
+  let inBlock = false;
+  for (const raw of lines) {
+    let code = "";
+    let i = 0;
+    while (i < raw.length) {
+      if (inBlock) {
+        const end = raw.indexOf("*/", i);
+        if (end === -1) { i = raw.length; }             // rest of the line is comment
+        else { i = end + 2; inBlock = false; }           // consume through the close, keep scanning after it
+      } else {
+        const lc = raw.indexOf("//", i);
+        const bc = raw.indexOf("/*", i);
+        if (bc !== -1 && (lc === -1 || bc < lc)) {
+          code += raw.slice(i, bc); i = bc + 2; inBlock = true;  // a block comment opens; find its close
+        } else if (lc !== -1 && (bc === -1 || lc < bc)) {
+          code += raw.slice(i, lc); i = raw.length;              // line comment to end of line
+        } else {
+          code += raw.slice(i); i = raw.length;                 // no comment on the rest of the line
+        }
+      }
+    }
+    out.push(code);
+  }
+  return out;
+}
 
-// An ignore directive in a comment; reason (>= 3 chars after trimming) required.
-const IGNORE = /(?:\/\/|\/\*)\s*ua-sniff:ignore(?:=([\w-]+))?\s+(\S[^*]*?)\s*(?:\*\/|$)/i;
+// An ignore directive in a comment; reason (>= 3 chars after trimming) required. Accepts the JS forms `//`
+// and `/*`, AND the JSDoc continuation forms ` * ua-sniff:ignore ...` and ` * // ua-sniff:ignore ...`, so the
+// documented line-above suppression works inside a /** */ block, where every line begins with ` * ` (#153).
+const IGNORE = /(?:\/\/|\/\*|^\s*\*)\s*ua-sniff:ignore(?:=([\w-]+))?\s+(\S[^*]*?)\s*(?:\*\/|$)/i;
 function ignoreOf(rawLine) {
   const m = rawLine.match(IGNORE);
   if (!m) return null;
@@ -96,12 +132,13 @@ function ignoreOf(rawLine) {
   return { all: !m[1], rule: m[1] ? m[1].toLowerCase() : null };
 }
 // A directive on the line ABOVE only counts when that line is comment-only (no code). Otherwise a
-// trailing ignore on one statement would also silently suppress a real sniff on the next line.
-function lineAboveIgnore(prevRaw) {
-  if (!prevRaw) return null;
+// trailing ignore on one statement would also silently suppress a real sniff on the next line. The
+// "comment-only" test uses the multi-line CODE of that line, so a JSDoc ` * ...` prose line qualifies.
+function lineAboveIgnore(prevRaw, prevCode) {
+  if (prevRaw === undefined) return null;
   const ig = ignoreOf(prevRaw);
   if (!ig) return null;
-  return stripComments(prevRaw).trim().length === 0 ? ig : null;
+  return prevCode.trim().length === 0 ? ig : null;
 }
 
 const problems = [];
@@ -110,15 +147,15 @@ for (const f of files) {
   try { text = readFileSync(f, "utf8"); }
   catch (e) { die(`could not read ${f} (${e.message})`); }
   const lines = text.split(/\r?\n/);
+  const codeArr = codeLines(lines);
   for (let i = 0; i < lines.length; i++) {
-    const raw = lines[i];
-    const code = stripComments(raw);
+    const code = codeArr[i];
     const hits = [];
     if (UA_API.test(code)) hits.push("ua-api");
     if (BRAND.test(code) && TESTOP.test(code)) hits.push("ua-brand-test");
     if (hits.length === 0) continue;
     // A directive on this line, or a comment-only directive on the line directly above, suppresses.
-    const ig = ignoreOf(raw) || lineAboveIgnore(lines[i - 1]);
+    const ig = ignoreOf(lines[i]) || lineAboveIgnore(lines[i - 1], codeArr[i - 1] ?? "");
     for (const rule of hits) {
       if (ig && (ig.all || ig.rule === rule)) continue;
       problems.push({ file: f, line: i + 1, rule });

@@ -52,6 +52,24 @@ closed and match on anchored paths, and adds the CI harness that keeps the whole
   unreleased directive text (#135); and the drift message prints the **real** `esk-init.mjs` path with the
   user's scope flags and names the scope it checked (#137). Each pinned by a discrimination test.
 
+### Hardened (scan gates fail closed and match precisely, ADR-0076)
+
+- **retention-basis no longer prints OK for a scan it did not do (#145).** `--map` is required; no `--map`, or
+  an explicit `--map` to a missing file, fails closed (exit 2). The published `invoke` adds `--map-optional`,
+  which turns a genuinely-absent map into a DISTINCT vacuous pass (`OK [vacuous] - no data map at …`), so a
+  consumer without a declared inventory stays green while a mistyped path can no longer read as a completed
+  check.
+- **no-ua-sniffing tracks multi-line block-comment state (#153),** so `navigator.userAgent` named in JSDoc
+  prose is no longer flagged (the root cause of the earlier #112 item 2), while a real sniff in code is still
+  caught; the ignore directive now also accepts the JSDoc ` * ua-sniff:ignore …` continuation form.
+- **reference-links resolves a Markdown link target relative to the citing file, case-sensitively (#147),** so
+  a dangling link to `docs/missing/README.md` is caught even when another `README.md` exists elsewhere; prose
+  mentions keep the basename rule. Four broken upstream cross-reference links are repointed in the same change.
+- **reference-links honours `GATE_REPO_ROOT` and fails closed on an unreadable path (#121),** instead of
+  scanning above the repo on an arg-less run or counting an unreadable `.md` as scanned and clean.
+- Three gate scripts changed content, so their manifest `sha256` is recomputed; `retention-basis` also changed
+  its `invoke`. Each fix is pinned by a discrimination test.
+
 ### Hardened (hook arming never disables existing hooks; pre-push fails closed, ADR-0077)
 
 - **`install-hooks.mjs` arms only at the repository root (#143).** Run from a package nested inside another

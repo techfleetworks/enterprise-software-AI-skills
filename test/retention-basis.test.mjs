@@ -94,35 +94,51 @@ test("fails closed (exit 2) on a BARE not-personal key (matches check-untagged-p
 });
 
 // --- fail closed on bad input ------------------------------------------------
-// (A MISSING map file is no longer a failure - it is the optional-map safe default, covered below. A map
-// file that IS present but malformed JSON still fails closed.)
+// (A MISSING map fails closed unless --map-optional is given; see the ISSUE-145 cases below. A map file that
+// IS present but malformed JSON always fails closed.)
 test("fails closed (exit 2) on invalid JSON", () => {
   assert.equal(run("{ not json").status, 2);
 });
 test("fails closed (exit 2) on an invalid/missing class", () => {
   assert.equal(run([{ field: "users.email", class: "secret", basis: "contract", retention: "2y" }]).status, 2);
 });
-// --- optional map: the gate travels into consumers with a safe default (ADR-0064) ---
-// --map is optional now. With no map - or a map the consumer has not created yet - there are no declared
-// personal entries, so there is nothing to check and the gate passes (exit 0). check-untagged-pii is the
-// gate that forces undeclared PII to be declared; this one only bites once entries exist. A map file that IS
-// present but is malformed JSON still fails closed.
-test("optional map: --map omitted → PASS (exit 0, empty default; travels into a config-less consumer)", () => {
+
+// --- ISSUE-145: a missing map must not read as a completed check -------------------------------------------
+// Before the fix, no --map at all and an explicit --map to a missing file BOTH printed the same OK line and
+// exited 0, so a required compliance gate "passed" having checked nothing (a mistyped path, or a map kept
+// elsewhere). Now --map is required, a missing explicit map fails CLOSED, and only --map-optional (the
+// published CI invoke) turns a genuinely-absent map into a DISTINCT vacuous pass. Each case is discriminating:
+// reverting the fix makes it exit 0 with the generic OK line again.
+test("ISSUE-145: no --map at all fails closed (exit 2, bad usage) — reverting makes it pass vacuously", () => {
   const r = spawnSync(process.execPath, [CHECK], { encoding: "utf8" });
-  assert.equal(r.status, 0, (r.stdout || "") + (r.stderr || ""));
+  assert.equal(r.status, 2, (r.stdout || "") + (r.stderr || ""));
 });
-test("optional map: --map points at a file that does not exist → PASS (exit 0, treated as empty)", () => {
+test("ISSUE-145: an explicit --map to a missing file, WITHOUT --map-optional, fails closed (exit 2)", () => {
   const dir = mkdtempSync(join(tmpdir(), "ret-nomap-"));
   const r = spawnSync(process.execPath, [CHECK, "--map", join(dir, "does-not-exist.json")], { encoding: "utf8" });
-  assert.equal(r.status, 0, (r.stdout || "") + (r.stderr || ""));
+  assert.equal(r.status, 2, (r.stdout || "") + (r.stderr || ""));
 });
-test("optional map: a map file present but malformed JSON still fails closed (exit 2, discriminating)", () => {
+test("ISSUE-145: a missing map WITH --map-optional passes vacuously (exit 0) and says so distinctly", () => {
+  const dir = mkdtempSync(join(tmpdir(), "ret-opt-"));
+  const r = spawnSync(process.execPath, [CHECK, "--map", join(dir, "does-not-exist.json"), "--map-optional"], { encoding: "utf8" });
+  const out = (r.stdout || "") + (r.stderr || "");
+  assert.equal(r.status, 0, out);
+  assert.match(out, /no data map|vacuous/i, out); // a real pass of entries must NOT print this line
+});
+test("ISSUE-145: --map-optional does NOT weaken a real check — a present map with a gap still fails (exit 1)", () => {
+  const dir = mkdtempSync(join(tmpdir(), "ret-present-"));
+  const f = join(dir, "data-map.json");
+  writeFileSync(f, JSON.stringify([{ field: "users.email", class: "restricted", basis: "contract" }]));
+  const r = spawnSync(process.execPath, [CHECK, "--map", f, "--map-optional"], { encoding: "utf8" });
+  assert.equal(r.status, 1, (r.stdout || "") + (r.stderr || ""));
+});
+test("a map file present but malformed JSON still fails closed (exit 2, discriminating)", () => {
   const dir = mkdtempSync(join(tmpdir(), "ret-bad-"));
   const f = join(dir, "data-map.json");
   writeFileSync(f, "{ not json");
   const r = spawnSync(process.execPath, [CHECK, "--map", f], { encoding: "utf8" });
   assert.equal(r.status, 2);
 });
-test("still FLAGS a declared personal entry missing basis+retention under the optional-map model (discriminating)", () => {
+test("still FLAGS a declared personal entry missing basis+retention (discriminating)", () => {
   assert.equal(run([{ field: "users.email", class: "restricted" }]).status, 1);
 });
