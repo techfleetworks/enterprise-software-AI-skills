@@ -115,6 +115,7 @@ test("the validator itself discriminates: known-bad manifests are rejected", () 
   assert.ok(bad((m) => (m.gates = [])).length, "empty gates must fail (minItems)");
   assert.ok(bad((m) => delete m.gates[0].sha256).length, "gate missing sha256 must fail");
   assert.ok(bad((m) => (m.gates[0].sha256 = "nothex")).length, "bad sha256 must fail pattern");
+  assert.ok(bad((m) => (m.gates[0].testSha256 = "nothex")).length, "bad testSha256 must fail pattern (#123)");
   assert.ok(bad((m) => (m.gates[0].lane = "blocking")).length, "lane outside enum must fail");
   assert.ok(bad((m) => (m.gates[0].script = "x.py")).length, "unsupported script extension must fail");
   assert.ok(bad((m) => (m.gates[0].id = "Not_Kebab")).length, "non-kebab id must fail");

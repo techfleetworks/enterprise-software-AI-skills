@@ -96,8 +96,19 @@ for (const gate of manifest.gates) {
   }
   if (!gate.test) {
     violations.push(`gate "${gate.id}": names no discrimination test (every gate must name one).`);
-  } else if (!existsSync(resolve(BASE, gate.test))) {
-    violations.push(`gate "${gate.id}": discrimination test ${gate.test} is missing.`);
+  } else {
+    const testPath = resolve(BASE, gate.test);
+    if (!existsSync(testPath)) {
+      violations.push(`gate "${gate.id}": discrimination test ${gate.test} is missing.`);
+    } else if (gate.testSha256) {
+      // Pin the TEST content, not just its path (#123): a committed discrimination test replaced with a hollow
+      // always-pass one drifts from the manifest's testSha256, caught the same way a neutered gate script drifts
+      // from sha256. Hashed LF-normalized (same helper), so it verifies on a CRLF or LF checkout alike.
+      const actualTest = sha256(testPath);
+      if (actualTest !== gate.testSha256) {
+        violations.push(`gate "${gate.id}": discrimination test ${gate.test} sha256 ${actualTest.slice(0, 12)}… != manifest testSha256 ${String(gate.testSha256).slice(0, 12)}… (test hollowed/drifted).`);
+      }
+    }
   }
 }
 

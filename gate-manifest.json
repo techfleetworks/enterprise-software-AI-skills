@@ -7,25 +7,27 @@
       "origin": "upstream",
       "skill": "judge-arch",
       "script": "scripts/ci/check-skill-gate-parity.mjs",
-      "sha256": "55751c82d176b0a3dffa7e5e8726931fc8766710f0aa4846f0847722ad404afb",
+      "sha256": "0384ac941158376f8e9b326418103634d0393baa244430fd68b49a82f16385a0",
       "test": "test/skill-gate-parity.test.mjs",
       "lane": "required",
       "couples": [
         "gate-manifest.json",
         "scripts/ci/check-*.mjs"
-      ]
+      ],
+      "testSha256": "9039fedf694a736b7a9b375a7b374d184537222c83fb1800dde478c85a2762c5"
     },
     {
       "id": "manifest-provenance",
       "origin": "upstream",
       "skill": "judge-arch",
       "script": "scripts/ci/check-manifest-provenance.mjs",
-      "sha256": "06756dfd29db425806f3ab4fb4964e7408bf854c129997593837f2b7b3695069",
+      "sha256": "1816e07c4705c8ec8838cb84f882c75be9c79fd2202c16d524cacd8381672e25",
       "test": "test/manifest-provenance.test.mjs",
       "lane": "required",
       "couples": [
         "gate-manifest.json"
-      ]
+      ],
+      "testSha256": "4f7c381a2149d04a410944db90f8162552b888686d9dd2eda872e2ab5deceec6"
     },
     {
       "id": "bootstrap-presence",
@@ -38,7 +40,8 @@
       "couples": [
         "gate-manifest.json",
         ".github/workflows/enterprise-gates.yml"
-      ]
+      ],
+      "testSha256": "fab0e9b8e2e39ff0776a862aaaea4faf98b07bed2c88b033bc684ec57ef04f16"
     },
     {
       "id": "reference-links",
@@ -53,7 +56,8 @@
         ".",
         "--ignore",
         ".claude/skills"
-      ]
+      ],
+      "testSha256": "498932b9a5b7cb680ffe233177248acc31d3627c9226b613ce9045633a041e4c"
     },
     {
       "id": "no-ua-sniffing",
@@ -70,7 +74,8 @@
         "--ignore",
         ".claude/skills",
         "."
-      ]
+      ],
+      "testSha256": "956d6a38c304db75505d2c81ae1b862e0c4c81434ee2a6850b97d61d569187ec"
     },
     {
       "id": "owasp-lints",
@@ -87,7 +92,8 @@
         "--ignore",
         ".claude/skills",
         "."
-      ]
+      ],
+      "testSha256": "056ac7a673d36033ed8202a6b59d40cf1980fe3d48b1b6bff43a78f9a2259520"
     },
     {
       "id": "migration-safety",
@@ -104,7 +110,8 @@
         "--ignore",
         ".claude/skills",
         "."
-      ]
+      ],
+      "testSha256": "03c0ab2a7dd8a59664cde45253562ce35395338ed03d1e59dc79e0d3baaa6c82"
     },
     {
       "id": "alert-hygiene",
@@ -121,7 +128,8 @@
         "--ignore",
         ".claude/skills",
         "."
-      ]
+      ],
+      "testSha256": "9dbfc46be12e62a869dc25029a6e3b7c2c2cef45e06b8761b26b7a68437b7648"
     },
     {
       "id": "arch-gate",
@@ -138,7 +146,8 @@
         ".githooks",
         "--ignore",
         ".claude/skills"
-      ]
+      ],
+      "testSha256": "a46849de0e25353de6d19dd314bdfb9f9f4b8b267fed4d70ba14631331c37525"
     },
     {
       "id": "untagged-pii",
@@ -157,7 +166,8 @@
         "--map",
         "data-map.json",
         "."
-      ]
+      ],
+      "testSha256": "93a4247eee993ba2b5cb7e81963319b3bde67c66a9ad1d19686203b122f64a35"
     },
     {
       "id": "retention-basis",
@@ -171,7 +181,8 @@
         "--map",
         "data-map.json",
         "--map-optional"
-      ]
+      ],
+      "testSha256": "1f362c3463015631647dfc0399e952a8d8bfc4bf2e77cac13954a6bd4231f9bd"
     }
   ],
   "machinery": [

@@ -46,7 +46,7 @@ function fixture({ gates = [], machinery = [], extraScripts = [], omitManifest =
     const rel = g.script ?? `scripts/ci/check-${g.id}.mjs`;
     const testRel = g.test ?? `test/${g.id}.test.mjs`;
     if (g.writeScript !== false) writeFileSync(join(root, rel), g.content ?? "// gate\n");
-    if (g.writeTest !== false) writeFileSync(join(root, testRel), "// test\n");
+    if (g.writeTest !== false) writeFileSync(join(root, testRel), g.testContent ?? "// test\n");
     const entry = {
       id: g.id,
       script: rel,
@@ -54,6 +54,7 @@ function fixture({ gates = [], machinery = [], extraScripts = [], omitManifest =
       test: testRel,
       lane: g.lane ?? "required",
     };
+    if (g.testSha256 !== undefined) entry.testSha256 = g.testSha256; // #123: pin the test's content
     if (g.omitTestField) delete entry.test;
     manifestGates.push(entry);
   }
@@ -102,6 +103,22 @@ test("PARITY: FLAGS (1) a manifest gate whose script is missing", () => {
 test("PARITY: FLAGS (1) a manifest gate whose discrimination test is missing", () => {
   const root = fixture({ gates: [{ id: "alpha", content: "// alpha\n", writeTest: false }] });
   assert.equal(run(root), 1);
+});
+
+test("PARITY ISSUE-123: passes (0) when a gate's test matches its testSha256", () => {
+  const root = fixture({ gates: [{ id: "alpha", content: "// alpha\n", testContent: "// real test\n", testSha256: sha("// real test\n") }] });
+  assert.equal(run(root), 0);
+});
+
+test("PARITY ISSUE-123: FLAGS (1) a hollowed discrimination test (content drifts from testSha256)", () => {
+  // The committed test was replaced with an always-pass one, but testSha256 still pins the real test's hash.
+  const root = fixture({ gates: [{ id: "alpha", content: "// alpha\n", testContent: "test('ok',()=>{});\n", testSha256: sha("// the real discriminating test\n") }] });
+  assert.equal(run(root), 1);
+});
+
+test("PARITY: a gate without testSha256 still verifies test existence only (back-compat)", () => {
+  const root = fixture({ gates: [{ id: "alpha", content: "// alpha\n" }] }); // no testSha256 pinned
+  assert.equal(run(root), 0);
 });
 
 test("PARITY: FLAGS (1) an unsanctioned committed gate not in the manifest (allow-list)", () => {

@@ -116,8 +116,23 @@ const checkEntry = (entry, kind) => {
     violations.push(`${kind} "${entry.id}": source marker is "${m[1]}: ${m[2]}", expected "${kind}: ${entry.id}".`);
   }
   if (entry.test !== undefined) {
-    if (typeof entry.test !== "string" || !existsSync(resolve(dirname(MANIFEST), entry.test))) {
+    const testPath = resolve(dirname(MANIFEST), entry.test);
+    if (typeof entry.test !== "string" || !existsSync(testPath)) {
       violations.push(`${kind} "${entry.id}": test ${entry.test} is missing.`);
+    } else if (kind === "gate") {
+      // #123: a gate must pin its discrimination TEST's content (testSha256), not just name the file, so a hollowed
+      // always-pass test is caught by parity/provenance the same way a neutered gate script is. The origin is the
+      // source of truth for that hash, so require it here and verify it against the real test file (LF-normalized).
+      if (typeof entry.testSha256 !== "string") {
+        violations.push(`gate "${entry.id}": no testSha256 (every upstream gate must pin its discrimination test's hash; add it in the same commit as the test).`);
+      } else {
+        let tbytes;
+        try { tbytes = readFileSync(testPath); } catch (e) { failClosed(`cannot read test ${testPath} for gate "${entry.id}": ${e.message}.`); }
+        const actualTest = createHash("sha256").update(tbytes.toString("utf8").replace(/\r\n/g, "\n")).digest("hex");
+        if (actualTest !== entry.testSha256) {
+          violations.push(`gate "${entry.id}": test ${entry.test} sha256 ${actualTest.slice(0, 12)}… != manifest testSha256 ${String(entry.testSha256).slice(0, 12)}… (recompute it from the test in the same commit as the test change).`);
+        }
+      }
     }
   } else if (kind === "gate") {
     violations.push(`gate "${entry.id}": names no test (every gate ships one).`);

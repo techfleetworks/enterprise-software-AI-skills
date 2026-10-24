@@ -42,13 +42,20 @@ function fixture({ entries = [], extraMarked = [], omitManifest = false, rawMani
       writeFileSync(join(dir, name), body);
     }
     const testRel = `test/${e.id}.test.mjs`;
+    const testBody = e.testBody ?? "// test\n";
     if (e.writeTest !== false) {
       mkdirSync(join(root, "test"), { recursive: true });
-      writeFileSync(join(root, testRel), "// test\n");
+      writeFileSync(join(root, testRel), testBody);
     }
     const entry = { id: e.id, skill, script: `scripts/ci/${name}`, sha256: e.hash ?? sha(body), test: testRel };
-    if (kind === "gate") { entry.origin = e.origin ?? "upstream"; entry.lane = "required"; gates.push(entry); }
-    else machinery.push(entry);
+    if (kind === "gate") {
+      entry.origin = e.origin ?? "upstream";
+      entry.lane = "required";
+      // #123: every upstream gate pins its discrimination TEST's hash. e.testHash overrides it (drift case);
+      // e.omitTestSha leaves it off (missing case).
+      if (!e.omitTestSha) entry.testSha256 = e.testHash ?? sha(testBody);
+      gates.push(entry);
+    } else machinery.push(entry);
   }
   for (const x of extraMarked) {
     const dir = join(skillsDir, x.skill ?? "judge-arch", "scripts");
@@ -110,6 +117,18 @@ test("INTEGRITY: FLAGS (1) a source whose marker id does not match the manifest 
 
 test("INTEGRITY: FLAGS (1) a gate that names a test which does not exist", () => {
   assert.equal(run(fixture({ entries: [{ id: "alpha", writeTest: false }] })), 1);
+});
+
+test("INTEGRITY ISSUE-123: FLAGS (1) a gate with NO testSha256 (the test's content is not pinned)", () => {
+  assert.equal(run(fixture({ entries: [{ id: "alpha", omitTestSha: true }] })), 1);
+});
+
+test("INTEGRITY ISSUE-123: FLAGS (1) a gate whose testSha256 does not match its test file (hollowed test)", () => {
+  assert.equal(run(fixture({ entries: [{ id: "alpha", testHash: sha("a DIFFERENT, real discriminating test\n") }] })), 1);
+});
+
+test("INTEGRITY ISSUE-123: passes (0) when testSha256 matches the test file content", () => {
+  assert.equal(run(fixture({ entries: [{ id: "alpha", testBody: "import {test} from 'node:test';\ntest('real', () => {});\n" }] })), 0);
 });
 
 test("INTEGRITY: FLAGS (1) a marked source script that is not listed in the manifest", () => {

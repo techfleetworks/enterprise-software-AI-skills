@@ -104,6 +104,17 @@ closed and match on anchored paths, and adds the CI harness that keeps the whole
 - esk-init is the bootstrap installer, not a manifest gate, so no sha/provenance change. Each fix is pinned by a
   discrimination test.
 
+### Hardened (a gate pins its discrimination test's content, ADR-0080)
+
+- **Replacing a copied discrimination test with a hollow always-pass one is now caught (#123).** Each gate carries
+  a `testSha256` (LF-normalized hash of its test), so the test's *content* is pinned, not just its path:
+  `check-upstream-manifest-integrity` requires it and verifies it against the real test at the source,
+  `check-manifest-provenance` holds a consumer's value to the published release, and `check-skill-gate-parity`
+  fails on a committed test that drifts from it. Before this, the discrimination-test CI step proved nothing once
+  its test was swapped out.
+- The two gate scripts that gained the check (parity, provenance) have their manifest `sha256` recomputed; the
+  manifest gains `testSha256` on every gate. Each fix is pinned by a discrimination test.
+
 ## 1.3.0 - 2026-10-21
 
 One source of truth for the repo's own gates, so the local pre-push and CI cannot silently diverge. A new

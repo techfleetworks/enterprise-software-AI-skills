@@ -147,6 +147,12 @@ for (const g of committedUpstream) {
   if (g.sha256 !== u.sha256) {
     violations.push(`gate "${g.id}": sha256 ${String(g.sha256).slice(0, 12)}… != published ${String(u.sha256).slice(0, 12)}… (the manifest points at different gate content than the release).`);
   }
+  // Bind the gate's discrimination-test hash to the release too (#123): the release pins testSha256, so a consumer
+  // that hollowed a copied test (dropping or changing testSha256 to match its hollow copy) diverges from the
+  // published value here, the same way a changed gate script does. undefined-vs-present counts as a mismatch.
+  if (g.testSha256 !== u.testSha256) {
+    violations.push(`gate "${g.id}": testSha256 ${String(g.testSha256).slice(0, 12)}… != published ${String(u.testSha256).slice(0, 12)}… (the manifest pins a different discrimination-test than the release, i.e. a hollowed test).`);
+  }
   if ((g.lane ?? "required") !== (u.lane ?? "required")) {
     violations.push(`gate "${g.id}": lane "${g.lane}" != published lane "${u.lane}" (a required upstream gate cannot be downgraded locally).`);
   }
