@@ -41,6 +41,18 @@ const opt = (n, d) => { const i = args.indexOf(n); return i >= 0 && args[i + 1] 
 const die2 = (m) => { console.error(`[check-skill-receipt] FAIL (closed) - ${m}`); process.exit(2); };
 const parseList = (s) => (s == null ? null : String(s).split(",").map((x) => x.trim().split("\\").join("/")).filter(Boolean));
 
+// --- usage + unknown-flag guard, before any work (#140) ----------------------------------------------------
+const USAGE = `check-skill-receipt - verify the skill-application receipt log for a change is complete and grounded.
+Usage: node check-skill-receipt.mjs [--change <name>] [--receipt <log.jsonl>] [--skills-dir <dir>]
+                                    [--config <path>] [--changed-list <csv>] [--base <ref>]
+  Default: validate the latest receipt entry. --changed-list also checks diff-binding + coupling.`;
+if (args.includes("--help") || args.includes("-h")) { console.log(USAGE); process.exit(0); }
+{
+  const KNOWN = new Set(["--change", "--receipt", "--skills-dir", "--config", "--changed-list", "--base", "--help"]);
+  const unknown = args.filter((a) => a.startsWith("--") && !KNOWN.has(a));
+  if (unknown.length) die2(`unknown flag(s): ${unknown.join(", ")}. Run with --help for usage.`);
+}
+
 const receiptPath = resolve(opt("--receipt", "docs/skill-receipts/log.jsonl"));
 const skillsDir = resolve(opt("--skills-dir", ".claude/skills"));
 const configPath = resolve(opt("--config", join(skillsDir, "judge-arch", "assets", "skill-receipt.config.json")));

@@ -101,3 +101,18 @@ test("missing file fails closed (exit 2)", () => {
     assert.equal(e.status, 2);
   }
 });
+
+// --- ISSUE-140: --help exits 0 with usage; an unknown flag is rejected ---
+test("ISSUE-140: claim-lint --help prints usage and exits 0", () => {
+  const out = execFileSync("node", [CHECK, "--help"], { encoding: "utf8" });
+  assert.match(out, /usage:/i);
+});
+test("ISSUE-140: claim-lint rejects an unknown flag (exit 2)", () => {
+  const dir = mkdtempSync(join(tmpdir(), "cl-help-"));
+  const f = join(dir, "draft.md");
+  writeFileSync(f, "# ok\n");
+  let code = 0, out = "";
+  try { execFileSync("node", [CHECK, f, "--stric"], { encoding: "utf8", stdio: "pipe" }); } catch (e) { code = e.status; out = (e.stdout || "") + (e.stderr || ""); }
+  assert.equal(code, 2);
+  assert.match(out, /unknown flag/);
+});

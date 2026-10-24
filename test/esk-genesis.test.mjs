@@ -558,3 +558,15 @@ process.on("exit", () => {
     }
   }
 });
+
+// --- ISSUE-140: --help exits 0 with usage; an unknown flag is rejected ---
+test("ISSUE-140: esk-genesis --help prints usage and exits 0", () => {
+  const out = execFileSync("node", [GEN, "--help"], { encoding: "utf8" });
+  assert.match(out, /Usage:/);
+});
+test("ISSUE-140: esk-genesis rejects an unknown flag (exit 2)", () => {
+  let code = 0, out = "";
+  try { execFileSync("node", [GEN, "--yes", "--taget", "x"], { encoding: "utf8", stdio: "pipe" }); } catch (e) { code = e.status; out = (e.stdout || "") + (e.stderr || ""); }
+  assert.equal(code, 2);
+  assert.match(out, /unknown flag/);
+});

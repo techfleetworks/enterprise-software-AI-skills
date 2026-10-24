@@ -221,3 +221,15 @@ test("the repository's own latest receipt is complete and grounded against the r
     "--skills-dir", resolve(REPO, ".claude/skills")], { encoding: "utf8" });
   assert.equal(r.status, 0, out(r));
 });
+
+// --- ISSUE-140: --help exits 0 with usage; an unknown flag is rejected (fail-closed) ---
+test("ISSUE-140: check-skill-receipt --help prints usage and exits 0", () => {
+  const r = spawnSync(process.execPath, [GATE, "--help"], { encoding: "utf8" });
+  assert.equal(r.status, 0, (r.stdout || "") + (r.stderr || ""));
+  assert.match(r.stdout, /Usage:/);
+});
+test("ISSUE-140: check-skill-receipt rejects an unknown flag (exit 2)", () => {
+  const r = spawnSync(process.execPath, [GATE, "--chnage", "x"], { encoding: "utf8" });
+  assert.equal(r.status, 2);
+  assert.match((r.stdout || "") + (r.stderr || ""), /unknown flag/);
+});
