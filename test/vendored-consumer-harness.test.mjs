@@ -88,6 +88,17 @@ test("a vendoring consumer passes every scaffolded gate and its discrimination t
     //    child reports its real exit code.
     const dt = spawnSync(process.execPath, ["--test", join(C, "test", "arch-gate.test.mjs")], { cwd: C, encoding: "utf8", env: childEnv({ GATE_DIR: join(C, "scripts", "ci") }) });
     assert.equal(dt.status, 0, `arch-gate discrimination test FAILED in the consumer layout:\n${dt.stdout}\n${dt.stderr}`);
+
+    // 7. #120 (behavioral): parity/provenance must run DIRECTLY in the generated workflow, not THROUGH the runner
+    //    they verify. Neuter the runner, then show both halves: running parity through the no-op runner passes
+    //    vacuously (the hole), while running parity's own script directly - exactly what the workflow now does -
+    //    still CATCHES the drifted runner. Done last (it tampers with the runner) so earlier steps are unaffected.
+    const runnerPath = join(C, "scripts", "ci", "run-manifest-gates.mjs");
+    writeFileSync(runnerPath, "process.exit(0);\n"); // neuter: its sha now differs from the manifest
+    const throughRunner = spawnSync(process.execPath, [runnerPath, "--only", "skill-gate-parity"], { cwd: C, encoding: "utf8", env: gateEnv });
+    assert.equal(throughRunner.status, 0, "a no-op runner makes parity pass THROUGH the runner — the #120 hole the workflow must avoid");
+    const direct = spawnSync(process.execPath, [join(C, "scripts", "ci", "check-skill-gate-parity.mjs")], { cwd: C, encoding: "utf8", env: gateEnv });
+    assert.notEqual(direct.status, 0, "running parity's own script directly (as the generated workflow now does) must still CATCH the drifted runner");
   } finally {
     // Best-effort: a Windows file lock throwing from rmSync must not mask the test verdict (CI/Linux unaffected).
     try { rmSync(C, { recursive: true, force: true }); } catch { /* leave the temp dir rather than throw */ }

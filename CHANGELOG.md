@@ -104,6 +104,19 @@ closed and match on anchored paths, and adds the CI harness that keeps the whole
 - esk-init is the bootstrap installer, not a manifest gate, so no sha/provenance change. Each fix is pinned by a
   discrimination test.
 
+### Hardened (generated CI workflow can't be hollowed; one fetch error can't red it, ADR-0079)
+
+- **The parity and provenance gates run DIRECTLY in the generated workflow, not through the runner they verify
+  (#120).** `skill-gate-parity` and `manifest-provenance` now run their own `check-<gate>.mjs` instead of
+  `run-manifest-gates.mjs --only`, so a no-op or weakened runner can no longer make the parity job pass vacuously
+  and defeat the drift/tamper detection it advertises; every other gate still runs via the aggregator.
+- **Only the manifest-provenance job fetches the upstream manifest (#125),** so a transient github.com error can
+  red at most that one job instead of the whole required check, and a run makes one download instead of one per
+  gate; the fetch now retries a transient error.
+- Workflow-template only (no gate/machinery/manifest change, so no sha/provenance change). Pinned by
+  generated-workflow assertions plus a behavioral harness check that a no-op runner is caught by the direct parity
+  invocation.
+
 ### Hardened (a gate pins its discrimination test's content, ADR-0080)
 
 - **Replacing a copied discrimination test with a hollow always-pass one is now caught (#123).** Each gate carries

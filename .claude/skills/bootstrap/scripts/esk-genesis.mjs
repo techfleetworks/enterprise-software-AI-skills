@@ -365,19 +365,23 @@ jobs:
         with:
           node-version: 24
       # Fetch the pinned upstream release manifest so the provenance gate can verify this repo's committed
-      # manifest. 404 (no release for this version) leaves the file absent, which provenance treats as "not
-      # published" and fails closed; any other error fails this step.
+      # manifest. ONLY the manifest-provenance job needs it, so only that job fetches (#125): otherwise a
+      # transient github.com error in any of the gate jobs would red that job and the required check, for a file
+      # the job never reads, and it would cost one download per gate. 404 (no release for this version) leaves the
+      # file absent, which provenance treats as "not published" and fails closed; --retry rides out a transient
+      # error; any other non-2xx/404 fails this step.
       - name: Fetch upstream manifest for provenance
+        if: matrix.gate == 'manifest-provenance'
         run: |
           v=$(node -p "require('./gate-manifest.json').version")
           url="https://github.com/${upstreamRepo}/releases/download/v\${v}/gate-manifest.json"
-          code=$(curl -sSL -o /tmp/upstream-manifest.json -w '%{http_code}' "$url" || echo 000)
+          code=$(curl -sSL --retry 3 --retry-all-errors -o /tmp/upstream-manifest.json -w '%{http_code}' "$url" || echo 000)
           if [ "$code" = "404" ]; then rm -f /tmp/upstream-manifest.json; fi
           if [ "$code" != "200" ] && [ "$code" != "404" ]; then echo "upstream fetch failed: HTTP $code"; exit 1; fi
       # The gates default their repo-root resolution to their UPSTREAM location (four levels up). In a
       # consumer they live in scripts/ci (two levels up), so this env tells each gate where the repo root,
-      # manifest, and gate dir actually are. --only runs just THIS matrix gate, reusing every aggregator
-      # safeguard (within-repo, invoke validation, lane, fail-closed).
+      # manifest, and gate dir actually are. Most gates run via the aggregator with --only (just THIS matrix
+      # gate, reusing every aggregator safeguard); the two self-verifying gates run directly - see below.
       - name: Run gate \${{ matrix.gate }}
         env:
           GATE_REPO_ROOT: \${{ github.workspace }}
@@ -385,7 +389,18 @@ jobs:
           GATE_DIR: \${{ github.workspace }}/scripts/ci
           GATE_UPSTREAM_FILE: /tmp/upstream-manifest.json
           GATE_UPSTREAM_REPO: ${upstreamRepo}
-        run: node scripts/ci/run-manifest-gates.mjs --only "\${{ matrix.gate }}"
+        # skill-gate-parity and manifest-provenance VERIFY the runner/machinery and the committed manifest, so they
+        # must NOT be executed THROUGH the runner they check: a no-op run-manifest-gates would otherwise make them
+        # pass vacuously, defeating the drift/tamper detection parity advertises (#120). Run those two directly
+        # from their own script; every OTHER gate runs via the aggregator, which adds the within-repo / invoke /
+        # lane / fail-closed safeguards. Both forms read the same GATE_* env above.
+        run: |
+          case "\${{ matrix.gate }}" in
+            skill-gate-parity|manifest-provenance)
+              node scripts/ci/check-\${{ matrix.gate }}.mjs ;;
+            *)
+              node scripts/ci/run-manifest-gates.mjs --only "\${{ matrix.gate }}" ;;
+          esac
       # Run the gate's discrimination test IN the consumer, so a copied gate that was neutered (made
       # vacuous) is caught here, not just upstream. The manifest guarantees each gate ships a test, and
       # genesis copies it; a missing test file is therefore a real problem, so fail rather than skip.
