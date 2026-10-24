@@ -35,6 +35,14 @@ closed and match on anchored paths, and adds the CI harness that keeps the whole
 - **The harness strips `NODE_TEST_CONTEXT` from child `node --test` runs (#119),** so a neutered copied gate
   test can no longer false-pass; a vacuity guard fails if the stripping regresses.
 
+### Hardened (arch-gate detection + reporting, ADR-0074)
+
+- **arch-gate now fails closed on an unreadable path (#149)** instead of reporting PASS on a tree it could not
+  fully read, **reports `evaluated X of Y` files (#127)** rather than the walked total, **covers Python**
+  (`except: pass`) and **warns when zero code files were evaluated (#146)**, and **`emptyCatch` now flags an
+  empty `.catch(() => {})` arrow handler (#124)**, not only a `catch {}` block. Each pinned by a discrimination
+  test.
+
 ## 1.3.0 - 2026-10-21
 
 One source of truth for the repo's own gates, so the local pre-push and CI cannot silently diverge. A new
