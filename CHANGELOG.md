@@ -136,12 +136,18 @@ closed and match on anchored paths, and adds the CI harness that keeps the whole
   a misspelling of `--personal`) can no longer be silently ignored and fall back to a different scope or mode.
 - CLI scripts, not manifest gates, so no sha/provenance change. Each behavior is pinned by a discrimination test.
 
-### Fixed (docs: skeptical-audit's claim-lint self-check shows --strict, #141)
+### Fixed (--changed-list checks don't treat vendored skills as product code, ADR-0083)
 
-- **The skeptical-audit SKILL's self-check example now runs `claim-lint --strict`,** matching its own definition
-  of done (which requires `--strict`), and states that the default is warn-only (findings print but exit 0). A
-  reader copying the example into a script or CI step no longer gets a silent exit 0 on a draft with findings.
-  Docs only; no code change.
+- **Re-vendoring the skills no longer forces a dishonest receipt or thousands of review cells (#151).**
+  `check-skill-receipt`'s coupling check and `check-arch-review-coverage` now exclude paths under the vendored
+  `.claude/skills` tree, so a change that only re-vendors the skills can carry an all-`not-applicable` receipt and
+  a review entry with no cells for vendored files. The in-tree discrimination fixtures ride the same tree prefix.
+- The exclusion is narrow and anchored by path prefix (`.claude/skills`, plus an optional `--exclude`), never a
+  substring, so a real product path (including one that merely contains `discriminate-fixtures` outside the tree)
+  still fires coupling and still needs a review cell. A `--no-default-skills-exclude` flag drops the default so the
+  upstream repo (whose own product is `.claude/skills`) still couples and reviews its own skill changes.
+- The receipt's diff-binding check is unchanged (full list). Neither script is a manifest gate, so no
+  sha/provenance change. Each behavior is pinned by a discrimination test.
 
 ## 1.3.0 - 2026-10-21
 
