@@ -10,6 +10,21 @@ skills with `esk-genesis` and vendors them under `.claude/skills/` showed the ga
 end to end on that layout. This release makes a vendoring consumer install green, hardens the gates to fail
 closed and match on anchored paths, and adds the CI harness that keeps the whole class from recurring.
 
+### Fixed (private-repo ruleset guidance, ADR-0084)
+
+- **Applying the ruleset on a private repo without a rulesets plan now explains the options (#152).**
+  `scripts/apply-ruleset.sh` no longer swallows a failed lookup with `|| true` and marches on to the create call;
+  a refused lookup, update, or create is routed to one handler that, on a plan/visibility 403, prints what GitHub
+  returned plus the options (upgrade the plan, make the repo public, or require the check via classic branch
+  protection) instead of aborting on gh's raw error under `set -euo pipefail`.
+- **The plan requirement is documented before the last step.** The genesis next-step output and
+  `docs/repository-governance.md` now say that applying a ruleset to a private repository can need a plan that
+  includes rulesets, and link to GitHub's plans page. The gates still run in CI on every PR regardless; only the
+  merge-blocking enforcement waits until a ruleset (or equivalent protection) requires the check.
+- `apply-ruleset.sh` is an installer script, not a manifest gate, so no sha/provenance change. Pinned by
+  discrimination tests (a refused lookup and a refused create each exit non-zero with the guidance; the happy
+  path still applies and records the marker).
+
 ### Fixed (vendoring install, ADR-0072)
 
 - **arch-gate no longer fails a vendoring consumer (#142).** Its published `invoke` now skips `.claude/skills`
@@ -135,19 +150,6 @@ closed and match on anchored paths, and adds the CI harness that keeps the whole
 - **An unknown `--flag` is now rejected with exit 2** on all four, so a typo (for example `esk-init --persnal`,
   a misspelling of `--personal`) can no longer be silently ignored and fall back to a different scope or mode.
 - CLI scripts, not manifest gates, so no sha/provenance change. Each behavior is pinned by a discrimination test.
-
-### Fixed (--changed-list checks don't treat vendored skills as product code, ADR-0083)
-
-- **Re-vendoring the skills no longer forces a dishonest receipt or thousands of review cells (#151).**
-  `check-skill-receipt`'s coupling check and `check-arch-review-coverage` now exclude paths under the vendored
-  `.claude/skills` tree, so a change that only re-vendors the skills can carry an all-`not-applicable` receipt and
-  a review entry with no cells for vendored files. The in-tree discrimination fixtures ride the same tree prefix.
-- The exclusion is narrow and anchored by path prefix (`.claude/skills`, plus an optional `--exclude`), never a
-  substring, so a real product path (including one that merely contains `discriminate-fixtures` outside the tree)
-  still fires coupling and still needs a review cell. A `--no-default-skills-exclude` flag drops the default so the
-  upstream repo (whose own product is `.claude/skills`) still couples and reviews its own skill changes.
-- The receipt's diff-binding check is unchanged (full list). Neither script is a manifest gate, so no
-  sha/provenance change. Each behavior is pinned by a discrimination test.
 
 ## 1.3.0 - 2026-10-21
 
