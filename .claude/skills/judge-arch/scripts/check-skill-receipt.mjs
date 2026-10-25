@@ -48,7 +48,7 @@ Usage: node check-skill-receipt.mjs [--change <name>] [--receipt <log.jsonl>] [-
   Default: validate the latest receipt entry. --changed-list also checks diff-binding + coupling.`;
 if (args.includes("--help") || args.includes("-h")) { console.log(USAGE); process.exit(0); }
 {
-  const KNOWN = new Set(["--change", "--receipt", "--skills-dir", "--config", "--changed-list", "--base", "--help"]);
+  const KNOWN = new Set(["--change", "--receipt", "--skills-dir", "--config", "--changed-list", "--base", "--exclude", "--no-default-skills-exclude", "--help"]);
   const unknown = args.filter((a) => a.startsWith("--") && !KNOWN.has(a));
   if (unknown.length) die2(`unknown flag(s): ${unknown.join(", ")}. Run with --help for usage.`);
 }
@@ -59,6 +59,20 @@ const configPath = resolve(opt("--config", join(skillsDir, "judge-arch", "assets
 const change = opt("--change", null);
 const basePath = opt("--base", null);
 const changed = parseList(opt("--changed-list", null)); // null = not provided
+// #151: for the COUPLING check, a changed path under the vendored skills tree is not the consumer's own product
+// surface - re-vendoring the skills must not fire the behavior/ui coupling rules and force a false "applied".
+// Default: exclude the conventional repo-relative .claude/skills tree (the --changed-list paths are repo-relative);
+// --exclude adds prefixes; --no-default-skills-exclude drops the default so the UPSTREAM repo (whose OWN product IS
+// .claude/skills) still couples its own skill changes (review N1). In-tree discrimination fixtures live under
+// .claude/skills, so the prefix already covers them - no separate, un-anchored fixtures match (review N2). Matching
+// is an anchored path-prefix (f === p or f starts with p + "/"), never a substring, so `src/.claude/skills/x` is NOT
+// excluded. Diff-binding below still uses the FULL `changed`, so a receipt citing a vendored file it changed binds.
+const PATH_EXCLUDE = [
+  ...(args.includes("--no-default-skills-exclude") ? [] : [".claude/skills"]),
+  ...(opt("--exclude", "") || "").split(",").map((s) => s.trim().split("\\").join("/").replace(/\/+$/, "")).filter(Boolean),
+].filter((p, i, a) => p && a.indexOf(p) === i);
+const isVendoredPath = (f) => PATH_EXCLUDE.some((p) => f === p || f.startsWith(p + "/"));
+const couplingChanged = changed ? changed.filter((f) => !isVendoredPath(f)) : changed;
 
 // --- the skill set: dirs under skills-dir holding a SKILL.md, minus bootstrap (the installer, not a per-change
 // discipline). Derived, so it is accurate by construction and cannot drift from the real skills. --------------
@@ -186,7 +200,7 @@ for (const name of skillSet) {
 let couplingNote;
 if (changed && coupling.length) {
   for (const rule of coupling) {
-    const fired = changed.some((f) => rule.when.some((re) => re.test(f)));
+    const fired = couplingChanged.some((f) => rule.when.some((re) => re.test(f)));
     if (!fired) continue;
     for (const req of rule.requires) {
       const s = entry.skills[req];
