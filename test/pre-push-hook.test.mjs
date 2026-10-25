@@ -216,3 +216,23 @@ process.on("exit", () => {
     }
   }
 });
+
+// --- ISSUE-134: the pre-push does not scan gitignored paths (it matches CI's committed-only file set) ---------
+test("ISSUE-134: a gitignored file does NOT fail the pre-push (CI never scans it); once tracked it does (discriminating)", () => {
+  const dir = mkdtempSync(join(tmpdir(), "prepush-gi-"));
+  created.push(dir);
+  execFileSync("git", ["init", "-q", dir], { stdio: "pipe" });
+  execFileSync("git", ["-C", dir, "config", "core.autocrlf", "false"], { stdio: "pipe" });
+  mkdirSync(join(dir, "scripts", "ci"), { recursive: true });
+  // the REAL no-ua-sniffing gate, which supports --ignore (that is how the hook excludes gitignored paths)
+  copyFileSync(resolve(process.cwd(), ".claude/skills/universal-browser-device-support/scripts/check-no-ua-sniffing.mjs"), join(dir, "scripts", "ci", "check-no-ua-sniffing.mjs"));
+  writeFileSync(join(dir, "gate-manifest.json"), JSON.stringify({ version: "1.0.0", gates: [{ id: "no-ua-sniffing", origin: "upstream", skill: "x", script: "scripts/ci/check-no-ua-sniffing.mjs", sha256: "0".repeat(64), test: "t", lane: "required", invoke: ["--allow-empty", "--ignore", "scripts/ci", "."] }], aggregator: { requiredCheck: "enterprise-gates" } }));
+  mkdirSync(join(dir, ".venv", "pkg"), { recursive: true });
+  writeFileSync(join(dir, ".venv", "pkg", "widget.js"), 'if (navigator.userAgent.indexOf("Trident") > -1) { legacy(); }\n');
+  // Gitignored: CI never sees it, so the hook must pass. Reverting the fix scans .venv and fails here.
+  writeFileSync(join(dir, ".gitignore"), ".venv/\n");
+  assert.equal(runHook(dir), 0, "a gitignored sniffing file must not fail the pre-push (CI never scans it)");
+  // Control: the SAME file, no longer gitignored, IS scanned and blocks.
+  writeFileSync(join(dir, ".gitignore"), "# .venv no longer ignored\n");
+  assert.notEqual(runHook(dir), 0, "once the file is tracked/not-ignored, the pre-push scans it and blocks");
+});

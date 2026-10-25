@@ -29,6 +29,20 @@ try {
   root = resolve(process.cwd());
 }
 
+// #134: CI only ever sees COMMITTED files - gitignored paths (a local .venv, build/, a tool cache) are not in
+// the repository. The local hook runs the gates over the WORKING TREE, so without this it would fail on files CI
+// never scans (observed: a third-party .js inside a gitignored .venv/ failing no-ua-sniffing). Collect git's own
+// ignore set and feed it to each gate as extra --ignore paths below, so the local pre-flight matches CI. This is
+// a LOCAL, hook-only adjustment scoped to exactly what git ignores; it does NOT change the manifest invoke, so
+// provenance/parity are unaffected and the ADR-0061 invoke-lock stays intact (it is not a path-level waiver).
+let ignoredPaths = [];
+try {
+  const out = execSync("git ls-files --others --ignored --exclude-standard --directory", { cwd: root, encoding: "utf8" });
+  ignoredPaths = out.split(/\r?\n/).map((s) => s.trim().replace(/\/+$/, "")).filter(Boolean);
+} catch {
+  /* not a git repo, or git unavailable: scan everything, as before (fail safe toward scanning MORE, not less) */
+}
+
 // Gates that need the network (the published upstream release asset) are CI-only; everything else in the
 // manifest is offline and runs here. Keyed by gate id so this stays a tiny, stable list.
 const NETWORK_GATES = new Set(["manifest-provenance"]);
@@ -84,6 +98,16 @@ for (const gate of gates) {
       process.exit(1);
     }
     invokeArgs = gate.invoke;
+  }
+  // #134: for a gate that accepts --ignore (its invoke already uses it), add git's ignored paths so an
+  // uncommitted local directory cannot fail the pre-push on files CI never sees. The gates collect --ignore
+  // from anywhere in argv, so appending after the scan path is fine. A gate with no --ignore in its invoke
+  // (parity/provenance/bootstrap-presence/retention-basis) does not scan the tree for product code, so it is
+  // left untouched. This narrows the LOCAL run to git's ignore set only; it does not touch the manifest invoke.
+  if (ignoredPaths.length && invokeArgs.includes("--ignore")) {
+    const extra = [];
+    for (const p of ignoredPaths) extra.push("--ignore", p);
+    invokeArgs = [...invokeArgs, ...extra];
   }
   const res = spawnSync(process.execPath, [abs, ...invokeArgs], { stdio: "inherit", env });
   // A crash or signal (status null) counts as a failure, same as a non-zero exit.
