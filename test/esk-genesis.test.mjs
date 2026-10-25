@@ -383,6 +383,35 @@ test("CODE-OWNERS: an all-whitespace --code-owners value is a blocker (no owner 
   assert.match(r.out, /no owner was parsed/i);
 });
 
+// #144 (ADR-0086): a reconcile is forward-only; esk-genesis must not silently move the pin to an OLDER version.
+test("DOWNGRADE #144: refuses to move the pin backward without --allow-downgrade (fail closed, nothing written)", () => {
+  const hi = buildSource({ version: "2.0.0", gates: [{ id: "alpha" }] });
+  const lo = buildSource({ version: "1.0.0", gates: [{ id: "alpha" }] });
+  const tgt = newTarget();
+  assert.equal(run(hi, tgt, ["--yes"]), 0, "install 2.0.0");
+  const r = runCapture(lo, tgt, ["--yes"]);
+  assert.equal(r.code, 2, "a backward pin must be refused (exit 2): " + r.out);
+  assert.match(r.out, /backward|forward-only/i);
+  assert.equal(readManifest(tgt).version, "2.0.0", "the refused downgrade must leave the pin at 2.0.0");
+});
+test("DOWNGRADE #144: --allow-downgrade permits the backward move", () => {
+  const hi = buildSource({ version: "2.0.0", gates: [{ id: "alpha" }] });
+  const lo = buildSource({ version: "1.0.0", gates: [{ id: "alpha" }] });
+  const tgt = newTarget();
+  assert.equal(run(hi, tgt, ["--yes"]), 0);
+  assert.equal(run(lo, tgt, ["--yes", "--allow-downgrade"]), 0, "explicit opt-in must be allowed");
+  assert.equal(readManifest(tgt).version, "1.0.0");
+});
+test("DOWNGRADE #144: a forward move and a same-version reconcile are allowed (discriminating)", () => {
+  const lo = buildSource({ version: "1.0.0", gates: [{ id: "alpha" }] });
+  const hi = buildSource({ version: "2.0.0", gates: [{ id: "alpha" }] });
+  const tgt = newTarget();
+  assert.equal(run(lo, tgt, ["--yes"]), 0);
+  assert.equal(run(hi, tgt, ["--yes"]), 0, "forward 1.0.0 -> 2.0.0 must be allowed");
+  assert.equal(readManifest(tgt).version, "2.0.0");
+  assert.equal(run(hi, tgt, ["--yes"]), 0, "a same-version reconcile must be allowed");
+});
+
 test("RECONCILE: a gate dropped upstream is removed (no orphan)", () => {
   const tgt = newTarget();
   run(buildSource({ version: "1.0.0", gates: [{ id: "alpha" }, { id: "foo" }] }), tgt, ["--yes"]);

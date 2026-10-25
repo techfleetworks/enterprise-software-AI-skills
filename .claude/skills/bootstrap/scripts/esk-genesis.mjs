@@ -50,17 +50,23 @@ const args = process.argv.slice(2);
 const flag = (n) => args.includes(n);
 const opt = (n) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : undefined; };
 const die = (msg) => { console.error(`[esk-genesis] FAIL: ${msg}`); process.exit(2); };
+// Compare two format-validated "x.y.z" semver strings numerically. Returns -1 if a < b, 0 if equal, 1 if a > b.
+const cmpSemver = (a, b) => {
+  const pa = a.split(".").map(Number), pb = b.split(".").map(Number);
+  for (let i = 0; i < 3; i++) if (pa[i] !== pb[i]) return pa[i] < pb[i] ? -1 : 1;
+  return 0;
+};
 
 // --- usage + unknown-flag guard, before any work (#140) ----------------------------------------------------
 const USAGE = `esk-genesis - install/reconcile the enterprise CI gates into a consumer repo from the upstream manifest.
 Usage: node esk-genesis.mjs [--source <skills-repo>] [--target <repo>] [--yes] [--code-owners "@a @b"]
-                            [--version <x.y.z>] [--adopt-existing]
+                            [--version <x.y.z>] [--adopt-existing] [--allow-downgrade]
   no --yes = plan only (dry run); --yes = apply. --source defaults to this skills repo, --target to the cwd.`;
 if (flag("--help") || flag("-h")) { console.log(USAGE); process.exit(0); }
 {
   // Reject an unknown --flag so a typo cannot silently change behavior. --opt values are paths/owners/versions
   // (never --prefixed), so this only catches real typos.
-  const KNOWN = new Set(["--source", "--target", "--yes", "--code-owners", "--version", "--adopt-existing", "--help"]);
+  const KNOWN = new Set(["--source", "--target", "--yes", "--code-owners", "--version", "--adopt-existing", "--allow-downgrade", "--help"]);
   const unknown = args.filter((a) => a.startsWith("--") && !KNOWN.has(a));
   if (unknown.length) die(`unknown flag(s): ${unknown.join(", ")}. Run with --help for usage.`);
 }
@@ -168,6 +174,19 @@ if (foreignPrior && !adoptExisting) {
 // Only a manifest we recognize as ours drives reconcile deletions; a foreign one being adopted is treated as
 // a fresh layering (no removals), so its gates survive as repo-local.
 const priorForReconcile = looksLikeOurManifest(prior) ? prior : null;
+
+// Forward-only (CONTRIBUTING.md: "Consumers upgrade forward only"). A reconcile moves a consumer to a NEWER
+// pinned version and must not move it backward. esk-genesis used to move the pin DOWN silently when run from an
+// older source, or given --version <lower> (#144), which contradicts the documented guarantee and brings back
+// version-specific bugs (e.g. a v1.2.0 invoke that lacks --ignore .claude/skills, so a vendored gate fails on
+// its own copy). Refuse a backward move unless the operator explicitly opts in with --allow-downgrade. The pin
+// is only ever moved at genesis, so this is the right layer to block it (provenance is offline and stateless: it
+// verifies the committed manifest is faithful to the release it pins, not that the pin is the latest release).
+if (priorForReconcile && typeof priorForReconcile.version === "string" && /^\d+\.\d+\.\d+$/.test(priorForReconcile.version)) {
+  if (cmpSemver(version, priorForReconcile.version) < 0 && !flag("--allow-downgrade")) {
+    die(`refusing to move the pin BACKWARD, from ${priorForReconcile.version} to ${version}: esk-genesis reconcile is forward-only (CONTRIBUTING.md). An older pin reintroduces version-specific bugs. If you truly intend to downgrade, re-run with --allow-downgrade.`);
+  }
+}
 
 // Copies: every upstream gate + machinery script, and every gate test.
 const copies = []; // { from, to, sha256 (expected), label }

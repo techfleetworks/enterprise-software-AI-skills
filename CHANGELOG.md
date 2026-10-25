@@ -10,6 +10,20 @@ skills with `esk-genesis` and vendors them under `.claude/skills/` showed the ga
 end to end on that layout. This release makes a vendoring consumer install green, hardens the gates to fail
 closed and match on anchored paths, and adds the CI harness that keeps the whole class from recurring.
 
+### Fixed (esk-genesis enforces forward-only, ADR-0086)
+
+- **`esk-genesis` refuses to move a consumer's pin backward without `--allow-downgrade` (#144).** Run from an
+  older source, or given `--version <lower>`, it used to move the pin down (for example 1.2.1 to 1.2.0) silently
+  with exit 0, contradicting the documented forward-only guarantee and reintroducing version-specific bugs (such
+  as a v1.2.0 invoke that lacks `--ignore .claude/skills`). It now compares the new version against the target's
+  pinned version and fails closed (exit 2) on a backward move, before writing anything, naming the
+  `--allow-downgrade` escape. A forward or same-version reconcile is unchanged.
+- The forward-only guarantee is enforced at the point of change (genesis), not in `check-manifest-provenance`,
+  which stays offline and stateless (it verifies the committed manifest is faithful to the release it pins, not
+  that the pin is the latest). `esk-genesis.mjs` is the installer, not a manifest gate, so no sha/provenance
+  change. Pinned by discrimination tests (backward refused + nothing written; `--allow-downgrade` permits;
+  forward/same allowed).
+
 ### Fixed (vendoring install, ADR-0072)
 
 - **arch-gate no longer fails a vendoring consumer (#142).** Its published `invoke` now skips `.claude/skills`
