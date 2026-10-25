@@ -54,13 +54,13 @@ const die = (msg) => { console.error(`[esk-genesis] FAIL: ${msg}`); process.exit
 // --- usage + unknown-flag guard, before any work (#140) ----------------------------------------------------
 const USAGE = `esk-genesis - install/reconcile the enterprise CI gates into a consumer repo from the upstream manifest.
 Usage: node esk-genesis.mjs [--source <skills-repo>] [--target <repo>] [--yes] [--code-owners "@a @b"]
-                            [--version <x.y.z>] [--adopt-existing]
+                            [--version <x.y.z>] [--adopt-existing] [--check-integration-id <app-id|none>]
   no --yes = plan only (dry run); --yes = apply. --source defaults to this skills repo, --target to the cwd.`;
 if (flag("--help") || flag("-h")) { console.log(USAGE); process.exit(0); }
 {
   // Reject an unknown --flag so a typo cannot silently change behavior. --opt values are paths/owners/versions
   // (never --prefixed), so this only catches real typos.
-  const KNOWN = new Set(["--source", "--target", "--yes", "--code-owners", "--version", "--adopt-existing", "--help"]);
+  const KNOWN = new Set(["--source", "--target", "--yes", "--code-owners", "--version", "--adopt-existing", "--check-integration-id", "--help"]);
   const unknown = args.filter((a) => a.startsWith("--") && !KNOWN.has(a));
   if (unknown.length) die(`unknown flag(s): ${unknown.join(", ")}. Run with --help for usage.`);
 }
@@ -269,6 +269,25 @@ const workflowExists = existsSync(workflowPath);
 const requiredCheck = src.aggregator?.requiredCheck || "enterprise-gates";
 const rulesetPath = join(TARGET, ".github", "rulesets", "enterprise-gates.json");
 const rulesetExists = existsSync(rulesetPath);
+
+// Pin the required check to the app that must PRODUCE it, not just its name (#148, ADR-0085). Without an
+// integration_id the rule names the check but not its source, so any actor that can post a status named
+// `enterprise-gates` on the head commit satisfies it. esk-genesis scaffolds a GitHub Actions workflow, so the
+// expected producer is the GitHub Actions app (id 15368 on github.com); that is the default. A host with a
+// different producer (GitHub Enterprise Server, a GitHub App, a self-hosted CI) passes --check-integration-id
+// <its-app-id>, and --check-integration-id none opts out (context-only, the prior unpinned behavior).
+const GITHUB_ACTIONS_APP_ID = 15368;
+const integrationIdRaw = opt("--check-integration-id");
+let checkIntegrationId = GITHUB_ACTIONS_APP_ID;
+if (integrationIdRaw !== undefined) {
+  if (integrationIdRaw === "none") checkIntegrationId = null;
+  else if (/^[1-9][0-9]*$/.test(integrationIdRaw)) checkIntegrationId = Number(integrationIdRaw);
+  else die(`--check-integration-id must be a positive integer (an app id) or "none"; got ${JSON.stringify(integrationIdRaw)}.`);
+}
+const requiredStatusCheck = checkIntegrationId == null
+  ? { context: requiredCheck }
+  : { context: requiredCheck, integration_id: checkIntegrationId };
+
 const RULESET = JSON.stringify({
   name: "enterprise-gates",
   target: "branch",
@@ -277,7 +296,7 @@ const RULESET = JSON.stringify({
   rules: [
     { type: "deletion" },
     { type: "non_fast_forward" },
-    { type: "required_status_checks", parameters: { strict_required_status_checks_policy: true, required_status_checks: [{ context: requiredCheck }] } },
+    { type: "required_status_checks", parameters: { strict_required_status_checks_policy: true, required_status_checks: [requiredStatusCheck] } },
   ],
 }, null, 2) + "\n";
 const applyScriptSrc = join(SOURCE, "scripts", "apply-ruleset.sh");
@@ -515,7 +534,7 @@ for (const r of removals) console.log(`    - remove dropped upstream gate ${r.sc
 for (const r of repoLocal) console.log(`    - preserve repo-local gate ${r.script} (recorded as adopted${r.hasTest ? "" : "; WARNING: no test at " + r.test + " - parity will flag it until you add one"})`);
 if (manifestChanged) console.log(`    - ${prior ? "update" : "write"} gate-manifest.json (pin ${version})`);
 if (workflowChanged) console.log(`    - ${workflowExists ? "update" : "scaffold"} .github/workflows/enterprise-gates.yml (the single required check)`);
-if (!rulesetExists) console.log(`    - scaffold .github/rulesets/enterprise-gates.json (requires the "${requiredCheck}" check; apply it with scripts/apply-ruleset.sh to BLOCK merges)`);
+if (!rulesetExists) console.log(`    - scaffold .github/rulesets/enterprise-gates.json (requires the "${requiredCheck}" check${checkIntegrationId == null ? ", context-only (--check-integration-id none)" : `, pinned to app id ${checkIntegrationId}${checkIntegrationId === GITHUB_ACTIONS_APP_ID ? " = GitHub Actions" : ""}`}; apply it with scripts/apply-ruleset.sh to BLOCK merges)`);
 if (installApplyScript) console.log(`    - ${existsSync(applyScriptDst) ? "update" : "install"} scripts/apply-ruleset.sh (one admin command to turn enforcement on)`);
 if (installHook) console.log(`    - ${hookExists ? "update" : "install"} the pre-push hook (.githooks/pre-push)${hookExists ? "" : " and point core.hooksPath at it"}`);
 if (installHelper) console.log(`    - ${existsSync(helperPath) ? "update" : "install"} the hook auto-arm helper (.githooks/install-hooks.mjs)`);
