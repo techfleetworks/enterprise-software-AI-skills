@@ -43,6 +43,16 @@ scripts/apply-ruleset.sh owner/repo      # or target a specific repo
 gh api repos/<owner>/<repo>/rulesets --jq '.[].name'
 ```
 
+**Plan requirement (private repositories).** Applying a repository ruleset needs admin on the repo,
+and on a **private** repository it needs a plan that includes repository rulesets (for example GitHub
+Pro, Team, or Enterprise). On a plan that does not, the API refuses with HTTP 403 ("Upgrade to GitHub
+Pro or make this repository public"). `apply-ruleset.sh` turns that refusal into an explanation with
+the options (upgrade the plan, make the repo public, or require the check via classic branch
+protection); it does not abort on gh's raw error. The gates still run in CI on every PR regardless;
+only the merge-blocking enforcement waits until a ruleset (or equivalent protection) requires the
+check. GitHub's plans: <https://docs.github.com/en/get-started/learning-about-github/githubs-plans>.
+See [`docs/adr/0084-ruleset-plan-guidance.md`](adr/0084-ruleset-plan-guidance.md).
+
 To change the policy, edit `.github/rulesets/main-protection.json`, open a PR, and run the apply
 script once it merges. The decision and its rationale are recorded in
 [`docs/adr/0003-branch-protection-as-code.md`](adr/0003-branch-protection-as-code.md).
