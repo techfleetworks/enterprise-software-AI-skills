@@ -136,6 +136,18 @@ closed and match on anchored paths, and adds the CI harness that keeps the whole
   a misspelling of `--personal`) can no longer be silently ignored and fall back to a different scope or mode.
 - CLI scripts, not manifest gates, so no sha/provenance change. Each behavior is pinned by a discrimination test.
 
+### Fixed (the local pre-push scans only what CI scans, ADR-0082)
+
+- **The pre-push hook no longer fails on gitignored files (#134).** It collects git's ignore set
+  (`git ls-files --others --ignored --exclude-standard`) and passes those paths as extra `--ignore` to each gate
+  that accepts `--ignore`, so an uncommitted local directory (a Python `.venv`, a build cache) can't fail the
+  local hook on files CI never scans. A developer is no longer pushed toward `--no-verify` for a local-only false
+  positive.
+- This is a local, hook-only adjustment scoped to exactly what git ignores: it changes nothing in the manifest
+  (provenance/parity unaffected, the ADR-0061 invoke-lock intact) and is NOT a path-level waiver. The requested
+  consumer-owned waiver for a *committed* path is deliberately deferred to its own decision. Pinned by a
+  discrimination test.
+
 ## 1.3.0 - 2026-10-21
 
 One source of truth for the repo's own gates, so the local pre-push and CI cannot silently diverge. A new
