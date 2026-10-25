@@ -136,6 +136,13 @@ closed and match on anchored paths, and adds the CI harness that keeps the whole
   a misspelling of `--personal`) can no longer be silently ignored and fall back to a different scope or mode.
 - CLI scripts, not manifest gates, so no sha/provenance change. Each behavior is pinned by a discrimination test.
 
+### Fixed (docs: skeptical-audit's claim-lint self-check shows --strict, #141)
+
+- **The skeptical-audit SKILL's self-check example now runs `claim-lint --strict`,** matching its own definition
+  of done (which requires `--strict`), and states that the default is warn-only (findings print but exit 0). A
+  reader copying the example into a script or CI step no longer gets a silent exit 0 on a draft with findings.
+  Docs only; no code change.
+
 ## 1.3.0 - 2026-10-21
 
 One source of truth for the repo's own gates, so the local pre-push and CI cannot silently diverge. A new
