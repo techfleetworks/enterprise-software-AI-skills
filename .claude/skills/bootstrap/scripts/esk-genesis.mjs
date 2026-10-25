@@ -622,6 +622,7 @@ try {
 
 console.log(`\n[esk-genesis] OK: ${fresh ? "bootstrapped" : "reconciled"} ${TARGET} to ${upstreamRepo}@${version}.`);
 console.log(`Next: commit these files, then an admin makes "${consumerManifest.aggregator.requiredCheck}" a required status check so the gates block merges.`);
+console.log(`Note: applying the ruleset to a PRIVATE repo needs a plan that includes rulesets (GitHub Pro/Team/Enterprise), or make the repo public; the gates still run in CI on every PR either way. apply-ruleset.sh explains the options if GitHub refuses.`);
 if (workflowChanged) console.log(`The enterprise-gates.yml workflow was ${workflowExists ? "updated" : "scaffolded"}; review it before committing.`);
 if (installHook) console.log(`The pre-push hook (.githooks/pre-push) was ${hookExists ? "updated" : "installed"}; it runs the offline gates before each push.`);
 if (prepareAction === "add") console.log(`A package.json "prepare" script was added, so every clone arms the hook automatically on 'npm install'. Zero per-clone setup.`);

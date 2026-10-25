@@ -10,6 +10,21 @@ skills with `esk-genesis` and vendors them under `.claude/skills/` showed the ga
 end to end on that layout. This release makes a vendoring consumer install green, hardens the gates to fail
 closed and match on anchored paths, and adds the CI harness that keeps the whole class from recurring.
 
+### Fixed (private-repo ruleset guidance, ADR-0084)
+
+- **Applying the ruleset on a private repo without a rulesets plan now explains the options (#152).**
+  `scripts/apply-ruleset.sh` no longer swallows a failed lookup with `|| true` and marches on to the create call;
+  a refused lookup, update, or create is routed to one handler that, on a plan/visibility 403, prints what GitHub
+  returned plus the options (upgrade the plan, make the repo public, or require the check via classic branch
+  protection) instead of aborting on gh's raw error under `set -euo pipefail`.
+- **The plan requirement is documented before the last step.** The genesis next-step output and
+  `docs/repository-governance.md` now say that applying a ruleset to a private repository can need a plan that
+  includes rulesets, and link to GitHub's plans page. The gates still run in CI on every PR regardless; only the
+  merge-blocking enforcement waits until a ruleset (or equivalent protection) requires the check.
+- `apply-ruleset.sh` is an installer script, not a manifest gate, so no sha/provenance change. Pinned by
+  discrimination tests (a refused lookup and a refused create each exit non-zero with the guidance; the happy
+  path still applies and records the marker).
+
 ### Fixed (vendoring install, ADR-0072)
 
 - **arch-gate no longer fails a vendoring consumer (#142).** Its published `invoke` now skips `.claude/skills`
