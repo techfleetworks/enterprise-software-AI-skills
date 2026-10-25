@@ -70,10 +70,18 @@ test("a prev-release install upgraded to HEAD converges to a fresh HEAD install 
     const up = genesis(REPO, upgraded);
     assert.equal(up.status, 0, `upgrade to HEAD failed:\n${up.stdout}\n${up.stderr}`);
 
-    // Same file set, and every file byte-identical. A stale (un-refreshed) file is exactly a mismatch here.
+    // Same file set, and every REFRESHED file byte-identical. A stale (un-refreshed) file is a mismatch here.
     assert.deepEqual(listFiles(upgraded), listFiles(fresh), "upgraded consumer has a different travelling-file set than a fresh HEAD install");
+    // The branch ruleset is scaffolded no-clobber ON PURPOSE (ADR-0066: a consumer may already protect its
+    // branch, so esk-genesis writes it once and never overwrites it). It therefore legitimately does NOT converge
+    // when its template content changes between releases (e.g. the integration_id pin, #148/ADR-0085): an existing
+    // consumer keeps its own ruleset until it re-scaffolds or edits it. So it is excluded from the byte-identity
+    // check here (it is still required to be PRESENT in both by the file-set assertion above). Every file esk-genesis
+    // REFRESHES on upgrade must still converge exactly.
+    const NO_CLOBBER = new Set([".github/rulesets/enterprise-gates.json"]);
     const stale = [];
     for (const rel of listFiles(fresh)) {
+      if (NO_CLOBBER.has(rel)) continue;
       if (norm(readFileSync(join(fresh, rel), "utf8")) !== norm(readFileSync(join(upgraded, rel), "utf8"))) stale.push(rel);
     }
     assert.deepEqual(stale, [], `these travelling files were NOT refreshed to current on upgrade (esk-genesis must refresh every owned file, ADR-0069/0070): ${stale.join(", ")}`);

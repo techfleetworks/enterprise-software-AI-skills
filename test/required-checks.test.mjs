@@ -25,6 +25,17 @@ test("required status checks are enforced strictly (branches must be up to date)
   assert.equal(rule.parameters.strict_required_status_checks_policy, true);
 });
 
+// #148 (ADR-0085): every required check must be PINNED to the app that produces it (the GitHub Actions app,
+// id 15368), not named by context alone - otherwise any actor that can post a status with the same name on the
+// head commit satisfies the rule. This fails if the integration_id is dropped from any required check.
+test("every required status check is pinned to the GitHub Actions app id (no context-only check)", () => {
+  const checks = rule.parameters.required_status_checks || [];
+  assert.ok(checks.length >= 3, `expected at least the 3 required checks, got ${checks.length} (the pin loop must not pass vacuously on an empty array)`);
+  for (const c of checks) {
+    assert.equal(c.integration_id, 15368, `required check "${c.context}" must be pinned to integration_id 15368 (GitHub Actions), got ${JSON.stringify(c.integration_id)}`);
+  }
+});
+
 test("the ruleset is actively enforced and blocks deletion, force-push, and direct push", () => {
   assert.equal(ruleset.enforcement, "active");
   const types = (ruleset.rules || []).map((r) => r.type);
