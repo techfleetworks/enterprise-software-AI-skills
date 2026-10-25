@@ -13,6 +13,13 @@
 # Any file named log.jsonl, in any directory, is one of these logs.
 log.jsonl merge=union
 
+# The changelog is the third file every PR edits: each PR adds a "### Fixed (...)" block near the top, so
+# two open PRs collide there the same way the logs do (ADR-0087). It only ever gains new blocks (existing
+# entries are not rewritten), so the same union driver is the right fix: a merge keeps both PRs' new
+# entries instead of raising a conflict. union is NEVER applied to source code, only to these accumulating
+# text files, because concatenating both sides of a code conflict can produce wrong code.
+CHANGELOG.md merge=union
+
 # The pre-push hook template is a shebang script; it must check out with LF so it runs under the shell
 # that git invokes it with, even on Windows.
 .claude/skills/bootstrap/templates/pre-push text eol=lf
