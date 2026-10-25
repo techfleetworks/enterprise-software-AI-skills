@@ -10,18 +10,6 @@ skills with `esk-genesis` and vendors them under `.claude/skills/` showed the ga
 end to end on that layout. This release makes a vendoring consumer install green, hardens the gates to fail
 closed and match on anchored paths, and adds the CI harness that keeps the whole class from recurring.
 
-### Fixed (the changelog joins the logs under the union merge driver, ADR-0087)
-
-- **`CHANGELOG.md` now uses git's `union` merge driver, like the two append-only logs already did.** Every PR
-  edits three shared files (the receipt log, the arch-review log, and the changelog); the logs were already
-  `merge=union` (via the bare `log.jsonl` rule), but the changelog was not, so it was the one that still conflicted
-  on every merge after the first. Adding `CHANGELOG.md merge=union` makes a merge keep both PRs' new entries
-  instead of raising a conflict (GitHub honors the base branch's `.gitattributes`). `union` stays scoped to these
-  accumulating text files, never source code.
-- Repository configuration, not a manifest gate, so no sha/provenance change. Proven by a discrimination test
-  (two branches appending to a `union` log merge cleanly, conflict without it, and `git check-attr` confirms all
-  three real paths resolve to `merge=union`).
-
 ### Fixed (vendoring install, ADR-0072)
 
 - **arch-gate no longer fails a vendoring consumer (#142).** Its published `invoke` now skips `.claude/skills`
@@ -148,17 +136,12 @@ closed and match on anchored paths, and adds the CI harness that keeps the whole
   a misspelling of `--personal`) can no longer be silently ignored and fall back to a different scope or mode.
 - CLI scripts, not manifest gates, so no sha/provenance change. Each behavior is pinned by a discrimination test.
 
-### Fixed (the local pre-push scans only what CI scans, ADR-0082)
+### Fixed (docs: skeptical-audit's claim-lint self-check shows --strict, #141)
 
-- **The pre-push hook no longer fails on gitignored files (#134).** It collects git's ignore set
-  (`git ls-files --others --ignored --exclude-standard`) and passes those paths as extra `--ignore` to each gate
-  that accepts `--ignore`, so an uncommitted local directory (a Python `.venv`, a build cache) can't fail the
-  local hook on files CI never scans. A developer is no longer pushed toward `--no-verify` for a local-only false
-  positive.
-- This is a local, hook-only adjustment scoped to exactly what git ignores: it changes nothing in the manifest
-  (provenance/parity unaffected, the ADR-0061 invoke-lock intact) and is NOT a path-level waiver. The requested
-  consumer-owned waiver for a *committed* path is deliberately deferred to its own decision. Pinned by a
-  discrimination test.
+- **The skeptical-audit SKILL's self-check example now runs `claim-lint --strict`,** matching its own definition
+  of done (which requires `--strict`), and states that the default is warn-only (findings print but exit 0). A
+  reader copying the example into a script or CI step no longer gets a silent exit 0 on a draft with findings.
+  Docs only; no code change.
 
 ## 1.3.0 - 2026-10-21
 
