@@ -10,6 +10,20 @@ skills with `esk-genesis` and vendors them under `.claude/skills/` showed the ga
 end to end on that layout. This release makes a vendoring consumer install green, hardens the gates to fail
 closed and match on anchored paths, and adds the CI harness that keeps the whole class from recurring.
 
+### Fixed (the always-on directive is portable to consumer projects, ADR-0088)
+
+- **The directive delivered to consumer sessions no longer names upstream-only files and checks (#132).** The
+  always-on hook delivers `enterprise-skills-always-on.md` to every project, but that file named a review log, a
+  skill-receipt log, `check:receipt`/`check:architecture`, a PR template, `CONTRIBUTING.md`, `apply-ruleset.sh`,
+  and named CI jobs that a consumer repo does not have. The file is now **universal** (only the skills and the
+  evidence rule); the repo-specific contributor process moved to `always-on/upstream-contributor-process.md`,
+  which only this repo's `CLAUDE.md` imports, so it never reaches a consumer. The emitter is unchanged; it prints
+  the now-universal directive by construction.
+- The `bootstrap` skill is intentionally absent from the directive's "apply these" list (it is the installer, not
+  a per-change discipline). Documentation + configuration, not a manifest gate, so no sha/provenance change.
+  Pinned by a discrimination test (the universal directive and the emitter's actual output name no upstream-only
+  artifact; the moved artifacts still live in the upstream process file; `CLAUDE.md` imports both).
+
 ### Fixed (the changelog joins the logs under the union merge driver, ADR-0087)
 
 - **`CHANGELOG.md` now uses git's `union` merge driver, like the two append-only logs already did.** Every PR

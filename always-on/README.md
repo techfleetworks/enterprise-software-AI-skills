@@ -10,8 +10,9 @@ spawned subagent, injected by the harness rather than left to the model to remem
 
 | File | What it is |
 |---|---|
-| [`enterprise-skills-always-on.md`](enterprise-skills-always-on.md) | The directive that gets injected: it names all 16 skills and makes applying the relevant ones mandatory before any work is called done. |
-| [`emit-directive.mjs`](emit-directive.mjs) | A tiny Node script the hook runs to print the directive. It is what makes the hook robust (see "Why a script" below). |
+| [`enterprise-skills-always-on.md`](enterprise-skills-always-on.md) | The **universal** directive that gets injected everywhere: it names all 16 skills, makes applying the relevant ones mandatory before any work is called done, and states the evidence rule. It names no repo-specific file or CI check, so it is safe to deliver to any consumer project. |
+| [`upstream-contributor-process.md`](upstream-contributor-process.md) | This repo's **own** contributor process (the fresh-context review log, the skill receipt, the named CI checks). Loaded only by this repo's `CLAUDE.md` import, never by the hook, so a consumer repo is never pointed at artifacts it does not have. |
+| [`emit-directive.mjs`](emit-directive.mjs) | A tiny Node script the hook runs to print the universal directive. It is what makes the hook robust (see "Why a script" below). |
 | [`settings.snippet.json`](settings.snippet.json) | The `hooks` block to merge into a `settings.json`. |
 
 ## It covers every skill without bloating context
@@ -163,8 +164,11 @@ installer mirrors them there when you pass `--skills`, or you can copy a skill f
 ## Turn the directive on in another project or machine
 
 Run the installer, which references this repo for the directive (never copies it), so pulling this repo
-updates the always-on directive hook for that project too. By default it wires the directive hook only, not
-the skill files. For a session that runs outside this repo, the skills also need to be in a per-machine
+updates the always-on directive hook for that project too. The hook delivers only the **universal** directive
+(`enterprise-skills-always-on.md`): the skills and the evidence rule, which apply anywhere. It does NOT deliver
+this repo's own contributor process (`upstream-contributor-process.md`), so a session in another project is
+never told to use a review log, a receipt, or CI checks that project does not have. By default it wires the
+directive hook only, not the skill files. For a session that runs outside this repo, the skills also need to be in a per-machine
 discovery location such as `~/.claude/skills`; pass `--skills` and the installer mirrors them there too (it
 records what it copied, so re-running it with `--skills` later keeps the mirror current):
 
