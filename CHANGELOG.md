@@ -10,6 +10,18 @@ skills with `esk-genesis` and vendors them under `.claude/skills/` showed the ga
 end to end on that layout. This release makes a vendoring consumer install green, hardens the gates to fail
 closed and match on anchored paths, and adds the CI harness that keeps the whole class from recurring.
 
+### Fixed (the changelog joins the logs under the union merge driver, ADR-0087)
+
+- **`CHANGELOG.md` now uses git's `union` merge driver, like the two append-only logs already did.** Every PR
+  edits three shared files (the receipt log, the arch-review log, and the changelog); the logs were already
+  `merge=union` (via the bare `log.jsonl` rule), but the changelog was not, so it was the one that still conflicted
+  on every merge after the first. Adding `CHANGELOG.md merge=union` makes a merge keep both PRs' new entries
+  instead of raising a conflict (GitHub honors the base branch's `.gitattributes`). `union` stays scoped to these
+  accumulating text files, never source code.
+- Repository configuration, not a manifest gate, so no sha/provenance change. Proven by a discrimination test
+  (two branches appending to a `union` log merge cleanly, conflict without it, and `git check-attr` confirms all
+  three real paths resolve to `merge=union`).
+
 ### Fixed (vendoring install, ADR-0072)
 
 - **arch-gate no longer fails a vendoring consumer (#142).** Its published `invoke` now skips `.claude/skills`
