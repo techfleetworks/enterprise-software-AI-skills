@@ -114,10 +114,12 @@ This is the moment the discipline is actually for.
 
 ## Prove it on yourself (the meta-check - do not skip)
 Before you hit send, scan your own draft for the banned moves above. The fast mechanical pass:
-`node scripts/claim-lint.mjs <your-draft.md>` flags hedge-words and claim-shaped sentences that
-carry no evidence state. The linter is a smoke alarm, not a judge - it catches the obvious misses;
-the skeptic's loop catches the subtle ones. A clean lint is `observed` evidence that you ran the
-check, nothing more.
+`node scripts/claim-lint.mjs <your-draft.md> --strict` flags hedge-words and claim-shaped sentences that
+carry no evidence state, and exits non-zero on any finding - this is the form the definition of done below
+requires, and the one to wire into any script or CI step. Without `--strict` it is warn-only: it prints the
+same findings but exits 0 (handy for a first look, not for a gate). The linter is a smoke alarm, not a judge -
+it catches the obvious misses; the skeptic's loop catches the subtle ones. A clean `--strict` lint is
+`observed` evidence that you ran the check, nothing more.
 
 ## Evidence & skeptical assessment (required)
 This skill **owns** the evidence discipline every other skill depends on - the canonical contract is
