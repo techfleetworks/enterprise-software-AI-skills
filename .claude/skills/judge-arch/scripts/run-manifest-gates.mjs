@@ -31,7 +31,7 @@
  * Seams for tests: GATE_MANIFEST_FILE, GATE_RUNNER (override the node binary). Pinned by
  * test/run-manifest-gates.test.mjs.
  */
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, appendFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { resolve, dirname, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -40,6 +40,11 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", 
 const MANIFEST = process.env.GATE_MANIFEST_FILE ? resolve(process.env.GATE_MANIFEST_FILE) : resolve(ROOT, "gate-manifest.json");
 const BASE = dirname(MANIFEST);
 const NODE = process.env.GATE_RUNNER || process.execPath;
+// A VACUOUS pass is a gate that exits 0 having found nothing in its scope to check (no .sql files, no source
+// files, no alert blocks). The --allow-empty gates print exactly this marker on that branch and never on a real
+// pass, so it is the signal the aggregator uses to tell "passed, nothing to check" from "passed, checked and
+// clean" (#150, ADR-0089). A vacuous pass still exits 0 (its matrix job stays green); it is only RENDERED apart.
+const VACUOUS_MARKER = /--allow-empty; whole-repo scope/;
 
 const failClosed = (msg) => {
   console.error(`✖ run-manifest-gates (fail-closed): ${msg}`);
@@ -101,18 +106,41 @@ for (const gate of gatesToRun) {
   }
   const runner = gate.script.endsWith(".sh") ? "bash" : NODE;
   console.log(`\n── gate: ${gate.id} (${gate.lane})${invokeArgs.length ? " " + invokeArgs.join(" ") : ""} ──`);
-  const res = spawnSync(runner, [scriptPath, ...invokeArgs], { stdio: "inherit" });
+  // Capture (not inherit) so we can detect a vacuous pass from the gate's own output, then re-emit that output
+  // verbatim so a human still sees exactly what the gate printed. Gates are small and fast, so buffering is fine.
+  const res = spawnSync(runner, [scriptPath, ...invokeArgs], { encoding: "utf8" });
+  if (res.stdout) process.stdout.write(res.stdout);
+  if (res.stderr) process.stderr.write(res.stderr);
   const code = res.status === null ? 1 : res.status; // signal/crash → treat as failure
-  summary.push({ id: gate.id, lane: gate.lane, code });
+  // Vacuous only when the gate PASSED (code 0) and reported it scanned nothing in scope; a failure that happened
+  // to print the marker is still a failure, never "vacuous".
+  const vacuous = code === 0 && VACUOUS_MARKER.test((res.stdout || "") + (res.stderr || ""));
+  summary.push({ id: gate.id, lane: gate.lane, code, vacuous });
   if (code !== 0) (gate.lane === "required" ? requiredFailures : advisoryFailures).push(gate.id);
 }
 
 console.log("\n── aggregate ──");
-for (const s of summary) console.log(`  ${s.code === 0 ? "✓" : "✗"} ${s.id} (${s.lane}) exit ${s.code}`);
+for (const s of summary) {
+  const mark = s.code !== 0 ? "✗" : s.vacuous ? "○" : "✓";
+  const note = s.vacuous ? " vacuous (nothing in scope)" : "";
+  console.log(`  ${mark} ${s.id} (${s.lane}) exit ${s.code}${note}`);
+}
 if (advisoryFailures.length) console.log(`  advisory failures (non-blocking): ${advisoryFailures.join(", ")}`);
+
+// Surface vacuous passes so a green board is not mistaken for "every gate examined the code". A vacuous pass is
+// still a pass (it does not fail the aggregator); it is only reported distinctly here and in the CI job summary.
+const vacuousGates = summary.filter((s) => s.vacuous).map((s) => s.id);
+if (vacuousGates.length) {
+  const msg = `${vacuousGates.length} gate(s) passed VACUOUSLY (nothing in their scope to check): ${vacuousGates.join(", ")}. A vacuous pass is not evidence the code was examined.`;
+  console.log(`\nℹ ${msg}`);
+  if (process.env.GITHUB_ACTIONS) process.stdout.write(`::warning title=enterprise-gates vacuous passes::${msg}\n`);
+  if (process.env.GITHUB_STEP_SUMMARY) {
+    try { appendFileSync(process.env.GITHUB_STEP_SUMMARY, `\n> **enterprise-gates:** ${msg}\n`); } catch { /* best-effort; never fail the gate on a summary write */ }
+  }
+}
 
 if (requiredFailures.length) {
   console.error(`\n✖ run-manifest-gates: ${requiredFailures.length} required gate(s) failed: ${requiredFailures.join(", ")}`);
   process.exit(1);
 }
-console.log(`\n✓ run-manifest-gates: all ${summary.filter((s) => s.lane === "required").length} required gate(s) passed.`);
+console.log(`\n✓ run-manifest-gates: all ${summary.filter((s) => s.lane === "required").length} required gate(s) passed${vacuousGates.length ? ` (${vacuousGates.length} vacuously; see note above)` : ""}.`);

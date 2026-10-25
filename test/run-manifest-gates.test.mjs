@@ -24,7 +24,9 @@ function fixture({ gates = [], rawManifest, omitManifest = false } = {}) {
   const manifestGates = [];
   for (const g of gates) {
     const rel = g.script ?? `scripts/ci/check-${g.id}.${g.sh ? "sh" : "mjs"}`;
-    const body = g.sh ? `exit ${g.exit ?? 0}\n` : `process.exit(${g.exit ?? 0});\n`;
+    // g.body, when given, is the exact script body (so a test can make a gate print a specific line, e.g. the
+    // vacuous marker). Otherwise just exit with the chosen code.
+    const body = g.body ?? (g.sh ? `exit ${g.exit ?? 0}\n` : `process.exit(${g.exit ?? 0});\n`);
     if (g.writeScript !== false) writeFileSync(join(root, rel), body);
     manifestGates.push({ id: g.id, script: rel, sha256: "0".repeat(64), test: `test/${g.id}.test.mjs`, lane: g.lane ?? "required" });
   }
@@ -45,6 +47,22 @@ function run(root) {
     return e.status ?? 1;
   }
 }
+
+// Run and capture stdout (for assertions on the rendered aggregate board). GITHUB_* are cleared so the
+// Actions-only branches do not fire in a test that happens to run inside CI.
+function runCapture(root) {
+  const env = { ...process.env, GATE_MANIFEST_FILE: join(root, "gate-manifest.json") };
+  delete env.GITHUB_ACTIONS; delete env.GITHUB_STEP_SUMMARY;
+  try {
+    const out = execFileSync("node", [AGG], { encoding: "utf8", env });
+    return { code: 0, out };
+  } catch (e) {
+    return { code: e.status ?? 1, out: (e.stdout || "") + (e.stderr || "") };
+  }
+}
+
+// The exact marker the --allow-empty gates print on a vacuous pass; the aggregator keys on it (#150).
+const VACUOUS_LINE = "[check-x] OK - no .sql files to scan (--allow-empty; whole-repo scope).";
 
 test("AGG: passes (0) when all required gates pass", () => {
   assert.equal(run(fixture({ gates: [{ id: "a", exit: 0 }, { id: "b", exit: 0 }] })), 0);
@@ -137,6 +155,33 @@ test("AGG: passes gate.invoke args to the gate (discriminating)", () => {
 test("AGG: fails closed (2) on a malformed invoke (not an array of strings)", () => {
   assert.equal(run(invokeFixture("SCAN_ME")), 2, "a string invoke must fail closed, never be silently dropped (which would make the gate scan nothing)");
   assert.equal(run(invokeFixture([1, 2])), 2, "non-string invoke elements must fail closed");
+});
+
+// #150: a VACUOUS pass (a gate that exits 0 having found nothing in scope, printing the marker) is rendered
+// distinctly in the aggregate board and flagged in a note, so a green board is not read as "every gate examined
+// the code". A real pass is NOT flagged. Discriminating: reverting the aggregator's detection renders the vacuous
+// gate as a plain ✓ with no note, failing these assertions.
+test("AGG #150: a vacuous pass renders as ○ vacuous with a note, a real pass as ✓", () => {
+  const root = fixture({ gates: [
+    { id: "vac", exit: 0, body: `console.log(${JSON.stringify(VACUOUS_LINE)}); process.exit(0);\n` },
+    { id: "real", exit: 0, body: `console.log("[check-real] OK - 7 .sql file(s) scanned, no unsafe patterns."); process.exit(0);\n` },
+  ] });
+  const { code, out } = runCapture(root);
+  assert.equal(code, 0, "both gates pass, so the aggregator still exits 0: " + out);
+  assert.match(out, /○ vac \(required\) exit 0 vacuous/, "the vacuous gate must render as ○ ... vacuous");
+  assert.match(out, /✓ real \(required\) exit 0(?! vacuous)/, "the real pass must render as ✓ with no vacuous note");
+  assert.match(out, /passed VACUOUSLY .* vac\b/, "the end note must name the vacuous gate");
+  assert.doesNotMatch(out, /○ real/, "a real pass must never be marked vacuous");
+});
+
+test("AGG #150: a FAILING gate that happens to print the marker is still a failure, not vacuous", () => {
+  const root = fixture({ gates: [
+    { id: "bad", exit: 1, body: `console.log(${JSON.stringify(VACUOUS_LINE)}); process.exit(1);\n` },
+  ] });
+  const { code, out } = runCapture(root);
+  assert.equal(code, 1, "a required failure still fails the aggregator");
+  assert.match(out, /✗ bad/, "a failure renders as ✗, never ○");
+  assert.doesNotMatch(out, /vacuous/, "a non-zero gate is never classified vacuous even if it printed the marker");
 });
 
 process.on("exit", () => {
