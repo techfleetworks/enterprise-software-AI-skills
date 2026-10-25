@@ -45,6 +45,32 @@ test("coverage: passes a fully reviewed, evidenced change", () => {
 test("coverage: FLAGS an unreviewed changed file (discriminating)", () => {
   assert.equal(cov(baseEntry(), "a.ts,b.ts"), 1);
 });
+test("coverage ISSUE-151: a vendored .claude/skills file is NOT required to be reviewed (re-vendor, discriminating)", () => {
+  // Reverting the exclusion makes the vendored file "unreviewed" -> exit 1, so this is discriminating.
+  assert.equal(cov(baseEntry(), "a.ts,.claude/skills/judge-arch/scripts/arch-gate.mjs"), 0);
+});
+test("coverage ISSUE-151: a pure re-vendor (only vendored paths) needs no review cells", () => {
+  assert.equal(cov(baseEntry(), ".claude/skills/judge-arch/SKILL.md,.claude/skills/judge-arch/scripts/arch-gate.mjs"), 0);
+});
+test("coverage ISSUE-151: a real (non-vendored) unreviewed file still fails (the exclusion is narrow)", () => {
+  assert.equal(cov(baseEntry(), "a.ts,src/widget.tsx"), 1);
+});
+test("coverage ISSUE-151 N1: --no-default-skills-exclude re-requires review of a .claude/skills file (upstream repo reviews its own skills)", () => {
+  // The UPSTREAM repo's OWN product IS .claude/skills; the escape turns the default exclusion off so its skill
+  // changes still need review. Discriminating: without the flag this exact file is excluded (exit 0, test above).
+  assert.equal(cov(baseEntry(), "a.ts,.claude/skills/judge-arch/scripts/arch-gate.mjs", ["--no-default-skills-exclude"]), 1);
+});
+test("coverage ISSUE-151 N2: a discriminate-fixtures path OUTSIDE .claude/skills is NOT excluded (narrowing is anchored to the tree)", () => {
+  // The old un-anchored fixtures regex matched this anywhere; dropping it means a real product path that merely
+  // contains that segment is still reviewed. Unreviewed -> exit 1.
+  assert.equal(cov(baseEntry(), "a.ts,src/discriminate-fixtures/Calc.tsx"), 1);
+});
+test("coverage ISSUE-151: --exclude <prefix> drops a matching path from the files needing review (with control)", () => {
+  // Control: without the flag, src/vendor/x.ts is unreviewed -> exit 1.
+  assert.equal(cov(baseEntry(), "a.ts,src/vendor/x.ts"), 1);
+  // With --exclude src/vendor, that path needs no review cell -> exit 0.
+  assert.equal(cov(baseEntry(), "a.ts,src/vendor/x.ts", ["--exclude", "src/vendor"]), 0);
+});
 test("coverage: FLAGS a missing question in the matrix (discriminating)", () => {
   const e = baseEntry(); delete e.matrix["a.ts"].dependency;
   assert.equal(cov(e, "a.ts"), 1);
