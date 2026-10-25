@@ -411,6 +411,43 @@ test("DOWNGRADE #144: a forward move and a same-version reconcile are allowed (d
   assert.equal(readManifest(tgt).version, "2.0.0");
   assert.equal(run(hi, tgt, ["--yes"]), 0, "a same-version reconcile must be allowed");
 });
+// #148 (ADR-0085): the scaffolded ruleset must PIN the required check to the producing app (integration_id),
+// not name it by context alone. Default is the GitHub Actions app id (15368); a flag overrides it; "none" opts
+// out. Discriminating: the old scaffold wrote `{ context }` with no integration_id, so the default assertion fails.
+const scaffoldedCheck = (tgt) => {
+  const rs = JSON.parse(readFileSync(join(tgt, ".github", "rulesets", "enterprise-gates.json"), "utf8"));
+  const rule = rs.rules.find((r) => r.type === "required_status_checks");
+  return rule.parameters.required_status_checks[0];
+};
+test("RULESET #148: the scaffolded required check is pinned to the GitHub Actions app id by default", () => {
+  const src = buildSource({ gates: [{ id: "alpha" }] });
+  const tgt = newTarget();
+  assert.equal(run(src, tgt, ["--yes"]), 0);
+  const c = scaffoldedCheck(tgt);
+  assert.equal(c.context, "enterprise-gates");
+  assert.equal(c.integration_id, 15368, "default must pin GitHub Actions (15368)");
+});
+test("RULESET #148: --check-integration-id <n> overrides the pinned app id", () => {
+  const src = buildSource({ gates: [{ id: "alpha" }] });
+  const tgt = newTarget();
+  assert.equal(run(src, tgt, ["--yes", "--check-integration-id", "99123"]), 0);
+  assert.equal(scaffoldedCheck(tgt).integration_id, 99123);
+});
+test("RULESET #148: --check-integration-id none scaffolds a context-only check (opt out)", () => {
+  const src = buildSource({ gates: [{ id: "alpha" }] });
+  const tgt = newTarget();
+  assert.equal(run(src, tgt, ["--yes", "--check-integration-id", "none"]), 0);
+  const c = scaffoldedCheck(tgt);
+  assert.equal(c.context, "enterprise-gates");
+  assert.equal(c.integration_id, undefined);
+});
+test("RULESET #148: a non-numeric --check-integration-id is rejected (fail closed)", () => {
+  const src = buildSource({ gates: [{ id: "alpha" }] });
+  const tgt = newTarget();
+  const r = runCapture(src, tgt, ["--yes", "--check-integration-id", "abc"]);
+  assert.equal(r.code, 2, "a bad app id must fail closed: " + r.out);
+  assert.match(r.out, /positive integer/i);
+});
 
 test("RECONCILE: a gate dropped upstream is removed (no orphan)", () => {
   const tgt = newTarget();
