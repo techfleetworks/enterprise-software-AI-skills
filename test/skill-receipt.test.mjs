@@ -135,6 +135,47 @@ test("FAILS when a fired coupling surface is marked not-applicable (discriminati
   assert.match(out(r), /coupling rule.*fired|not .?applied/i);
 });
 
+// ISSUE-151: a VENDORED path (under .claude/skills, or a discriminate fixture) must NOT fire a coupling rule -
+// re-vendoring the skills is not the consumer's own product change. Diff-binding still uses the full list, so the
+// applied skill-a (where: real.md) still binds. Discriminating: reverting (coupling over the full list) fires.
+test("ISSUE-151: a vendored .claude/skills path does NOT fire a coupling rule (re-vendor is not product change)", () => {
+  const config = { rules: [{ id: "b-surface", when: ["**/*.ts"], requires: ["skill-b"] }] };
+  const r = run(build({ config }).argv, ["--changed-list", "real.md,.claude/skills/skill-b/scripts/thing.ts"]);
+  assert.equal(r.status, 0, out(r));
+});
+test("ISSUE-151: a fixtures path UNDER .claude/skills does NOT fire a coupling rule (covered by the tree prefix)", () => {
+  // The in-tree discrimination fixtures live under .claude/skills, so the single tree prefix already excludes them -
+  // no separate, un-anchored fixtures match is needed (review N2).
+  const config = { rules: [{ id: "ui", when: ["**/*.tsx"], requires: ["skill-b"] }] };
+  const r = run(build({ config }).argv, ["--changed-list", "real.md,.claude/skills/judge-arch/assets/discriminate-fixtures/components/Calc.tsx"]);
+  assert.equal(r.status, 0, out(r));
+});
+test("ISSUE-151 N1: --no-default-skills-exclude makes a .claude/skills path FIRE coupling (upstream repo couples its own skills)", () => {
+  // The escape turns the default tree exclusion off, so the UPSTREAM repo (whose OWN product IS .claude/skills) still
+  // couples its skill changes. Discriminating: without the flag this exact path does not fire (exit 0, test above);
+  // with it, the rule fires and skill-b (not-applicable in goodEntry) must be applied -> non-zero.
+  const config = { rules: [{ id: "b-surface", when: ["**/*.ts"], requires: ["skill-b"] }] };
+  const r = run(build({ config }).argv, ["--changed-list", "real.md,.claude/skills/skill-b/scripts/thing.ts", "--no-default-skills-exclude"]);
+  assert.notEqual(r.status, 0, out(r));
+});
+test("ISSUE-151 N2: a discriminate-fixtures path OUTSIDE .claude/skills DOES fire (the narrowing is anchored to the tree)", () => {
+  // The old un-anchored fixtures regex matched that segment anywhere; dropping it means a real product path that
+  // merely contains "discriminate-fixtures" is still coupled.
+  const config = { rules: [{ id: "ui", when: ["**/*.tsx"], requires: ["skill-b"] }] };
+  const r = run(build({ config }).argv, ["--changed-list", "real.md,src/discriminate-fixtures/Calc.tsx"]);
+  assert.notEqual(r.status, 0, out(r));
+});
+test("ISSUE-151: --exclude <prefix> keeps a matching path from firing a coupling rule (with control)", () => {
+  const config = { rules: [{ id: "b-surface", when: ["**/*.ts"], requires: ["skill-b"] }] };
+  const base = build({ config });
+  // Control: without --exclude, the src/ path fires the rule and skill-b (not-applicable) must be applied -> non-zero.
+  const fired = run(base.argv, ["--changed-list", "real.md,src/vendor/thing.ts"]);
+  assert.notEqual(fired.status, 0, out(fired));
+  // With --exclude src/vendor, the path is excluded from coupling and the rule does not fire -> pass.
+  const excluded = run(base.argv, ["--changed-list", "real.md,src/vendor/thing.ts", "--exclude", "src/vendor"]);
+  assert.equal(excluded.status, 0, out(excluded));
+});
+
 // 7. traversal anchor -> fail closed (exit 2)
 test("FAILS CLOSED (exit 2) on an anchor path that escapes the skills dir (threat model)", () => {
   const e = goodEntry(); e.skills["skill-a"].anchors = ["../../../../etc/passwd#x"];

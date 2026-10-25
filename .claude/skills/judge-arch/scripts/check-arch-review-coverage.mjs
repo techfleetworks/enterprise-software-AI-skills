@@ -30,6 +30,21 @@ if (!change) die("no --change <ref> given (the commit/PR this review must be FOR
 if (!changedArg) die("no --changed-list given (the changed code files to require coverage for; fail closed).");
 const changed = changedArg.split(",").map((s) => s.trim().split("\\").join("/")).filter(Boolean);
 if (changed.length === 0) die("empty changed-list (fail closed).");
+// #151: re-vendoring the skills changes files under .claude/skills that are not the consumer's own code to
+// review - requiring a four-question review cell for each would force thousands of cells for an initial vendor.
+// Default: exclude the conventional repo-relative .claude/skills tree (the --changed-list paths are repo-relative);
+// --exclude adds comma-separated path prefixes; --no-default-skills-exclude drops the default so the UPSTREAM repo
+// (whose OWN product IS .claude/skills) still requires review of its own skill changes (review N1). In-tree
+// discrimination fixtures live under .claude/skills, so the prefix already covers them - no separate, un-anchored
+// fixtures match (review N2). Matching is an anchored path-prefix (f === p or f starts with p + "/"), not a substring.
+const extraExclude = (opt("--exclude") ?? "").split(",").map((s) => s.trim().split("\\").join("/").replace(/\/+$/, "")).filter(Boolean);
+const EXCLUDE_PREFIXES = [
+  ...(process.argv.includes("--no-default-skills-exclude") ? [] : [".claude/skills"]),
+  ...extraExclude,
+].filter((p, i, a) => p && a.indexOf(p) === i);
+const isExcluded = (f) => EXCLUDE_PREFIXES.some((p) => f === p || f.startsWith(p + "/"));
+const reviewable = changed.filter((f) => !isExcluded(f));
+const excludedCount = changed.length - reviewable.length;
 
 if (!existsSync(logPath)) die(`review log not found: ${logPath}`);
 const raw = readFileSync(logPath, "utf8");
@@ -61,7 +76,7 @@ if (!entry) die(`no review record whose change == "${change}" - append a review 
 const matrix = entry.matrix || {};
 const problems = [];
 
-for (const f of changed) {
+for (const f of reviewable) {
   const cells = matrix[f];
   if (!cells) { problems.push(`${f}: not in the review matrix (unreviewed)`); continue; }
   for (const q of QUESTIONS) {
@@ -93,6 +108,6 @@ if (problems.length) {
   for (const p of problems) console.error("  • " + p);
   process.exit(1);
 }
-console.log(`[check-arch-review-coverage] OK - ${changed.length} changed file(s) fully reviewed ` +
-  `(× ${QUESTIONS.length} questions), every cell verdicted + evidenced, logged; ${logNote}.`);
+console.log(`[check-arch-review-coverage] OK - ${reviewable.length} changed file(s) fully reviewed ` +
+  `(× ${QUESTIONS.length} questions), every cell verdicted + evidenced, logged${excludedCount ? `; ${excludedCount} vendored/excluded file(s) not requiring review` : ""}; ${logNote}.`);
 process.exit(0);
