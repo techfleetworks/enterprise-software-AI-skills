@@ -10,17 +10,19 @@ skills with `esk-genesis` and vendors them under `.claude/skills/` showed the ga
 end to end on that layout. This release makes a vendoring consumer install green, hardens the gates to fail
 closed and match on anchored paths, and adds the CI harness that keeps the whole class from recurring.
 
-### Fixed (ruleset pins the required check to its producing app, ADR-0085)
+### Fixed (esk-genesis enforces forward-only, ADR-0086)
 
-- **The scaffolded ruleset now pins `enterprise-gates` to the GitHub Actions app id, not its name alone (#148).**
-  `esk-genesis` scaffolds `{ "context": "enterprise-gates", "integration_id": 15368 }`, so a status with the same
-  name from another source cannot satisfy the required check. A new `--check-integration-id <app-id>` flag sets
-  the id for a host whose producer is not github.com's GitHub Actions (for example GitHub Enterprise Server);
-  `--check-integration-id none` opts out to a context-only check, and a non-numeric value fails closed.
-- Upstream's own `.github/rulesets/main-protection.json` pins its three required checks (`test (20)`, `test (24)`,
-  `routing`) to the same app id, and a guard test fails if the pin is ever dropped.
-- `esk-genesis.mjs` is the installer, not a manifest gate, so no sha/provenance change. Pinned by discrimination
-  tests (default pins 15368; a flag overrides; `none` omits; a bad value fails closed).
+- **`esk-genesis` refuses to move a consumer's pin backward without `--allow-downgrade` (#144).** Run from an
+  older source, or given `--version <lower>`, it used to move the pin down (for example 1.2.1 to 1.2.0) silently
+  with exit 0, contradicting the documented forward-only guarantee and reintroducing version-specific bugs (such
+  as a v1.2.0 invoke that lacks `--ignore .claude/skills`). It now compares the new version against the target's
+  pinned version and fails closed (exit 2) on a backward move, before writing anything, naming the
+  `--allow-downgrade` escape. A forward or same-version reconcile is unchanged.
+- The forward-only guarantee is enforced at the point of change (genesis), not in `check-manifest-provenance`,
+  which stays offline and stateless (it verifies the committed manifest is faithful to the release it pins, not
+  that the pin is the latest). `esk-genesis.mjs` is the installer, not a manifest gate, so no sha/provenance
+  change. Pinned by discrimination tests (backward refused + nothing written; `--allow-downgrade` permits;
+  forward/same allowed).
 
 ### Fixed (vendoring install, ADR-0072)
 
