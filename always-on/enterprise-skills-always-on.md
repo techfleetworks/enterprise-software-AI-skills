@@ -29,38 +29,18 @@ relevant" as a deliberate, stated judgment for that task, never a silent default
 If a skill's full instructions are not already in context, invoke it before relying
 on it. Do not report work complete until the relevant skills above have been applied.
 
-## Before you open or update a pull request
-Run `judge-arch` in fresh context on the change (it dispatches the review to a subagent), resolve or
-explicitly waive every finding, and record the review in `docs/arch-reviews/log.jsonl`. The committed PR
-template and `CONTRIBUTING.md` carry the full checklist. The mechanical gates are required CI checks that
-block merge on their own: the gate-script tests and `check:architecture` (the `test` job). The `routing`
-check (change-type to required-artifact) blocks merge once the committed ruleset is applied with
-`scripts/apply-ruleset.sh`. A change that skips a routed artifact cannot merge. These checks prove the
-routed artifact is present and the repo passes its gates; they do NOT verify that a fresh-context review
-happened (no required check reads the review log) or that the judgment was sound. The review is required by
-this directive and the PR checklist, not by a gate, so run it anyway: loaded is not the same as reviewed.
-
-Also append a skill-application receipt for the change to `docs/skill-receipts/log.jsonl`: one entry per PR
-covering EVERY skill (applied or not-applicable), each `applied` entry citing a real skill heading, quoting at
-least eight exact words from under that heading, and pointing at files really in the change. `npm run
-check:receipt` checks it is complete and that every quote is a verbatim run from the cited section; add
-`--changed-list <the diff>` to also check that the cited files are in the change and that a coupled surface
-is marked applied (the merge-blocking CI job that passes the diff and base is deferred to the techfleetnetwork
-release). None of it proves the work is true or good, so a human must still review it. A silent skip becomes a
-failing empty cell: you cannot claim a skill without showing what you pulled and where. There is NO triviality
-exemption: a one-line or copy-only change still ships a receipt. Most skills are legitimately `not-applicable`
-for a small change, but the entry still has to exist and say so; "it is too small to bother" is exactly the
-shortcut this receipt exists to stop.
-
 ## Evidence is mandatory on every claim
 Every factual claim you output carries an **evidence state** (`proven` / `observed` / `inferred` /
 `documented` / `reported` / `not-assessed`), a **re-runnable source**, and a **named limitation**. Run
 the disconfirming-case-first pass, attach the evidence ledger, and never report work "done / secure /
-tested / safe / fixed / passes / complete" without it. The canonical contract is
-`.claude/skills/skeptical-audit/references/evidence-discipline.md`. How this directive reaches a session depends on where
-the session runs, and no single path covers all of them: a session working inside this repo gets it from the
-committed `CLAUDE.md` import (main agent and most subagents, no approval) and from the committed
-`.claude/settings.json` hook (every subagent, including Explore and Plan, after a one-time trust step); a
-local session rooted outside the repo gets it only from the per-machine user-level hook, if one is installed,
-and cloud sessions follow their own rules again (see the map). Loaded is not the same as obeyed: the gates,
-not this text, prove a skill was applied. See `always-on/README.md` for the full coverage map and its limits.
+tested / safe / fixed / passes / complete" without it. The canonical contract is the `skeptical-audit`
+skill's `references/evidence-discipline.md`. Loaded is not the same as obeyed: where a gate exists, the gate,
+not this text, proves a skill was applied.
+
+---
+
+This directive is universal: it names only the skills and the evidence rule, which apply in every repository
+the skills are installed in. The repository that AUTHORS these skills has an additional contributor process
+(a fresh-context review log, a skill receipt, named CI checks) that a consumer repository does not have; that
+part lives in `upstream-contributor-process.md` and is loaded only when working in the upstream repo, so a
+consumer session is never pointed at files and checks that do not exist there.
