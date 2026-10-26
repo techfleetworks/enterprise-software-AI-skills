@@ -10,6 +10,15 @@ skills with `esk-genesis` and vendors them under `.claude/skills/` showed the ga
 end to end on that layout. This release makes a vendoring consumer install green, hardens the gates to fail
 closed and match on anchored paths, and adds the CI harness that keeps the whole class from recurring.
 
+### Fixed (text files, including the vendored skills, check out as LF everywhere, ADR-0090)
+
+- **`.gitattributes` now forces `eol=lf`, so a Windows checkout no longer gets CRLF in 322 of the skill files
+  (#129).** `* text=auto` alone wrote the platform-native ending on checkout, so a consumer that vendors the
+  skills by copying a Windows checkout committed CRLF. `* text=auto eol=lf` makes every text file check out as LF
+  on every platform. The blobs were already LF, so there is no 322-file content diff and no spurious `git status`
+  modifications; not a manifest gate, so no sha/provenance change. Pinned by a discrimination test
+  (`git check-attr eol` resolves to `lf` for representative files).
+
 ### Fixed (a vacuous gate pass is now visible, ADR-0089)
 
 - **The aggregate board and the required check distinguish a vacuous pass from a real one (#150).**
