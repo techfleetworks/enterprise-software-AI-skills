@@ -72,6 +72,8 @@
         "--ignore",
         "scripts/ci",
         "--ignore",
+        ".githooks",
+        "--ignore",
         ".claude/skills",
         "."
       ],
@@ -89,6 +91,8 @@
         "--allow-empty",
         "--ignore",
         "scripts/ci",
+        "--ignore",
+        ".githooks",
         "--ignore",
         ".claude/skills",
         "."
@@ -190,7 +194,7 @@
       "id": "run-manifest-gates",
       "skill": "judge-arch",
       "script": "scripts/ci/run-manifest-gates.mjs",
-      "sha256": "666cc1b32db9c65ec29f4227b258ff6044294d365f7bb09026126af29bc8c714",
+      "sha256": "0a1302f1b6db8f6ef734e36bb463232faa5724c1d02ca6217eabd952838801de",
       "test": "test/run-manifest-gates.test.mjs"
     },
     {

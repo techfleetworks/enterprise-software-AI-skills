@@ -10,19 +10,18 @@ skills with `esk-genesis` and vendors them under `.claude/skills/` showed the ga
 end to end on that layout. This release makes a vendoring consumer install green, hardens the gates to fail
 closed and match on anchored paths, and adds the CI harness that keeps the whole class from recurring.
 
-### Fixed (the always-on directive is portable to consumer projects, ADR-0088)
+### Fixed (a vacuous gate pass is now visible, ADR-0089)
 
-- **The directive delivered to consumer sessions no longer names upstream-only files and checks (#132).** The
-  always-on hook delivers `enterprise-skills-always-on.md` to every project, but that file named a review log, a
-  skill-receipt log, `check:receipt`/`check:architecture`, a PR template, `CONTRIBUTING.md`, `apply-ruleset.sh`,
-  and named CI jobs that a consumer repo does not have. The file is now **universal** (only the skills and the
-  evidence rule); the repo-specific contributor process moved to `always-on/upstream-contributor-process.md`,
-  which only this repo's `CLAUDE.md` imports, so it never reaches a consumer. The emitter is unchanged; it prints
-  the now-universal directive by construction.
-- The `bootstrap` skill is intentionally absent from the directive's "apply these" list (it is the installer, not
-  a per-change discipline). Documentation + configuration, not a manifest gate, so no sha/provenance change.
-  Pinned by a discrimination test (the universal directive and the emitter's actual output name no upstream-only
-  artifact; the moved artifacts still live in the upstream process file; `CLAUDE.md` imports both).
+- **The aggregate board and the required check distinguish a vacuous pass from a real one (#150).**
+  `run-manifest-gates` now detects a gate that exits 0 having found nothing in its scope (the `--allow-empty`
+  marker) and renders it `○ <id> vacuous (nothing in scope)` instead of `✓`, ends with a note listing the vacuous
+  gates, and in GitHub Actions emits a `::warning::` plus a job-summary line. A vacuous pass is still a pass (it
+  does not fail the aggregator); it is only reported apart, so a green board is not mistaken for full coverage.
+- **The JS scan gates (`no-ua-sniffing`, `owasp-lints`) ignore `.githooks`**, so a genesis-only consumer is not
+  told "1 source file scanned" for the installer's own hook; it correctly reads as vacuous.
+- The aggregator is machinery (its sha256 is recomputed; parity/provenance/upstream-integrity re-verified); the
+  two invoke changes are not a sha change and no gate script is edited. Pinned by a discrimination test (a vacuous
+  pass renders `○`, a real pass `✓`, a failure that prints the marker is still `✗`).
 
 ### Fixed (the changelog joins the logs under the union merge driver, ADR-0087)
 
