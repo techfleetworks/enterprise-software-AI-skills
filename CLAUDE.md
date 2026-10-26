@@ -16,4 +16,10 @@ for the coverage map and its limits.
 See `always-on/README.md` for how the two layers work and their limits, and `.claude/skills/bootstrap/SKILL.md` to install
 the always-on hook into another project or machine.
 
+The first import below is the **universal** directive (the skills + the evidence rule) that the always-on hook
+delivers to every repo. The second is this repo's **own** contributor process (the fresh-context review log,
+the skill receipt, the named CI checks); it is imported here, not by the hook, so only sessions working inside
+this repo load it, and a consumer repo is never pointed at artifacts it does not have.
+
 @always-on/enterprise-skills-always-on.md
+@always-on/upstream-contributor-process.md

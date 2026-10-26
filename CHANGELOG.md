@@ -10,19 +10,31 @@ skills with `esk-genesis` and vendors them under `.claude/skills/` showed the ga
 end to end on that layout. This release makes a vendoring consumer install green, hardens the gates to fail
 closed and match on anchored paths, and adds the CI harness that keeps the whole class from recurring.
 
-### Fixed (esk-genesis enforces forward-only, ADR-0086)
+### Fixed (the always-on directive is portable to consumer projects, ADR-0088)
 
-- **`esk-genesis` refuses to move a consumer's pin backward without `--allow-downgrade` (#144).** Run from an
-  older source, or given `--version <lower>`, it used to move the pin down (for example 1.2.1 to 1.2.0) silently
-  with exit 0, contradicting the documented forward-only guarantee and reintroducing version-specific bugs (such
-  as a v1.2.0 invoke that lacks `--ignore .claude/skills`). It now compares the new version against the target's
-  pinned version and fails closed (exit 2) on a backward move, before writing anything, naming the
-  `--allow-downgrade` escape. A forward or same-version reconcile is unchanged.
-- The forward-only guarantee is enforced at the point of change (genesis), not in `check-manifest-provenance`,
-  which stays offline and stateless (it verifies the committed manifest is faithful to the release it pins, not
-  that the pin is the latest). `esk-genesis.mjs` is the installer, not a manifest gate, so no sha/provenance
-  change. Pinned by discrimination tests (backward refused + nothing written; `--allow-downgrade` permits;
-  forward/same allowed).
+- **The directive delivered to consumer sessions no longer names upstream-only files and checks (#132).** The
+  always-on hook delivers `enterprise-skills-always-on.md` to every project, but that file named a review log, a
+  skill-receipt log, `check:receipt`/`check:architecture`, a PR template, `CONTRIBUTING.md`, `apply-ruleset.sh`,
+  and named CI jobs that a consumer repo does not have. The file is now **universal** (only the skills and the
+  evidence rule); the repo-specific contributor process moved to `always-on/upstream-contributor-process.md`,
+  which only this repo's `CLAUDE.md` imports, so it never reaches a consumer. The emitter is unchanged; it prints
+  the now-universal directive by construction.
+- The `bootstrap` skill is intentionally absent from the directive's "apply these" list (it is the installer, not
+  a per-change discipline). Documentation + configuration, not a manifest gate, so no sha/provenance change.
+  Pinned by a discrimination test (the universal directive and the emitter's actual output name no upstream-only
+  artifact; the moved artifacts still live in the upstream process file; `CLAUDE.md` imports both).
+
+### Fixed (the changelog joins the logs under the union merge driver, ADR-0087)
+
+- **`CHANGELOG.md` now uses git's `union` merge driver, like the two append-only logs already did.** Every PR
+  edits three shared files (the receipt log, the arch-review log, and the changelog); the logs were already
+  `merge=union` (via the bare `log.jsonl` rule), but the changelog was not, so it was the one that still conflicted
+  on every merge after the first. Adding `CHANGELOG.md merge=union` makes a merge keep both PRs' new entries
+  instead of raising a conflict (GitHub honors the base branch's `.gitattributes`). `union` stays scoped to these
+  accumulating text files, never source code.
+- Repository configuration, not a manifest gate, so no sha/provenance change. Proven by a discrimination test
+  (two branches appending to a `union` log merge cleanly, conflict without it, and `git check-attr` confirms all
+  three real paths resolve to `merge=union`).
 
 ### Fixed (vendoring install, ADR-0072)
 
@@ -149,6 +161,18 @@ closed and match on anchored paths, and adds the CI harness that keeps the whole
 - **An unknown `--flag` is now rejected with exit 2** on all four, so a typo (for example `esk-init --persnal`,
   a misspelling of `--personal`) can no longer be silently ignored and fall back to a different scope or mode.
 - CLI scripts, not manifest gates, so no sha/provenance change. Each behavior is pinned by a discrimination test.
+
+### Fixed (the local pre-push scans only what CI scans, ADR-0082)
+
+- **The pre-push hook no longer fails on gitignored files (#134).** It collects git's ignore set
+  (`git ls-files --others --ignored --exclude-standard`) and passes those paths as extra `--ignore` to each gate
+  that accepts `--ignore`, so an uncommitted local directory (a Python `.venv`, a build cache) can't fail the
+  local hook on files CI never scans. A developer is no longer pushed toward `--no-verify` for a local-only false
+  positive.
+- This is a local, hook-only adjustment scoped to exactly what git ignores: it changes nothing in the manifest
+  (provenance/parity unaffected, the ADR-0061 invoke-lock intact) and is NOT a path-level waiver. The requested
+  consumer-owned waiver for a *committed* path is deliberately deferred to its own decision. Pinned by a
+  discrimination test.
 
 ## 1.3.0 - 2026-10-21
 
