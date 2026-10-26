@@ -1,4 +1,8 @@
-* text=auto
+# Force LF on checkout for every text file, on every platform. Without `eol=lf`, `* text=auto` writes the
+# platform-native ending on checkout, so a Windows checkout gets CRLF in 322 of the skill files even with
+# core.autocrlf=false; a consumer that vendors the skills by copying that checkout then commits CRLF (#129,
+# ADR-0090). The repo's blobs are already LF; this only changes what a working-tree checkout receives.
+* text=auto eol=lf
 *.mjs text
 # Shell scripts must check out with LF even on Windows, or the bash that runs them
 # (CI and the ADR/ruleset gate tests) fails on CR bytes (`$'\r': command not found`).
