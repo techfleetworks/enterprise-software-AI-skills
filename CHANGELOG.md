@@ -13,6 +13,22 @@ begins landing a second batch, the ten issues (#174 to #183) from an agent-sessi
 held to include; the first of those (#178) adds build-comparison rigor and the executable BDD harness they all
 ride on.
 
+### Added (combinatorial testing, and a tested checker before "0 found" counts, ADR-0095)
+
+- **Combinatorial testing (#182).** `comprehensive-test-strategy` gains `references/combinatorial-testing.md`
+  (NIST SP 800-142: covering arrays, strength t, listing factors and value classes, generating with ACTS or
+  PICT, constraints) and `scripts/coverage-measure.mjs`, a dependency-free tool that reads a plan (factors,
+  strength, rows, optional constraints) and reports the measured share of t-way combinations covered, so a
+  hand-picked grid is shown to cover less than a covering array instead of being assumed complete. Step 6 of the
+  skill, the reference table, the evidence ledger, and the done-checklist now cover it.
+- **A pass/fail checker is itself tested before its "0 found" counts (#182).** The skill's new oracle rule: any
+  leak checker, grader, or comparison script ships its own unit tests for value variants (punctuation, case,
+  spacing, Unicode), one value found inside a larger one, and empty input, first. `scripts/leak-check.mjs` is the
+  worked example, a reference whole-token leak checker for human-readable secrets at token boundaries that catches
+  "Dr Example" as a leak of "Dr. Example" and does not flag "75k" inside "175k", pinned by `test/leak-check.test.mjs`
+  (its limits, including an embedded machine secret with no delimiter, are named). Both scripts ship discriminating
+  tests and an executable scenario; this is `verifiable-quality-gates` applied to an oracle.
+
 ### Added (reports meet the asked reading grade and keep the evidence words, ADR-0094)
 
 - **Agent reports now meet a set reading grade, measured before sending (#181).** `usability-ux-universal-design`
