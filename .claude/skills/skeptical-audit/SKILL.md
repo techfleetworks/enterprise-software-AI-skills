@@ -121,6 +121,14 @@ same findings but exits 0 (handy for a first look, not for a gate). The linter i
 it catches the obvious misses; the skeptic's loop catches the subtle ones. A clean `--strict` lint is
 `observed` evidence that you ran the check, nothing more.
 
+It also raises the high-stakes claims that need more than an evidence state (see the definitions in
+[`references/evidence-discipline.md`](references/evidence-discipline.md), section 6): `fixed`/`resolved`
+without a revert record (red before, green after, red again on revert); `verified` without a re-runnable
+command, exit code, and output hash; a suite-backed claim without its covering cases and the shapes it did
+not check; and `done` while a HIGH review finding is named open in the same report. From the structured
+review log, `judge-arch/scripts/check-open-high-findings.mjs` is the companion that blocks "done" over an
+open HIGH finding.
+
 ## Evidence & skeptical assessment (required)
 This skill **owns** the evidence discipline every other skill depends on - the canonical contract is
 [`references/evidence-discipline.md`](references/evidence-discipline.md) (the taxonomy, the required

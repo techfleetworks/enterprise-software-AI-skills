@@ -13,6 +13,22 @@ begins landing a second batch, the ten issues (#174 to #183) from an agent-sessi
 held to include; the first of those (#178) adds build-comparison rigor and the executable BDD harness they all
 ride on.
 
+### Added (define "fixed" and "verified", ADR-0092)
+
+- **"fixed", "verified", "done" now carry a defined bar (#179).** The evidence contract
+  (`skeptical-audit/references/evidence-discipline.md`) defines **fixed** as a committed test that is red before
+  the fix, green after it, and red again on revert; **verified** as a re-runnable command, its exit code, and an
+  output hash; a green suite as proof only of the cases it names (uncovered shapes listed as not checked); and a
+  HIGH review finding as a blocker of "done" until fixed or operator-waived. `verifiable-quality-gates` adds the
+  "a defect test is a red-on-revert discrimination test" framing.
+- **`claim-lint` raises these as smoke alarms.** New rules flag `fixed`/`resolved` without a revert record,
+  `verified` without a command + exit + hash, a suite-backed claim without its cases + not-checked shapes, and
+  `done` while an open HIGH is named in the same report. Grounding is document-level, so a record inside a fenced
+  block still counts.
+- **`check-open-high-findings.mjs` (new) blocks "done" over an open HIGH.** It reads the structured review log and
+  fails when a HIGH or critical finding has no resolution and no operator waiver; the finish check (#174) will call
+  it. Both the new rules and the checker ship discriminating tests; the four scenarios run on the BDD harness.
+
 ### Added (executable BDD harness and build-comparison rigor, ADR-0091)
 
 - **The `.feature` scenarios now actually run (#178).** A dependency-free step runner

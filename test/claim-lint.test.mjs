@@ -93,6 +93,46 @@ test("still flags a genuine standalone hedge ('likely') with --strict (exit 1)",
   assert.equal(run(REAL_HEDGE, ["--strict"]), 1);
 });
 
+// --- ISSUE-179: high-stakes claims need a specific record, not merely an evidence state ---
+// Each pair discriminates: the "bad" case exits 1 under --strict (the rule fires); if the rule were
+// disabled or claim-lint no-op'd, the bad case would stop flagging and these would fail.
+test("179 FIX: 'fixed' with no revert record is flagged (exit 1); with a revert record it passes (exit 0)", () => {
+  assert.equal(run("The login crash is now fixed.\n", ["--strict"]), 1);
+  assert.equal(run("The login crash is now fixed.\nrevert-check: `npm test` red before, green after, red on revert.\n", ["--strict"]), 0);
+});
+test("179 FIX: 'the bug is resolved' is flagged without a revert record (discriminating)", () => {
+  assert.equal(run("The race-condition bug is resolved.\n", ["--strict"]), 1);
+});
+test("179 FIX: an incidental pass needs attribution (revert record) before it counts", () => {
+  assert.equal(run("The year test now passes.\n", ["--strict"]), 1);
+});
+test("179 VERIFY: 'verified' with no re-runnable command is flagged (exit 1); with command+exit+hash it passes", () => {
+  assert.equal(run("I verified the masking logic.\n", ["--strict"]), 1);
+  assert.equal(run("I verified the masking logic.\nverified-by: `npm test -- mask` exit 0 sha256 ab12cd.\n", ["--strict"]), 0);
+});
+test("179 SUITE: a suite-backed claim with no named cases + not-checked is flagged; with them it passes", () => {
+  assert.equal(run("The 75-case suite passes.\n", ["--strict"]), 1);
+  assert.equal(run("Year answers work (cases: full day-month-year, partial date; not-checked: time-only).\nThe 75-case suite passes.\n", ["--strict"]), 0);
+});
+test("179 DONE: 'done' while a HIGH finding is open is flagged; with no open HIGH it is not", () => {
+  assert.equal(run("Review returned 1 HIGH finding, still open.\nThe work is done and ready to ship.\n", ["--strict"]), 1);
+  assert.equal(run("The work is done [observed]: all gates green.\n", ["--strict"]), 0);
+});
+test("179: a 'not-checked' scoping line is evidence, not a claim (no false positive on 'checked')", () => {
+  assert.equal(run("Shapes not-checked: time-only inputs.\n", ["--strict"]), 0);
+});
+test("179 VERIFY: domain vocabulary ('email must be verified') is NOT flagged (no false positive)", () => {
+  assert.equal(run("The user's email must be verified before checkout.\n", ["--strict"]), 0);
+});
+test("179 VERIFY: 'I verified' with an inline evidence state is grounded (no false positive)", () => {
+  assert.equal(run("I verified the fix [observed]: re-ran `npm test`, all green.\n", ["--strict"]), 0);
+});
+test("179 scoping: a scoping phrase does not smuggle a co-located untagged claim past the linter (discriminating)", () => {
+  // The record/scoping token must not suppress a genuine claim on the same line.
+  assert.equal(run("The error path is not covered by tests, but the build passes.\n", ["--strict"]), 1);
+  assert.equal(run("Covered cases: login, logout; the deployment is live and running.\n", ["--strict"]), 1);
+});
+
 test("missing file fails closed (exit 2)", () => {
   try {
     execFileSync(process.execPath, [CHECK], { stdio: "pipe" });

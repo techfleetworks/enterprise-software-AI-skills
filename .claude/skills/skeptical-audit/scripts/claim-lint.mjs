@@ -43,7 +43,9 @@ const CLAIM_PATTERNS = [
   /\bis (unused|dead code|not (used|referenced|called))\b/i,
   /\bno (references?|callers?|usages?|other) \w+/i,
   /\b(nothing|no one|nobody) (uses|references|calls)\b/i,
-  /\b(verified|confirmed|validated|ensured|checked)\b/i,
+  // "verified" is owned by the dedicated VERIFY rule (assertive "I/we verified"); the generic pattern keeps
+  // the siblings, and "checked" but not the scoping token "not-checked"/"not checked".
+  /\b(confirmed|validated|ensured)\b|(?<!not[-\s])\bchecked\b/i,
   /\bthere (is|are) no\b/i, /\bnever (happens|fails|breaks)\b/i,
   /\balways (works|passes|succeeds)\b/i, /\bhandles? (all|every)\b/i,
   /\bis (tested|reviewed|validated|working)\b/i,
@@ -52,6 +54,32 @@ const CLAIM_PATTERNS = [
 ];
 
 const STATE = /(proven|observed|inferred|documented|reported|not[-\s]assessed)/i;
+
+// #179: high-stakes claims need MORE than an evidence state - a specific, re-runnable record. These are
+// checked DOCUMENT-level (the record may sit in a fenced block, which the per-line loop skips), so a claim
+// is grounded when the report carries the matching record somewhere, and flagged when it carries none.
+//
+// "fixed"/"resolved" (a defect, or a test that now passes) needs a REVERT record: a committed test was red
+// before the fix, green after it, and red again when the fix is reverted (each run with its command + exit).
+const FIX_CLAIM = /\b(is (now )?fixed|is (now )?resolved|now fixed|now resolved|now passes|passes now|fixed incidentally|marked? (it )?(as )?(fixed|resolved))\b/i;
+const FIX_DEFECT = /\b(bug|defect|issue|regression|failure|the test)\b[^.\n]*\b(is |was |now )?(fixed|resolved)\b/i;
+const REVERT_RECORD = /\brevert[-\s]?check\b|\bred[\s>._,-]{1,6}green[\s>._,-]{1,6}red\b|\bred on revert\b/i;
+// "verified" as an AGENT claim ("I/we verified", "verified that") needs a re-runnable command, its exit
+// code, and an output hash (or an explicit "verified-by"), OR at least an inline evidence state. Scoped to
+// the assertive frame so ordinary domain vocabulary ("the email must be verified") is not flagged.
+const VERIFY_CLAIM = /\b(?:i|we)\s+(?:have\s+)?verified\b|\bverified that\b/i;
+const VERIFY_RECORD = /\bverified-by\b|\bexit\b[^\n]*\b(sha-?256|output[-\s]?hash|output[-\s]?sha)\b|\b(sha-?256|output[-\s]?hash|output[-\s]?sha)\b[^\n]*\bexit\b/i;
+// A claim that generalizes from a test SUITE to a behavior must name the covering cases and the input
+// shapes it did NOT check (a green suite proves only the cases it contains).
+const SUITE_CLAIM = /\b(suite|test suite|green suite|all tests|\d+[\s-]?cases?|\d+ scenarios?)\b[^\n]*\b(pass(es|ed)?|green|works?|correct|prove[sd]?|cover)\b|\b(works?|correct|handles? (all|every))\b[^\n]*\b(suite|test suite|all tests|\d+[\s-]?cases?)\b/i;
+const CASES_MARKER = /\bcases?:/i;
+const NOTCHECKED_MARKER = /\bnot[-\s]checked\b|\bnot covered\b|\buncovered\b/i;
+// "done"/"complete"/"ready to ship" must not stand while a HIGH review finding is open.
+const DONE_CLAIM = /\b(is|are|work is|marked?|calling (it|this|the work)|called (it|this|the work))\s+(done|complete)\b|\bready to (merge|ship)\b|\bshippable\b|\bgood to (merge|ship|go)\b/i;
+const openHighLine = (l) =>
+  /\bHIGH\b/.test(l) &&
+  /\b(open|unresolved|unaddressed|not (yet )?(fixed|resolved|waived))\b/i.test(l) &&
+  !/\b(no|zero|0)\b[^\n]*\b(open|unresolved|HIGH)\b/i.test(l);
 
 const argv = process.argv.slice(2);
 // #140: -h/--help prints usage and exits 0; an unknown --flag is rejected (so a typo cannot be ignored).
@@ -75,6 +103,14 @@ try {
 }
 
 const lines = text.split(/\r?\n/);
+// Document-level grounding for the #179 rules: the record (a revert run, a command + exit + hash, a
+// cases/not-checked list) may sit in a fenced block the per-line loop skips, so a claim is grounded when
+// the report carries the matching record anywhere, and flagged when it carries none.
+const hasRevertRecord = REVERT_RECORD.test(text);
+const hasVerifyRecord = VERIFY_RECORD.test(text);
+const hasCases = CASES_MARKER.test(text);
+const hasNotChecked = NOTCHECKED_MARKER.test(text);
+const hasOpenHigh = lines.some(openHighLine);
 const findings = [];
 let inFence = false;
 
@@ -105,7 +141,28 @@ lines.forEach((raw, i) => {
       findings.push({ n: i + 1, kind: "HEDGE", hit: h.word, line: raw.trim() });
     }
   }
-  if (!hasState) {
+  // #179: high-stakes claims that need a specific record, not merely an evidence state. A high-stakes
+  // claim line is OWNED by its specific rule: it flags when the record is absent, and either way the
+  // generic CLAIM check is skipped for that line (grounded -> not double-flagged; ungrounded -> the
+  // specific finding already says what is missing). A grounding/record line is likewise not a claim.
+  let handled = false;
+  if (FIX_CLAIM.test(line) || FIX_DEFECT.test(line)) {
+    if (!hasRevertRecord) findings.push({ n: i + 1, kind: "FIX", hit: "fixed/resolved with no revert record", line: raw.trim() });
+    handled = true;
+  } else if (VERIFY_CLAIM.test(line)) {
+    // An inline evidence state (or the next-line evidence row) grounds it too, as the generic path allows;
+    // only a bare "I verified X" with neither a record nor a state is flagged.
+    if (!hasVerifyRecord && !hasState) findings.push({ n: i + 1, kind: "VERIFY", hit: "verified with no re-runnable command + exit + hash (and no evidence state)", line: raw.trim() });
+    handled = true;
+  } else if (SUITE_CLAIM.test(line)) {
+    if (!(hasCases && hasNotChecked)) findings.push({ n: i + 1, kind: "SUITE", hit: "suite-backed claim with no named cases + not-checked shapes", line: raw.trim() });
+    handled = true;
+  } else if (hasOpenHigh && DONE_CLAIM.test(line)) {
+    findings.push({ n: i + 1, kind: "DONE-OPEN-HIGH", hit: "done/complete while a HIGH review finding is open", line: raw.trim() });
+    handled = true;
+  }
+
+  if (!hasState && !handled) {
     for (const p of CLAIM_PATTERNS) {
       const m = line.match(p);
       if (m) {
@@ -124,11 +181,18 @@ if (findings.length === 0) {
 
 const hedges = findings.filter((f) => f.kind === "HEDGE").length;
 const claims = findings.filter((f) => f.kind === "CLAIM").length;
-console.log(`claim-lint: ${findings.length} finding(s) in ${file} - ${hedges} hedge-word(s), ${claims} untagged claim(s)\n`);
+const grounded = findings.length - hedges - claims;
+console.log(`claim-lint: ${findings.length} finding(s) in ${file} - ${hedges} hedge-word(s), ${claims} untagged claim(s), ${grounded} ungrounded high-stakes claim(s)\n`);
+const WHY = {
+  HEDGE: (f) => `hedge-word "${f.hit}" - cite a measurement or say not-assessed`,
+  CLAIM: (f) => `claim "${f.hit}" has no evidence state - tag proven/observed/inferred/documented/reported/not-assessed`,
+  FIX: () => `"fixed"/"resolved" needs a revert record (red before, green after, red again on revert), each run with its command + exit`,
+  VERIFY: () => `"verified" needs a re-runnable command, its exit code, and an output hash (e.g. verified-by: \`cmd\` exit 0 sha256 ...)`,
+  SUITE: () => `a suite-backed claim must name the covering cases and the shapes it did NOT check (a green suite proves only its cases)`,
+  "DONE-OPEN-HIGH": () => `cannot be "done" while a HIGH review finding is open - fix it, or get an operator waiver, first`,
+};
 for (const f of findings) {
-  const why = f.kind === "HEDGE"
-    ? `hedge-word "${f.hit}" - cite a measurement or say not-assessed`
-    : `claim "${f.hit}" has no evidence state - tag proven/observed/inferred/documented/reported/not-assessed`;
+  const why = (WHY[f.kind] || WHY.CLAIM)(f);
   console.log(`  L${f.n}  [${f.kind}] ${why}`);
   console.log(`         > ${f.line}`);
 }
