@@ -23,6 +23,17 @@
   },
   {
     "feature": "evidence/claims-match-evidence.feature",
+    "scenario": "A defect caused by two inputs together is tested with a covering array",
+    "domain": "evidence",
+    "audience": "agent",
+    "usecase": "interaction-defects-use-covering-array",
+    "category": "edge",
+    "quality": "security",
+    "severity": "medium",
+    "status": "covered"
+  },
+  {
+    "feature": "evidence/claims-match-evidence.feature",
     "scenario": "A defect is not marked fixed until undoing the fix turns a committed test red",
     "domain": "evidence",
     "audience": "agent",
@@ -128,6 +139,17 @@
     "usecase": "ownership-observed-before-build",
     "category": "negative",
     "quality": "reliability",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "evidence/claims-match-evidence.feature",
+    "scenario": "The check that decides \"leaked or not\" is itself tested before \"0 leaks\" is claimed",
+    "domain": "evidence",
+    "audience": "agent",
+    "usecase": "oracle-unit-tested",
+    "category": "error",
+    "quality": "security",
     "severity": "high",
     "status": "covered"
   },

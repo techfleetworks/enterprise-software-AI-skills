@@ -116,7 +116,39 @@ Read `references/quality-gates-and-flaky-tests.md`. Configure CI to:
   (unit base below its floor, e2e share above its cap, the unit >= integration >= e2e order inverted, or a
   layer's runtime over budget), so the ice cream cone cannot creep in unnoticed.
 
-### Step 6: Schedule exploratory testing (the human layer)
+### Step 6: Cover input interactions, and trust only a tested checker
+
+Two failures live outside the pyramid's layers: a defect that appears only when inputs act together, and a
+checker that decides pass or fail but is itself wrong.
+
+**Cover input interactions with a covering array (combinatorial testing).** Read
+`references/combinatorial-testing.md`. When a defect comes from two or more inputs taking particular values at
+the same time, a hand-picked grid of cases misses the pairing that triggers it. Instead: list the factors and
+each factor's value classes, choose a strength `t` (pairwise, `t = 2`, is the usual default and catches the
+large majority of interaction defects per NIST SP 800-142), generate a covering array with a tool (NIST ACTS or
+PICT), and measure the share of `t`-way combinations your rows actually cover with `scripts/coverage-measure.mjs`.
+Report the measured share, name the strength, and model any forbidden combinations as constraints. "We tested a
+5 by 5 grid" is not a covering array; the measured percentage is the evidence.
+
+**Trust only a tested checker (the oracle rule).** Any check that decides pass or fail is an oracle: a leak
+checker, a grader, an output-comparison or diff script. An oracle with its own bug makes its count meaningless,
+so a "0 found", "0 leaks", or "all passed" claim does not count until the checker has its own passing unit tests.
+Those tests cover, at least:
+
+- **variants of the same value** (punctuation, case, spacing, Unicode): the checker must still match. "Dr Example"
+  must be caught as a leak of "Dr. Example".
+- **one value found inside a larger one**: the checker must not false-alarm. "75k" must not be reported as a leak
+  just because the output contains "175k".
+- **empty input**: a defined, safe result (empty output is clean, not a crash and not a silent pass).
+
+`scripts/leak-check.mjs` is the worked example: a reference leak checker that gets both audit cases right, pinned
+by `test/leak-check.test.mjs`. A checker without these tests is `not-assessed`, and its "0 found" is refused. This
+is `verifiable-quality-gates` applied to an oracle: the thing that decides pass or fail is proven able to fail.
+Name the checker's own limits too: `leak-check.mjs` matches whole tokens, so (the flip side of the "75k inside
+175k" rule) a secret embedded in a larger alphanumeric token with no delimiter, such as a concatenated API key,
+is not caught; machine secrets need a substring or entropy check alongside it.
+
+### Step 7: Schedule exploratory testing (the human layer)
 
 Read `references/exploratory-testing.md`. Automated tests only check what you thought to specify; schedule
 regular, time-boxed exploratory sessions with a destructive mindset to find what automation misses: usability
@@ -124,7 +156,7 @@ snags, confusing errors, slow responses, design issues. Turn every reproducible 
 at the lowest layer that proves it (push it down), and treat an escaped defect as a missing lower-level test,
 not just a bug to patch. This complements the pyramid; it never replaces it.
 
-### Step 7: Wire everything into CI/CD (shared with bdd-comprehensive-testing)
+### Step 8: Wire everything into CI/CD (shared with bdd-comprehensive-testing)
 
 The pipeline runs the pyramid on every PR (fast tests first, fail fast), contract tests on change, and heavier
 load and chaos suites on a schedule or pre-release gate. Order stages by speed and scope, not by test type:
@@ -132,7 +164,7 @@ fast narrow integration tests can share the unit stage; what matters is that fee
 the CI setup from `bdd-comprehensive-testing`'s `ci-cd-wiring` rather than building a parallel one. Every test
 type publishes a readable report; the build fails on real failures and blocks merge.
 
-### Step 8: Confirm the strategy before calling it done
+### Step 9: Confirm the strategy before calling it done
 
 - [ ] Logic covered by unit tests at the lowest useful level.
 - [ ] Seams (DB, queue, external) covered by integration tests against real dependencies where practical.
@@ -141,6 +173,10 @@ type publishes a readable report; the build fails on real failures and blocks me
 - [ ] Performance validated against SLOs (if hot path or scale requirement).
 - [ ] Resilience validated by fault injection (if availability matters).
 - [ ] Each behavior tested at the lowest layer that proves it; redundant higher-level tests deleted.
+- [ ] Interaction defects (two or more inputs together) tested with a covering array of a stated strength, and
+      the measured share of combinations covered reported, not a hand-picked grid.
+- [ ] Every pass/fail checker (leak checker, grader, comparison script) has its own passing tests for value
+      variants, one value inside another, and empty input, before any "0 found" from it is claimed.
 - [ ] Exploratory session run on a cadence; findings turned into lower-level automated tests.
 - [ ] Coverage gate passes; no known flaky tests left unquarantined.
 - [ ] All of it runs in CI and blocks merge on failure.
@@ -173,7 +209,10 @@ shape gates green and the flaky list empty.
 | Coverage, mutation, and property-based testing, flaky-test management, CI gates | `references/quality-gates-and-flaky-tests.md` |
 | Test code quality: DAMP vs DRY, Rule of Three, one behavior per test, deleting redundant tests | `references/test-code-quality.md` |
 | Exploratory and manual testing, destructive mindset, findings to automated regressions | `references/exploratory-testing.md` |
+| Combinatorial testing: covering arrays, strength t, NIST SP 800-142, ACTS/PICT, constraints, measuring coverage | `references/combinatorial-testing.md` |
 | Mechanical gate: test-pyramid-shape enforcement from a JUnit report | `scripts/check-test-shape.mjs` |
+| Measure the t-way combination coverage of a set of test rows (covering-array check) | `scripts/coverage-measure.mjs` |
+| Reference tested oracle: a secret-leak checker that handles value variants and substrings | `scripts/leak-check.mjs` |
 
 ## Evidence & skeptical assessment (required)
 
@@ -190,6 +229,8 @@ source, never a bare assertion.
 | "A provider cannot break this consumer silently" | the contract test runs and fails on a mismatch in a fixture | the contract test runs in both the consumer and provider pipelines |
 | "The tests actually assert, not just execute" | a mutation run shows surviving mutants being killed | a mutation gate blocks merge on critical modules (see `verifiable-quality-gates`) |
 | "There are no flaky tests being ignored" | the quarantine list is empty and the suite is green on reruns | re-run stability is tracked and a flaky test is quarantined automatically |
+| "The interaction defect is covered" | `coverage-measure.mjs` reports the measured t-way share for the rows that ran | the covering array of the stated strength reports full coverage and runs in CI |
+| "The checker's 0-found is trustworthy" | the checker's own tests pass for value variants, one value inside another, and empty input | those checker tests are committed and run in CI (a no-op checker fails them) |
 
 **Definition of done:** the ledger covers every layer the change needs with a verdict and a re-runnable source;
 coverage is treated as necessary-not-sufficient, never as the target; the shape gate is green; the flaky list is
@@ -246,3 +287,7 @@ escaped defect is treated as a missing lower-level test.
 - Koen Claessen and John Hughes, "QuickCheck: A Lightweight Tool for Random Testing of Haskell Programs," ICFP
   2000 (<https://www.cs.tufts.edu/~nr/cs257/archive/john-hughes/quick.pdf>): property-based testing, where a
   property is stated as a function and checked on random input. `[documented]`
+- D. Richard Kuhn, Raghu N. Kacker, Yu Lei, *Practical Combinatorial Testing*, NIST Special Publication 800-142,
+  October 2010 (<https://doi.org/10.6028/NIST.SP.800-142>): covering arrays, t-way (combinatorial) testing, the
+  interaction rule that most failures are triggered by a few interacting values, and measuring combinatorial
+  coverage. The basis for `references/combinatorial-testing.md`. `[documented]`
