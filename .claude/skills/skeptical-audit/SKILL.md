@@ -137,6 +137,13 @@ assumption with no observed-owner record; a headlined "most favorable" cut inste
 headline; a downgrade with no next step; "done" while the report's observed count is below its inferred
 count; and an unmeasured "A is safer/better than B" comparison.
 
+And it raises the evidence-words slip (see
+[`references/evidence-discipline.md`](references/evidence-discipline.md), section 8): a fixed or chosen
+set described as tries, odds, or a rate. Making a report simple keeps the counts and totals, the word
+"chosen" versus "random", and the evidence state; a grade of 25 chosen combinations, each run once, is
+not "25 out of 25 tries". The reading-grade companion rule (measure a draft against the grade the operator
+asked for before sending it) lives in `usability-ux-universal-design`, which ships `scripts/readability.mjs`.
+
 ## Evidence & skeptical assessment (required)
 This skill **owns** the evidence discipline every other skill depends on - the canonical contract is
 [`references/evidence-discipline.md`](references/evidence-discipline.md) (the taxonomy, the required

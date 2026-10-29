@@ -180,6 +180,52 @@ test("180 no-FP: a 'done' line with unrelated co-located counts is not misattrib
   assert.equal(run("The onboarding wizard is done. We saw 3 observed anomalies in logs; the graph has 5 inferred edges.\n", ["--strict"]), 0);
 });
 
+// --- ISSUE-181: EVIDENCE-WORDS - a chosen/fixed set described, on the same line, as a NUMERIC tries/odds/rate
+// result is flagged. A no-op claim-lint (always exit 0) flips every must-flag case below, so these discriminate.
+test("181: a fixed set of chosen combinations framed as 'N out of N tries' is flagged (exit 1)", () => {
+  assert.equal(run("The 25 chosen combinations reproduced it, 25 out of 25 tries.\n", ["--strict"]), 1);
+});
+test("181: a chosen set framed as a failure rate is flagged (exit 1)", () => {
+  assert.equal(run("All 25 chosen combinations failed, a 100% failure rate.\n", ["--strict"]), 1);
+});
+test("181: a chosen set framed as a percentage of the time is flagged (exit 1)", () => {
+  assert.equal(run("All 25 chosen combinations failed 100% of the time.\n", ["--strict"]), 1);
+});
+test("181: a hand-picked set framed as numeric odds is flagged (exit 1)", () => {
+  assert.equal(run("The 25 hand-picked cases failed; the probability of that is 1 in 1000.\n", ["--strict"]), 1);
+});
+test("181: 'no randomness' does not disarm the rule - a deterministic set as a rate is flagged (exit 1)", () => {
+  // Regression for the dead-branch bug: RANDOM_SET must be affirmative-only, so "no randomness" still checks.
+  assert.equal(run("The 25 deterministic combinations, no randomness involved, hit a 100 percent failure rate.\n", ["--strict"]), 1);
+});
+test("181: keeping the evidence words ('all N chosen combinations failed') passes (exit 0)", () => {
+  assert.equal(run("observed: all 25 chosen combinations failed, each run once.\n", ["--strict"]), 0);
+});
+test("181 no-FP: a genuinely random set of trials described as tries is NOT flagged", () => {
+  // The report calls the set random, so "N out of N tries" is the right evidence word, not a reframing.
+  assert.equal(run("We ran 25 random trials and 25 out of 25 failed.\n", ["--strict"]), 0);
+});
+test("181 no-FP: 'tries' with no chosen-set signal in context is NOT flagged", () => {
+  assert.equal(run("It reproduced on 25 out of 25 tries in the fuzzer.\n", ["--strict"]), 0);
+});
+test("181 no-FP: a chosen set with no tries/odds/rate framing is NOT flagged", () => {
+  assert.equal(run("We hand-picked 25 combinations and all 25 failed.\n", ["--strict"]), 0);
+});
+// The four co-occurrence false positives the fresh-context review found: a bare noun ("attempts"), a
+// cross-line pairing, and "curated ... error rate" must all pass now.
+test("181 no-FP: a bare count of 'attempts' (no N-out-of-N) is NOT flagged", () => {
+  assert.equal(run("The retry logic caps at 3 attempts per request.\n", ["--strict"]), 0);
+});
+test("181 no-FP: a chosen-set word and a framing word on DIFFERENT lines are NOT flagged", () => {
+  assert.equal(run("The retry logic caps at 3 attempts per request.\nThe backoff schedule is a fixed table of 1s, 2s, 4s.\n", ["--strict"]), 0);
+});
+test("181 no-FP: 'deterministic' modifying a process (not a set), with 'attempts', is NOT flagged", () => {
+  assert.equal(run("The deterministic retry caps at 5 attempts before lockout.\n", ["--strict"]), 0);
+});
+test("181 no-FP: a regression set with a plain error rate (no strong chosen-set word) is NOT flagged", () => {
+  assert.equal(run("We ran the curated regression set and saw a 0 percent error rate.\n", ["--strict"]), 0);
+});
+
 test("missing file fails closed (exit 2)", () => {
   try {
     execFileSync(process.execPath, [CHECK], { stdio: "pipe" });

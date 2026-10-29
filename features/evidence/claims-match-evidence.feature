@@ -95,3 +95,19 @@ Feature: Claims of "fixed", "clean" and "done" match the evidence behind them
     And it cites no measurement comparing them
     When the claim check runs on the report
     Then the sentence is flagged as an untagged claim
+
+  @audience:operator @usecase:plain-language-meets-grade @category:happy @quality:accessibility @severity:medium
+  Scenario: A plain-language report meets the reading grade the operator asked for
+    Finding 6: the operator asked for a 7th-grade explanation; the first reply measured grade 10.1.
+    Given the operator asks for an explanation at a 7th-grade reading level
+    When the agent drafts the explanation
+    Then the draft is measured with a readability check before it is sent
+    And a draft above grade 7.9 is rewritten, not sent
+
+  @audience:operator @usecase:plain-language-keeps-evidence @category:boundary @quality:reliability @severity:medium
+  Scenario: Making a report simple does not change what the evidence says
+    Finding 5: a fixed grid of 25 chosen combinations became "25 out of 25 tries" in the plain-language version.
+    Given the evidence is 25 hand-picked combinations, each run once, all failing
+    When the agent explains it in plain language
+    Then the explanation says "all 25 chosen combinations failed"
+    And it does not describe the result as tries, odds or a rate

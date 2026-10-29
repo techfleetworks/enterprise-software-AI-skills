@@ -13,6 +13,22 @@ begins landing a second batch, the ten issues (#174 to #183) from an agent-sessi
 held to include; the first of those (#178) adds build-comparison rigor and the executable BDD harness they all
 ride on.
 
+### Added (reports meet the asked reading grade and keep the evidence words, ADR-0094)
+
+- **Agent reports now meet a set reading grade, measured before sending (#181).** `usability-ux-universal-design`
+  ships `scripts/readability.mjs`, a dependency-free Flesch-Kincaid grader that scores a draft's prose only
+  (skipping code blocks, tables, inline code, URLs, and file paths) and, with `--max-grade N`, exits non-zero
+  when the draft is above the target, so a report drafted above the grade the operator asked for is rewritten,
+  not sent. It fails closed on no countable prose, an unreadable file, or a missing or non-numeric target. The
+  skill's plain-language rule, mechanical-gate note, and evidence ledger now cover agent reports, not only UI copy.
+- **Simplifying a report must keep its evidence words (#181).** The evidence contract
+  (`skeptical-audit/references/evidence-discipline.md`, section 8) says a plainer rewrite keeps the counts and
+  totals, "chosen" versus "random", and the evidence state, and never turns a fixed or chosen set into tries,
+  odds, or a rate. `claim-lint` raises the detectable slice as a smoke alarm: a chosen or fixed set framed, on
+  the same line, as a numeric tries, odds, or rate result, unless the line calls the set random (the numeric and
+  same-line limits keep common bare nouns like "attempts" and "error rate" from crying wolf). Each piece ships a
+  discriminating test and an executable scenario; the two rules are owned by the skill whose concern they are.
+
 ### Added (skeptical-audit catches mistakes before and around a claim, ADR-0093)
 
 - **Five additions to `skeptical-audit` (#180), each a `claim-lint` smoke alarm with a scenario.** Observe
