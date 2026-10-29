@@ -57,3 +57,31 @@ jobs:
         run: npm run vendor:owasp
       - name: Verbatim-overlap gate
         run: npm run check:verbatim
+
+  # Executable BDD (ADR-0091). The validation gates (gherkin-valid, tags, coverage) prove the .feature
+  # files are well-formed, fully tagged, in sync with the datastore, and append-only; then bdd-run.mjs
+  # EXECUTES the scenarios and check-bdd-executed reconciles the Cucumber JSON against the datastore, so
+  # "every scenario ran and passed" is proven, not assumed. Needs the @cucumber/gherkin parser (installed
+  # by npm ci) and origin/main for the append-only log base, so it fetches full history.
+  bdd:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Gherkin syntax gate
+        run: node .claude/skills/bdd-comprehensive-testing/scripts/check-gherkin-valid.mjs features
+      - name: BDD tag taxonomy gate
+        run: node .claude/skills/bdd-comprehensive-testing/scripts/check-bdd-tags.mjs features
+      - name: BDD coverage + append-only gate
+        run: |
+          git show origin/main:features/bdd-coverage-log.md > "$RUNNER_TEMP/base-log.md" 2>/dev/null || true
+          BDD_LOG_BASE="$RUNNER_TEMP/base-log.md" node .claude/skills/bdd-comprehensive-testing/scripts/check-bdd-coverage.mjs features
+      - name: Run the scenarios and reconcile (executable)
+        run: npm run test:bdd

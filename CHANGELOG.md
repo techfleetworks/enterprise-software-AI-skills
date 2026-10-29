@@ -8,7 +8,24 @@ semantic versioning for the skills library and its gates.
 A consumer-install correctness release: a batch of issues (#117–#153) from a real consumer that adopts the
 skills with `esk-genesis` and vendors them under `.claude/skills/` showed the gates were never exercised
 end to end on that layout. This release makes a vendoring consumer install green, hardens the gates to fail
-closed and match on anchored paths, and adds the CI harness that keeps the whole class from recurring.
+closed and match on anchored paths, and adds the CI harness that keeps the whole class from recurring. It also
+begins landing a second batch, the ten issues (#174 to #183) from an agent-session audit, which this release is
+held to include; the first of those (#178) adds build-comparison rigor and the executable BDD harness they all
+ride on.
+
+### Added (executable BDD harness and build-comparison rigor, ADR-0091)
+
+- **The `.feature` scenarios now actually run (#178).** A dependency-free step runner
+  (`.claude/skills/bdd-comprehensive-testing/scripts/bdd-run.mjs`) executes the scenarios over the existing
+  `@cucumber/gherkin` parser and emits the standard Cucumber JSON that `check-bdd-executed` reconciles, so "every
+  scenario ran and passed" is proven, not assumed. A real `features/` tree, a CI `bdd` job (added to the required
+  checks), and step definitions land with it. No new dependency: it reuses the parser the repo already had, and it
+  fails closed, naming the file, on a Gherkin construct it does not support.
+- **`verifiable-quality-gates` gains build-comparison rigor.** A new section and reference script
+  (`scripts/compare-gate-runs.mjs`) make a "no new failures" claim able to fail: compare only on fields proven
+  present (a missing field is an error, not an empty status), count worsening inside gates that are red in both
+  builds, and cite the command, exit code, and output hash for any "clean" verdict. Both new scripts ship with
+  discriminating tests that go red when the script is a no-op.
 
 ### Fixed (text files, including the vendored skills, check out as LF everywhere, ADR-0090)
 
