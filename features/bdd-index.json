@@ -1,0 +1,24 @@
+[
+  {
+    "feature": "evidence/claims-match-evidence.feature",
+    "scenario": "A before-and-after comparison that reads a missing field cannot report \"0 new failures\"",
+    "domain": "evidence",
+    "audience": "agent",
+    "usecase": "regression-diff-must-be-able-to-fail",
+    "category": "negative",
+    "quality": "reliability",
+    "severity": "critical",
+    "status": "covered"
+  },
+  {
+    "feature": "evidence/claims-match-evidence.feature",
+    "scenario": "A new problem inside a gate that was already failing is reported as new",
+    "domain": "evidence",
+    "audience": "agent",
+    "usecase": "new-failure-inside-red-gate",
+    "category": "edge",
+    "quality": "reliability",
+    "severity": "critical",
+    "status": "covered"
+  }
+]

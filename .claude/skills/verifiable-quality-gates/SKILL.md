@@ -116,6 +116,41 @@ one entry at a time. Once a check has a real, discriminating test its name must 
 flag day. See
 `references/owning-layer-and-ratchet.md`.
 
+## Comparing a change against a base build
+
+"This change adds no new failures" is a claim, and it fails the same way a vacuous check does: the
+comparison can be built so it could never have found a failure. In an audited run an agent reported
+"0 new failures, CLEAN" from a script that sorted gates by an `ok` field no gate record had, so
+"passed in base, failed in changed" could never be true. In the same run a gate failing in both builds
+got worse (420 problems to 430) and a pass-or-fail comparison could not see it.
+
+Two rules make a before-and-after comparison able to fail:
+
+1. **Compare only on fields proven present. A missing field is an error, not an empty status.** Confirm
+   the field you compare on exists on every record first; if it is absent, stop with an error naming
+   the field and print no count. A field read as empty and then treated as "no change" is how a clean
+   verdict gets reported without a comparison.
+
+   ```
+   # never: a status field no record has, read as "unchanged" -> new-failure list can never fill
+   status = rec.get("ok") or rec.get("passed")
+
+   # always: proven-present or it is a hard error
+   if status_field not in rec: die(f'"{status_field}" absent from {gate}; cannot compute pass/fail')
+   ```
+
+2. **For gates red in both builds, compare per-case results or problem counts; any increase is new**
+   until it is explained or fixed. This needs gate records that keep the per-case results, or a count
+   plus a hash of the case list, not just the last output line. A both-red gate with only a last line
+   cannot be proven to have not gotten worse, so it is reported UNVERIFIABLE and blocks "clean".
+
+The reference script `scripts/compare-gate-runs.mjs` embodies both rules, and its discriminating test
+(`test/compare-gate-runs.test.mjs`) proves it: rename the status field and it must error; add one
+problem inside a red gate and it must report it. **The claim rule:** a "0 new failures" or "clean"
+claim may only cite a run that was able to find a failure, with its command, exit code, and output
+hash; without that citation the verdict is `not-assessed`, never `proven`. See
+`references/comparing-against-a-base-build.md`.
+
 ## Mechanical gate
 
 This skill ships its own two gates, and they guard each other. `scripts/check-has-test.mjs` (the coverage
@@ -152,8 +187,10 @@ gates that prove other checks are themselves proven.
 | Building the discrimination (mutation) gate: the no-op mutant, running the suite, requiring failure, restoring safely, failing closed | `references/mutation-gate.md` |
 | Faithful, discriminating check-tests: fixtures, checks rooted at their own location, test-only seams for database/API/network-gated checks, how a coverage gate credits a test | `references/check-test-patterns.md` |
 | Prove-at-the-owning-layer, deleting dead or redundant monitors, the shrink-only allowlist ratchet | `references/owning-layer-and-ratchet.md` |
+| Comparing a change against a base build so a "no new failures" claim can actually fail (proven-present fields, worsening inside red gates) | `references/comparing-against-a-base-build.md` |
 | Dependency-free reference coverage gate (every check has a test that runs it) | `scripts/check-has-test.mjs` |
 | Dependency-free reference mutation gate (no-op each check, require its test to fail) | `scripts/verify-check-discrimination.mjs` |
+| Dependency-free reference build-comparison script (new failures and worsened red gates, fails closed on a missing field) | `scripts/compare-gate-runs.mjs` |
 | Example configuration for both engines | `assets/verifiable-gates.config.example.json` |
 
 ## Evidence & skeptical assessment (required)
@@ -170,6 +207,7 @@ emits an **evidence ledger** so no detection claim is trusted on assumption.
 | "This check fails closed" | running it with a missing input or zero-scan and seeing a non-zero exit | a committed test asserts the fail-closed exit codes and discriminates |
 | "Coverage of the checks is not the goal; detection is" | the suite reports mutation results, not just a coverage number | the discrimination gate is the merge-blocking signal, not a coverage threshold |
 | "No check is a blind monitor of a guarantee owned elsewhere" | the invariant is shown proven at its owning layer (a test next to the owner) | the redundant monitor is deleted and an ADR records why |
+| "This change adds no new failures vs the base build" | a comparison that reads fields proven present (not an absent field read as empty) exits 0 | the comparison also counts worsening inside gates that are red in both builds, and the claim cites its command, exit code, and output hash |
 
 **Definition of done:** every check fails closed and emits evidence; has a committed test that runs the real
 check; that test discriminates (proven by the mutation gate); redundant monitors are deleted in favor of the

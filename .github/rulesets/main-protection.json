@@ -28,7 +28,8 @@
         "required_status_checks": [
           { "context": "test (20)", "integration_id": 15368 },
           { "context": "test (24)", "integration_id": 15368 },
-          { "context": "routing", "integration_id": 15368 }
+          { "context": "routing", "integration_id": 15368 },
+          { "context": "bdd", "integration_id": 15368 }
         ]
       }
     }

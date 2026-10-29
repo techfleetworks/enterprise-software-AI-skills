@@ -21,3 +21,6 @@ Thumbs.db
 
 # App-managed worktree metadata (not part of the repo).
 .claude/worktrees/
+
+# Cucumber JSON report written by `npm run test:bdd` (regenerated each run; CI writes its own).
+.bdd-report.json
