@@ -99,6 +99,12 @@ Read `references/content-and-plain-language.md`. Words are UI, and people skim r
 - **Helpful empty, loading, and success states**: tell people what is happening and what to do next,
   never a blank void or a dead spinner.
 - **Scannable structure**: headings, short paragraphs, lists; front-load the important part.
+- **Reports to people, not only UI copy**: an agent's own reports to the people it works for follow these
+  rules too. When someone sets a reading grade, measure the draft before sending it and rewrite anything
+  above the target (`scripts/readability.mjs`, Flesch-Kincaid, prose only, exits non-zero over `--max-grade`);
+  and keep the evidence words when you simplify (the counts and totals, "chosen" versus "random", the
+  evidence state), a rule `skeptical-audit` owns (evidence contract, section 8). See
+  `references/content-and-plain-language.md`.
 
 ### Step 5: Prevent errors and make recovery painless
 
@@ -130,7 +136,10 @@ cognitive load cannot be decided by a regex or a linter, and a gate that claimed
 What enforces this skill instead:
 
 - The **plain-language rule** is partly held by the repo house-style gate (no em or en dashes, plain
-  prose) and by review.
+  prose) and by review. One slice of it is measured: `scripts/readability.mjs` reports the Flesch-Kincaid
+  grade of a draft's prose and, with `--max-grade N`, exits non-zero above the target, so a report drafted
+  above the grade the operator asked for is rewritten, not sent. That measures reading grade, not whether the
+  meaning is clear, so it is a floor to clear rather than a verdict on usability.
 - The **shared foundations** (keyboard operability, target size, reduced motion, responsive layout) are
   gated by the sibling skills `universal-accessibility-wcag` (`check-a11y-checklist`, `check-axe-results`)
   and `universal-browser-device-support` (`check-no-ua-sniffing`). Do those first.
@@ -147,6 +156,9 @@ What enforces this skill instead:
 - Cognitive load minimized: recognition over recall, sensible defaults, progressive disclosure,
   consistent patterns.
 - Copy is plain-language, specific, and scannable; labels are action-oriented.
+- If the person set a reading grade, each report was measured (`scripts/readability.mjs --max-grade N`) and
+  rewritten until it met the target before sending; simplifying kept the evidence words (counts and totals,
+  "chosen" versus "random", the evidence state).
 - Empty, loading, error, and success states are all designed and helpful.
 - Errors are prevented where possible; messages are clear and actionable; destructive actions are
   confirmed or reversible.
@@ -162,6 +174,7 @@ What enforces this skill instead:
 | The ten usability heuristics applied to real interfaces | `references/usability-heuristics.md` |
 | Reducing cognitive load: recognition, affordances, hierarchy, defaults, progressive disclosure | `references/cognitive-load-and-clarity.md` |
 | Plain-language content, labels, microcopy, empty/loading/success states, readability | `references/content-and-plain-language.md` |
+| Measure a draft's reading grade before sending (Flesch-Kincaid, prose only) | `scripts/readability.mjs` |
 | Error prevention, forgiving recovery, reversibility, safe destructive actions | `references/error-prevention-and-recovery.md` |
 | Usability testing, task-based research, sample size, testing across the spectrum, iteration | `references/usability-testing-and-research.md` |
 | All 100 Weinschenk findings, each with its design takeaways (the research behind the heuristics) | `references/weinschenk-100-things.md` |
@@ -179,7 +192,8 @@ first (where does a first-time user get stuck?) before you call it intuitive.
 |---|---|---|
 | "A first-time user can complete the core task" | a task-based test with about 5 representative users succeeds | the test is repeated across the ability and literacy spectrum and the top issues are fixed |
 | "The design has no obvious usability defects" | a heuristic evaluation against the ten heuristics finds none | the evaluation is done by someone who did not design it |
-| "The copy is plain language" | a readability check puts it near an 8th-grade level | it is validated with non-expert and non-native readers |
+| "The copy is plain language" | `scripts/readability.mjs` reports it at or below the target grade | it is validated with non-expert and non-native readers |
+| "A report meets the grade the operator asked for" | `readability.mjs <draft> --max-grade N` exits 0 on the draft that was sent | a readability check over sent reports is wired into the finish check (#174) |
 | "Errors are preventable and recoverable" | destructive actions are confirmed or reversible, shown in a test | a user in testing recovers from a mistake without help |
 | "It works for the spectrum, not one average user" | the test pool spans abilities, literacy, age, and device | findings are tracked per segment, not just in aggregate |
 

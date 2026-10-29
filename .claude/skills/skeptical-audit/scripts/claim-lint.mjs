@@ -100,6 +100,20 @@ const NEXT_STEP = /\bnext step\b|\bto (raise|upgrade) (it|this)\b|\bwould (raise
 // Headline: the reported headline must be the metric declared BEFORE measuring; headlining the most favorable
 // result is flagged. Scoped to the reporting sense so git "cherry-pick the hotfix" is not flagged.
 const HEADLINE_CHERRY = /\bheadlined the (most )?favorable\b|\bmost favorable (cut|number|result|metric|measure|reading|percentage|figure|score)\b|\bcherry.?pick(ed|ing)? (the |a )?(most )?favorable\b|\bcherry.?pick(ed|ing)? (the |a )?(result|number|metric|cut|measure|score)\b/i;
+// #181: evidence words - making a report simple must not change what the evidence says. The one slice a
+// line-level alarm can see is a FIXED or CHOSEN set (hand-picked, each run once, a deterministic set)
+// described, ON THE SAME LINE, as a NUMERIC tries/odds/rate result: a grid of 25 chosen combinations, each
+// run once, is not "25 out of 25 tries". Three deliberate limiters keep it from crying wolf (the failure
+// PR #180 named): the chosen-set signal and the numeric framing must be on the SAME line (not line + next,
+// which flagged two unrelated adjacent sentences); the framing must be NUMERIC (a count out of a count, an
+// N% rate, numeric odds) because bare nouns like "attempts", "error rate", and "probability" are far too
+// common to flag; and a line that AFFIRMATIVELY calls the set random is left alone ("no randomness" does not
+// count as random, so a deterministic set is still checked). The other halves of the rule - keep the counts
+// and totals, keep "chosen" vs "random", keep the evidence state - are the discipline (contract section 8)
+// the review and the finish check own.
+const CHOSEN_SET = /\b(?:chosen|hand-?picked|hand-?selected|cherry-?picked|each run once|run once each|deterministic (?:set|grid|combinations?|inputs?|cases?)|fixed (?:set|grid|list|table))\b/i;
+const RANDOM_SET = /(?<!\bno )(?<!\bnot )\brandom\w*\b|\bsampled\b|\ba sample of\b|\bdrawn at random\b|\bby chance\b|\bfuzz\w*\b/i;
+const TRIES_ODDS_RATE = /\b\d+\s*(?:out of|\/)\s*\d+\s*(?:tries|attempts|trials)\b|\btried\s+\d+\s+times\b|\b\d+(?:\.\d+)?\s*(?:%|percent)\s+(?:of the time\b|(?:[a-z]+\s+)?rate\b)|\b(?:success|failure|pass|fail|error|hit)\s+rate\s+of\s+\d|\b(?:odds|probability|likelihood)\s+(?:of\s+[\w\s]{0,20}?)?(?:is|was|are|were|of|at|=)\s+\d|\b\d+\s*(?:in|to)\s*\d+\s+(?:odds|chance)\b/i;
 
 const argv = process.argv.slice(2);
 // #140: -h/--help prints usage and exits 0; an unknown --flag is rejected (so a typo cannot be ignored).
@@ -200,6 +214,9 @@ lines.forEach((raw, i) => {
   } else if (HEADLINE_CHERRY.test(line)) {
     findings.push({ n: i + 1, kind: "HEADLINE", hit: "a favorable cut headlined instead of the metric declared before measuring", line: raw.trim() });
     handled = true;
+  } else if (TRIES_ODDS_RATE.test(line) && CHOSEN_SET.test(line) && !RANDOM_SET.test(line)) {
+    findings.push({ n: i + 1, kind: "EVIDENCE-WORDS", hit: "a fixed/chosen set described as tries, odds or a rate", line: raw.trim() });
+    handled = true;
   }
 
   if (!hasState && !handled) {
@@ -234,6 +251,7 @@ const WHY = {
   OWNERSHIP: () => `observe which part owns the behavior before building on it - record the owner (file:line) and the output of running it through the system`,
   DOWNGRADE: () => `a downgrade is the deliverable, but name the next step that would raise it and who will take it - do not let it be the last word`,
   HEADLINE: () => `declare the headline metric and its cut BEFORE measuring, and report every cut with what each one counts - do not headline the most favorable`,
+  "EVIDENCE-WORDS": () => `keep the evidence words when you simplify: a chosen/fixed set, each run once, is not "tries", "odds" or "a rate" - say "all N chosen combinations failed" and keep the count, the chosen-vs-random word, and the evidence state`,
 };
 for (const f of findings) {
   const why = (WHY[f.kind] || WHY.CLAIM)(f);

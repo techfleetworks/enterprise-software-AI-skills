@@ -132,3 +132,34 @@ The discipline reaches the decisions made before a claim is written, and how a c
 a downgrade with no next step; a headlined "most favorable" cut; "done" while the `N observed` and `N
 inferred` counts stated with the claim show inferred in the majority; an unmeasured "safer/better than"
 comparison). The receipt and the fresh-context review still own whether the judgment behind each was sound.
+
+## 8. Keep the evidence words when you make a report simple
+
+Simplifying a report for a reader is required, not optional (the reading grade rule lives in
+`usability-ux-universal-design`, which ships `scripts/readability.mjs` to measure a draft against the grade
+the operator asked for before it is sent). But making the words simple must never change what the evidence
+says. When you simplify, you keep three things exactly:
+
+- **The counts and their totals.** "12 of 59 observed" stays "12 of 59", not "most" and not "nearly all".
+  A total that is dropped hides how much was not checked.
+- **"chosen" versus "random".** A hand-picked, fixed set and a random sample are different evidence; the
+  plain version keeps whichever word is true.
+- **The evidence state.** `observed`, `reported`, and `not-assessed` survive the rewrite. A plainer sentence
+  does not quietly promote a `not-assessed` row to a fact.
+
+The specific slip this rule is named for: **do not turn a fixed or chosen set into tries, odds, or a rate.**
+Take a grid of 25 hand-picked combinations, each run once, by a program with no randomness:
+
+> Keep: "all 25 chosen combinations failed."
+> Slip: "25 out of 25 tries", a "100% rate", or any "odds".
+
+Tries, odds, and rates describe repeated or random trials; a fixed set has none of those, so the words invent
+a measurement that was never taken. Keep the count and its total, keep whichever of "chosen" or "random" is
+true, and keep the evidence state.
+
+`claim-lint` raises the one slice a line-level alarm can see: a fixed or chosen set named on a line that, on
+that same line, frames the result as a numeric tries, odds, or rate (a count out of a count, an N% rate,
+numeric odds), when that line does not also call the set random. The framing must be numeric on purpose: a
+bare "attempts" or "error rate" is far too common to flag. The alarm cannot see a simplification that silently
+drops the word "chosen" or rounds "12 of 59" to "most", which is `not-assessed` by the alarm and owned by the
+fresh-context review and the finish check. A smoke alarm catches the loose word, not the dropped one.

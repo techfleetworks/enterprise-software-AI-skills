@@ -67,6 +67,17 @@
   },
   {
     "feature": "evidence/claims-match-evidence.feature",
+    "scenario": "A plain-language report meets the reading grade the operator asked for",
+    "domain": "evidence",
+    "audience": "operator",
+    "usecase": "plain-language-meets-grade",
+    "category": "happy",
+    "quality": "accessibility",
+    "severity": "medium",
+    "status": "covered"
+  },
+  {
+    "feature": "evidence/claims-match-evidence.feature",
     "scenario": "A test that turns green without a targeted change is explained before it counts",
     "domain": "evidence",
     "audience": "agent",
@@ -95,6 +106,17 @@
     "usecase": "downgrade-names-next-step",
     "category": "negative",
     "quality": "functional",
+    "severity": "medium",
+    "status": "covered"
+  },
+  {
+    "feature": "evidence/claims-match-evidence.feature",
+    "scenario": "Making a report simple does not change what the evidence says",
+    "domain": "evidence",
+    "audience": "operator",
+    "usecase": "plain-language-keeps-evidence",
+    "category": "boundary",
+    "quality": "reliability",
     "severity": "medium",
     "status": "covered"
   },
