@@ -12,6 +12,17 @@
   },
   {
     "feature": "evidence/claims-match-evidence.feature",
+    "scenario": "A claim that one approach is better than another needs a measurement",
+    "domain": "evidence",
+    "audience": "agent",
+    "usecase": "comparison-claim-needs-source",
+    "category": "negative",
+    "quality": "reliability",
+    "severity": "medium",
+    "status": "covered"
+  },
+  {
+    "feature": "evidence/claims-match-evidence.feature",
     "scenario": "A defect is not marked fixed until undoing the fix turns a committed test red",
     "domain": "evidence",
     "audience": "agent",
@@ -60,6 +71,50 @@
     "domain": "evidence",
     "audience": "agent",
     "usecase": "unexplained-pass-attributed",
+    "category": "negative",
+    "quality": "reliability",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "evidence/claims-match-evidence.feature",
+    "scenario": "A work item with mostly inferred evidence cannot be marked done",
+    "domain": "evidence",
+    "audience": "operator",
+    "usecase": "done-needs-observed-majority",
+    "category": "negative",
+    "quality": "reliability",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "evidence/claims-match-evidence.feature",
+    "scenario": "Lowering a claim's evidence state comes with the next step to raise it",
+    "domain": "evidence",
+    "audience": "agent",
+    "usecase": "downgrade-names-next-step",
+    "category": "negative",
+    "quality": "functional",
+    "severity": "medium",
+    "status": "covered"
+  },
+  {
+    "feature": "evidence/claims-match-evidence.feature",
+    "scenario": "The agent observes which part owns a behavior before building on it",
+    "domain": "evidence",
+    "audience": "agent",
+    "usecase": "ownership-observed-before-build",
+    "category": "negative",
+    "quality": "reliability",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "evidence/claims-match-evidence.feature",
+    "scenario": "The headline number is the one chosen before the results, with every other cut shown",
+    "domain": "evidence",
+    "audience": "operator",
+    "usecase": "headline-is-predeclared",
     "category": "negative",
     "quality": "reliability",
     "severity": "high",

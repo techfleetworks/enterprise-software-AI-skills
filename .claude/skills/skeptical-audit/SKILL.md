@@ -20,7 +20,9 @@ No claim ships without three things attached:
 3. a **named limitation** - what you did *not* check (which surface, input class, or environment).
 
 If you cannot attach all three, you do not assert it. You state the honest evidence state and say
-what it would take to upgrade it. **Downgrading a claim is not failure - it is the deliverable.**
+what it would take to upgrade it. **Downgrading a claim is not failure - it is the deliverable, and it
+names the next step to upgrade it** (the measurement that would raise it, and who will take it). A
+downgrade is never the last line of the work.
 
 ## The evidence states (never interchange these)
 - **proven** - a committed, *discriminating* test or CI gate keeps it true on every future change (per `verifiable-quality-gates`). The strongest state, and the only one that survives regression by construction. Earned only when the gate exists, is in the required set, and its own test fails if the check is no-opped.
@@ -128,6 +130,12 @@ command, exit code, and output hash; a suite-backed claim without its covering c
 not check; and `done` while a HIGH review finding is named open in the same report. From the structured
 review log, `judge-arch/scripts/check-open-high-findings.mjs` is the companion that blocks "done" over an
 open HIGH finding.
+
+It also raises the mistakes that happen before and around a claim (see
+[`references/evidence-discipline.md`](references/evidence-discipline.md), section 7): an ownership
+assumption with no observed-owner record; a headlined "most favorable" cut instead of a predeclared
+headline; a downgrade with no next step; "done" while the report's observed count is below its inferred
+count; and an unmeasured "A is safer/better than B" comparison.
 
 ## Evidence & skeptical assessment (required)
 This skill **owns** the evidence discipline every other skill depends on - the canonical contract is

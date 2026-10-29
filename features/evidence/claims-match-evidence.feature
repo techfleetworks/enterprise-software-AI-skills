@@ -54,3 +54,44 @@ Feature: Claims of "fixed", "clean" and "done" match the evidence behind them
     When the agent calls the work done
     Then the work is not marked done
     And the open HIGH finding is shown to the operator
+
+  @audience:agent @usecase:ownership-observed-before-build @category:negative @quality:reliability @severity:high
+  Scenario: The agent observes which part owns a behavior before building on it
+    Finding 6: the agent wrote code and a test assuming one module owned "keep that secret"; another module did.
+    Given the agent plans a change that relies on module A handling input X
+    When it has not searched for the owner of X and run X through the system
+    Then the edit is held
+    And the agent is told to record the observed owner before editing
+
+  @audience:operator @usecase:headline-is-predeclared @category:negative @quality:reliability @severity:high
+  Scenario: The headline number is the one chosen before the results, with every other cut shown
+    Finding 5: the agent said it "headlined the most favorable cut (3.0%)" while the clean measure was 6.2%.
+    Given the agent measured confident-wrong answers in 3 ways: 35%, 6.2% and 3.0%
+    And it declared 6.2% as the headline before it measured
+    When it reports to the operator
+    Then 6.2% is the headline
+    And all 3 numbers appear with what each one counts
+
+  @audience:operator @usecase:done-needs-observed-majority @category:negative @quality:reliability @severity:high
+  Scenario: A work item with mostly inferred evidence cannot be marked done
+    Finding 6: an audit row was marked "Done" while 47 of its 59 records were inferred, not re-checked.
+    Given a status row whose evidence is 12 observed records and 47 inferred records
+    When the agent marks the row "done"
+    Then the mark is refused
+    And the row shows "12 of 59 observed"
+
+  @audience:agent @usecase:downgrade-names-next-step @category:negative @quality:functional @severity:medium
+  Scenario: Lowering a claim's evidence state comes with the next step to raise it
+    Finding 6: the agent downgraded claims without naming the measurement that would raise them.
+    Given the agent downgrades a claim from "observed" to "not-assessed"
+    When it reports the downgrade
+    Then the report names the measurement that would raise it and who will take it
+    And the downgrade is not the last line of the work
+
+  @audience:agent @usecase:comparison-claim-needs-source @category:negative @quality:reliability @severity:medium
+  Scenario: A claim that one approach is better than another needs a measurement
+    Finding 5: the agent called a large language model layer "the primary control" with no evidence, then retracted it.
+    Given the agent writes that approach A is safer than approach B
+    And it cites no measurement comparing them
+    When the claim check runs on the report
+    Then the sentence is flagged as an untagged claim
