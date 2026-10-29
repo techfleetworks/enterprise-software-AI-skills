@@ -151,6 +151,19 @@ claim may only cite a run that was able to find a failure, with its command, exi
 hash; without that citation the verdict is `not-assessed`, never `proven`. See
 `references/comparing-against-a-base-build.md`.
 
+## What "fixed" and "verified" mean (a defect test is a discrimination test)
+
+A defect is **fixed** only when a committed test is **red on the code before the fix, green after it, and
+red again when the fix is reverted** (each run recorded with its command and exit). The red-on-revert run
+is the discrimination proof from the core rule, aimed at the fix: it shows the test can detect the fix
+being lost, so the regression cannot silently return. A defect marked fixed with no red-on-revert run is
+`not-assessed`, never a pass. **Verified** means a re-runnable command, its exit code, and an output hash
+are in the receipt. A test that turns green with no edit aimed at it is an **unexplained pass**: revert
+each edit in turn and name the one that turns it red again before counting it as a fix. These definitions
+are owned by the evidence contract
+([`skeptical-audit/references/evidence-discipline.md`](../skeptical-audit/references/evidence-discipline.md),
+section 6) and raised as smoke alarms by `claim-lint`.
+
 ## Mechanical gate
 
 This skill ships its own two gates, and they guard each other. `scripts/check-has-test.mjs` (the coverage

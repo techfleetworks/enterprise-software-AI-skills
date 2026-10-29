@@ -12,6 +12,28 @@
   },
   {
     "feature": "evidence/claims-match-evidence.feature",
+    "scenario": "A defect is not marked fixed until undoing the fix turns a committed test red",
+    "domain": "evidence",
+    "audience": "agent",
+    "usecase": "fixed-needs-red-on-revert",
+    "category": "negative",
+    "quality": "reliability",
+    "severity": "critical",
+    "status": "covered"
+  },
+  {
+    "feature": "evidence/claims-match-evidence.feature",
+    "scenario": "A HIGH review finding is fixed or waived before the work is called done",
+    "domain": "evidence",
+    "audience": "operator",
+    "usecase": "review-findings-acted-on",
+    "category": "adverse",
+    "quality": "reliability",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "evidence/claims-match-evidence.feature",
     "scenario": "A new problem inside a gate that was already failing is reported as new",
     "domain": "evidence",
     "audience": "agent",
@@ -19,6 +41,28 @@
     "category": "edge",
     "quality": "reliability",
     "severity": "critical",
+    "status": "covered"
+  },
+  {
+    "feature": "evidence/claims-match-evidence.feature",
+    "scenario": "A passing test suite does not prove a behavior the suite never tests",
+    "domain": "evidence",
+    "audience": "agent",
+    "usecase": "green-suite-must-cover-the-claim",
+    "category": "edge",
+    "quality": "reliability",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "evidence/claims-match-evidence.feature",
+    "scenario": "A test that turns green without a targeted change is explained before it counts",
+    "domain": "evidence",
+    "audience": "agent",
+    "usecase": "unexplained-pass-attributed",
+    "category": "negative",
+    "quality": "reliability",
+    "severity": "high",
     "status": "covered"
   }
 ]

@@ -407,4 +407,5 @@ review log mirrors tamper-evident audit logging (`compliance-data-lifecycle`).
 - `scripts/check-arch-review-coverage.mjs`: the review-coverage gate (every changed file times every question, logged and evidenced).
 - `scripts/check-arch-rules-discriminate.mjs`: the mutation-test for the reviewer: planted violations the mechanical layer must flag.
 - `scripts/check-change-routing.mjs`: the change-type to required-artifact routing gate (ADR-0031). A change that touches a kind of surface must ship its discipline's artifact (a new skill an ADR, a new gate a test). Checks presence; `ownerGate` names who checks correctness. Config at `assets/routing-rules.config.json`, adopter starting map at `assets/example/routing-rules.config.json`; run on every PR by `.github/workflows/routing.yml`.
+- `scripts/check-open-high-findings.mjs`: reads the structured review log and blocks "done" over any HIGH (or critical) finding that has no resolution and no operator waiver (ADR-0092). The finish check (issue #174) calls it; it also runs on its own with `--change`.
 - `assets/AGENTS.baseline.md`, `assets/decisions.template.md`, `assets/presets/`: starter rules per stack.

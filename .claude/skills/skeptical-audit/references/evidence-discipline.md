@@ -78,3 +78,34 @@ copy - one owner, per the repo's data-ownership rule. The `check-skill-evidence-
 RESOLVES on disk, and the ledger phrase is there; it does NOT verify that the claim -> proof map is real
 or sound, which stays a judge-arch and human review. A shrink-only allowlist tightens to 100% as each
 skill adopts the contract.
+
+## 6. "fixed" and "verified" mean something specific (do not use them loosely)
+
+Two of the words from section 4 carry a defined bar. Saying them without the record is the smoke the
+`claim-lint` rules below raise.
+
+- **Fixed.** A defect is **fixed** only when a committed test is **red on the code before the fix, green
+  after it, and red again when the fix is reverted**. Each of the three runs is recorded with its command
+  and exit code. The red-on-revert run is what proves the test can detect the fix being lost; without it,
+  "fixed" is `not-assessed`, never a pass. Red-on-revert proves the test detects the regression, not that
+  the fix is complete.
+- **Verified.** A claim is **verified** only when a **re-runnable command, its exit code, and an output
+  hash** are in the receipt. "I verified it" with nothing another person can re-run is `reported`, not
+  `observed`.
+- **A green suite proves only the cases it contains.** A claim backed by a passing suite names the cases
+  that cover it and lists the input shapes it does **not** check as `not-assessed`. A suite that passes
+  while an untested shape is broken is the trap (an event with a full day, month, and year answered
+  "UNKNOWN" while 75 cases stayed green).
+- **An unexplained pass is not a fix.** If a test that was failing now passes and no edit was aimed at it,
+  revert each edit in turn and name the one that turns it red again. Until then the pass is `not-assessed`.
+- **A HIGH review finding blocks "done".** Work is not `done` while a `judge-arch` HIGH (or critical)
+  finding is open. Fix it, or record an operator waiver (reason, approver, expiry), first.
+
+These are enforced as smoke alarms by `claim-lint`: `fixed`/`resolved` need a revert record; an agent's
+`verified` claim ("I verified", "we verified", "verified that") needs a command + exit + hash record or at
+least an inline evidence state; a suite-backed claim needs its cases + not-checked shapes; and `done` is
+flagged while an open HIGH is named in the same report. The receipt bar for `verified` is still the full
+command + exit + hash (the smoke alarm is deliberately lenient, catching only the bare word with no
+grounding at all). From the structured review log, `judge-arch/scripts/check-open-high-findings.mjs` blocks
+"done" over an open HIGH. A smoke alarm is not a judge: it catches the loose word, not the subtle gap, so
+the loop above still owns the subtle ones.
