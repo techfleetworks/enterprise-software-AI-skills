@@ -109,3 +109,26 @@ command + exit + hash (the smoke alarm is deliberately lenient, catching only th
 grounding at all). From the structured review log, `judge-arch/scripts/check-open-high-findings.mjs` blocks
 "done" over an open HIGH. A smoke alarm is not a judge: it catches the loose word, not the subtle gap, so
 the loop above still owns the subtle ones.
+
+## 7. Mistakes before and around a claim (not only in the claim itself)
+
+The discipline reaches the decisions made before a claim is written, and how a claim is framed.
+
+- **Observe who owns a behavior before building on it.** Before you build on "module A handles Y", search
+  for the owner of Y and run Y through the system; record the observed owner (`file:line` plus the run
+  output) in the plan. An ownership assumption with no observed-owner record is a guess, not a fact.
+- **Declare the headline before you measure.** Name the headline metric and its cut before measuring, then
+  report every cut with what each one counts. Headlining the most favorable number after the fact is
+  cherry-picking, even when every number is real.
+- **Every downgrade names its next step.** Lowering a claim's state is the deliverable, but it names the
+  measurement that would raise it and who will take it, and it is not the last line of the work.
+- **"Done" needs a mostly-observed majority.** A status row whose evidence is mostly inferred cannot be
+  marked done. Show "N of M observed" instead, and re-check the inferred records before claiming done.
+- **A comparison needs a measurement.** "A is safer / better / more reliable than B", or calling something
+  "the primary control", is a claim: it carries an evidence state and a cited measurement, or it is not
+  asserted.
+
+`claim-lint` raises each of these as a smoke alarm (an ownership assertion with no owner record or state;
+a downgrade with no next step; a headlined "most favorable" cut; "done" while the `N observed` and `N
+inferred` counts stated with the claim show inferred in the majority; an unmeasured "safer/better than"
+comparison). The receipt and the fresh-context review still own whether the judgment behind each was sound.

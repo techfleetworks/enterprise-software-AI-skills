@@ -51,6 +51,11 @@ const CLAIM_PATTERNS = [
   /\bis (tested|reviewed|validated|working)\b/i,
   /\b(the )?(build|suite|ci|pipeline|deploy\w*|check|gate) (passes|passed|succeeds|succeeded)\b/i,
   /\bcan('?t| not) (happen|fail|occur)\b/i,
+  // #180: a comparison ("A is safer/better/more reliable than B") is a claim that needs a measurement, and
+  // calling something "the primary/main/real control" is a claim about what actually protects the system.
+  // The comparative list is curated (not a bare "more <anything> than", which catches "more work than").
+  /\bis (safer|better|faster|stronger|cheaper|simpler|more (reliable|secure|robust|performant|scalable|accurate|efficient|resilient|maintainable|available)) than\b/i,
+  /\bis (the|a) (primary|main|real) (control|guarantee|defen[cs]e)\b/i,
 ];
 
 const STATE = /(proven|observed|inferred|documented|reported|not[-\s]assessed)/i;
@@ -80,6 +85,21 @@ const openHighLine = (l) =>
   /\bHIGH\b/.test(l) &&
   /\b(open|unresolved|unaddressed|not (yet )?(fixed|resolved|waived))\b/i.test(l) &&
   !/\b(no|zero|0)\b[^\n]*\b(open|unresolved|HIGH)\b/i.test(l);
+
+// #180: skeptical-audit additions - mistakes that happen before and around a claim.
+// Ownership: before building on "X owns Y", record the OBSERVED owner (file:line + run output); an
+// ownership assumption with no owner record and no evidence state is held. Scoped to a code-ownership
+// context (a code noun, or an "assume") so an ordinary domain fact ("the user owns their data") is not flagged.
+const OWNS_CLAIM = /\b(module|component|service|function|class|handler|endpoint|the code|which (part|module|component))\b[^.\n]*\b(owns|handles|is responsible for|is the owner of)\b|\bassum\w+\b[^.\n]*\b(owns|handles|is responsible for|is the owner of)\b/i;
+const OWNER_RECORD = /\bowner:\s*\S+:\d+/i; // e.g. owner: src/mask.ts:42
+// Downgrade: lowering a claim's evidence state is the deliverable, but it must name the next step to raise it.
+// Requires an explicit downgrade VERB, so ordinary "now reported to the vendor" / "now inferred from the header"
+// are not read as a downgrade.
+const DOWNGRADE_CLAIM = /\bdowngrad(e|ed|ing)\b|\b(lowered|dropped|moved)\s+(it\s+|this\s+)?(to|down to)\s+(not[-\s]assessed|reported|inferred|documented)\b/i;
+const NEXT_STEP = /\bnext step\b|\bto (raise|upgrade) (it|this)\b|\bwould (raise|upgrade)\b|\bwho will\b|\bupgrade it by\b/i;
+// Headline: the reported headline must be the metric declared BEFORE measuring; headlining the most favorable
+// result is flagged. Scoped to the reporting sense so git "cherry-pick the hotfix" is not flagged.
+const HEADLINE_CHERRY = /\bheadlined the (most )?favorable\b|\bmost favorable (cut|number|result|metric|measure|reading|percentage|figure|score)\b|\bcherry.?pick(ed|ing)? (the |a )?(most )?favorable\b|\bcherry.?pick(ed|ing)? (the |a )?(result|number|metric|cut|measure|score)\b/i;
 
 const argv = process.argv.slice(2);
 // #140: -h/--help prints usage and exits 0; an unknown --flag is rejected (so a typo cannot be ignored).
@@ -111,6 +131,10 @@ const hasVerifyRecord = VERIFY_RECORD.test(text);
 const hasCases = CASES_MARKER.test(text);
 const hasNotChecked = NOTCHECKED_MARKER.test(text);
 const hasOpenHigh = lines.some(openHighLine);
+// #180: a "done" row whose evidence is mostly inferred cannot be marked done. The "N observed" / "N inferred"
+// tally is computed LOCAL to each done claim (its line plus the adjacent evidence line), so unrelated counts
+// elsewhere in the report do not bind to it.
+const tally = (s, re) => [...s.matchAll(re)].reduce((a, m) => a + Number(m[1]), 0);
 const findings = [];
 let inFence = false;
 
@@ -157,8 +181,24 @@ lines.forEach((raw, i) => {
   } else if (SUITE_CLAIM.test(line)) {
     if (!(hasCases && hasNotChecked)) findings.push({ n: i + 1, kind: "SUITE", hit: "suite-backed claim with no named cases + not-checked shapes", line: raw.trim() });
     handled = true;
-  } else if (hasOpenHigh && DONE_CLAIM.test(line)) {
-    findings.push({ n: i + 1, kind: "DONE-OPEN-HIGH", hit: "done/complete while a HIGH review finding is open", line: raw.trim() });
+  } else if (DONE_CLAIM.test(line)) {
+    const ctx = line + " " + nextNonBlank;
+    const obs = tally(ctx, /(\d+)\s+observed\b/gi);
+    const inf = tally(ctx, /(\d+)\s+inferred\b/gi);
+    // Only an evidence/records context ties the counts to the done claim, so unrelated co-located numbers
+    // (e.g. "3 observed anomalies ... 5 inferred edges") do not misfire as a done-on-inferred.
+    const evidenceCtx = /\b(evidence|records?|rows?|re-?(checked|queried|verified))\b/i.test(ctx);
+    if (hasOpenHigh) { findings.push({ n: i + 1, kind: "DONE-OPEN-HIGH", hit: "done/complete while a HIGH review finding is open", line: raw.trim() }); handled = true; }
+    else if (inf > 0 && inf > obs && evidenceCtx) { findings.push({ n: i + 1, kind: "DONE-INFERRED", hit: `done while evidence is mostly inferred (${obs} observed vs ${inf} inferred)`, line: raw.trim() }); handled = true; }
+    // else: not a blocked done; a plain untagged "is done" falls through to the generic CLAIM check below.
+  } else if (OWNS_CLAIM.test(line) && !hasState && !OWNER_RECORD.test(line) && !(nextIsEvidence && OWNER_RECORD.test(nextNonBlank))) {
+    findings.push({ n: i + 1, kind: "OWNERSHIP", hit: "ownership asserted with no observed owner (file:line + run output)", line: raw.trim() });
+    handled = true;
+  } else if (DOWNGRADE_CLAIM.test(line)) {
+    if (!(NEXT_STEP.test(line) || (nextNonBlank && NEXT_STEP.test(nextNonBlank)))) findings.push({ n: i + 1, kind: "DOWNGRADE", hit: "a downgrade with no next step to raise it", line: raw.trim() });
+    handled = true; // a downgrade line is owned here (it naturally carries the state it lowered to)
+  } else if (HEADLINE_CHERRY.test(line)) {
+    findings.push({ n: i + 1, kind: "HEADLINE", hit: "a favorable cut headlined instead of the metric declared before measuring", line: raw.trim() });
     handled = true;
   }
 
@@ -190,6 +230,10 @@ const WHY = {
   VERIFY: () => `"verified" needs a re-runnable command, its exit code, and an output hash (e.g. verified-by: \`cmd\` exit 0 sha256 ...)`,
   SUITE: () => `a suite-backed claim must name the covering cases and the shapes it did NOT check (a green suite proves only its cases)`,
   "DONE-OPEN-HIGH": () => `cannot be "done" while a HIGH review finding is open - fix it, or get an operator waiver, first`,
+  "DONE-INFERRED": (f) => `cannot be "done" on mostly-inferred evidence (${f.hit}) - re-check the inferred records or show "N of M observed"`,
+  OWNERSHIP: () => `observe which part owns the behavior before building on it - record the owner (file:line) and the output of running it through the system`,
+  DOWNGRADE: () => `a downgrade is the deliverable, but name the next step that would raise it and who will take it - do not let it be the last word`,
+  HEADLINE: () => `declare the headline metric and its cut BEFORE measuring, and report every cut with what each one counts - do not headline the most favorable`,
 };
 for (const f of findings) {
   const why = (WHY[f.kind] || WHY.CLAIM)(f);

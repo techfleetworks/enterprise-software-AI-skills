@@ -13,6 +13,17 @@ begins landing a second batch, the ten issues (#174 to #183) from an agent-sessi
 held to include; the first of those (#178) adds build-comparison rigor and the executable BDD harness they all
 ride on.
 
+### Added (skeptical-audit catches mistakes before and around a claim, ADR-0093)
+
+- **Five additions to `skeptical-audit` (#180), each a `claim-lint` smoke alarm with a scenario.** Observe
+  the owner before building (an ownership assumption with no observed-owner record is flagged); declare the
+  headline before measuring (headlining the most favorable cut is flagged); every downgrade names its next
+  step (a downgrade with no next step is flagged, and the one-rule line now says so); "done" needs a
+  mostly-observed majority (a "done" claim is flagged when the report's observed count is below its inferred
+  count); and a comparison needs a measurement ("A is safer/better than B" and "the primary control" are now
+  generic claim patterns needing an evidence state). Documented in the evidence contract (section 7); each
+  rule ships a discriminating test and runs on the BDD harness.
+
 ### Added (define "fixed" and "verified", ADR-0092)
 
 - **"fixed", "verified", "done" now carry a defined bar (#179).** The evidence contract

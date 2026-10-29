@@ -133,6 +133,53 @@ test("179 scoping: a scoping phrase does not smuggle a co-located untagged claim
   assert.equal(run("Covered cases: login, logout; the deployment is live and running.\n", ["--strict"]), 1);
 });
 
+// --- ISSUE-180: skeptical-audit additions (mistakes before and around a claim) ---
+// Each pair discriminates: bad -> exit 1 under --strict; good -> exit 0.
+test("180 OWNERSHIP: an ownership assumption with no observed owner is flagged; with an owner record it passes", () => {
+  assert.equal(run("The plan assumes the LoginModule owns the keep-that-secret request.\n", ["--strict"]), 1);
+  assert.equal(run("The masker module owns the keep-that-secret request (owner: src/mask.ts:42).\n", ["--strict"]), 0);
+});
+test("180 DOWNGRADE: a downgrade with no next step is flagged; naming the next step passes", () => {
+  assert.equal(run("I downgraded the uptime claim to not-assessed.\n", ["--strict"]), 1);
+  assert.equal(run("I downgraded uptime to not-assessed. Next step: run the 24h soak (owner: me) to raise it.\n", ["--strict"]), 0);
+});
+test("180 HEADLINE: headlining the most favorable cut is flagged; a predeclared headline with all cuts passes", () => {
+  assert.equal(run("I headlined the most favorable cut (3.0%).\n", ["--strict"]), 1);
+  assert.equal(run("Headline (declared before measuring): 6.2%. Cuts: 35%, 6.2%, 3.0%.\n", ["--strict"]), 0);
+});
+test("180 DONE-INFERRED: 'done' on mostly-inferred evidence is flagged; an observed majority passes", () => {
+  assert.equal(run("The audit row is done. Evidence: 12 observed records and 47 inferred records.\n", ["--strict"]), 1);
+  assert.equal(run("The audit row is done [observed]. Evidence: 50 observed records and 2 inferred records.\n", ["--strict"]), 0);
+});
+test("180 COMPARE: 'A is safer than B' with no measurement is an untagged claim; a cited comparison passes", () => {
+  assert.equal(run("The LLM layer is safer than the rule gate.\n", ["--strict"]), 1);
+  assert.equal(run("The LLM layer is safer than the rule gate [observed]: benchmark ran 2026-10-29.\n", ["--strict"]), 0);
+  assert.equal(run("The model is the primary control.\n", ["--strict"]), 1);
+});
+
+// #180 no-false-positive guards (from the fresh-context review): the five rules must NOT fire on ordinary
+// engineering, git, legal, or domain vocabulary, or they train people to ignore the tool.
+test("180 no-FP: git 'cherry-pick' and 'most favorable way' are not HEADLINE findings", () => {
+  assert.equal(run("We cherry-picked the hotfix onto the 2.1 release branch.\n", ["--strict"]), 0);
+  assert.equal(run("The court ruled in the most favorable way.\n", ["--strict"]), 0);
+});
+test("180 no-FP: ordinary comparatives ('more work/common than') are not COMPARE findings", () => {
+  assert.equal(run("The migration is more work than expected.\n", ["--strict"]), 0);
+  assert.equal(run("This failure is more common than people assume.\n", ["--strict"]), 0);
+});
+test("180 no-FP: ordinary 'now reported/inferred' are not DOWNGRADE findings (needs a downgrade verb)", () => {
+  assert.equal(run("The crash is now reported to the vendor and tracked as VND-12.\n", ["--strict"]), 0);
+  assert.equal(run("The locale is now inferred from the Accept-Language header.\n", ["--strict"]), 0);
+});
+test("180 no-FP: ordinary domain ownership ('the user owns their data') is not an OWNERSHIP finding", () => {
+  assert.equal(run("Under GDPR the user owns their data and may export it.\n", ["--strict"]), 0);
+  assert.equal(run("The platform team is responsible for triage this week.\n", ["--strict"]), 0);
+});
+test("180 no-FP: a 'done' line with unrelated co-located counts is not misattributed as DONE-INFERRED", () => {
+  // The counts are not in an evidence/records context, and the state tokens ground the line.
+  assert.equal(run("The onboarding wizard is done. We saw 3 observed anomalies in logs; the graph has 5 inferred edges.\n", ["--strict"]), 0);
+});
+
 test("missing file fails closed (exit 2)", () => {
   try {
     execFileSync(process.execPath, [CHECK], { stdio: "pipe" });
