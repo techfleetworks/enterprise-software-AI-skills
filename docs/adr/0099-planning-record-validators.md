@@ -66,7 +66,10 @@ cover it).
   entry plus a schema case, not a new script.
 * Honest limits. The schemas check that a record is present and structurally complete and that named claims reach
   an evidence state; they do not prove the plan is sound (a human still reviews), and the validator's ADR check is
-  a fast pre-check, not a replacement for `check_adr`. The edit-gate holds edits; the Stop finish-check (issue
+  a fast pre-check, not a replacement for `check_adr`. A record may cite a measurement file (arch-standards) or a
+  `@security` scenario (threat-model) by name; unlike the ADR's confirmation files, those references are not checked
+  for existence here, so a cited-but-absent measurement or scenario is caught by review and the owning gate
+  (comprehensive-test-strategy, owasp-secure-coding-bdd), not by this pre-check. The edit-gate holds edits; the Stop finish-check (issue
   #174) remains the backstop that holds the turn, and both must fail closed because Claude Code hooks fail open by
   default. `unsure-audience-asks` is modeled as a hold on an empty audience set (the agent cannot proceed without
   confirmed audiences), which is the enforceable shadow of "stop and ask"; the asking itself stays a human

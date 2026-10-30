@@ -219,8 +219,9 @@ function validateRecord(rt, rec) {
     }
     case "reversibility": {
       if (!rec.reversibility || !str(rec.reversibility.claim)) return `missing a reversibility claim`;
-      if (!evid(rec.reversibility)) return `the reversibility claim must be "observed" or "proven"`;
-      if (rec.safeToShip === true && !evid(rec.reversibility)) return `"safe to ship" is claimed while reversibility is below "observed"`;
+      // Requiring the claim to be observed/proven already forbids a "safe to ship" below observed: any record that
+      // reaches here has reversibility >= observed, so no separate safeToShip guard is needed.
+      if (!evid(rec.reversibility)) return `the reversibility claim must be "observed" or "proven" (no "safe to ship" below observed)`;
       return null;
     }
     case "service-readiness": {
@@ -261,10 +262,13 @@ function validateAdr(rec) {
   if (!existsSync(abs) || !statSync(abs).isFile()) return `the ADR file "${path}" does not exist`;
   const text = readFileSync(abs, "utf8");
   if (/PLACEHOLDER|\bTODO\b|\bTBD\b|\bXXX\b|\{\{/.test(text)) return `the ADR has an unfilled placeholder`;
-  if (!/##\s*Context/i.test(text)) return `the ADR has no Context section`;
-  if (!/status\s*[:=]/i.test(text)) return `the ADR has no Status`;
-  if (!/Considered Options/i.test(text)) return `the ADR names no Considered Options`;
-  if (!/##\s*(Consequences|Decision Outcome)/i.test(text)) return `the ADR records no Consequences`;
+  if (!/#{1,6}\s*Context/i.test(text)) return `the ADR has no Context section`;
+  // Status may be a heading ("## Status", value on the next line: Nygard) or a frontmatter key ("status:": MADR).
+  if (!/^#{1,6}\s*status\b/im.test(text) && !/status\s*[:=]/i.test(text)) return `the ADR has no Status`;
+  // MADR records "Considered Options"; a Nygard lightweight ADR (which the ADR skill produces for small
+  // decisions) records a Decision section instead. Accept either, so the skill's own fallback is not rejected.
+  if (!/Considered Options/i.test(text) && !/#{1,6}\s*Decision\b/i.test(text)) return `the ADR names no Considered Options and no Decision`;
+  if (!/#{1,6}\s*(Consequences|Decision Outcome)/i.test(text)) return `the ADR records no Consequences`;
   const cites = (rec && typeof rec === "object" && Array.isArray(rec.confirmationFiles)) ? rec.confirmationFiles : [];
   for (const f of cites) if (!existsSync(resolve(f))) return `the ADR cites "${f}", which does not exist (dead link)`;
   return null;

@@ -272,6 +272,110 @@ test("plan: an arch-standards claim with no measurement HOLDS (exit 2)", () => {
   assert.equal(r.code, 2, r.out);
 });
 
+test("plan: a Nygard-format ADR (heading Status, Decision, no Considered Options) is accepted (exit 0) - F1 regression", () => {
+  const sb = sandbox();
+  const nygard = join(sb.base, "nygard.md");
+  writeFileSync(nygard, `# 1. Record decisions\n## Status\nAccepted\n## Context\nwhy\n## Decision\nwe will do X\n## Consequences\n- good and bad\n`);
+  const plans = buildPlans(writeAdr(sb.base));
+  plans["adr"] = { path: nygard };
+  const r = planCheck(sb, planSelection(), plans);
+  assert.equal(r.code, 0, r.out);
+});
+
+test("plan: an ADR with no Status at all is refused (exit 2)", () => {
+  const sb = sandbox();
+  const noStatus = join(sb.base, "no-status.md");
+  writeFileSync(noStatus, `# ADR\n## Context\nwhy\n## Decision\nd\n## Consequences\nc\n`);
+  const plans = buildPlans(writeAdr(sb.base));
+  plans["adr"] = { path: noStatus };
+  const r = planCheck(sb, planSelection(), plans);
+  assert.equal(r.code, 2, r.out);
+  assert.match(r.out, /no Status/);
+});
+
+test("plan: an ADR with neither Considered Options nor a Decision is refused (exit 2)", () => {
+  const sb = sandbox();
+  const bad = join(sb.base, "no-options.md");
+  writeFileSync(bad, `---\nstatus: "accepted"\n---\n# ADR\n## Context\nwhy\n## Consequences\nc\n`);
+  const plans = buildPlans(writeAdr(sb.base));
+  plans["adr"] = { path: bad };
+  const r = planCheck(sb, planSelection(), plans);
+  assert.equal(r.code, 2, r.out);
+  assert.match(r.out, /Considered Options and no Decision/);
+});
+
+test("plan: an ADR path that does not exist is refused (exit 2)", () => {
+  const sb = sandbox();
+  const plans = buildPlans(writeAdr(sb.base));
+  plans["adr"] = { path: join(sb.base, "nope.md") };
+  assert.equal(planCheck(sb, planSelection(), plans).code, 2);
+});
+
+test("plan: a bdd-matrix with no audiences is refused (exit 2)", () => {
+  const sb = sandbox();
+  const plans = buildPlans(writeAdr(sb.base));
+  plans["bdd-matrix"].audiences = [];
+  const r = planCheck(sb, planSelection(), plans);
+  assert.equal(r.code, 2, r.out);
+  assert.match(r.out, /audiences/);
+});
+
+test("plan: a bdd-matrix cell that is neither a scenario nor an N/A is refused (exit 2)", () => {
+  const sb = sandbox();
+  const plans = buildPlans(writeAdr(sb.base));
+  plans["bdd-matrix"].cells = [{ useCase: "x", audience: "agent" }];
+  assert.equal(planCheck(sb, planSelection(), plans).code, 2);
+});
+
+test("plan: service-readiness with no alert-fires evidence is refused (exit 2)", () => {
+  const sb = sandbox();
+  const plans = buildPlans(writeAdr(sb.base));
+  plans["service-readiness"].alertFires = { evidenceState: "inferred" };
+  assert.equal(planCheck(sb, planSelection(), plans).code, 2);
+});
+
+test("plan: service-readiness with no runbook is refused (exit 2)", () => {
+  const sb = sandbox();
+  const plans = buildPlans(writeAdr(sb.base));
+  delete plans["service-readiness"].runbook;
+  assert.equal(planCheck(sb, planSelection(), plans).code, 2);
+});
+
+test("plan: a browser verdict below observed is refused (exit 2)", () => {
+  const sb = sandbox();
+  const plans = buildPlans(writeAdr(sb.base));
+  plans["browser-verdict"].evidenceState = "documented";
+  assert.equal(planCheck(sb, planSelection(), plans).code, 2);
+});
+
+test("plan: a usability verdict with no claim is refused (exit 2)", () => {
+  const sb = sandbox();
+  const plans = buildPlans(writeAdr(sb.base));
+  delete plans["usability-verdict"].claim;
+  assert.equal(planCheck(sb, planSelection(), plans).code, 2);
+});
+
+test("plan: data-lifecycle with no data class is refused (exit 2)", () => {
+  const sb = sandbox();
+  const plans = buildPlans(writeAdr(sb.base));
+  delete plans["data-lifecycle"].dataClass;
+  assert.equal(planCheck(sb, planSelection(), plans).code, 2);
+});
+
+test("plan: arch-standards with no claims is refused (exit 2)", () => {
+  const sb = sandbox();
+  const plans = buildPlans(writeAdr(sb.base));
+  plans["arch-standards"].claims = [];
+  assert.equal(planCheck(sb, planSelection(), plans).code, 2);
+});
+
+test("plan: a threat model with no threats is refused (exit 2)", () => {
+  const sb = sandbox();
+  const plans = buildPlans(writeAdr(sb.base));
+  plans["threat-model"].threats = [];
+  assert.equal(planCheck(sb, planSelection(), plans).code, 2);
+});
+
 test("--help prints usage and exits 0", () => {
   assert.match(execFileSync(process.execPath, [CLI, "--help"], { encoding: "utf8" }), /check-task-plan/);
 });
