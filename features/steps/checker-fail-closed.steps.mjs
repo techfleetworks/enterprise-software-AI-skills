@@ -94,12 +94,19 @@ export default function ({ Given, When, Then, And }) {
     world.script = "slow-check.mjs";
     installChecker(world.skillsDir, world.skill, world.script, "setTimeout(() => {}, 10000)"); // hangs ~10s
     world.timeoutMs = "500";
+    world.endTurn = () => {
+      world.res = runCheck(
+        ["run", world.skill, world.script, "--skills-dir", world.skillsDir, "--timeout-ms", world.timeoutMs],
+        world.workDir,
+      );
+    };
   });
+  // Shared across features: "the agent tries to end its turn" runs whatever finish action the preceding Given
+  // installed as world.endTurn (a timeout checker here, a per-task receipt check in the #177 steps). Defining it
+  // once keeps the step from being ambiguous across the two step files that use this exact phrase.
   When(/^the agent tries to end its turn$/, (world) => {
-    world.res = runCheck(
-      ["run", world.skill, world.script, "--skills-dir", world.skillsDir, "--timeout-ms", world.timeoutMs],
-      world.workDir,
-    );
+    if (typeof world.endTurn !== "function") throw new Error("no end-turn action was set up by a Given before 'the agent tries to end its turn'");
+    world.endTurn();
   });
   // "Then the turn does not end" is shared with the missing-checker scenario (defined once above).
   And(/^the agent is told the checker timed out, not that the receipt passed$/, (world) => {

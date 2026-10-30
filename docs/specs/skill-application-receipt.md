@@ -210,3 +210,66 @@ Each proven to discriminate (mutation-verified where feasible), per verifiable-q
 - Wiring: always-on directive line, each skill DoD line, PR template checklist item.
 - An ADR for the receipt system.
 - README: a short section + the receipt in the "how a skill gets chosen and enforced" flow.
+
+---
+
+## 11. Per-task receipts outside a repo (ADR-0097, issue #177)
+
+The receipt above is one entry per pull request. Work done in a folder that is not a git repo never has a PR,
+so it never gets a checked receipt. In the audited session a receipt from the day before was copied unchanged
+into every build, and the free-form receipts that were written could not be checked. The per-task receipt fixes
+this: one grounded entry per task, stored outside the work folder, tied to the hashes of the files the task
+changed. It shares the grounding primitives (section-by-heading extraction, whitespace-insensitive matching, and
+the at-least-8-exact-words rule) via `receipt-grounding.mjs`, so the two gates cannot drift on those; each
+composes them for its own shape (the per-task gate matches one heading and one quote, the PR gate several
+sections and several quotes).
+
+### Schema (one JSON object per line)
+
+```
+{
+  "task_id": "<stable id for this task>",
+  "session_id": "<the agent session>",
+  "created_at": "<ISO timestamp>",
+  "changed_files": [ { "path": "<repo- or work-relative path>", "sha256": "<hash at task time>" } ],
+  "skills": [
+    {
+      "name": "<skill>",
+      "verdict": "applied" | "not-applicable" | "waived",
+      "heading": "<a real heading slug in the skill's SKILL.md>",   // applied
+      "quote": "<>= 8 exact words from under that heading>",        // applied
+      "skill_file_sha256": "<hash of the installed SKILL.md read>", // applied (optional but checked when present)
+      "files": [ "<paths in the change this skill was applied to>" ],// applied
+      "why": "<reasoning>", "what": "<guidance pulled>",            // optional, carried into export
+      "waiver": { "reason": "", "approver": "", "expires": "YYYY-MM-DD" } // waived
+    }
+  ],
+  "checkers": [ { "command": "<checker run>", "exit": 0, "output_sha256": "<hash of its output>" } ]
+}
+```
+
+### Store
+
+`~/.claude/esk/receipts/<session_id>.jsonl`, outside any work folder so a cleaned Temp cannot lose it.
+Append-only, one file per session, so two sessions in the same folder never overwrite each other.
+
+### The gate (`task-receipt.mjs check`)
+
+Reuses the grounding logic of `check-skill-receipt` and refuses a task's receipt (exit 2, which blocks the task
+from ending) when: the file is empty; a file the task changed is not covered (full check, never a sample); a
+recorded file hash differs from the file's current hash (stale or copied); an `applied` quote is not verbatim
+under its cited heading of the installed skill; the recorded `skill_file_sha256` does not match the installed
+SKILL.md; an `applied` entry points at a file outside the change; a required skill in the selection is not
+`applied`; or a waiver is missing or expired. A valid, grounded receipt whose hashes match the current files is
+accepted. `task-receipt.mjs export` turns the per-task entries into the section-4 PR format when the work later
+becomes a pull request.
+
+### Honest limit
+
+Same as section 2: a grounded per-task receipt proves real quotes, the right files, and current hashes. It does
+not prove the work was good. A human still reviews. And like the PR gate, turning "accepted" into "the task
+cannot end" is the finish-check hook's job (issue #174), which must itself fail closed because Claude Code hooks
+fail open by default. The changed-file list and the selection are supplied by the caller (there is no git diff
+outside a repo), so the hash-tie defends against a copied or stale receipt, not against an honest-but-incomplete
+changed-list; this is the same trust property as the PR gate's passed-in diff. Without a selection the gate
+discloses that completeness was not checked rather than passing silently.

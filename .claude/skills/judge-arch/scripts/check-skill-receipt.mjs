@@ -31,8 +31,8 @@
 // traversal, bad config). Dependency-free, offline.
 import { readFileSync, existsSync, readdirSync, statSync, realpathSync } from "node:fs";
 import { resolve, join, dirname, relative, sep } from "node:path";
+import { MIN_QUOTE_WORDS, norm, slugify, sectionText } from "./receipt-grounding.mjs";
 
-const MIN_QUOTE_WORDS = 8;
 const STATUSES = new Set(["applied", "not-applicable"]);
 const BANNER = "This receipt is the agent's self-report. A human must review the work against the diff. It does not prove the work was done or done well.";
 
@@ -224,29 +224,9 @@ process.exit(0);
 
 // --- helpers -------------------------------------------------------------------------------------------------
 function nonEmpty(v) { return v != null && String(v).trim() !== ""; }
-function norm(s) { return String(s).replace(/\s+/g, " ").trim(); }
 function truncate(s) { const t = String(s); return t.length > 50 ? t.slice(0, 47) + "..." : t; }
-// The text under one heading: from the matched heading line to the next heading of equal-or-higher level (or
-// end of file). Returns null if no heading slugifies to `slug`. Frontmatter sits before any heading, so it is
-// never included; a quote must come from the cited section, not from the file at large.
-function sectionText(md, slug) {
-  const lines = md.split(/\r?\n/);
-  let start = -1, level = 0;
-  for (let i = 0; i < lines.length; i++) {
-    const m = /^(#{1,6})\s+(.*?)\s*#*\s*$/.exec(lines[i]);
-    if (m && slugify(m[2]) === slug) { start = i; level = m[1].length; break; }
-  }
-  if (start < 0) return null;
-  let end = lines.length;
-  for (let i = start + 1; i < lines.length; i++) {
-    const m = /^(#{1,6})\s+/.exec(lines[i]);
-    if (m && m[1].length <= level) { end = i; break; }
-  }
-  return lines.slice(start, end).join("\n");
-}
-function slugify(text) {
-  return String(text).toLowerCase().replace(/`/g, "").replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "-");
-}
+// norm, slugify, sectionText and MIN_QUOTE_WORDS are the shared grounding logic (receipt-grounding.mjs), one
+// owner for both this PR-level gate and the per-task gate (task-receipt.mjs).
 function globToRe(glob) {
   const g = String(glob).split("\\").join("/");
   let re = "^";
