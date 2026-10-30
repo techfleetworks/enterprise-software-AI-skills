@@ -13,6 +13,27 @@ begins landing a second batch, the ten issues (#174 to #183) from an agent-sessi
 held to include; the first of those (#178) adds build-comparison rigor and the executable BDD harness they all
 ride on.
 
+### Added (a missing checker blocks the work and runs from any folder, ADR-0096)
+
+- **Fail-closed checker runner (#183).** `always-on/run-check.mjs` is a dependency-free front door for running
+  any checker a skill names, from any folder. `which <skill> <script>` prints the checker's absolute installed
+  path; `run <skill> <script> [-- args]` runs it. It resolves the path from the real skill-discovery locations
+  (an explicit `--skills-dir`/`$ESK_SKILLS_DIR` override pins one; otherwise the nearest project `.claude/skills`
+  walking up, then `~/.claude/skills`, then the repo it ships in), validates the skill/script names (no `..`, no
+  path separators), runs the checker with no shell and a timeout, and reads the exit code directly. It fails
+  closed: a missing checker, an uninstalled skill, a checker that cannot start, and a checker that runs past its
+  time limit are each a BLOCK (exit 2) that names the install path and command, never a silent skip and never a
+  pass; exit 0 means the checker passed and exit 1 means the checker itself reported a failure. This removes the
+  three defects the audit found in one line (`bash check_adr.sh | tail || ls`): a folder-relative checker path, a
+  pipe that masked the exit code, and a missing checker treated as "skip and judge myself."
+- **The skills point at the runner (#183).** `architectural-decision-records` now runs `check_adr.sh` through the
+  runner in its workflow, mechanical-gate note, and done-checklist, and says never to use a folder-relative path
+  or a `tail`/`head` pipe (a pipe reports the last command's exit code, so a failure reads as a pass).
+  `always-on/upstream-contributor-process.md` states the run-through-the-runner convention once for every checker,
+  with the `set -o pipefail` fallback. `test/run-check.test.mjs` is the discriminating test, and the three
+  scenarios (`skill-cannot-load`, `checker-missing-fails-closed`, `checker-timeout-fails-closed`) drive the real
+  runner on the executable BDD harness.
+
 ### Added (combinatorial testing, and a tested checker before "0 found" counts, ADR-0095)
 
 - **Combinatorial testing (#182).** `comprehensive-test-strategy` gains `references/combinatorial-testing.md`

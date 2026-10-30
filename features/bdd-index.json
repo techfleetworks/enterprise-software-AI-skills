@@ -1,5 +1,38 @@
 [
   {
+    "feature": "always-on/skills-apply-every-task.feature",
+    "scenario": "A checker that runs past its time limit counts as a failure",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "checker-timeout-fails-closed",
+    "category": "timeout",
+    "quality": "reliability",
+    "severity": "medium",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-apply-every-task.feature",
+    "scenario": "A missing checker blocks the finish instead of being skipped",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "checker-missing-fails-closed",
+    "category": "error",
+    "quality": "reliability",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "A selected skill that cannot be loaded blocks the task",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "skill-cannot-load",
+    "category": "error",
+    "quality": "reliability",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
     "feature": "evidence/claims-match-evidence.feature",
     "scenario": "A before-and-after comparison that reads a missing field cannot report \"0 new failures\"",
     "domain": "evidence",
