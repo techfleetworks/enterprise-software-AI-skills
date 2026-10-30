@@ -45,9 +45,11 @@ router:
    holds. It exempts edits to the record files and is a no-op where it is not wired, so it never breaks unrelated
    work.
 4. **The load-state lifecycle**: `record-load.mjs` (PostToolUse on the Skill tool) records a GENUINE load, so
-   "loaded" means the text was actually read; `reload-skills.mjs` (SessionStart, matcher `compact`) re-delivers
-   and records the selected skills after a compaction, closing the audit's "never comes back" gap. The schemas
-   are documented in `always-on/edit-gate-records.md`.
+   "loaded" means the text was actually read; `reload-skills.mjs` (SessionStart, matcher `compact`) clears the
+   selected skills from the load-state and names them to re-load after a compaction, so the edit-gate re-holds
+   until they are genuinely re-read (a real SKILL.md exceeds the 10,000-char additionalContext cap, so the bodies
+   cannot be re-inlined, and must not be marked loaded without being delivered). The schemas are documented in
+   `always-on/edit-gate-records.md`.
 5. **Proof**: `test/routing-lib.test.mjs` (a test per rule), `test/check-task-plan.test.mjs`,
    `test/edit-gate.test.mjs`, and `test/load-state.test.mjs` are the discriminating tests (a no-op gate or
    validator flips every HOLD), and eleven `@audience:agent` scenarios drive the real scripts on the harness.
@@ -60,8 +62,9 @@ before the edit or stop an edit made with no selection at all.
 
 * Before a source edit, the task must have a selection (every skill given a verdict, router-required skills not
   self-waived) and every required/applies skill's current text must have been loaded this session, or the edit is
-  held with what to do. After a compaction, the selected skills are re-delivered, so one never silently goes
-  missing. "Loaded" is a genuine read (recorded on the Skill tool), not a recall or an auto-injection.
+  held with what to do. After a compaction, the selected skills are cleared from the load-state and named to
+  re-load, so the edit-gate re-holds until each is genuinely re-read and none silently goes missing. "Loaded" is a
+  genuine read (recorded on the Skill tool), not a recall or an auto-injection.
 * The real guarantee lives in the gate scripts and their discriminating tests, plus the versioned router. The
   grounding of "loaded" is the file hash, so a changed skill is re-read.
 * Honest limits. The edit-gate holds EDITS; the Stop finish-check (issue #174) is the backstop that holds the

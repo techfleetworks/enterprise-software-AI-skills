@@ -28,9 +28,11 @@ ride on.
   path to the skills it makes required (each rule has its own test), shipped for personal installs, distinct from
   the artifact routing map under `judge-arch/assets/example`.
 - **The load-state lifecycle (#175).** `record-load.mjs` (PostToolUse on the Skill tool) records a genuine load,
-  so "loaded" means the text was actually read; `reload-skills.mjs` (SessionStart, matcher `compact`) re-delivers
-  and records the selected skills after a compaction, closing the audit's "a skill never invoked never comes back"
-  gap. Schemas in `always-on/edit-gate-records.md`; the settings snippet wires all three hooks. Eleven scenarios
+  so "loaded" means the text was actually read; `reload-skills.mjs` (SessionStart, matcher `compact`) clears the
+  selected skills from the load-state and names them to re-load after a compaction, so the edit-gate re-holds until
+  each is genuinely re-read (a real SKILL.md exceeds the additionalContext cap, so bodies cannot be re-inlined and
+  must not be marked loaded without delivery). Schemas in `always-on/edit-gate-records.md`; the settings snippet
+  wires all three hooks. Eleven scenarios
   drive the real scripts on the harness; four discriminating test files back them. The plan step (step 3) is PR-B.
 
 ### Added (per-task receipts outside a repo, tied to file hashes, ADR-0097)

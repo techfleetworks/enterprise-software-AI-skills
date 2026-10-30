@@ -18,6 +18,8 @@ import { loadRoutingConfig, requiredSkillsForPaths } from "../../always-on/routi
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const CHECK = join(REPO, "always-on", "check-task-plan.mjs");
 const GATE = join(REPO, "always-on", "edit-gate.mjs");
+const RELOAD = join(REPO, "always-on", "reload-skills.mjs");
+const RECORD = join(REPO, "always-on", "record-load.mjs");
 const CFG = loadRoutingConfig();
 const sha256 = (buf) => createHash("sha256").update(buf).digest("hex");
 
@@ -171,19 +173,25 @@ export default function ({ Given, When, Then, And }) {
   // --- skills-apply: reload after compaction ---
   Given(/^the agent's context was compacted$/, (world) => { ensureSkills(world); world.selObj = fullSelection(); });
   And(/^"verifiable-quality-gates" was never invoked earlier in this session$/, (world) => {
-    world.priorLoaded = hashesOf(world.skillsDir, SET);
-    delete world.priorLoaded["verifiable-quality-gates"]; // only prior-used skills came back after compaction
+    // after the compaction only prior-used skills came back; vqg (never invoked) is absent from the load-state
+    const h = hashesOf(world.skillsDir, SET);
+    delete h["verifiable-quality-gates"];
+    world.loadedPath = writeJson(world.workDir, "loaded.json", h);
   });
   When(/^the agent's next edit changes a test file the router maps to "verifiable-quality-gates"$/, (world) => {
-    // The SessionStart:compact reload re-delivers the SELECTED skills' text, so the load-state now includes vqg.
-    world.loadedState = hashesOf(world.skillsDir, SET); // reload delivered all selected skills, vqg included
     const sp = writeJson(world.workDir, "selection.json", world.selObj);
-    const lp = writeJson(world.workDir, "loaded.json", world.loadedState);
-    world.res = editGate({ tool_name: "Write", tool_input: { file_path: "src/feature.test.ts" } }, { ESK_SELECTION: sp, ESK_LOADED: lp, ESK_SKILLS_DIR: world.skillsDir });
+    // 1. the compact reload clears the selected skills from the load-state and NAMES them to re-load (it cannot
+    //    inline 20-35 KB bodies into a 10 KB additionalContext, and must not falsely mark them loaded).
+    const reload = spawnSync(process.execPath, [RELOAD], { encoding: "utf8", env: { ...process.env, ESK_SELECTION: sp, ESK_SKILLS_DIR: world.skillsDir, ESK_LOADED: world.loadedPath } });
+    world.reloadCtx = (JSON.parse(reload.stdout || "{}").hookSpecificOutput || {}).additionalContext || "";
+    // 2. prompted by that notice, the agent genuinely re-loads vqg with the Skill tool; record-load captures it.
+    spawnSync(process.execPath, [RECORD], { encoding: "utf8", input: JSON.stringify({ tool_name: "Skill", tool_input: { skill: "verifiable-quality-gates" } }), env: { ...process.env, ESK_LOADED: world.loadedPath, ESK_SKILLS_DIR: world.skillsDir } });
+    world.loadedState = JSON.parse(readFileSync(world.loadedPath, "utf8"));
   });
   Then(/^the text of "verifiable-quality-gates" is in the agent's context before the edit runs$/, (world) => {
-    assert.ok(world.loadedState["verifiable-quality-gates"], "vqg must have been delivered by the compact reload");
-    assert.equal(world.res.status, 0, `the edit is allowed because vqg is now loaded\n${world.res.out}`);
+    assert.match(world.reloadCtx, /verifiable-quality-gates/, "the compact reload must name vqg to re-load");
+    const cur = sha256(readFileSync(join(world.skillsDir, "verifiable-quality-gates", "SKILL.md")));
+    assert.equal(world.loadedState["verifiable-quality-gates"], cur, "after the genuine re-load, vqg's current text is recorded as loaded (in context)");
   });
 
   // --- skills-apply: a required skill cannot be self-waived ---

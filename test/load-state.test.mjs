@@ -56,20 +56,25 @@ test("record-load: an unsafe skill name is ignored (no traversal)", () => {
   assert.deepEqual(Object.keys(state), []);
 });
 
-test("reload-skills: re-delivers selected skills' text and records them in the load-state", () => {
+test("reload-skills: after a compaction it CLEARS selected skills from the load-state and names them to re-load", () => {
+  // The fix for the false-loaded bug: it must not mark skills loaded (their 20-35 KB bodies cannot fit the 10 KB
+  // additionalContext cap), it must clear them so the edit-gate re-holds until they are genuinely re-read.
   const sb = sandbox(["pattern-selector", "verifiable-quality-gates"]);
   const sel = { "pattern-selector": { verdict: "applies", reason: "x" }, "verifiable-quality-gates": { verdict: "required" } };
   const selPath = join(sb.base, "selection.json");
   writeFileSync(selPath, JSON.stringify(sel));
   const loaded = join(sb.base, "loaded.json");
+  writeFileSync(loaded, JSON.stringify({ ...sb.hashes, "other-skill": "abc" })); // both were loaded before the compaction
   const r = run(RELOAD, "", { ESK_SELECTION: selPath, ESK_SKILLS_DIR: sb.skillsDir, ESK_LOADED: loaded });
   assert.equal(r.status, 0);
   const obj = JSON.parse(r.out);
   assert.match(obj.hookSpecificOutput.additionalContext, /pattern-selector/);
   assert.match(obj.hookSpecificOutput.additionalContext, /verifiable-quality-gates/);
+  assert.match(obj.hookSpecificOutput.additionalContext, /Re-load/);
   const state = JSON.parse(readFileSync(loaded, "utf8"));
-  assert.equal(state["pattern-selector"], sb.hashes["pattern-selector"]);
-  assert.equal(state["verifiable-quality-gates"], sb.hashes["verifiable-quality-gates"]);
+  assert.equal(state["pattern-selector"], undefined, "cleared so it must be re-read, not falsely marked loaded");
+  assert.equal(state["verifiable-quality-gates"], undefined, "cleared so it must be re-read");
+  assert.equal(state["other-skill"], "abc", "a non-selected skill's entry is left alone");
 });
 
 test("reload-skills: without a selection it emits nothing and exits 0 (not wired)", () => {

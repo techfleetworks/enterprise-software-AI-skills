@@ -84,6 +84,15 @@ test("editing the selection record itself is exempt (allowed), so the agent can 
   assert.equal(r.code, 0, r.out);
 });
 
+test("a valid selection with ESK_LOADED unset allows with a load-not-wired notice (no silent skip)", () => {
+  const sb = sandbox();
+  const selPath = join(sb.base, "selection.json");
+  writeFileSync(selPath, JSON.stringify(sb.sel));
+  const r = runGate(editPayload("src/feature.ts"), { ESK_SELECTION: selPath, ESK_SKILLS_DIR: sb.skillsDir });
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /load-state is not wired/);
+});
+
 test("a malformed payload fails closed (deny, exit 2)", () => {
   try {
     execFileSync(process.execPath, [GATE], { encoding: "utf8", input: "{ not json", env: { ...process.env, ESK_SELECTION: "x" } });

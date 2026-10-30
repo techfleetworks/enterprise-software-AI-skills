@@ -25,8 +25,10 @@ marked not-applicable without a waiver).
 
 Step 2 of the formula. Which skills were genuinely read this session, keyed by the skill file's current sha256.
 `record-load.mjs` (PostToolUse on the Skill tool) adds an entry when a skill is actually loaded;
-`reload-skills.mjs` (SessionStart, matcher `compact`) re-delivers and records the selected skills after a
-compaction. A stale hash (the skill text changed since it was delivered) does not count as loaded.
+`reload-skills.mjs` (SessionStart, matcher `compact`) clears the selected skills from the load-state and names
+them to re-load after a compaction (a real SKILL.md is 20-35 KB, over the 10,000-char additionalContext cap, so
+the bodies cannot be re-inlined and must not be marked loaded without being delivered). A stale hash (the skill
+text changed since it was delivered) does not count as loaded.
 
 ```json
 { "<skill-name>": "<sha256 of the SKILL.md that was delivered>" }

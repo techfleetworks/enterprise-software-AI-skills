@@ -40,47 +40,56 @@ function allow(note) {
   process.exit(0);
 }
 
+// A PreToolUse hook that fails any way other than exit 2 fails OPEN (the edit proceeds), so route EVERY error to
+// deny. deny()/allow() call process.exit synchronously, so they bypass the try/catch below; only an unexpected
+// throw lands in it.
+process.on("uncaughtException", () => deny("edit-gate crashed; failing closed."));
+process.stdin.on("error", () => deny("edit-gate could not read its input; failing closed."));
+
 let raw = "";
 process.stdin.on("data", (d) => (raw += d));
 process.stdin.on("end", () => {
-  let payload;
-  try { payload = JSON.parse(raw || "{}"); } catch { deny("could not parse the PreToolUse payload; failing closed."); }
-  const tool = payload.tool_name || payload.toolName || "";
-  const input = payload.tool_input || payload.toolInput || {};
-  const isEdit = EDIT_TOOLS.has(tool);
-  const isBash = tool === "Bash";
-  if (!isEdit && !isBash) allow(); // not a file-writing tool; nothing to gate
+  try {
+    let payload;
+    try { payload = JSON.parse(raw || "{}"); } catch { deny("could not parse the PreToolUse payload; failing closed."); }
+    const tool = payload.tool_name || payload.toolName || "";
+    const input = payload.tool_input || payload.toolInput || {};
+    // Only the file-editing tools are gated here. Bash is NOT matched (gating it would deny read-only commands
+    // before a selection can be written); files written through Bash are backstopped by the #174 finish-check.
+    if (!EDIT_TOOLS.has(tool)) allow();
 
-  // The file this edit targets (edit tools carry it; Bash does not reliably).
-  const targetPath = input.file_path || input.filePath || input.notebook_path || null;
+    const targetPath = input.file_path || input.filePath || input.notebook_path || null;
+    const selectionPath = process.env.ESK_SELECTION;
+    const skillsDir = process.env.ESK_SKILLS_DIR || ".claude/skills";
 
-  const selectionPath = process.env.ESK_SELECTION;
-  const skillsDir = process.env.ESK_SKILLS_DIR || ".claude/skills";
+    // Not wired on this machine: do not break unrelated work. The finish-check (issue #174) still backs this up.
+    if (!selectionPath) allow("the edit-gate is not wired (ESK_SELECTION unset); skipping the select/load check.");
 
-  // Not wired on this machine: do not break unrelated work. The finish-check (issue #174) still backs this up.
-  if (!selectionPath) allow("the edit-gate is not wired (ESK_SELECTION unset); skipping the select/load check.");
+    // Let the agent create or update the selection record and the load-state themselves (chicken-and-egg).
+    const exempt = [selectionPath, process.env.ESK_LOADED].filter(Boolean).map((p) => resolve(p));
+    if (targetPath && exempt.includes(resolve(targetPath))) allow();
 
-  // Let the agent create or update the selection record and the load-state themselves (chicken-and-egg).
-  const exempt = [selectionPath, process.env.ESK_LOADED].filter(Boolean).map((p) => resolve(p));
-  if (targetPath && exempt.includes(resolve(targetPath))) allow();
+    // Step 1 must exist: the selection record. Missing file = the agent has not written the selection yet.
+    if (!existsSync(resolve(selectionPath))) {
+      deny("write the skill selection for this task first (every skill marked required / applies / not-applicable with a reason). The edit is held until it exists.");
+    }
 
-  // Step 1 must exist: the selection record. Missing file = the agent has not written the selection yet.
-  if (!existsSync(resolve(selectionPath))) {
-    deny("write the skill selection for this task first (every skill marked required / applies / not-applicable with a reason). The edit is held until it exists.");
+    const changed = targetPath ? ["--changed-list", targetPath.split("\\").join("/")] : [];
+    const waivers = process.env.ESK_WAIVERS ? ["--waivers", process.env.ESK_WAIVERS] : [];
+
+    // Step 1: validate the selection (completeness, reasons, no self-waive of a router-required skill).
+    const sel = spawnSync(process.execPath, [CHECK, "selection", "--selection", selectionPath, "--skills-dir", skillsDir, ...changed, ...waivers], { encoding: "utf8" });
+    if (sel.status !== 0) deny(`selection step not satisfied:\n${(sel.stdout || "") + (sel.stderr || "")}`.trim());
+
+    // Step 2: every required/applies skill's text must have been loaded this session. When ESK_LOADED is unset
+    // the load half cannot run; allow with a notice (parallel to the ESK_SELECTION-unset notice).
+    if (process.env.ESK_LOADED) {
+      const load = spawnSync(process.execPath, [CHECK, "loaded", "--selection", selectionPath, "--loaded", process.env.ESK_LOADED, "--skills-dir", skillsDir], { encoding: "utf8" });
+      if (load.status !== 0) deny(`load step not satisfied (load the skill, then retry the edit):\n${(load.stdout || "") + (load.stderr || "")}`.trim());
+      allow();
+    }
+    allow("the load-state is not wired (ESK_LOADED unset); checked selection only.");
+  } catch (e) {
+    deny(`edit-gate failed (${e && e.message}); failing closed.`);
   }
-
-  const changed = targetPath ? ["--changed-list", targetPath.split("\\").join("/")] : [];
-  const waivers = process.env.ESK_WAIVERS ? ["--waivers", process.env.ESK_WAIVERS] : [];
-
-  // Step 1: validate the selection (completeness, reasons, no self-waive of a router-required skill).
-  const sel = spawnSync(process.execPath, [CHECK, "selection", "--selection", selectionPath, "--skills-dir", skillsDir, ...changed, ...waivers], { encoding: "utf8" });
-  if (sel.status !== 0) deny(`selection step not satisfied:\n${(sel.stdout || "") + (sel.stderr || "")}`.trim());
-
-  // Step 2: every required/applies skill's text must have been loaded this session.
-  if (process.env.ESK_LOADED) {
-    const load = spawnSync(process.execPath, [CHECK, "loaded", "--selection", selectionPath, "--loaded", process.env.ESK_LOADED, "--skills-dir", skillsDir], { encoding: "utf8" });
-    if (load.status !== 0) deny(`load step not satisfied (load the skill, then retry the edit):\n${(load.stdout || "") + (load.stderr || "")}`.trim());
-  }
-
-  allow();
 });

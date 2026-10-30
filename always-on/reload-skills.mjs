@@ -1,15 +1,18 @@
 #!/usr/bin/env node
-// reload-skills - a SessionStart (matcher: compact) hook that, after a compaction, re-delivers the text of every
-// required/applies skill in the task's selection as additionalContext and records each in the load-state. The
-// audit finding: after a compaction the app re-attaches only skills invoked earlier, so a skill that was never
-// invoked never comes back. This brings the SELECTED skills back regardless, so the next edit has their text in
-// context. Exit 0 always; SessionStart cannot block, and a failure just means no re-delivery (the edit-gate then
-// holds the next edit until the skill is loaded, so the gap is caught, never silently passed).
+// reload-skills - a SessionStart (matcher: compact) hook. After a compaction the task's selected skill BODIES are
+// gone from context (the audit finding: only skills invoked earlier come back). A single real SKILL.md is
+// 20-35 KB, well over Claude Code's 10,000-char additionalContext cap, so the bodies cannot be re-inlined here;
+// trying would deliver nothing yet mark them loaded, a false "loaded" that defeats the whole gate. Instead this:
+//   1. CLEARS each selected required/applies skill from the load-state, so it reads as NOT loaded again and the
+//      edit-gate holds the next edit until the skill is genuinely re-read (record-load.mjs captures that).
+//   2. emits a short NOTICE naming those skills, so the agent knows to re-load them before editing.
+// This way "loaded" stays truthful: it means the current text was actually read this session, not that a
+// compaction happened. Exit 0 always (SessionStart cannot block); any failure fails SAFE toward not-loaded,
+// because the edit-gate still holds a skill that is not in the load-state.
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
-import { resolve, join, dirname } from "node:path";
-import { createHash } from "node:crypto";
+import { resolve, dirname } from "node:path";
 
-const MAX = 10000; // Claude Code caps hook additionalContext at 10,000 characters.
+const MAX = 10000; // Claude Code caps hook additionalContext at 10,000 characters; the NOTICE is only skill names.
 const SAFE = /^[A-Za-z0-9._-]+$/;
 
 function emit(ctx) {
@@ -18,28 +21,28 @@ function emit(ctx) {
 
 try {
   const selPath = process.env.ESK_SELECTION;
-  const skillsDir = process.env.ESK_SKILLS_DIR || ".claude/skills";
   const loadedPath = process.env.ESK_LOADED;
-  if (!selPath || !existsSync(resolve(selPath))) process.exit(0); // not wired / no selection yet: nothing to reload
+  if (!selPath || !existsSync(resolve(selPath))) process.exit(0); // not wired / no selection yet
   const sel = JSON.parse(readFileSync(resolve(selPath), "utf8"));
   const names = Object.entries(sel)
     .filter(([, e]) => e && (e.verdict === "required" || e.verdict === "applies"))
     .map(([n]) => n)
     .filter((n) => SAFE.test(n) && n !== "." && n !== "..");
 
-  let state = {};
-  if (loadedPath) { try { state = JSON.parse(readFileSync(resolve(loadedPath), "utf8")); } catch { state = {}; } if (!state || typeof state !== "object" || Array.isArray(state)) state = {}; }
-
-  let ctx = "The task's selected skills, re-delivered after a compaction so none is missing from context:\n";
-  for (const n of names) {
-    const f = join(resolve(skillsDir), n, "SKILL.md");
-    if (!existsSync(f)) continue;
-    const text = readFileSync(f, "utf8");
-    state[n] = createHash("sha256").update(Buffer.from(text, "utf8")).digest("hex");
-    ctx += `\n--- ${n} ---\n${text}\n`;
+  // Clear each selected skill from the load-state so it must be re-read; the edit-gate then holds until it is.
+  if (loadedPath && existsSync(resolve(loadedPath))) {
+    let state = {};
+    try { state = JSON.parse(readFileSync(resolve(loadedPath), "utf8")); } catch { state = {}; }
+    if (state && typeof state === "object" && !Array.isArray(state)) {
+      for (const n of names) delete state[n];
+      mkdirSync(dirname(resolve(loadedPath)), { recursive: true });
+      writeFileSync(resolve(loadedPath), JSON.stringify(state));
+    }
   }
-  if (loadedPath) { mkdirSync(dirname(resolve(loadedPath)), { recursive: true }); writeFileSync(resolve(loadedPath), JSON.stringify(state)); }
-  if (ctx.length > MAX) ctx = ctx.slice(0, MAX); // cap; the edit-gate still holds any skill not fully re-delivered
-  emit(ctx);
-} catch { /* never break the session */ }
+
+  const ctx = names.length
+    ? `Context was compacted. The task's selected skills are no longer in context. Re-load each with the Skill tool before your next edit (the edit-gate holds the edit until you do): ${names.join(", ")}.`
+    : "Context was compacted. No selected skills needed re-loading.";
+  emit(ctx.length > MAX ? ctx.slice(0, MAX) : ctx);
+} catch { /* never break the session; an un-cleared skill still reads as loaded only if it already was, and a genuine re-read refreshes it */ }
 process.exit(0);
