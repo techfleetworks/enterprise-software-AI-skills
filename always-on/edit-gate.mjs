@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// edit-gate - a PreToolUse hook that holds a source edit until the task's skill SELECT and LOAD steps are done
-// (issue #175, steps 1 and 2 of the formula; step 3 plan is added by PR-B).
+// edit-gate - a PreToolUse hook that holds a source edit until the task's skill SELECT, LOAD, and PLAN steps are
+// done (issue #175, steps 1, 2, and 3 of the formula).
 //
 // Why: today a skill is read only if the agent decides to, and after a compaction only skills used earlier come
 // back. This hook runs on the file-writing tools and, before the edit runs, requires a selection record for the
@@ -17,6 +17,7 @@
 //   ESK_LOADED      path to the load-state (JSON: skill -> sha256 delivered this session)
 //   ESK_SKILLS_DIR  the skills dir (default .claude/skills)
 //   ESK_WAIVERS     comma-separated skills the operator waived
+//   ESK_PLANS       path to the planning records (JSON: record-type -> record); step 3
 // When ESK_SELECTION is unset the machine has not wired the gate, so the hook emits a NOTICE and allows rather
 // than break unrelated work; where it IS set, a missing selection is a deny. It FAILS CLOSED (deny) on its own
 // errors, because a PreToolUse hook that crashes otherwise fails open.
@@ -81,14 +82,22 @@ process.stdin.on("end", () => {
     const sel = spawnSync(process.execPath, [CHECK, "selection", "--selection", selectionPath, "--skills-dir", skillsDir, ...changed, ...waivers], { encoding: "utf8" });
     if (sel.status !== 0) deny(`selection step not satisfied:\n${(sel.stdout || "") + (sel.stderr || "")}`.trim());
 
-    // Step 2: every required/applies skill's text must have been loaded this session. When ESK_LOADED is unset
-    // the load half cannot run; allow with a notice (parallel to the ESK_SELECTION-unset notice).
+    const notes = [];
+    // Step 2: every required/applies skill's text must have been loaded this session (when ESK_LOADED is wired).
     if (process.env.ESK_LOADED) {
       const load = spawnSync(process.execPath, [CHECK, "loaded", "--selection", selectionPath, "--loaded", process.env.ESK_LOADED, "--skills-dir", skillsDir], { encoding: "utf8" });
       if (load.status !== 0) deny(`load step not satisfied (load the skill, then retry the edit):\n${(load.stdout || "") + (load.stderr || "")}`.trim());
-      allow();
+    } else {
+      notes.push("the load-state is not wired (ESK_LOADED unset)");
     }
-    allow("the load-state is not wired (ESK_LOADED unset); checked selection only.");
+    // Step 3: the planning records for the selected skills must exist and be complete (when ESK_PLANS is wired).
+    if (process.env.ESK_PLANS) {
+      const plan = spawnSync(process.execPath, [CHECK, "plan", "--selection", selectionPath, "--plans", process.env.ESK_PLANS, "--skills-dir", skillsDir], { encoding: "utf8" });
+      if (plan.status !== 0) deny(`plan step not satisfied (write the missing planning records, then retry):\n${(plan.stdout || "") + (plan.stderr || "")}`.trim());
+    } else {
+      notes.push("the plan check is not wired (ESK_PLANS unset)");
+    }
+    allow(notes.length ? `edit allowed; ${notes.join("; ")}.` : undefined);
   } catch (e) {
     deny(`edit-gate failed (${e && e.message}); failing closed.`);
   }

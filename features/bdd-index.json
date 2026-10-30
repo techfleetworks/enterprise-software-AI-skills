@@ -100,12 +100,100 @@
   },
   {
     "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "A behavior change has its use case and audience matrix before code changes",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "behavior-matrix-before-code",
+    "category": "happy",
+    "quality": "functional",
+    "severity": "critical",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
     "scenario": "A change that matches no routing rule still gets a verdict for every skill",
     "domain": "always-on",
     "audience": "agent",
     "usecase": "no-routed-files-still-selected",
     "category": "empty-overflow",
     "quality": "functional",
+    "severity": "medium",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "A change that stores or reads personal data proves how that data is kept and deleted",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "personal-data-lifecycle",
+    "category": "happy",
+    "quality": "compliance",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "A change that will be deployed proves it can be reversed",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "deploy-reversibility",
+    "category": "happy",
+    "quality": "release-safety",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "A change touching input, secrets or stored data has a threat model before code changes",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "threat-model-before-code",
+    "category": "happy",
+    "quality": "security",
+    "severity": "critical",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "A change with no security surface marks the threat model not-applicable with a reason",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "no-security-surface",
+    "category": "edge",
+    "quality": "security",
+    "severity": "medium",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "A feature or refactor has a complete pattern-decision record before code changes",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "pattern-decision-before-code",
+    "category": "happy",
+    "quality": "functional",
+    "severity": "critical",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "A named threat with no control fails the task",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "threat-without-control",
+    "category": "negative",
+    "quality": "security",
+    "severity": "critical",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "A new service or endpoint proves the team will know when it breaks",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "service-readiness",
+    "category": "happy",
+    "quality": "reliability",
     "severity": "medium",
     "status": "covered"
   },
@@ -122,12 +210,45 @@
   },
   {
     "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "A pattern-decision record with a missing part is refused",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "pattern-record-incomplete",
+    "category": "negative",
+    "quality": "functional",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "A security control with no @security scenario is not counted as done",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "control-without-security-scenario",
+    "category": "negative",
+    "quality": "security",
+    "severity": "critical",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
     "scenario": "A selected skill that cannot be loaded blocks the task",
     "domain": "always-on",
     "audience": "agent",
     "usecase": "skill-cannot-load",
     "category": "error",
     "quality": "reliability",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "A significant decision ships its ADR in the same change",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "adr-with-significant-decision",
+    "category": "happy",
+    "quality": "functional",
     "severity": "high",
     "status": "covered"
   },
@@ -155,6 +276,28 @@
   },
   {
     "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "A source edit tried before the planning step is held",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "edit-before-plan-held",
+    "category": "negative",
+    "quality": "functional",
+    "severity": "critical",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "A user-facing change carries accessibility, browser and usability verdicts",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "ui-change-three-verdicts",
+    "category": "happy",
+    "quality": "accessibility",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
     "scenario": "An \"applied\" entry that points at a file outside the change is refused",
     "domain": "always-on",
     "audience": "agent",
@@ -162,6 +305,28 @@
     "category": "negative",
     "quality": "reliability",
     "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "An ADR with an unfilled placeholder or a link to a missing file is refused",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "adr-placeholder-or-dead-link",
+    "category": "negative",
+    "quality": "reliability",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "An architecture change applies the standards in code, not only by name",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "architecture-standards-applied",
+    "category": "edge",
+    "quality": "reliability",
+    "severity": "medium",
     "status": "covered"
   },
   {
@@ -226,6 +391,17 @@
     "audience": "agent",
     "usecase": "unsure-means-apply",
     "category": "edge",
+    "quality": "functional",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "When the audiences are not certain, the agent asks the operator and waits",
+    "domain": "always-on",
+    "audience": "operator",
+    "usecase": "unsure-audience-asks",
+    "category": "permission",
     "quality": "functional",
     "severity": "high",
     "status": "covered"

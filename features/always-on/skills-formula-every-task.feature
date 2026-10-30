@@ -23,6 +23,14 @@ Feature: Every task runs the full enterprise-skills formula, with no reminder
       Then the edit does not run
       And the agent is told to write the skill selection first
 
+    @audience:agent @usecase:edit-before-plan-held @category:negative @quality:functional @severity:critical
+    Scenario: A source edit tried before the planning step is held
+      Given the selection says "pattern-selector" and "owasp-secure-coding-bdd" apply
+      And no pattern-decision record and no threat model exist for this task
+      When the agent tries to edit a source file
+      Then the edit does not run
+      And the agent is told which planning records are missing
+
   Rule: Step 1, select. Every skill gets a stated verdict for the task
 
     @audience:agent @usecase:every-skill-gets-verdict @category:happy @quality:functional @severity:critical
@@ -95,6 +103,131 @@ Feature: Every task runs the full enterprise-skills formula, with no reminder
       When the finish check runs
       Then the turn does not end
       And the agent is told to load the skill and redo the steps that depend on it
+
+  Rule: Step 3, plan. Each applicable skill's planning record exists before code changes
+
+    @audience:agent @usecase:pattern-decision-before-code @category:happy @quality:functional @severity:critical
+    Scenario: A feature or refactor has a complete pattern-decision record before code changes
+      Source: pattern-selector "Definition of done" (SKILL.md line 193).
+      Given the task adds a feature
+      When the agent writes the pattern-decision record
+      Then the record names the forces and their evidence, the lifetime forces and the cost of deferring
+      And it names the decision, its pros and cons, and the failure it prevents
+      And it names the security and operational trade-offs and the simpler alternative
+      And it names the adopt-safely path, the verify step and the verification status
+
+    @audience:agent @usecase:pattern-record-incomplete @category:negative @quality:functional @severity:high
+    Scenario: A pattern-decision record with a missing part is refused
+      Given the pattern-decision record has no "simpler alternative"
+      When the planning check runs
+      Then the source edit stays held
+      And the agent is told which part is missing
+
+    @audience:agent @usecase:threat-model-before-code @category:happy @quality:security @severity:critical
+    Scenario: A change touching input, secrets or stored data has a threat model before code changes
+      Source: owasp-secure-coding-bdd "The selection flow: OWASP threat modeling (required, enforced)" (SKILL.md lines 40-54).
+      Given the task changes how the app handles a value the user asked to keep secret
+      When the agent writes the threat model
+      Then it states the surface in scope
+      And it names what can go wrong using a category list such as STRIDE
+      And it maps each threat to the OWASP cheat sheet and the control that stops it
+
+    @audience:agent @usecase:threat-without-control @category:negative @quality:security @severity:critical
+    Scenario: A named threat with no control fails the task
+      Given the threat model names "a secret reaches a second output channel"
+      And no control is mapped to that threat
+      When the finish check runs
+      Then the turn does not end
+      And the unmapped threat is named
+
+    @audience:agent @usecase:control-without-security-scenario @category:negative @quality:security @severity:critical
+    Scenario: A security control with no @security scenario is not counted as done
+      Source: "A security control with no scenario in the shared index is not-assessed, never a pass" (owasp SKILL.md lines 367-369).
+      Given a control is mapped to a threat
+      And no @security scenario in the feature index tests that control
+      When the finish check runs
+      Then the turn does not end
+      And the control is reported as "not-assessed"
+
+    @audience:agent @usecase:no-security-surface @category:edge @quality:security @severity:medium
+    Scenario: A change with no security surface marks the threat model not-applicable with a reason
+      Given the task changes only the wording of a code comment
+      And the router finds no input, auth, secret, data or dependency file in the change
+      When the agent writes the verdict for "owasp-secure-coding-bdd"
+      Then the verdict is "not-applicable" with that reason
+
+    @audience:agent @usecase:behavior-matrix-before-code @category:happy @quality:functional @severity:critical
+    Scenario: A behavior change has its use case and audience matrix before code changes
+      Source: bdd-comprehensive-testing "Definition of done" (SKILL.md line 389).
+      Given the task changes what the app answers
+      When the agent plans the change
+      Then the audiences are recorded
+      And every use case times audience cell is a written Gherkin scenario or a recorded "N/A" with a reason
+      And every scenario carries audience, use case, category, quality and severity tags
+
+    @audience:operator @usecase:unsure-audience-asks @category:permission @quality:functional @severity:high
+    Scenario: When the audiences are not certain, the agent asks the operator and waits
+      Source: "If the audience set isn't stated or can't be derived with certainty from the request or the repo, STOP and ASK the user".
+      Given the task does not say who uses the changed behavior
+      When the agent reaches the behavior matrix
+      Then the agent asks the operator to confirm the audiences
+      And no scenario is written for an audience the agent guessed
+
+    @audience:agent @usecase:adr-with-significant-decision @category:happy @quality:functional @severity:high
+    Scenario: A significant decision ships its ADR in the same change
+      Source: architectural-decision-records "Definition of done" (SKILL.md line 86).
+      Given the task chooses one of two ways to store a value
+      When the agent ends the task
+      Then an ADR exists with context, at least two options, real consequences and a status
+      And the ADR checker passes
+
+    @audience:agent @usecase:adr-placeholder-or-dead-link @category:negative @quality:reliability @severity:high
+    Scenario: An ADR with an unfilled placeholder or a link to a missing file is refused
+      Finding 5: an ADR cited a measurement file that did not exist and kept a placeholder.
+      Given the ADR cites "measure/coverage_v2.json" and that file does not exist
+      When the ADR checker runs
+      Then it fails
+      And the turn does not end
+
+    @audience:agent @usecase:personal-data-lifecycle @category:happy @quality:compliance @severity:high
+    Scenario: A change that stores or reads personal data proves how that data is kept and deleted
+      Source: compliance-data-lifecycle "Definition of done" (SKILL.md line 258).
+      Given the task changes how a user's stated health condition is stored
+      When the agent ends the task
+      Then the data's class and retention basis are recorded
+      And the claim that deletion reaches every store is "observed" or "proven", not "inferred"
+
+    @audience:agent @usecase:deploy-reversibility @category:happy @quality:release-safety @severity:high
+    Scenario: A change that will be deployed proves it can be reversed
+      Source: release-deployment-safety "Definition of done" (SKILL.md line 231).
+      Given the task includes a schema migration
+      When the agent ends the task
+      Then the reversibility claim is "observed" or "proven"
+      And no "safe to ship" claim is made while it is lower than "observed"
+
+    @audience:agent @usecase:service-readiness @category:happy @quality:reliability @severity:medium
+    Scenario: A new service or endpoint proves the team will know when it breaks
+      Source: sre-operational-readiness "Definition of done" (SKILL.md line 218).
+      Given the task adds an endpoint
+      When the agent ends the task
+      Then its service level indicators, alerts and runbook exist
+      And the claim that an alert fires is "observed" or "proven"
+
+    @audience:agent @usecase:ui-change-three-verdicts @category:happy @quality:accessibility @severity:high
+    Scenario: A user-facing change carries accessibility, browser and usability verdicts
+      Source: routing rule "ui-change-needs-a11y-verdict" and the three universal skills' "Definition of done".
+      Given the task changes a screen component
+      When the agent ends the task
+      Then an accessibility verdict, a browser and device verdict and a usability verdict exist
+      And each measurable claim in them is "observed" or "proven"
+
+    @audience:agent @usecase:architecture-standards-applied @category:edge @quality:reliability @severity:medium
+    Scenario: An architecture change applies the standards in code, not only by name
+      Source: enterprise-architecture-standards "Definition of done" (SKILL.md line 108).
+      Given the task adds a new component that other modules call
+      When the agent ends the task
+      Then the standards it cites are visible in the code
+      And claims about load or resilience point to a measurement or a test
 
   Rule: Step 8, receipt. One grounded entry per task covers every skill
 

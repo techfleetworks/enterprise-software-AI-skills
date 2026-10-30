@@ -45,6 +45,52 @@ function hashesOf(skillsDir, names) {
 function writeJson(dir, name, obj) { const p = join(dir, name); writeFileSync(p, JSON.stringify(obj)); return p; }
 function taskPlan(args) { const r = spawnSync(process.execPath, [CHECK, ...args], { encoding: "utf8" }); return { status: r.status, out: (r.stdout || "") + (r.stderr || "") }; }
 function editGate(payload, env) { const r = spawnSync(process.execPath, [GATE], { encoding: "utf8", input: JSON.stringify(payload), env: { ...process.env, ...env } }); return { status: r.status, out: (r.stdout || "") + (r.stderr || "") }; }
+// The end-of-task / finish check runs the formula steps in order (select -> load -> plan) and stops at the first
+// hold. Shared by "the finish check runs" and "the agent ends the task"; the #175 PR-B plan scenarios set
+// world.plansObj so the plan step runs.
+function runFinish(world) {
+  const selPath = writeJson(world.workDir, "selection.json", world.selObj);
+  let r = taskPlan(["selection", "--selection", selPath, "--skills-dir", world.skillsDir, ...(world.changedListArg || [])]);
+  if (r.status === 0 && world.loadedState) {
+    const lp = writeJson(world.workDir, "loaded.json", world.loadedState);
+    r = taskPlan(["loaded", "--selection", selPath, "--loaded", lp, "--skills-dir", world.skillsDir]);
+  }
+  if (r.status === 0 && world.plansObj) {
+    const pp = writeJson(world.workDir, "plans.json", world.plansObj);
+    r = taskPlan(["plan", "--selection", selPath, "--plans", pp, "--skills-dir", world.skillsDir]);
+  }
+  world.res = r;
+}
+
+// A selection where only the named skills apply and the rest are not-applicable (with reasons), so the plan
+// check's `need` is focused on the record(s) the scenario is about.
+function focusedSelection(applies) {
+  const s = {};
+  for (const n of SET) s[n] = { verdict: "not-applicable", reason: `not engaged by this task (${n})` };
+  for (const n of applies) s[n] = { verdict: "applies", reason: `relevant (${n})` };
+  return s;
+}
+function writeAdr(dir) {
+  const p = join(dir, `adr-${Math.random().toString(36).slice(2)}.md`);
+  writeFileSync(p, `---\nstatus: "accepted"\n---\n# Test ADR\n## Context and Problem Statement\nwhy\n## Considered Options\n- a\n- b\n## Decision\nd\n## Consequences\n- good and bad\n`);
+  return p;
+}
+// Valid planning records for every record type; scenarios take the one they need and may break it.
+function validRecords(adrPath) {
+  return {
+    "pattern-decision": { forces: "f", forcesEvidence: "[observed]", lifetimeForces: "lf", costOfDeferring: "c", decision: "d", pros: "p", cons: "co", failurePrevented: "fp", securityTradeoff: "s", operationalCost: "o", simplerAlternative: "sa", adoptSafely: "as", verify: "v", verificationStatus: "not-assessed" },
+    "threat-model": { surface: "the value kept secret", threats: [{ name: "a secret reaches a second output channel", category: "Information Disclosure", cheatSheet: "Logging", control: "redact before log", scenario: "@security leak blocked" }] },
+    "bdd-matrix": { audiences: ["agent"], cells: [{ useCase: "year-answer", audience: "agent", scenario: "@... year works" }] },
+    "adr": { path: adrPath },
+    "data-lifecycle": { dataClass: "health condition", retentionBasis: "consent", deletion: { claim: "cascade reaches every store", evidenceState: "observed" } },
+    "reversibility": { reversibility: { claim: "expand/contract migration", evidenceState: "observed" } },
+    "service-readiness": { slis: ["latency"], alerts: ["p99"], runbook: "runbook.md", alertFires: { evidenceState: "proven" } },
+    "a11y-verdict": { claim: "axe clean", evidenceState: "observed" },
+    "browser-verdict": { claim: "matrix pass", evidenceState: "observed" },
+    "usability-verdict": { claim: "5-user test", evidenceState: "observed" },
+    "arch-standards": { standards: ["layering"], claims: [{ claim: "handles 1k rps", measurement: "load-test.json" }] },
+  };
+}
 
 export default function ({ Given, When, Then, And }) {
   // --- Rule: the formula starts by itself. An edit before selection is held ---
@@ -53,7 +99,10 @@ export default function ({ Given, When, Then, And }) {
     world.selectionPath = join(world.workDir, "no-selection-yet.json"); // deliberately not created
   });
   When(/^the agent tries to edit a source file$/, (world) => {
-    world.res = editGate({ tool_name: "Write", tool_input: { file_path: "src/feature.ts" } }, { ESK_SELECTION: world.selectionPath, ESK_SKILLS_DIR: world.skillsDir });
+    const env = { ESK_SELECTION: world.selectionPath, ESK_SKILLS_DIR: world.skillsDir };
+    if (world.loadedPath) env.ESK_LOADED = world.loadedPath;
+    if (world.plansPath) env.ESK_PLANS = world.plansPath;
+    world.res = editGate({ tool_name: "Write", tool_input: { file_path: "src/feature.ts" } }, env);
   });
   Then(/^the edit does not run$/, (world) => { assert.equal(world.res.status, 2, `the edit must be held\n${world.res.out}`); });
   And(/^the agent is told to write the skill selection first$/, (world) => { assert.match(world.res.out, /write the skill selection/, world.res.out); });
@@ -75,15 +124,7 @@ export default function ({ Given, When, Then, And }) {
   });
   // "the finish check runs" = selection, then (if it passes and a load state is set) the load check. One failure
   // holds the turn. Serves silent-skip (selection fails) and applies-but-not-loaded (load fails).
-  When(/^the finish check runs$/, (world) => {
-    const selPath = writeJson(world.workDir, "selection.json", world.selObj);
-    let r = taskPlan(["selection", "--selection", selPath, "--skills-dir", world.skillsDir, ...(world.changedListArg || [])]);
-    if (r.status === 0 && world.loadedState) {
-      const lp = writeJson(world.workDir, "loaded.json", world.loadedState);
-      r = taskPlan(["loaded", "--selection", selPath, "--loaded", lp, "--skills-dir", world.skillsDir]);
-    }
-    world.res = r;
-  });
+  When(/^the finish check runs$/, (world) => { runFinish(world); });
   And(/^"compliance-data-lifecycle" is named as an empty cell$/, (world) => {
     assert.match(world.res.out, /compliance-data-lifecycle/, world.res.out);
     assert.match(world.res.out, /empty cell|no verdict/, world.res.out);
@@ -113,10 +154,7 @@ export default function ({ Given, When, Then, And }) {
     for (const n of ["comprehensive-test-strategy", "bdd-comprehensive-testing"]) sel[n] = { verdict: "applies", reason: "source changed" };
     world.selObj = sel;
   });
-  When(/^the agent ends the task$/, (world) => {
-    const p = writeJson(world.workDir, "selection.json", world.selObj);
-    world.res = taskPlan(["selection", "--selection", p, "--skills-dir", world.skillsDir, ...(world.changedListArg || [])]);
-  });
+  When(/^the agent ends the task$/, (world) => { runFinish(world); });
   Then(/^a selection covering every skill exists$/, (world) => { assert.equal(world.res.status, 0, world.res.out); });
   And(/^most skills may be "not-applicable", each with its reason$/, (world) => { assert.match(world.res.out, /covers all/, world.res.out); });
 
@@ -210,4 +248,184 @@ export default function ({ Given, When, Then, And }) {
   And(/^the agent is told only the operator can waive a skill the router requires$/, (world) => {
     assert.match(world.res.out, /only the operator can waive/, world.res.out);
   });
+
+  // =========================== #175 PR-B: Step 3, plan ===========================
+  const ok0 = (world) => assert.equal(world.res.status, 0, world.res.out);
+  const held2 = (world) => assert.equal(world.res.status, 2, world.res.out);
+
+  // --- edit before the planning step is held (reuses "the agent tries to edit a source file" / "the edit does not run") ---
+  Given(/^the selection says "pattern-selector" and "owasp-secure-coding-bdd" apply$/, (world) => {
+    ensureSkills(world);
+    // full selection (all apply, incl pattern-selector + owasp): selection and load pass, so the edit reaches the
+    // PLAN step and is held there for the missing records, not at selection.
+    world.selectionPath = writeJson(world.workDir, "selection.json", fullSelection());
+    world.loadedPath = writeJson(world.workDir, "loaded.json", hashesOf(world.skillsDir, SET));
+  });
+  And(/^no pattern-decision record and no threat model exist for this task$/, (world) => {
+    world.plansPath = writeJson(world.workDir, "plans.json", {}); // no planning records at all
+  });
+  And(/^the agent is told which planning records are missing$/, (world) => {
+    assert.match(world.res.out, /plan step not satisfied|planning record|missing/, world.res.out);
+  });
+
+  // --- pattern-decision ---
+  Given(/^the task adds a feature$/, (world) => {
+    ensureSkills(world);
+    world.selObj = focusedSelection(["pattern-selector"]);
+    world.plansObj = { "pattern-decision": validRecords()["pattern-decision"] };
+  });
+  When(/^the agent writes the pattern-decision record$/, (world) => { runFinish(world); });
+  Then(/^the record names the forces and their evidence, the lifetime forces and the cost of deferring$/, ok0);
+  And(/^it names the decision, its pros and cons, and the failure it prevents$/, ok0);
+  And(/^it names the security and operational trade-offs and the simpler alternative$/, ok0);
+  And(/^it names the adopt-safely path, the verify step and the verification status$/, ok0);
+
+  Given(/^the pattern-decision record has no "simpler alternative"$/, (world) => {
+    ensureSkills(world);
+    world.selObj = focusedSelection(["pattern-selector"]);
+    const r = validRecords()["pattern-decision"]; delete r.simplerAlternative;
+    world.plansObj = { "pattern-decision": r };
+  });
+  When(/^the planning check runs$/, (world) => { runFinish(world); });
+  Then(/^the source edit stays held$/, held2);
+  And(/^the agent is told which part is missing$/, (world) => { assert.match(world.res.out, /simplerAlternative/, world.res.out); });
+
+  // --- threat model ---
+  Given(/^the task changes how the app handles a value the user asked to keep secret$/, (world) => {
+    ensureSkills(world);
+    world.selObj = focusedSelection(["owasp-secure-coding-bdd"]);
+    world.plansObj = { "threat-model": validRecords()["threat-model"] };
+  });
+  When(/^the agent writes the threat model$/, (world) => { runFinish(world); });
+  Then(/^it states the surface in scope$/, ok0);
+  And(/^it names what can go wrong using a category list such as STRIDE$/, ok0);
+  And(/^it maps each threat to the OWASP cheat sheet and the control that stops it$/, ok0);
+
+  Given(/^the threat model names "a secret reaches a second output channel"$/, (world) => {
+    ensureSkills(world);
+    world.selObj = focusedSelection(["owasp-secure-coding-bdd"]);
+    world.tm = validRecords()["threat-model"];
+    world.tm.threats[0].name = "a secret reaches a second output channel";
+  });
+  And(/^no control is mapped to that threat$/, (world) => {
+    world.tm.threats[0].control = "";
+    world.plansObj = { "threat-model": world.tm };
+  });
+  And(/^the unmapped threat is named$/, (world) => { assert.match(world.res.out, /second output channel|has no control/, world.res.out); });
+
+  Given(/^a control is mapped to a threat$/, (world) => {
+    ensureSkills(world);
+    world.selObj = focusedSelection(["owasp-secure-coding-bdd"]);
+    world.tm = validRecords()["threat-model"]; // has a control
+  });
+  And(/^no @security scenario in the feature index tests that control$/, (world) => {
+    world.tm.threats[0].scenario = "";
+    world.plansObj = { "threat-model": world.tm };
+  });
+  And(/^the control is reported as "not-assessed"$/, (world) => { assert.match(world.res.out, /@security scenario|not-assessed/, world.res.out); });
+
+  // --- no security surface: owasp not-applicable with a reason ---
+  Given(/^the task changes only the wording of a code comment$/, (world) => {
+    ensureSkills(world);
+    world.changedListArg = ["--changed-list", "src/widget.ts"]; // source, but no security surface
+  });
+  And(/^the router finds no input, auth, secret, data or dependency file in the change$/, () => { /* src/widget.ts matches no security routing rule */ });
+  When(/^the agent writes the verdict for "owasp-secure-coding-bdd"$/, (world) => {
+    world.selObj = focusedSelection(["comprehensive-test-strategy", "bdd-comprehensive-testing"]); // source-change requires these
+    world.verdict = { verdict: "not-applicable", reason: "no input, auth, secret, data or dependency in the change" };
+    world.selObj["owasp-secure-coding-bdd"] = world.verdict;
+    const p = writeJson(world.workDir, "selection.json", world.selObj);
+    world.res = taskPlan(["selection", "--selection", p, "--skills-dir", world.skillsDir, ...world.changedListArg]);
+  });
+  Then(/^the verdict is "not-applicable" with that reason$/, (world) => {
+    assert.equal(world.verdict.verdict, "not-applicable");
+    assert.match(world.verdict.reason, /security|input|secret|dependency/i);
+    assert.equal(world.res.status, 0, world.res.out);
+  });
+
+  // --- behavior matrix ---
+  Given(/^the task changes what the app answers$/, (world) => {
+    ensureSkills(world);
+    world.selObj = focusedSelection(["bdd-comprehensive-testing"]);
+    world.plansObj = { "bdd-matrix": validRecords()["bdd-matrix"] };
+  });
+  When(/^the agent plans the change$/, (world) => { runFinish(world); });
+  Then(/^the audiences are recorded$/, ok0);
+  And(/^every use case times audience cell is a written Gherkin scenario or a recorded "N\/A" with a reason$/, ok0);
+  And(/^every scenario carries audience, use case, category, quality and severity tags$/, ok0);
+
+  Given(/^the task does not say who uses the changed behavior$/, (world) => {
+    ensureSkills(world);
+    world.selObj = focusedSelection(["bdd-comprehensive-testing"]);
+    world.bm = { audiences: [], cells: [] }; // uncertain: no audiences, nothing guessed
+    world.plansObj = { "bdd-matrix": world.bm };
+  });
+  When(/^the agent reaches the behavior matrix$/, (world) => { runFinish(world); });
+  Then(/^the agent asks the operator to confirm the audiences$/, (world) => {
+    assert.equal(world.res.status, 2, world.res.out); // held: cannot proceed without confirmed audiences
+    assert.match(world.res.out, /audiences/, world.res.out);
+  });
+  And(/^no scenario is written for an audience the agent guessed$/, (world) => { assert.equal(world.bm.cells.length, 0); });
+
+  // --- ADR ---
+  Given(/^the task chooses one of two ways to store a value$/, (world) => {
+    ensureSkills(world);
+    world.selObj = focusedSelection(["architectural-decision-records"]);
+    world.plansObj = { "adr": { path: writeAdr(world.workDir) } };
+  });
+  Then(/^an ADR exists with context, at least two options, real consequences and a status$/, ok0);
+  And(/^the ADR checker passes$/, ok0);
+
+  Given(/^the ADR cites "measure\/coverage_v2\.json" and that file does not exist$/, (world) => {
+    ensureSkills(world);
+    world.selObj = focusedSelection(["architectural-decision-records"]);
+    world.plansObj = { "adr": { path: writeAdr(world.workDir), confirmationFiles: ["measure/coverage_v2.json"] } };
+  });
+  When(/^the ADR checker runs$/, (world) => { runFinish(world); });
+
+  // --- data lifecycle ---
+  Given(/^the task changes how a user's stated health condition is stored$/, (world) => {
+    ensureSkills(world);
+    world.selObj = focusedSelection(["compliance-data-lifecycle"]);
+    world.plansObj = { "data-lifecycle": validRecords()["data-lifecycle"] };
+  });
+  Then(/^the data's class and retention basis are recorded$/, ok0);
+  And(/^the claim that deletion reaches every store is "observed" or "proven", not "inferred"$/, ok0);
+
+  // --- deploy reversibility ---
+  Given(/^the task includes a schema migration$/, (world) => {
+    ensureSkills(world);
+    world.selObj = focusedSelection(["release-deployment-safety"]);
+    world.plansObj = { "reversibility": validRecords()["reversibility"] };
+  });
+  Then(/^the reversibility claim is "observed" or "proven"$/, ok0);
+  And(/^no "safe to ship" claim is made while it is lower than "observed"$/, ok0);
+
+  // --- service readiness ---
+  Given(/^the task adds an endpoint$/, (world) => {
+    ensureSkills(world);
+    world.selObj = focusedSelection(["sre-operational-readiness"]);
+    world.plansObj = { "service-readiness": validRecords()["service-readiness"] };
+  });
+  Then(/^its service level indicators, alerts and runbook exist$/, ok0);
+  And(/^the claim that an alert fires is "observed" or "proven"$/, ok0);
+
+  // --- UI three verdicts ---
+  Given(/^the task changes a screen component$/, (world) => {
+    ensureSkills(world);
+    world.selObj = focusedSelection(["universal-accessibility-wcag", "universal-browser-device-support", "usability-ux-universal-design"]);
+    const v = validRecords();
+    world.plansObj = { "a11y-verdict": v["a11y-verdict"], "browser-verdict": v["browser-verdict"], "usability-verdict": v["usability-verdict"] };
+  });
+  Then(/^an accessibility verdict, a browser and device verdict and a usability verdict exist$/, ok0);
+  And(/^each measurable claim in them is "observed" or "proven"$/, ok0);
+
+  // --- architecture standards ---
+  Given(/^the task adds a new component that other modules call$/, (world) => {
+    ensureSkills(world);
+    world.selObj = focusedSelection(["enterprise-architecture-standards"]);
+    world.plansObj = { "arch-standards": validRecords()["arch-standards"] };
+  });
+  Then(/^the standards it cites are visible in the code$/, ok0);
+  And(/^claims about load or resilience point to a measurement or a test$/, ok0);
 }
