@@ -124,7 +124,12 @@ export default function ({ Given, When, Then, And }) {
   });
   // "the finish check runs" = selection, then (if it passes and a load state is set) the load check. One failure
   // holds the turn. Serves silent-skip (selection fails) and applies-but-not-loaded (load fails).
-  When(/^the finish check runs$/, (world) => { runFinish(world); });
+  // The #174 finish-check scenarios install world.runFinishCheck (the real finish-check.mjs); the #175 scenarios
+  // fall back to runFinish (select -> load -> plan over check-task-plan).
+  When(/^the finish check runs$/, (world) => {
+    if (typeof world.runFinishCheck === "function") world.runFinishCheck();
+    else runFinish(world);
+  });
   And(/^"compliance-data-lifecycle" is named as an empty cell$/, (world) => {
     assert.match(world.res.out, /compliance-data-lifecycle/, world.res.out);
     assert.match(world.res.out, /empty cell|no verdict/, world.res.out);

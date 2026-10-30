@@ -81,3 +81,40 @@ Feature: Skills apply themselves on every task, with no reminder
     When the agent tries to end its turn
     Then the turn does not end
     And the agent is told only the operator can waive a skill the router requires
+
+  @audience:agent @usecase:finish-blocked-without-receipt @category:negative @quality:reliability @severity:critical
+  Scenario: A task that changed files cannot end without a receipt, and the agent writes it unprompted
+    Given the agent changed 3 files during this task
+    And no receipt for this task exists
+    When the agent tries to end its turn
+    Then the turn does not end
+    And the agent is told which skills and which changed files the receipt must cover
+    And the agent writes the receipt and ends the turn without the operator saying anything
+
+  @audience:agent @usecase:off-tree-folder-enforced @category:edge @quality:reliability @severity:high
+  Scenario: The receipt is enforced even in a folder that is not a git repository
+    Given the agent works in a temporary folder that is not inside any git repository
+    When the agent changes a file and tries to end its turn without a receipt
+    Then the turn does not end
+    And the receipt is stored in a place that survives the temporary folder being cleaned
+
+  @audience:agent @usecase:read-only-task-not-blocked @category:happy @quality:functional @severity:high
+  Scenario: A read-only task ends with no receipt required
+    Given the agent only read files and answered a question
+    When the agent ends its turn
+    Then the turn ends with no receipt required and no delay the operator can notice
+
+  @audience:agent @usecase:repeated-block-escalates-once @category:adverse @quality:reliability @severity:high
+  Scenario: Repeated blocks escalate to the operator instead of looping
+    Given the agent's finish was blocked 3 times in a row for the same task
+    When it is blocked a 4th time
+    Then the agent stops trying
+    And the operator gets one plain-language message naming what is missing
+    And the agent does not loop
+
+  @audience:operator @usecase:proof-already-attached @category:happy @quality:functional @severity:medium
+  Scenario: The proof is already attached when the operator asks for it
+    Given a task that changed files has ended
+    When the operator wants proof the skills were followed
+    Then the receipt and the checker result for that task already exist
+    And the operator does not need to send a message to get them

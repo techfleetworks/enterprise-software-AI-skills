@@ -6,39 +6,60 @@ Generated from the feature files by `bdd-index-generate.mjs` - do not edit by ha
 |---|---|---|---|---|---|---|---|---|
 | always-on/skills-apply-every-task.feature | A checker that runs past its time limit counts as a failure | always-on | agent | checker-timeout-fails-closed | timeout | reliability | medium | covered |
 | always-on/skills-apply-every-task.feature | A missing checker blocks the finish instead of being skipped | always-on | agent | checker-missing-fails-closed | error | reliability | high | covered |
+| always-on/skills-apply-every-task.feature | A read-only task ends with no receipt required | always-on | agent | read-only-task-not-blocked | happy | functional | high | covered |
 | always-on/skills-apply-every-task.feature | A receipt copied from an earlier build is refused | always-on | agent | stale-receipt-refused | negative | reliability | critical | covered |
 | always-on/skills-apply-every-task.feature | A receipt that marks a skill applied without quoting its real text is refused | always-on | agent | receipt-quote-must-be-verbatim | negative | functional | critical | covered |
 | always-on/skills-apply-every-task.feature | A task that changed 400 files is checked in full, not sampled | always-on | agent | large-change-fully-checked | empty-overflow | reliability | medium | covered |
+| always-on/skills-apply-every-task.feature | A task that changed files cannot end without a receipt, and the agent writes it unprompted | always-on | agent | finish-blocked-without-receipt | negative | reliability | critical | covered |
 | always-on/skills-apply-every-task.feature | After the context is compacted, every skill the next edit needs is in context, not only the ones used before | always-on | agent | reload-after-compaction | edge | functional | high | covered |
 | always-on/skills-apply-every-task.feature | An empty receipt file does not count as a receipt | always-on | agent | empty-receipt-refused | empty-overflow | reliability | high | covered |
+| always-on/skills-apply-every-task.feature | Repeated blocks escalate to the operator instead of looping | always-on | agent | repeated-block-escalates-once | adverse | reliability | high | covered |
 | always-on/skills-apply-every-task.feature | The agent cannot mark a required skill not-applicable on its own | always-on | agent | required-skill-cannot-be-self-waived | negative | functional | high | covered |
+| always-on/skills-apply-every-task.feature | The proof is already attached when the operator asks for it | always-on | operator | proof-already-attached | happy | functional | medium | covered |
+| always-on/skills-apply-every-task.feature | The receipt is enforced even in a folder that is not a git repository | always-on | agent | off-tree-folder-enforced | edge | reliability | high | covered |
 | always-on/skills-apply-every-task.feature | Two sessions working in the same folder keep separate receipts | always-on | agent | parallel-sessions-separate-receipts | concurrency | reliability | medium | covered |
 | always-on/skills-formula-every-task.feature | A behavior change has its use case and audience matrix before code changes | always-on | agent | behavior-matrix-before-code | happy | functional | critical | covered |
+| always-on/skills-formula-every-task.feature | A caught mistake is encoded as a tested negative-example rule | always-on | agent | caught-mistake-encoded | happy | functional | high | covered |
 | always-on/skills-formula-every-task.feature | A change that matches no routing rule still gets a verdict for every skill | always-on | agent | no-routed-files-still-selected | empty-overflow | functional | medium | covered |
 | always-on/skills-formula-every-task.feature | A change that stores or reads personal data proves how that data is kept and deleted | always-on | agent | personal-data-lifecycle | happy | compliance | high | covered |
 | always-on/skills-formula-every-task.feature | A change that will be deployed proves it can be reversed | always-on | agent | deploy-reversibility | happy | release-safety | high | covered |
 | always-on/skills-formula-every-task.feature | A change touching input, secrets or stored data has a threat model before code changes | always-on | agent | threat-model-before-code | happy | security | critical | covered |
 | always-on/skills-formula-every-task.feature | A change with no security surface marks the threat model not-applicable with a reason | always-on | agent | no-security-surface | edge | security | medium | covered |
+| always-on/skills-formula-every-task.feature | A coverage number does not stand in for an exercised branch | always-on | agent | coverage-not-the-target | edge | reliability | high | covered |
 | always-on/skills-formula-every-task.feature | A feature or refactor has a complete pattern-decision record before code changes | always-on | agent | pattern-decision-before-code | happy | functional | critical | covered |
+| always-on/skills-formula-every-task.feature | A fixed mistake with no rule and no recorded reason holds the turn | always-on | agent | caught-mistake-not-encoded | negative | functional | high | covered |
 | always-on/skills-formula-every-task.feature | A named threat with no control fails the task | always-on | agent | threat-without-control | negative | security | critical | covered |
+| always-on/skills-formula-every-task.feature | A new gate with no discriminating test is held | always-on | agent | new-check-discriminates | negative | reliability | critical | covered |
 | always-on/skills-formula-every-task.feature | A new service or endpoint proves the team will know when it breaks | always-on | agent | service-readiness | happy | reliability | medium | covered |
 | always-on/skills-formula-every-task.feature | A one-line change still gets a full selection and a receipt | always-on | agent | tiny-change-full-selection | boundary | functional | high | covered |
 | always-on/skills-formula-every-task.feature | A pattern-decision record with a missing part is refused | always-on | agent | pattern-record-incomplete | negative | functional | high | covered |
+| always-on/skills-formula-every-task.feature | A review matrix that skips a changed file is not a PASS | always-on | agent | matrix-missing-file | negative | functional | high | covered |
+| always-on/skills-formula-every-task.feature | A review that stops before a verdict is not complete | always-on | agent | review-timeout | timeout | reliability | high | covered |
 | always-on/skills-formula-every-task.feature | A security control with no @security scenario is not counted as done | always-on | agent | control-without-security-scenario | negative | security | critical | covered |
 | always-on/skills-formula-every-task.feature | A selected skill that cannot be loaded blocks the task | always-on | agent | skill-cannot-load | error | reliability | high | covered |
+| always-on/skills-formula-every-task.feature | A self-review is not counted as a fresh-context review | always-on | agent | self-review-not-counted | negative | functional | critical | covered |
 | always-on/skills-formula-every-task.feature | A significant decision ships its ADR in the same change | always-on | agent | adr-with-significant-decision | happy | functional | high | covered |
 | always-on/skills-formula-every-task.feature | A skill left out of the selection fails the task | always-on | agent | silent-skip-is-empty-cell | negative | functional | critical | covered |
 | always-on/skills-formula-every-task.feature | A skill marked "applies" but never loaded fails the task | always-on | agent | applies-but-not-loaded | negative | functional | critical | covered |
+| always-on/skills-formula-every-task.feature | A source change with no test is held | always-on | agent | source-change-needs-test | negative | functional | critical | covered |
 | always-on/skills-formula-every-task.feature | A source edit tried before the planning step is held | always-on | agent | edit-before-plan-held | negative | functional | critical | covered |
 | always-on/skills-formula-every-task.feature | A user-facing change carries accessibility, browser and usability verdicts | always-on | agent | ui-change-three-verdicts | happy | accessibility | high | covered |
 | always-on/skills-formula-every-task.feature | An "applied" entry that points at a file outside the change is refused | always-on | agent | receipt-files-in-change | negative | reliability | high | covered |
 | always-on/skills-formula-every-task.feature | An ADR with an unfilled placeholder or a link to a missing file is refused | always-on | agent | adr-placeholder-or-dead-link | negative | reliability | high | covered |
 | always-on/skills-formula-every-task.feature | An architecture change applies the standards in code, not only by name | always-on | agent | architecture-standards-applied | edge | reliability | medium | covered |
 | always-on/skills-formula-every-task.feature | An edit tried before skill selection is held | always-on | agent | edit-before-selection-held | negative | functional | critical | covered |
+| always-on/skills-formula-every-task.feature | An untagged claim holds the turn | always-on | agent | untagged-claim-blocks | negative | functional | critical | covered |
+| always-on/skills-formula-every-task.feature | Each checker's command, exit code and output hash are recorded | always-on | agent | checker-results-recorded | happy | reliability | high | covered |
 | always-on/skills-formula-every-task.feature | Every skill in the directive gets a verdict | always-on | agent | every-skill-gets-verdict | happy | functional | critical | covered |
 | always-on/skills-formula-every-task.feature | Every skill marked "required" or "applies" is loaded before planning | always-on | agent | selected-skills-loaded | happy | functional | critical | covered |
+| always-on/skills-formula-every-task.feature | The final report leads with an evidence ledger and passes claim-lint | always-on | agent | ledger-and-claim-lint | happy | functional | high | covered |
+| always-on/skills-formula-every-task.feature | The formula runs end to end with no operator reminder | always-on | agent | formula-runs-without-prompt | happy | functional | critical | covered |
 | always-on/skills-formula-every-task.feature | The receipt must match the selection | always-on | agent | receipt-matches-selection | negative | functional | high | covered |
+| always-on/skills-formula-every-task.feature | The review runs in fresh context and covers every file against every question | always-on | subagent | review-in-fresh-context | happy | functional | critical | covered |
+| always-on/skills-formula-every-task.feature | The review step completes only when no HIGH or MEDIUM finding is open | always-on | agent | fix-until-clean | happy | functional | high | covered |
 | always-on/skills-formula-every-task.feature | The router makes skills required from the files a task changes | always-on | agent | router-adds-required-skills | edge | functional | high | covered |
+| always-on/skills-formula-every-task.feature | The task cannot end before the fresh-context review | always-on | agent | done-before-review-refused | negative | functional | critical | covered |
+| always-on/skills-formula-every-task.feature | Two tasks keep their proof separate | always-on | agent | two-tasks-kept-apart | concurrency | functional | high | covered |
 | always-on/skills-formula-every-task.feature | When the agent is unsure whether a skill applies, it applies it | always-on | agent | unsure-means-apply | edge | functional | high | covered |
 | always-on/skills-formula-every-task.feature | When the audiences are not certain, the agent asks the operator and waits | always-on | operator | unsure-audience-asks | permission | functional | high | covered |
 | evidence/claims-match-evidence.feature | A before-and-after comparison that reads a missing field cannot report "0 new failures" | evidence | agent | regression-diff-must-be-able-to-fail | negative | reliability | critical | covered |
