@@ -13,6 +13,24 @@ begins landing a second batch, the ten issues (#174 to #183) from an agent-sessi
 held to include; the first of those (#178) adds build-comparison rigor and the executable BDD harness they all
 ride on.
 
+### Added (per-task receipts outside a repo, tied to file hashes, ADR-0097)
+
+- **Per-task skill receipts (#177).** A new per-task receipt system so work done in a folder that is not a git
+  repo (no PR, no committed log) still gets a grounded, checked receipt. `task-receipt.mjs` (`write`/`check`/
+  `export`, under `.claude/skills/judge-arch/scripts/`) stores one append-only JSONL file per session at
+  `~/.claude/esk/receipts/<session_id>.jsonl` (outside the work folder, so a cleaned Temp cannot lose it, and so
+  two sessions never overwrite each other), ties each entry to the sha256 of every file the task changed, and
+  refuses a receipt (exit 2, which blocks the task from ending) that is empty, stale or copied (a recorded hash
+  that no longer matches the file), incomplete (any changed file uncovered; full check, never a sample), points
+  an `applied` entry at a file outside the change, quotes a skill without the text appearing verbatim under the
+  cited heading, carries a `skill_file_sha256` that does not match the installed `SKILL.md`, misses a required
+  skill from the selection, or carries an expired waiver. `export` turns the per-task entries into the PR
+  receipt format when the work becomes a pull request.
+- **One owner of "grounded" (#177).** The grounding logic (section-by-heading extraction and the >= 8 exact-words
+  verbatim rule) is extracted into `receipt-grounding.mjs`, which both the PR gate (`check-skill-receipt.mjs`,
+  refactored to import it) and the per-task gate use, so they cannot drift. `test/task-receipt.test.mjs` is the
+  discriminating test, and seven scenarios drive the real CLI on the executable BDD harness.
+
 ### Added (a missing checker blocks the work and runs from any folder, ADR-0096)
 
 - **Fail-closed checker runner (#183).** `always-on/run-check.mjs` is a dependency-free front door for running

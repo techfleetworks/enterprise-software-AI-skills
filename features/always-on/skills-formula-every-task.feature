@@ -22,3 +22,22 @@ Feature: Every task runs the full enterprise-skills formula, with no reminder
       When the agent tries to load it
       Then the task does not continue
       And the operator is told which skill is missing and the command that installs it
+
+  Rule: Step 8, receipt. One grounded entry per task covers every skill
+
+    @audience:agent @usecase:receipt-files-in-change @category:negative @quality:reliability @severity:high
+    Scenario: An "applied" entry that points at a file outside the change is refused
+      Source: each applied entry must point "at files really in the change" (upstream-contributor-process.md).
+      Given the receipt says "pattern-selector" was applied in "docs/old_record.md"
+      And that file did not change in this task
+      When the receipt check runs with the list of changed files
+      Then it fails
+      And the turn does not end
+
+    @audience:agent @usecase:receipt-matches-selection @category:negative @quality:functional @severity:high
+    Scenario: The receipt must match the selection
+      Given the selection marks 6 skills "required" or "applies"
+      And the receipt marks only 5 of them "applied"
+      When the receipt check runs
+      Then it fails
+      And the missing skill is named

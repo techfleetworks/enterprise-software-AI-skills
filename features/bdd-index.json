@@ -22,6 +22,61 @@
     "status": "covered"
   },
   {
+    "feature": "always-on/skills-apply-every-task.feature",
+    "scenario": "A receipt copied from an earlier build is refused",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "stale-receipt-refused",
+    "category": "negative",
+    "quality": "reliability",
+    "severity": "critical",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-apply-every-task.feature",
+    "scenario": "A receipt that marks a skill applied without quoting its real text is refused",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "receipt-quote-must-be-verbatim",
+    "category": "negative",
+    "quality": "functional",
+    "severity": "critical",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-apply-every-task.feature",
+    "scenario": "A task that changed 400 files is checked in full, not sampled",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "large-change-fully-checked",
+    "category": "empty-overflow",
+    "quality": "reliability",
+    "severity": "medium",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-apply-every-task.feature",
+    "scenario": "An empty receipt file does not count as a receipt",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "empty-receipt-refused",
+    "category": "empty-overflow",
+    "quality": "reliability",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-apply-every-task.feature",
+    "scenario": "Two sessions working in the same folder keep separate receipts",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "parallel-sessions-separate-receipts",
+    "category": "concurrency",
+    "quality": "reliability",
+    "severity": "medium",
+    "status": "covered"
+  },
+  {
     "feature": "always-on/skills-formula-every-task.feature",
     "scenario": "A selected skill that cannot be loaded blocks the task",
     "domain": "always-on",
@@ -29,6 +84,28 @@
     "usecase": "skill-cannot-load",
     "category": "error",
     "quality": "reliability",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "An \"applied\" entry that points at a file outside the change is refused",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "receipt-files-in-change",
+    "category": "negative",
+    "quality": "reliability",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "The receipt must match the selection",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "receipt-matches-selection",
+    "category": "negative",
+    "quality": "functional",
     "severity": "high",
     "status": "covered"
   },

@@ -6,7 +6,14 @@ Generated from the feature files by `bdd-index-generate.mjs` - do not edit by ha
 |---|---|---|---|---|---|---|---|---|
 | always-on/skills-apply-every-task.feature | A checker that runs past its time limit counts as a failure | always-on | agent | checker-timeout-fails-closed | timeout | reliability | medium | covered |
 | always-on/skills-apply-every-task.feature | A missing checker blocks the finish instead of being skipped | always-on | agent | checker-missing-fails-closed | error | reliability | high | covered |
+| always-on/skills-apply-every-task.feature | A receipt copied from an earlier build is refused | always-on | agent | stale-receipt-refused | negative | reliability | critical | covered |
+| always-on/skills-apply-every-task.feature | A receipt that marks a skill applied without quoting its real text is refused | always-on | agent | receipt-quote-must-be-verbatim | negative | functional | critical | covered |
+| always-on/skills-apply-every-task.feature | A task that changed 400 files is checked in full, not sampled | always-on | agent | large-change-fully-checked | empty-overflow | reliability | medium | covered |
+| always-on/skills-apply-every-task.feature | An empty receipt file does not count as a receipt | always-on | agent | empty-receipt-refused | empty-overflow | reliability | high | covered |
+| always-on/skills-apply-every-task.feature | Two sessions working in the same folder keep separate receipts | always-on | agent | parallel-sessions-separate-receipts | concurrency | reliability | medium | covered |
 | always-on/skills-formula-every-task.feature | A selected skill that cannot be loaded blocks the task | always-on | agent | skill-cannot-load | error | reliability | high | covered |
+| always-on/skills-formula-every-task.feature | An "applied" entry that points at a file outside the change is refused | always-on | agent | receipt-files-in-change | negative | reliability | high | covered |
+| always-on/skills-formula-every-task.feature | The receipt must match the selection | always-on | agent | receipt-matches-selection | negative | functional | high | covered |
 | evidence/claims-match-evidence.feature | A before-and-after comparison that reads a missing field cannot report "0 new failures" | evidence | agent | regression-diff-must-be-able-to-fail | negative | reliability | critical | covered |
 | evidence/claims-match-evidence.feature | A claim that one approach is better than another needs a measurement | evidence | agent | comparison-claim-needs-source | negative | reliability | medium | covered |
 | evidence/claims-match-evidence.feature | A defect caused by two inputs together is tested with a covering array | evidence | agent | interaction-defects-use-covering-array | edge | security | medium | covered |
