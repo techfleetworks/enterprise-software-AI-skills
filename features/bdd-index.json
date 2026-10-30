@@ -56,12 +56,34 @@
   },
   {
     "feature": "always-on/skills-apply-every-task.feature",
+    "scenario": "After the context is compacted, every skill the next edit needs is in context, not only the ones used before",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "reload-after-compaction",
+    "category": "edge",
+    "quality": "functional",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-apply-every-task.feature",
     "scenario": "An empty receipt file does not count as a receipt",
     "domain": "always-on",
     "audience": "agent",
     "usecase": "empty-receipt-refused",
     "category": "empty-overflow",
     "quality": "reliability",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-apply-every-task.feature",
+    "scenario": "The agent cannot mark a required skill not-applicable on its own",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "required-skill-cannot-be-self-waived",
+    "category": "negative",
+    "quality": "functional",
     "severity": "high",
     "status": "covered"
   },
@@ -78,6 +100,28 @@
   },
   {
     "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "A change that matches no routing rule still gets a verdict for every skill",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "no-routed-files-still-selected",
+    "category": "empty-overflow",
+    "quality": "functional",
+    "severity": "medium",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "A one-line change still gets a full selection and a receipt",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "tiny-change-full-selection",
+    "category": "boundary",
+    "quality": "functional",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
     "scenario": "A selected skill that cannot be loaded blocks the task",
     "domain": "always-on",
     "audience": "agent",
@@ -85,6 +129,28 @@
     "category": "error",
     "quality": "reliability",
     "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "A skill left out of the selection fails the task",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "silent-skip-is-empty-cell",
+    "category": "negative",
+    "quality": "functional",
+    "severity": "critical",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "A skill marked \"applies\" but never loaded fails the task",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "applies-but-not-loaded",
+    "category": "negative",
+    "quality": "functional",
+    "severity": "critical",
     "status": "covered"
   },
   {
@@ -100,11 +166,66 @@
   },
   {
     "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "An edit tried before skill selection is held",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "edit-before-selection-held",
+    "category": "negative",
+    "quality": "functional",
+    "severity": "critical",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "Every skill in the directive gets a verdict",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "every-skill-gets-verdict",
+    "category": "happy",
+    "quality": "functional",
+    "severity": "critical",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "Every skill marked \"required\" or \"applies\" is loaded before planning",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "selected-skills-loaded",
+    "category": "happy",
+    "quality": "functional",
+    "severity": "critical",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
     "scenario": "The receipt must match the selection",
     "domain": "always-on",
     "audience": "agent",
     "usecase": "receipt-matches-selection",
     "category": "negative",
+    "quality": "functional",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "The router makes skills required from the files a task changes",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "router-adds-required-skills",
+    "category": "edge",
+    "quality": "functional",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "When the agent is unsure whether a skill applies, it applies it",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "unsure-means-apply",
+    "category": "edge",
     "quality": "functional",
     "severity": "high",
     "status": "covered"

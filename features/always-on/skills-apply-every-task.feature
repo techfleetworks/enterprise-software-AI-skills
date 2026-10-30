@@ -64,3 +64,20 @@ Feature: Skills apply themselves on every task, with no reminder
     When the agent tries to end its turn
     Then the turn does not end
     And the 1 uncovered file is named
+
+  @audience:agent @usecase:reload-after-compaction @category:edge @quality:functional @severity:high
+  Scenario: After the context is compacted, every skill the next edit needs is in context, not only the ones used before
+    Finding 1: after each of the 12 compactions the app re-attached only skills invoked earlier; skills never invoked stayed absent.
+    Given the agent's context was compacted
+    And "verifiable-quality-gates" was never invoked earlier in this session
+    When the agent's next edit changes a test file the router maps to "verifiable-quality-gates"
+    Then the text of "verifiable-quality-gates" is in the agent's context before the edit runs
+
+  @audience:agent @usecase:required-skill-cannot-be-self-waived @category:negative @quality:functional @severity:high
+  Scenario: The agent cannot mark a required skill not-applicable on its own
+    Finding 2: off-tree work let the agent mark the BDD skill not-applicable by itself.
+    Given the router requires "architectural-decision-records" because an ADR file changed
+    And the agent's receipt marks that skill "not-applicable"
+    When the agent tries to end its turn
+    Then the turn does not end
+    And the agent is told only the operator can waive a skill the router requires

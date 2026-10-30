@@ -62,21 +62,22 @@ export default function ({ Given, When, Then, And }) {
   Then(/^it fails$/, (world) => { assert.notEqual(world.res.status, 0, `the receipt check must fail\n${world.res.out}`); });
 
   // --- Scenario: the receipt must match the selection ---
+  // Shared with #175 (selected-skills-loaded): establish six required/applies skills, installed, over one changed
+  // file. The receipt-specific vs load-specific setup lives in each scenario's following steps.
   Given(/^the selection marks 6 skills "required" or "applies"$/, (world) => {
-    world.selection = ["demo-a", "demo-b", "demo-c", "demo-d", "demo-e", "demo-missing"];
+    world.selectionNames = ["demo-a", "demo-b", "demo-c", "demo-d", "demo-e", "demo-missing"];
+    for (const name of world.selectionNames) installSkill(world.skillsDir, name); // install all 6
     world.cf = changedFile(world.workDir, "a.txt", "work");
     world.changedList = [world.cf.path];
-    const applied = world.selection.slice(0, 5);
-    for (const name of applied) installSkill(world.skillsDir, name);
+  });
+  And(/^the receipt marks only 5 of them "applied"$/, (world) => {
+    const applied = world.selectionNames.slice(0, 5);
+    world.missingSkill = world.selectionNames[5]; // the 6th is absent from the receipt; the check must name it
+    world.selection = world.selectionNames; // --selection requires all 6
     world.entry = {
       task_id: "t-sel", changed_files: [world.cf],
       skills: applied.map((name) => ({ name, verdict: "applied", heading: "the-core-rule", quote: QUOTE, files: [world.cf.path] })),
     };
-    world.missingSkill = "demo-missing";
-  });
-  And(/^the receipt marks only 5 of them "applied"$/, (world) => {
-    // the 6th selected skill (demo-missing) is absent from the receipt entirely; the check must name it
-    assert.equal(world.entry.skills.length, 5);
   });
   When(/^the receipt check runs$/, (world) => { runReceiptCheck(world); });
   And(/^the missing skill is named$/, (world) => {
