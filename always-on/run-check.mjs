@@ -33,7 +33,7 @@
  *
  * Dependency-free; Node >= 20; no shell (Windows exec-form safe). Matches scripts/compare-gate-runs.mjs.
  */
-import { existsSync, statSync } from "node:fs";
+import { statSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { dirname, join, resolve, isAbsolute } from "node:path";
@@ -130,6 +130,7 @@ if (override) {
 }
 
 const isDir = (p) => { try { return statSync(p).isDirectory(); } catch { return false; } };
+const isFile = (p) => { try { return statSync(p).isFile(); } catch { return false; } };
 
 // Where the skill folder was found (for a precise "checker missing" message) vs not installed at all.
 const skillRootsFound = roots.filter((r) => isDir(join(r, skill)));
@@ -144,7 +145,7 @@ if (skillRootsFound.length === 0) {
 
 // The checker path under each root where the skill exists; take the first that actually has the file.
 const candidatePaths = skillRootsFound.map((r) => join(r, skill, "scripts", script));
-const resolvedPath = candidatePaths.find((p) => existsSync(p) && statSync(p).isFile());
+const resolvedPath = candidatePaths.find((p) => isFile(p)); // wrapped: a TOCTOU removal blocks cleanly, never throws
 if (!resolvedPath) {
   block(
     `checker "${script}" for skill "${skill}" was not found. Expected it at: ${candidatePaths.join(", ")}. ` +
@@ -167,12 +168,14 @@ if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) block(`--timeout-ms must be a
 // Choose the interpreter by extension. Each is spawned as a real executable with an args array and NO shell,
 // so nothing in the path or the pass-through args is ever interpreted by a shell.
 const runner = resolvedPath.endsWith(".sh") ? "bash" : process.execPath; // .mjs/.js run on this same Node
-const runnerArgs = resolvedPath.endsWith(".sh") ? [resolvedPath, ...passThrough] : [resolvedPath, ...passThrough];
+const runnerArgs = [resolvedPath, ...passThrough];
 
+const MAX_OUTPUT = 10 * 1024 * 1024; // 10 MB: a generous ceiling so a verbose but passing checker is not blocked.
 const res = spawnSync(runner, runnerArgs, {
   timeout: timeoutMs,
   encoding: "utf8",
   shell: false,
+  maxBuffer: MAX_OUTPUT,
   // Keep the checker's own view of where it runs; it resolves its own inputs.
 });
 
@@ -184,6 +187,14 @@ if (res.error && res.error.code === "ETIMEDOUT") {
     `checker ${resolvedPath} did not finish within ${timeoutMs} ms and was stopped. ` +
       `A checker that runs past its time limit is reported as a TIMEOUT, not a pass. ` +
       `Raise the limit with --timeout-ms only if the checker is genuinely slow, then rerun.`,
+  );
+}
+// Too much output: Node aborts the spawn with ENOBUFS. The run was truncated, so we cannot trust it; fail
+// closed with a cause that is not "could not start" (the checker did start).
+if (res.error && res.error.code === "ENOBUFS") {
+  block(
+    `checker ${resolvedPath} produced more than ${MAX_OUTPUT} bytes of output and was stopped; a run that cannot ` +
+      `be read in full is a BLOCK, not a pass. Make the checker quieter, or raise the limit and rerun.`,
   );
 }
 // Any other spawn error means the checker could not start (e.g. bash or node missing on PATH): fail closed.
@@ -209,10 +220,19 @@ if (res.status === 0) {
   process.exit(0);
 }
 
-// A non-zero, non-timeout exit: the checker itself failed. Surface it as exit 1 (distinct from a fail-closed
-// block). It is still a real failure the agent must not paper over, but the checker spoke for itself.
+// Killed by a signal we did not set (our own timeout is handled above): an unexplained kill, so fail closed
+// rather than read it as a failure the checker chose to report.
+if (res.status === null) {
+  block(
+    `checker ${resolvedPath} was killed by signal ${res.signal} before it exited; an unexplained kill is a ` +
+      `BLOCK, not a pass.`,
+  );
+}
+
+// A non-zero exit: the checker itself failed. Surface it as exit 1 (distinct from a fail-closed block). It is
+// still a real failure the agent must not paper over, but the checker spoke for itself.
 console.error(
-  `[run-check] FAIL - ${skill}/${script} exited ${res.status === null ? `signal ${res.signal}` : res.status} ` +
-    `(${resolvedPath}). The checker reported a problem above; fix it, do not work around it.`,
+  `[run-check] FAIL - ${skill}/${script} exited ${res.status} (${resolvedPath}). ` +
+    `The checker reported a problem above; fix it, do not work around it.`,
 );
-process.exit(res.status === null ? 2 : 1); // killed by a signal (not our timeout) is unexplained: fail closed
+process.exit(1);

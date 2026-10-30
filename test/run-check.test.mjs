@@ -23,7 +23,10 @@ const REAL_SKILLS = join(REPO, ".claude", "skills");
 function run(args, cwd) {
   const dir = cwd || mkdtempSync(join(tmpdir(), "run-check-cwd-"));
   try {
-    const out = execFileSync(process.execPath, [RUNNER, ...args], { cwd: dir, stdio: "pipe", encoding: "utf8" });
+    // 20 MB buffer so this harness can capture a verbose checker's forwarded output (the runner itself allows 10 MB).
+    const out = execFileSync(process.execPath, [RUNNER, ...args], {
+      cwd: dir, stdio: "pipe", encoding: "utf8", maxBuffer: 20 * 1024 * 1024,
+    });
     return { code: 0, out };
   } catch (e) {
     return { code: e.status ?? 1, out: (e.stdout || "") + (e.stderr || "") };
@@ -83,6 +86,27 @@ test("run: a checker that TIMES OUT BLOCKS as a timeout (exit 2), never a pass -
   const r = run(["run", skill, script, "--skills-dir", skillsDir, "--timeout-ms", "500"]);
   assert.equal(r.code, 2, r.out);
   assert.match(r.out, /TIMEOUT|did not finish/);
+});
+
+test("run: a checker killed by a signal does not read as a pass (fail closed) - discriminating", () => {
+  // On POSIX the child's status is null (signalled) -> the runner's unexplained-kill block (exit 2); on Windows
+  // a killed child reports a non-zero status -> checker-failed (exit 1). Either way it must never pass (exit 0),
+  // which a no-op run-check would. The strong exit-2 assertion runs where the null-status branch actually fires.
+  const { skillsDir, skill, script } = fakeSkills({ body: "process.kill(process.pid, 'SIGKILL')" });
+  const r = run(["run", skill, script, "--skills-dir", skillsDir]);
+  assert.notEqual(r.code, 0, `a killed checker must not read as a pass\n${r.out}`);
+  if (process.platform !== "win32") {
+    assert.equal(r.code, 2, `on POSIX an unexplained signal-kill is a fail-closed block\n${r.out}`);
+    assert.match(r.out, /killed by signal/);
+  }
+});
+
+test("run: a verbose but PASSING checker over the old 1 MB default still passes (maxBuffer raised)", () => {
+  // Before the fix, Node's 1 MB spawn default would abort with ENOBUFS and the runner would block a passing
+  // checker; the 10 MB ceiling lets ~1.2 MB of output through, so a verbose pass stays a pass (exit 0).
+  const { skillsDir, skill, script } = fakeSkills({ body: "process.stdout.write('x'.repeat(1200000)); process.exit(0)" });
+  const r = run(["run", skill, script, "--skills-dir", skillsDir]);
+  assert.equal(r.code, 0, `a verbose passing checker must not be false-blocked\n${r.out.slice(0, 200)}`);
 });
 
 test("unsafe skill name with a path separator or .. BLOCKS before any filesystem access (exit 2)", () => {
