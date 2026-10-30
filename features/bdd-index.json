@@ -23,6 +23,17 @@
   },
   {
     "feature": "always-on/skills-apply-every-task.feature",
+    "scenario": "A read-only task ends with no receipt required",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "read-only-task-not-blocked",
+    "category": "happy",
+    "quality": "functional",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-apply-every-task.feature",
     "scenario": "A receipt copied from an earlier build is refused",
     "domain": "always-on",
     "audience": "agent",
@@ -56,6 +67,17 @@
   },
   {
     "feature": "always-on/skills-apply-every-task.feature",
+    "scenario": "A task that changed files cannot end without a receipt, and the agent writes it unprompted",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "finish-blocked-without-receipt",
+    "category": "negative",
+    "quality": "reliability",
+    "severity": "critical",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-apply-every-task.feature",
     "scenario": "After the context is compacted, every skill the next edit needs is in context, not only the ones used before",
     "domain": "always-on",
     "audience": "agent",
@@ -78,12 +100,45 @@
   },
   {
     "feature": "always-on/skills-apply-every-task.feature",
+    "scenario": "Repeated blocks escalate to the operator instead of looping",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "repeated-block-escalates-once",
+    "category": "adverse",
+    "quality": "reliability",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-apply-every-task.feature",
     "scenario": "The agent cannot mark a required skill not-applicable on its own",
     "domain": "always-on",
     "audience": "agent",
     "usecase": "required-skill-cannot-be-self-waived",
     "category": "negative",
     "quality": "functional",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-apply-every-task.feature",
+    "scenario": "The proof is already attached when the operator asks for it",
+    "domain": "always-on",
+    "audience": "operator",
+    "usecase": "proof-already-attached",
+    "category": "happy",
+    "quality": "functional",
+    "severity": "medium",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-apply-every-task.feature",
+    "scenario": "The receipt is enforced even in a folder that is not a git repository",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "off-tree-folder-enforced",
+    "category": "edge",
+    "quality": "reliability",
     "severity": "high",
     "status": "covered"
   },
@@ -107,6 +162,17 @@
     "category": "happy",
     "quality": "functional",
     "severity": "critical",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "A caught mistake is encoded as a tested negative-example rule",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "caught-mistake-encoded",
+    "category": "happy",
+    "quality": "functional",
+    "severity": "high",
     "status": "covered"
   },
   {
@@ -166,6 +232,17 @@
   },
   {
     "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "A coverage number does not stand in for an exercised branch",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "coverage-not-the-target",
+    "category": "edge",
+    "quality": "reliability",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
     "scenario": "A feature or refactor has a complete pattern-decision record before code changes",
     "domain": "always-on",
     "audience": "agent",
@@ -177,12 +254,34 @@
   },
   {
     "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "A fixed mistake with no rule and no recorded reason holds the turn",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "caught-mistake-not-encoded",
+    "category": "negative",
+    "quality": "functional",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
     "scenario": "A named threat with no control fails the task",
     "domain": "always-on",
     "audience": "agent",
     "usecase": "threat-without-control",
     "category": "negative",
     "quality": "security",
+    "severity": "critical",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "A new gate with no discriminating test is held",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "new-check-discriminates",
+    "category": "negative",
+    "quality": "reliability",
     "severity": "critical",
     "status": "covered"
   },
@@ -221,6 +320,28 @@
   },
   {
     "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "A review matrix that skips a changed file is not a PASS",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "matrix-missing-file",
+    "category": "negative",
+    "quality": "functional",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "A review that stops before a verdict is not complete",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "review-timeout",
+    "category": "timeout",
+    "quality": "reliability",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
     "scenario": "A security control with no @security scenario is not counted as done",
     "domain": "always-on",
     "audience": "agent",
@@ -239,6 +360,17 @@
     "category": "error",
     "quality": "reliability",
     "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "A self-review is not counted as a fresh-context review",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "self-review-not-counted",
+    "category": "negative",
+    "quality": "functional",
+    "severity": "critical",
     "status": "covered"
   },
   {
@@ -269,6 +401,17 @@
     "domain": "always-on",
     "audience": "agent",
     "usecase": "applies-but-not-loaded",
+    "category": "negative",
+    "quality": "functional",
+    "severity": "critical",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "A source change with no test is held",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "source-change-needs-test",
     "category": "negative",
     "quality": "functional",
     "severity": "critical",
@@ -342,6 +485,28 @@
   },
   {
     "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "An untagged claim holds the turn",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "untagged-claim-blocks",
+    "category": "negative",
+    "quality": "functional",
+    "severity": "critical",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "Each checker's command, exit code and output hash are recorded",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "checker-results-recorded",
+    "category": "happy",
+    "quality": "reliability",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
     "scenario": "Every skill in the directive gets a verdict",
     "domain": "always-on",
     "audience": "agent",
@@ -364,6 +529,28 @@
   },
   {
     "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "The final report leads with an evidence ledger and passes claim-lint",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "ledger-and-claim-lint",
+    "category": "happy",
+    "quality": "functional",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "The formula runs end to end with no operator reminder",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "formula-runs-without-prompt",
+    "category": "happy",
+    "quality": "functional",
+    "severity": "critical",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
     "scenario": "The receipt must match the selection",
     "domain": "always-on",
     "audience": "agent",
@@ -375,11 +562,55 @@
   },
   {
     "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "The review runs in fresh context and covers every file against every question",
+    "domain": "always-on",
+    "audience": "subagent",
+    "usecase": "review-in-fresh-context",
+    "category": "happy",
+    "quality": "functional",
+    "severity": "critical",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "The review step completes only when no HIGH or MEDIUM finding is open",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "fix-until-clean",
+    "category": "happy",
+    "quality": "functional",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
     "scenario": "The router makes skills required from the files a task changes",
     "domain": "always-on",
     "audience": "agent",
     "usecase": "router-adds-required-skills",
     "category": "edge",
+    "quality": "functional",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "The task cannot end before the fresh-context review",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "done-before-review-refused",
+    "category": "negative",
+    "quality": "functional",
+    "severity": "critical",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "Two tasks keep their proof separate",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "two-tasks-kept-apart",
+    "category": "concurrency",
     "quality": "functional",
     "severity": "high",
     "status": "covered"

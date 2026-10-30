@@ -247,3 +247,133 @@ Feature: Every task runs the full enterprise-skills formula, with no reminder
       When the receipt check runs
       Then it fails
       And the missing skill is named
+
+  Rule: Step 9, finish. The turn cannot end until every step left its proof, in order
+
+    @audience:agent @usecase:formula-runs-without-prompt @category:happy @quality:functional @severity:critical
+    Scenario: The formula runs end to end with no operator reminder
+      Given the operator asks "fix the date parsing bug in date_utils.py" and says nothing about skills
+      When the agent finishes the task
+      Then the task record shows these steps in this order: select, load, plan, build, prove, review, encode, receipt
+      And each step names the file or command output that proves it
+      And the operator never had to remind the agent of a step
+
+    @audience:agent @usecase:done-before-review-refused @category:negative @quality:functional @severity:critical
+    Scenario: The task cannot end before the fresh-context review
+      Given the select, load, plan, build and prove steps are complete
+      And no fresh-context review of this change exists
+      When the agent tries to end the task
+      Then the turn does not end
+      And the agent is told the review step is missing
+
+    @audience:agent @usecase:two-tasks-kept-apart @category:concurrency @quality:functional @severity:high
+    Scenario: Two tasks keep their proof separate
+      Given the agent is at the build step of task A
+      When the operator asks for an unrelated task B
+      Then task B gets its own selection, its own steps and its own receipt
+      And no proof from task A is counted for task B
+
+  Rule: Step 4, build. A changed behavior moves with a test that can fail
+
+    @audience:agent @usecase:source-change-needs-test @category:negative @quality:functional @severity:critical
+    Scenario: A source change with no test is held
+      Given the task changes a source file
+      And no test file changed in the same task
+      When the finish check runs
+      Then the turn does not end
+      And the agent is told to add or update the test for the changed behavior
+
+    @audience:agent @usecase:new-check-discriminates @category:negative @quality:reliability @severity:critical
+    Scenario: A new gate with no discriminating test is held
+      Given the task adds a gate script
+      And no committed test fails when the gate is replaced by a no-op
+      When the finish check runs
+      Then the turn does not end
+
+    @audience:agent @usecase:coverage-not-the-target @category:edge @quality:reliability @severity:high
+    Scenario: A coverage number does not stand in for an exercised branch
+      Given line coverage reached the target
+      And no test exercises the changed branch
+      When the build step is checked
+      Then the step is not complete
+      And the uncovered branch is named
+
+  Rule: Step 5, prove. The final report leads with evidence and passes claim-lint
+
+    @audience:agent @usecase:ledger-and-claim-lint @category:happy @quality:functional @severity:high
+    Scenario: The final report leads with an evidence ledger and passes claim-lint
+      Given the agent drafts its final report for the task
+      When the prove step runs
+      Then the report leads with an evidence ledger
+      And "claim-lint --strict" exits 0 on the report
+
+    @audience:agent @usecase:untagged-claim-blocks @category:negative @quality:functional @severity:critical
+    Scenario: An untagged claim holds the turn
+      Given the final report says "the merge is clean" with no evidence state and no source
+      When "claim-lint --strict" runs
+      Then it exits non-zero
+      And the turn does not end until the claim is tagged or removed
+
+    @audience:agent @usecase:checker-results-recorded @category:happy @quality:reliability @severity:high
+    Scenario: Each checker's command, exit code and output hash are recorded
+      Given the selection applies ADR, BDD and quality-gate skills
+      When the prove step runs
+      Then the task record holds the command, exit code and output hash of the ADR checker, the Gherkin and tag checkers and the discrimination test
+
+  Rule: Step 6, review. A fresh-context review covers every file against every question until clean
+
+    @audience:subagent @usecase:review-in-fresh-context @category:happy @quality:functional @severity:critical
+    Scenario: The review runs in fresh context and covers every file against every question
+      Given the change touches 4 files
+      When the review subagent runs
+      Then it did not see the author's reasoning
+      And its matrix has a verdict and a source for each of the 4 files against each question
+      And its findings are tagged by question, severity and file
+      And the review is appended to the review log
+
+    @audience:agent @usecase:self-review-not-counted @category:negative @quality:functional @severity:critical
+    Scenario: A self-review is not counted as a fresh-context review
+      Given the agent reviewed its own change without starting a fresh-context reviewer
+      When the finish check runs
+      Then the review step is not complete
+      And the turn does not end
+
+    @audience:agent @usecase:matrix-missing-file @category:negative @quality:functional @severity:high
+    Scenario: A review matrix that skips a changed file is not a PASS
+      Given the change touches 4 files
+      And the review matrix covers 3 of them
+      When the review result is recorded
+      Then it is not a PASS
+      And the missing file is named
+
+    @audience:agent @usecase:fix-until-clean @category:happy @quality:functional @severity:high
+    Scenario: The review step completes only when no HIGH or MEDIUM finding is open
+      Given the first review returned 1 HIGH and 2 MEDIUM findings
+      When the agent fixes them
+      Then a new fresh-context review runs on the fixed change
+      And the review step is complete only when no HIGH or MEDIUM finding is open or each open one has an operator waiver
+
+    @audience:agent @usecase:review-timeout @category:timeout @quality:reliability @severity:high
+    Scenario: A review that stops before a verdict is not complete
+      Given the review subagent stops before it records a verdict
+      When the finish check runs
+      Then the review step is not complete
+      And the agent starts a new review
+
+  Rule: Step 7, encode. A caught mistake becomes a tested rule
+
+    @audience:agent @usecase:caught-mistake-encoded @category:happy @quality:functional @severity:high
+    Scenario: A caught mistake is encoded as a tested negative-example rule
+      Given the review caught code that assumed the wrong module owns a behavior
+      When the agent closes that finding
+      Then a rule exists as a specific negative example at the right level
+      And it is wired into the architecture gate if it can be checked by a script
+      And it was tested by reverting the fix, clearing context and re-running the task
+
+    @audience:agent @usecase:caught-mistake-not-encoded @category:negative @quality:functional @severity:high
+    Scenario: A fixed mistake with no rule and no recorded reason holds the turn
+      Given a finding was fixed
+      And no rule or recorded reason for not writing one exists
+      When the finish check runs
+      Then the turn does not end
+      And the finding is named

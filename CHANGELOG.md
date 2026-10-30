@@ -13,6 +13,28 @@ begins landing a second batch, the ten issues (#174 to #183) from an agent-sessi
 held to include; the first of those (#178) adds build-comparison rigor and the executable BDD harness they all
 ride on.
 
+### Added (the finish-check engine, ADR-0100, issue #174 PR-A)
+
+- **The finish-check (#174).** `always-on/finish-check.mjs`, the engine of a `Stop`/`SubagentStop` hook, holds a
+  turn until the skills formula has left its proof for a file-changing task. It derives the changed files from the
+  transcript (edit-tool `file_path`s, read up to a snapshotted size so a growing transcript cannot race it); a
+  read-only task ends at once. For a task that changed files it reads the task record named by `ESK_TASK_RECORD`
+  and holds the turn on any unmet item across six groups: order (the eight steps ran in order), build (a test
+  moved with a source change, every new check ships a test that fails on a no-op, a covered-target number with an
+  uncovered changed branch is not a pass), prove (an evidence ledger, `claim-lint --strict` exit 0, each checker's
+  command/exit/output hash recorded), review (a fresh-context review covering every changed file against the four
+  questions, logged, not timed out, no open HIGH/MEDIUM/critical that is not fixed or operator-waived), encode
+  (each fixed mistake became a rule or carries a recorded reason), and the per-task receipt (#177).
+- **It fails closed.** A malformed payload, an unreadable or non-JSON record, an uncaught exception, and a stdin
+  error all route to BLOCK (exit 2), because a Stop hook that exits any other way lets the turn end. A loop cap
+  (`ESK_BLOCK_CAP`, default 3) escalates to the operator with one plain message instead of blocking forever, and
+  with `ESK_TASK_RECORD` unset the engine is a no-op notice so an un-bootstrapped machine is never broken.
+- **Proven and recorded.** `test/finish-check.test.mjs` (17 discriminating tests; a no-op finish-check that always
+  exits 0 flips every block case) and 21 scenarios (one `@audience:subagent`) that drive the real engine on the
+  harness. The record format is documented in `always-on/finish-check-records.md`. The installer wiring (esk-init
+  registration, hook-file protection, the SessionStart self-test and install canary, operator-only waivers, the
+  one-line summary) and its remaining eight scenarios are issue #174 PR-B.
+
 ### Added (step-3 planning-record validators, ADR-0099, issue #175 PR-B)
 
 - **The plan step (#175).** `check-task-plan.mjs` gains a `plan` mode: before a source edit, every required/applies
