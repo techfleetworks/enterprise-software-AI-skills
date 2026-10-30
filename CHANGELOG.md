@@ -13,6 +13,23 @@ begins landing a second batch, the ten issues (#174 to #183) from an agent-sessi
 held to include; the first of those (#178) adds build-comparison rigor and the executable BDD harness they all
 ride on.
 
+### Added (step-3 planning-record validators, ADR-0099, issue #175 PR-B)
+
+- **The plan step (#175).** `check-task-plan.mjs` gains a `plan` mode: before a source edit, every required/applies
+  skill that defines a planning record must have it, complete. One declarative schema per record type, from each
+  skill's Definition of done: the pattern-decision's fourteen parts; the threat model's surface and each threat
+  mapped to a category, an OWASP cheat sheet, a control, and a `@security` scenario (a control with no scenario is
+  not-assessed, never a pass); the BDD use-case by audience matrix; the ADR; the data-lifecycle record whose
+  deletion claim must be `observed`/`proven`, not inferred; the reversibility record (no "safe to ship" below
+  observed); the service-readiness record; the three UI verdicts; and the architecture-standards record whose
+  load/resilience claims point to a measurement or a test. The ADR is pre-checked structurally (sections, no
+  placeholder, no dead link to a cited file); `check_adr` stays the authoritative ADR gate, so the plan check and
+  the BDD run stay off bash.
+- **Wired into the edit-gate (#175).** Behind `ESK_PLANS`, a source edit is held until the selected skills' plans
+  exist and are complete. `test/check-task-plan.test.mjs` gains eleven discriminating plan tests, the edit-gate
+  test a step-3 deny, and sixteen scenarios (one `@audience:operator`) drive the real validator on the harness.
+  This completes issue #175 (PR-A was the select/load gate).
+
 ### Added (an edit-time select/load gate, ADR-0098, issue #175 PR-A)
 
 - **The edit-gate (#175).** `always-on/edit-gate.mjs`, a PreToolUse hook on `Write|Edit|MultiEdit|NotebookEdit|Bash`,

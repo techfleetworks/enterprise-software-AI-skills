@@ -93,6 +93,19 @@ test("a valid selection with ESK_LOADED unset allows with a load-not-wired notic
   assert.match(r.out, /load-state is not wired/);
 });
 
+test("step 3: an edit is DENIED when a required planning record is missing (exit 2)", () => {
+  const sb = sandbox();
+  const selPath = join(sb.base, "selection.json");
+  writeFileSync(selPath, JSON.stringify(sb.sel));
+  const loadedPath = join(sb.base, "loaded.json");
+  writeFileSync(loadedPath, JSON.stringify(sb.hashes));
+  const plansPath = join(sb.base, "plans.json");
+  writeFileSync(plansPath, JSON.stringify({})); // no planning records at all
+  const r = runGate(editPayload("src/feature.ts"), { ESK_SELECTION: selPath, ESK_LOADED: loadedPath, ESK_PLANS: plansPath, ESK_SKILLS_DIR: sb.skillsDir });
+  assert.equal(r.code, 2, r.out);
+  assert.match(r.out, /plan step not satisfied|planning record/);
+});
+
 test("a malformed payload fails closed (deny, exit 2)", () => {
   try {
     execFileSync(process.execPath, [GATE], { encoding: "utf8", input: "{ not json", env: { ...process.env, ESK_SELECTION: "x" } });
