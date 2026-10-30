@@ -13,6 +13,28 @@ begins landing a second batch, the ten issues (#174 to #183) from an agent-sessi
 held to include; the first of those (#178) adds build-comparison rigor and the executable BDD harness they all
 ride on.
 
+### Added (an edit-time select/load gate, ADR-0098, issue #175 PR-A)
+
+- **The edit-gate (#175).** `always-on/edit-gate.mjs`, a PreToolUse hook on `Write|Edit|MultiEdit|NotebookEdit|Bash`,
+  holds a source edit until the task has run the first steps of the skills formula: a selection record exists and
+  every required/applies skill was loaded this session. It denies the edit (exit 2) with what to do if either
+  holds, exempts the record files, and is a no-op where it is not wired so it never breaks unrelated work.
+- **Selection and load validators (#175).** `always-on/check-task-plan.mjs` (`selection`, `loaded`) is the
+  testable core: `selection` requires every directive skill to carry a verdict (required/applies/not-applicable)
+  with a reason, and refuses a router-required skill marked not-applicable without an operator waiver (a missing
+  skill is an empty cell); `loaded` requires every required/applies skill's CURRENT text to have been delivered
+  this session, keyed by the skill file's sha256 (a stale hash does not count).
+- **A versioned router (#175).** `always-on/routing-rules.config.json` + `routing-lib.mjs` map a changed/edited
+  path to the skills it makes required (each rule has its own test), shipped for personal installs, distinct from
+  the artifact routing map under `judge-arch/assets/example`.
+- **The load-state lifecycle (#175).** `record-load.mjs` (PostToolUse on the Skill tool) records a genuine load,
+  so "loaded" means the text was actually read; `reload-skills.mjs` (SessionStart, matcher `compact`) clears the
+  selected skills from the load-state and names them to re-load after a compaction, so the edit-gate re-holds until
+  each is genuinely re-read (a real SKILL.md exceeds the additionalContext cap, so bodies cannot be re-inlined and
+  must not be marked loaded without delivery). Schemas in `always-on/edit-gate-records.md`; the settings snippet
+  wires all three hooks. Eleven scenarios
+  drive the real scripts on the harness; four discriminating test files back them. The plan step (step 3) is PR-B.
+
 ### Added (per-task receipts outside a repo, tied to file hashes, ADR-0097)
 
 - **Per-task skill receipts (#177).** A new per-task receipt system so work done in a folder that is not a git

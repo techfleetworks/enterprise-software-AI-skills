@@ -3,6 +3,7 @@
   "//requires": "Node.js on PATH, and a Claude Code version that supports exec-form hook \"args\" (if yours does not, the command will not run; use the confirm-it-works check and the PowerShell fallback below). Check: `node --version` and `claude --version`.",
   "//personal": "For a personal (all-projects) install there is no project-dir placeholder, so use an ABSOLUTE path to the emitter in args[0], e.g. \"C:/Users/you/.claude/emit-directive.mjs\" or \"/home/you/.claude/emit-directive.mjs\". For a project install, keep \"${CLAUDE_PROJECT_DIR}/.claude/emit-directive.mjs\" (Claude Code substitutes ${CLAUDE_PROJECT_DIR} itself).",
   "//windows-fallback": "If exec form does not run on your machine (Windows setups are the usual culprit), replace an entry with the PowerShell shell form (shell and args cannot be combined): { \"type\": \"command\", \"shell\": \"powershell\", \"timeout\": 10, \"command\": \"node \\\"${CLAUDE_PROJECT_DIR}/.claude/emit-directive.mjs\\\" SessionStart\" }. Then confirm a fresh session actually receives the directive (see always-on/README.md, 'Confirm it works').",
+  "//edit-gate": "The edit-time select/load gate (ADR-0098, issue #175). PreToolUse on the file-editing tools (Write|Edit|MultiEdit|NotebookEdit) HOLDS a source edit until the task has a selection record and every required/applies skill was loaded this session; PostToolUse on Skill records a genuine load; SessionStart matcher 'compact' flags the selected skills to re-load after a compaction. The installer sets ESK_SELECTION (the task's selection record path), ESK_LOADED (the load-state path), and ESK_SKILLS_DIR per session; these paths MUST live outside the work tree. Where ESK_SELECTION is unset the gate is a no-op so it never breaks unrelated work. Bash is intentionally NOT matched here: gating all Bash would deny read-only commands (ls, git status) before a selection can be written, and files written through Bash are backstopped by the Stop finish-check (issue #174).",
   "hooks": {
     "SessionStart": [
       {
@@ -13,6 +14,19 @@
             "args": ["${CLAUDE_PROJECT_DIR}/.claude/emit-directive.mjs", "SessionStart"],
             "timeout": 10,
             "statusMessage": "Loading enterprise always-on skills directive"
+          }
+        ]
+      },
+      {
+        "//": "After a COMPACTION (main-thread compaction fires SessionStart with source=compact), the selected skills' bodies are gone from context. This clears them from the load-state and names them so they are re-loaded with the Skill tool before the next edit (the edit-gate then holds until they are). It does NOT inline the bodies: a single real SKILL.md exceeds the 10,000-char additionalContext cap, so inlining would deliver nothing yet mark them loaded. Needs ESK_SELECTION (+ ESK_SKILLS_DIR, ESK_LOADED) set per session by the installer.",
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/reload-skills.mjs"],
+            "timeout": 10,
+            "statusMessage": "Flagging selected skills to re-load after compaction"
           }
         ]
       }
@@ -26,6 +40,34 @@
             "args": ["${CLAUDE_PROJECT_DIR}/.claude/emit-directive.mjs", "SubagentStart"],
             "timeout": 10,
             "statusMessage": "Loading enterprise always-on skills directive"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/edit-gate.mjs"],
+            "timeout": 15,
+            "statusMessage": "Checking skill selection and load before edit"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/record-load.mjs"],
+            "timeout": 10,
+            "statusMessage": "Recording skill load"
           }
         ]
       }

@@ -1,0 +1,48 @@
+{
+  "_comment": "Versioned personal-install routing map (ADR-0098, issue #175). Maps a changed or edited file PATH to the skills the edit-gate marks REQUIRED for the task. A skill the router requires cannot be marked not-applicable without an operator waiver. This is the shipped default for a per-machine install; a repo may override it with its own. Globs: ** spans directories, * and ? do not cross '/'. Tune to your stack. The example routing map under judge-arch/assets/example maps to ARTIFACTS for the PR routing gate; this one maps to SKILLS for the edit-time gate.",
+  "version": 1,
+  "rules": [
+    {
+      "id": "schema-or-migration",
+      "description": "A schema or migration is a decision, a deployment risk, and often touches stored (possibly personal) data.",
+      "when": ["**/migrations/**", "db/migrations/*.sql", "prisma/schema.prisma", "**/*.sql"],
+      "requires": ["architectural-decision-records", "release-deployment-safety", "compliance-data-lifecycle"]
+    },
+    {
+      "id": "auth-input-secrets",
+      "description": "Auth, sessions, access control, secrets, crypto, or anything handling untrusted input must be threat-modeled.",
+      "when": ["**/auth/**", "**/*session*", "**/*login*", "**/*permission*", "**/*password*", "**/*token*", "**/*secret*", "**/*crypto*"],
+      "requires": ["owasp-secure-coding-bdd"]
+    },
+    {
+      "id": "ui-surface",
+      "description": "A user-facing change must carry accessibility, cross-browser/device, and usability verdicts.",
+      "when": ["**/*.tsx", "**/*.jsx", "**/*.vue", "**/*.svelte", "src/components/**", "app/**/*.tsx", "**/*.css"],
+      "requires": ["universal-accessibility-wcag", "universal-browser-device-support", "usability-ux-universal-design"]
+    },
+    {
+      "id": "source-change",
+      "description": "Production source should not change without tests and enumerated behavior moving with it.",
+      "when": ["src/**/*.ts", "src/**/*.js", "lib/**/*.ts", "app/**/*.ts", "**/*.mjs", "**/*.py", "**/*.go", "**/*.rs", "**/*.java"],
+      "requires": ["comprehensive-test-strategy", "bdd-comprehensive-testing"]
+    },
+    {
+      "id": "service-endpoint",
+      "description": "A new service or endpoint must prove the team will know when it breaks.",
+      "when": ["**/routes/**", "**/api/**", "**/endpoints/**", "**/*.controller.*", "**/handlers/**"],
+      "requires": ["sre-operational-readiness"]
+    },
+    {
+      "id": "test-files",
+      "description": "A change to tests must prove the check it adds can actually detect, not just pass.",
+      "when": ["**/*.test.*", "**/*.spec.*", "test/**", "tests/**", "**/__tests__/**"],
+      "requires": ["verifiable-quality-gates", "comprehensive-test-strategy"]
+    },
+    {
+      "id": "adr-or-decision",
+      "description": "Editing an architecture decision record is itself an architectural decision.",
+      "when": ["docs/adr/**", "docs/decisions/**", "**/*.adr.md"],
+      "requires": ["architectural-decision-records"]
+    }
+  ]
+}
