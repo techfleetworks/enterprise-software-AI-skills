@@ -1,7 +1,10 @@
-// receipt-grounding - the one owner of skill-receipt grounding logic, shared by the PR-level gate
-// (check-skill-receipt.mjs) and the per-task gate (task-receipt.mjs), so there is a single definition of what
-// "grounded" means: a quote of at least 8 exact words that appears verbatim under a real heading of the cited
-// skill file. Extracting it keeps the two checkers from drifting apart (one way to do one thing).
+// receipt-grounding - the one owner of the skill-receipt grounding PRIMITIVES, shared by the PR-level gate
+// (check-skill-receipt.mjs) and the per-task gate (task-receipt.mjs): heading slugs, section-by-heading
+// extraction, whitespace-insensitive matching, and the >= 8 exact-words threshold. Sharing these keeps the two
+// checkers from drifting on the parts most likely to change. Each gate still COMPOSES them for its own shape:
+// the per-task gate matches one heading and one quote (quoteUnderHeading below); the PR gate concatenates
+// several cited sections and checks several quotes. So "grounded" is defined once at the primitive level, not
+// forced into a single composition that would not fit both.
 //
 // Dependency-free, offline. Pure functions over text; no filesystem or process access lives here.
 
@@ -38,9 +41,10 @@ export function sectionText(md, slug) {
   return lines.slice(start, end).join("\n");
 }
 
-// The high-level grounding check: does `quote` (>= MIN_QUOTE_WORDS words) appear verbatim under the heading
-// whose slug is `headingSlug` in `fileText`? Returns { ok: true } or { ok: false, reason }. This is the whole
-// "prove you read it" rule in one place, so both receipt checkers decide it the same way.
+// The composed grounding check for ONE heading and ONE quote: does `quote` (>= MIN_QUOTE_WORDS words) appear
+// verbatim under the heading whose slug is `headingSlug` in `fileText`? Returns { ok: true } or { ok: false,
+// reason }. The per-task gate uses this directly; the PR gate composes the same primitives differently (several
+// sections, several quotes), so the two share the primitives above rather than this single-heading composition.
 export function quoteUnderHeading(fileText, headingSlug, quote) {
   const slug = String(headingSlug).trim().toLowerCase();
   const section = sectionText(fileText, slug);

@@ -36,10 +36,12 @@ the hashes of the files the task changed, not off git.
 
 Ship a per-task receipt system under `.claude/skills/judge-arch/scripts/`, next to the PR receipt it mirrors:
 
-1. **A shared grounding module, `receipt-grounding.mjs`.** The pure logic of "grounded" (section-by-heading
-   extraction, whitespace-insensitive match, the >= 8 exact-words rule, `quoteUnderHeading`) is extracted here,
-   and `check-skill-receipt.mjs` is refactored to import it. One owner, so the PR gate and the per-task gate can
-   never drift on what a valid quote is. The PR gate's existing tests still pass unchanged.
+1. **A shared grounding module, `receipt-grounding.mjs`.** The grounding PRIMITIVES (section-by-heading
+   extraction, whitespace-insensitive match, the >= 8 exact-words threshold, and a single-heading
+   `quoteUnderHeading`) are extracted here, and `check-skill-receipt.mjs` is refactored to import them. One owner
+   for the primitives, so the two gates cannot drift on those; each still composes them for its own shape (the
+   per-task gate matches one heading and one quote, the PR gate several cited sections and several quotes). The
+   PR gate's existing tests still pass unchanged.
 2. **A per-task receipt schema (JSONL)** with `task_id`, `session_id`, `created_at`, `changed_files`
    (`[{path, sha256}]`), `skills` (`[{name, verdict, heading, quote, skill_file_sha256, files, waiver}]`), and
    `checkers`. Documented in `skill-application-receipt.md` section 11.
@@ -64,8 +66,13 @@ copy-the-grounding option is rejected because the repo's own rule is one way to 
   stale, copied, incomplete, or ungrounded, and the refusal blocks the task from ending. A copied or day-old
   receipt (the audit's failure) no longer passes, because its recorded hashes do not match the files this task
   changed.
-* The grounding logic has a single owner (`receipt-grounding.mjs`); the PR gate and the per-task gate stay in
-  step by construction.
+* The grounding primitives have a single owner (`receipt-grounding.mjs`); the two gates stay in step on those by
+  construction, each composing them for its own shape (single heading+quote vs several sections and quotes).
+* The per-task gate defends against path traversal in a receipt-supplied skill name two ways: it rejects a name
+  that is not a single safe component (no separators, no `.` or `..`) before the join, and it realpath-checks that
+  the resolved skill file stays inside the skills dir, matching the sibling PR gate. The changed-file list and the
+  selection are caller-supplied (no git diff outside a repo), so the hash-tie defends against copying, not against
+  an honest-but-incomplete list; without a selection the gate discloses that completeness was not checked.
 * Honest limits. A grounded receipt proves real quotes, the right files, and current hashes; it does not prove
   the work was good, so a human still reviews (the banner rule). The per-task `check` reports a refusal with
   exit 2; turning that into "the task cannot end" is the finish-check hook (issue #174), which must itself fail

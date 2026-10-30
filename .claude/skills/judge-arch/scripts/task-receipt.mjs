@@ -22,13 +22,17 @@
 //
 // Dependency-free (Node built-ins), offline. Reuses the grounding logic of check-skill-receipt via
 // receipt-grounding.mjs (one owner of "grounded").
-import { readFileSync, writeFileSync, appendFileSync, existsSync, statSync, mkdirSync } from "node:fs";
-import { resolve, join, dirname } from "node:path";
+import { readFileSync, writeFileSync, appendFileSync, existsSync, statSync, mkdirSync, realpathSync } from "node:fs";
+import { resolve, join, dirname, sep } from "node:path";
 import { homedir } from "node:os";
 import { createHash } from "node:crypto";
 import { MIN_QUOTE_WORDS, quoteUnderHeading } from "./receipt-grounding.mjs";
 
-const SAFE_NAME = /^[A-Za-z0-9._-]+$/; // skill names and session ids: no path separators, no traversal
+const SAFE_NAME = /^[A-Za-z0-9._-]+$/; // skill names and session ids: no path separators
+// A legal component AND not a traversal step: "." matches SAFE_NAME and ".." is two legal chars, so both must be
+// rejected explicitly or `join(dir, name, ...)` could escape the dir (the guard's own promise, and the spec's
+// threat model). The applied branch also realpath-checks containment, matching the sibling PR gate.
+const isSafeName = (v) => SAFE_NAME.test(v) && v !== "." && v !== "..";
 const VERDICTS = new Set(["applied", "not-applicable", "waived"]);
 
 const argv = process.argv.slice(2);
@@ -74,7 +78,7 @@ function pickEntry(entries, taskId) {
 // --- write -------------------------------------------------------------------
 if (command === "write") {
   const session = opt("--session");
-  if (!session || !SAFE_NAME.test(session)) refuse(`--session <id> is required and must match ${SAFE_NAME} (no path separators).`);
+  if (!session || !isSafeName(session)) refuse(`--session <id> is required, must match ${SAFE_NAME}, and may not be "." or ".." (no path separators, no traversal).`);
   const entryArg = opt("--entry");
   if (!entryArg) refuse("--entry <file.json|-> is required.");
   const store = resolve(opt("--store", join(homedir(), ".claude", "esk", "receipts")));
@@ -106,6 +110,8 @@ if (command === "check") {
   const selection = parseList(opt("--selection", null)); // optional: skills the task was required to apply
   const skillsDir = resolve(opt("--skills-dir", ".claude/skills"));
   if (!existsSync(skillsDir) || !statSync(skillsDir).isDirectory()) refuse(`skills dir not found: ${skillsDir}`);
+  let skillsDirReal;
+  try { skillsDirReal = realpathSync(skillsDir); } catch (e) { refuse(`cannot resolve skills dir ${skillsDir}: ${e.message}`); }
 
   // changed_files must be a list of {path, sha256}
   const recorded = entry.changed_files;
@@ -121,8 +127,13 @@ if (command === "check") {
   // here; a sampled receipt leaves a changed file uncovered, so it fails here too. Full check, never a sample.
   for (const f of changed) {
     if (!recordedByPath.has(f)) refuse(`changed file "${f}" is not covered by the receipt (every changed file must be covered; no sampling).`);
-    if (!existsSync(f) || !statSync(f).isFile()) refuse(`changed file "${f}" does not exist now, so its hash cannot be confirmed.`);
-    const current = sha256(readFileSync(f));
+    let current;
+    try {
+      if (!statSync(f).isFile()) refuse(`changed file "${f}" is not a regular file now, so its hash cannot be confirmed.`);
+      current = sha256(readFileSync(f));
+    } catch (e) {
+      refuse(`changed file "${f}" could not be read to confirm its hash (${e.message}); a hash that cannot be confirmed is a refusal, not a pass.`);
+    }
     if (current !== recordedByPath.get(f)) {
       refuse(`the receipt does not describe the files it changed: "${f}" hash ${recordedByPath.get(f).slice(0, 12)} != current ${current.slice(0, 12)} (stale or copied receipt).`);
     }
@@ -136,7 +147,7 @@ if (command === "check") {
   for (const s of skills) {
     if (!s || typeof s !== "object" || !s.name) refuse("each skills item needs a name.");
     const name = String(s.name);
-    if (!SAFE_NAME.test(name)) refuse(`unsafe skill name "${name}" (no path separators).`);
+    if (!isSafeName(name)) refuse(`unsafe skill name "${name}" (no path separators, no "." or ".." traversal).`);
     if (!VERDICTS.has(s.verdict)) refuse(`skill "${name}" has an invalid verdict "${s.verdict}" (applied | not-applicable | waived).`);
     byName.set(name, s);
     if (s.verdict === "not-applicable") continue;
@@ -149,6 +160,11 @@ if (command === "check") {
     // applied: resolve the installed skill file, confirm its hash, ground the quote under the cited heading
     const skillFile = join(skillsDir, name, "SKILL.md");
     if (!existsSync(skillFile) || !statSync(skillFile).isFile()) refuse(`skill "${name}" is applied but its installed file was not found at ${skillFile}.`);
+    // Defense in depth (matches the PR gate): follow symlinks and require the resolved file to stay inside the
+    // skills dir, so even a crafted name or a planted symlink cannot point grounding at text outside the tree.
+    let realFile;
+    try { realFile = realpathSync(skillFile); } catch (e) { refuse(`skill "${name}": cannot resolve ${skillFile} (${e.message}).`); }
+    if (realFile !== skillsDirReal && !realFile.startsWith(skillsDirReal + sep)) refuse(`skill "${name}": its file resolves outside the skills dir (traversal rejected).`);
     const fileText = readFileSync(skillFile, "utf8");
     if (s.skill_file_sha256 && sha256(Buffer.from(fileText, "utf8")) !== s.skill_file_sha256) {
       refuse(`skill "${name}": the installed SKILL.md hash does not match the receipt's skill_file_sha256 (the receipt was written against different skill text).`);
@@ -163,16 +179,20 @@ if (command === "check") {
     }
   }
 
-  // Selection: every required skill must be applied (never silently dropped to not-applicable or omitted).
+  // Selection = completeness: every required skill must be applied (never silently dropped or omitted). Without a
+  // selection the gate cannot know which skills were relevant, so completeness is DISCLOSED as not-checked (the
+  // way the PR gate discloses diff-binding without a diff), never silently passed. The finish hook (#174) passes
+  // the router's required-skill list (#175); until then a caller that omits it is told completeness was skipped.
   if (selection) {
     for (const req of selection) {
       const s = byName.get(req);
       if (!s || s.verdict !== "applied") refuse(`the receipt does not match the selection: required skill "${req}" is ${s ? s.verdict : "missing"}, not applied.`);
     }
   }
-
-  const sel = selection ? `, selection of ${selection.length} satisfied` : ", no selection given";
-  console.log(`[task-receipt] OK - task "${entry.task_id}" accepted: ${changed.length} changed file(s) covered with current hashes, ${skills.length} skill entr${skills.length === 1 ? "y" : "ies"} grounded${sel}. A human must still review the work.`);
+  const selNote = selection
+    ? `selection of ${selection.length} required skill(s) satisfied`
+    : "completeness NOT checked (no --selection given; pass the router's required-skill list to require the relevant skills)";
+  console.log(`[task-receipt] OK - task "${entry.task_id}" accepted: ${changed.length} changed file(s) covered with current hashes, ${skills.length} skill entr${skills.length === 1 ? "y" : "ies"} grounded; ${selNote}. A human must still review the work.`);
   process.exit(0);
 }
 
@@ -197,11 +217,14 @@ if (command === "export") {
         quotes: [s.quote],
       };
     } else {
-      // not-applicable and waived both map to not-applicable in the PR format (which has no waived status); a
-      // waiver's reason is carried into why so the context is not lost.
+      // not-applicable and waived both map to not-applicable in the PR format (which has no waived status), so the
+      // waiver's full audit trail - reason, approver, and expiry - is carried into why, not just the reason, so a
+      // reviewer still sees who approved the skip and when it lapses.
       out.skills[name] = {
         status: "not-applicable",
-        why: s.verdict === "waived" && s.waiver ? `waived: ${s.waiver.reason}` : (s.why || "(from per-task receipt; fill in for the PR)"),
+        why: s.verdict === "waived" && s.waiver
+          ? `waived: ${s.waiver.reason} (approver: ${s.waiver.approver}, expires: ${s.waiver.expires})`
+          : (s.why || "(from per-task receipt; fill in for the PR)"),
       };
     }
   }

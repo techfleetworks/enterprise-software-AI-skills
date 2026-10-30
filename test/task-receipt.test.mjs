@@ -148,6 +148,52 @@ test("check: malformed JSON fails closed (exit 2)", () => {
   assert.equal(r.code, 2, r.out);
 });
 
+test("check: a skill name of '..' is refused as traversal before any file access (exit 2)", () => {
+  const sb = sandbox();
+  sb.entry.skills[0].name = ".."; // SAFE_NAME alone would admit this; isSafeName must reject it
+  const r = check(sb.entry, sb);
+  assert.equal(r.code, 2, r.out);
+  assert.match(r.out, /unsafe skill name/);
+});
+
+test("check: without --selection, the OK output discloses that completeness was NOT checked", () => {
+  const sb = sandbox();
+  const r = check(sb.entry, sb); // valid, no --selection
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /completeness NOT checked/);
+});
+
+test("check: a changed path that is a directory (not a readable file) fails closed (exit 2)", () => {
+  const sb = sandbox();
+  const dirPath = join(sb.work, "a-dir");
+  mkdirSync(dirPath);
+  sb.entry.changed_files.push({ path: fwd(dirPath), sha256: "0".repeat(64) });
+  const rp = writeReceipt(sb.base, sb.entry);
+  const r = run(["check", "--receipt", rp, "--changed-list", `${sb.cf.path},${fwd(dirPath)}`, "--skills-dir", sb.skillsDir]);
+  assert.equal(r.code, 2, r.out);
+  assert.match(r.out, /not a regular file|could not be read/);
+});
+
+test("write: a session id of '..' is refused as traversal (exit 2)", () => {
+  const sb = sandbox();
+  const store = join(sb.base, "store");
+  const r = run(["write", "--session", "..", "--entry", "-", "--store", store], JSON.stringify({ task_id: "t", changed_files: [], skills: [] }));
+  assert.equal(r.code, 2, r.out);
+  assert.match(r.out, /session/);
+});
+
+test("export: a waived skill carries its approver and expiry into why (audit trail not lost)", () => {
+  const sb = sandbox();
+  sb.entry.skills[0] = { name: "demo-skill", verdict: "waived", waiver: { reason: "temporary", approver: "mdenner", expires: "2099-01-01" } };
+  const rp = writeReceipt(sb.base, sb.entry);
+  const r = run(["export", "--receipt", rp, "--change", "fix/177-demo"]);
+  assert.equal(r.code, 0, r.out);
+  const obj = JSON.parse(r.out.trim());
+  assert.equal(obj.skills["demo-skill"].status, "not-applicable");
+  assert.match(obj.skills["demo-skill"].why, /approver: mdenner/);
+  assert.match(obj.skills["demo-skill"].why, /expires: 2099-01-01/);
+});
+
 test("write: two sessions in the same store keep separate files (parallel, no overwrite)", () => {
   const sb = sandbox();
   const store = join(sb.base, "store");

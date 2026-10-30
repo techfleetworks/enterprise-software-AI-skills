@@ -219,9 +219,10 @@ The receipt above is one entry per pull request. Work done in a folder that is n
 so it never gets a checked receipt. In the audited session a receipt from the day before was copied unchanged
 into every build, and the free-form receipts that were written could not be checked. The per-task receipt fixes
 this: one grounded entry per task, stored outside the work folder, tied to the hashes of the files the task
-changed. It reuses the same grounding logic (a quote of at least 8 exact words, verbatim under a real heading of
-the cited skill), extracted into `receipt-grounding.mjs` so the PR gate and the per-task gate decide "grounded"
-the same way.
+changed. It shares the grounding primitives (section-by-heading extraction, whitespace-insensitive matching, and
+the at-least-8-exact-words rule) via `receipt-grounding.mjs`, so the two gates cannot drift on those; each
+composes them for its own shape (the per-task gate matches one heading and one quote, the PR gate several
+sections and several quotes).
 
 ### Schema (one JSON object per line)
 
@@ -268,4 +269,7 @@ becomes a pull request.
 Same as section 2: a grounded per-task receipt proves real quotes, the right files, and current hashes. It does
 not prove the work was good. A human still reviews. And like the PR gate, turning "accepted" into "the task
 cannot end" is the finish-check hook's job (issue #174), which must itself fail closed because Claude Code hooks
-fail open by default.
+fail open by default. The changed-file list and the selection are supplied by the caller (there is no git diff
+outside a repo), so the hash-tie defends against a copied or stale receipt, not against an honest-but-incomplete
+changed-list; this is the same trust property as the PR gate's passed-in diff. Without a selection the gate
+discloses that completeness was not checked rather than passing silently.
