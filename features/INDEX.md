@@ -4,6 +4,9 @@ Generated from the feature files by `bdd-index-generate.mjs` - do not edit by ha
 
 | Feature | Scenario | Domain | Audience | Use case | Category | Quality | Severity | Status |
 |---|---|---|---|---|---|---|---|---|
+| always-on/skills-apply-every-task.feature | A checker that runs past its time limit counts as a failure | always-on | agent | checker-timeout-fails-closed | timeout | reliability | medium | covered |
+| always-on/skills-apply-every-task.feature | A missing checker blocks the finish instead of being skipped | always-on | agent | checker-missing-fails-closed | error | reliability | high | covered |
+| always-on/skills-formula-every-task.feature | A selected skill that cannot be loaded blocks the task | always-on | agent | skill-cannot-load | error | reliability | high | covered |
 | evidence/claims-match-evidence.feature | A before-and-after comparison that reads a missing field cannot report "0 new failures" | evidence | agent | regression-diff-must-be-able-to-fail | negative | reliability | critical | covered |
 | evidence/claims-match-evidence.feature | A claim that one approach is better than another needs a measurement | evidence | agent | comparison-claim-needs-source | negative | reliability | medium | covered |
 | evidence/claims-match-evidence.feature | A defect caused by two inputs together is tested with a covering array | evidence | agent | interaction-defects-use-covering-array | edge | security | medium | covered |

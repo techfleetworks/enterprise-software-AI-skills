@@ -29,6 +29,24 @@ exemption: a one-line or copy-only change still ships a receipt. Most skills are
 for a small change, but the entry still has to exist and say so; "it is too small to bother" is exactly the
 shortcut this receipt exists to stop.
 
+## Run every checker a skill names through the checker runner
+A skill names its checker by a path relative to the skill folder (for example `scripts/check_adr.sh`). Run it
+through `always-on/run-check.mjs` (ADR-0096), never by that relative path and never through a pipe:
+
+```
+node always-on/run-check.mjs run <skill> <script> [-- <checker args>]
+node always-on/run-check.mjs which <skill> <script>   # print the installed path only
+```
+
+The runner resolves the checker's absolute installed path (so the current folder does not matter), reads its
+exit code directly, and **fails closed**: a checker that is missing, cannot start, or runs past its time limit
+is a BLOCK (exit 2) that names the install path and command, never a silent skip and never a pass. It exits 0
+only when the checker passed, and 1 when the checker itself reported a failure. Do not run a checker by a
+folder-relative path (it breaks from any other folder), and do not pipe a checker into `tail` or `head` when
+its exit code matters: a pipe reports the last command's exit code, so `checker | tail` reads a real failure as
+a pass. When a pipe is unavoidable, set `set -o pipefail` or read the exit code before the pipe. A missing or
+unreadable checker never licenses judging in its place.
+
 ## How the directive reaches a session in this repo
 How this directive reaches a session depends on where the session runs, and no single path covers all of
 them: a session working inside this repo gets it from the committed `CLAUDE.md` import (main agent and most
