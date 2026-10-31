@@ -37,6 +37,9 @@ ride on.
   parent-backstop additions (discriminating), and 13 BDD scenarios (2 in the formula feature, 11 in a new
   `subagents-apply-skills.feature`) that drive the real scripts; the chain is green at 95 scenarios. ADR-0102.
   **This lands the last of the ten audit issues (#174 to #183).**
+- **bdd-run names the failing scenario (#176).** On a failing run, `bdd-run.mjs` now prints the failing
+  scenario, step, and error on stderr, not only into the report file, so a run whose report is not uploaded
+  (CI) still shows which scenario broke. (This surfaced a green-local/red-CI split in this PR's own tests.)
 
 ### Added (enforcement activation + install, ADR-0101, issue #174 PR-B)
 
