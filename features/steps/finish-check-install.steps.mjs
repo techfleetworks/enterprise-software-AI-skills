@@ -79,7 +79,7 @@ export default function ({ Given, When, Then, And }) {
   Then(/^the edit-gate, finish-check, record-load and session-setup hooks are all registered$/, (world) => {
     assert.ok(hasHook(world.inst.settings, "PreToolUse", "edit-gate.mjs"));
     assert.ok(hasHook(world.inst.settings, "Stop", "finish-check.mjs"));
-    assert.ok(hasHook(world.inst.settings, "SubagentStop", "finish-check.mjs"));
+    assert.ok(hasHook(world.inst.settings, "SubagentStop", "subagent-check.mjs"));
     assert.ok(hasHook(world.inst.settings, "PostToolUse", "record-load.mjs"));
     assert.ok(hasHook(world.inst.settings, "SessionStart", "session-setup.mjs"));
   });
