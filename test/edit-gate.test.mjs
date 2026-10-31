@@ -3,7 +3,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { writeFileSync, mkdirSync, mkdtempSync } from "node:fs";
+import { writeFileSync, mkdirSync, mkdtempSync, readFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -71,6 +71,27 @@ test("a complete selection with every skill loaded allows the edit (exit 0)", ()
   writeFileSync(loadedPath, JSON.stringify(sb.hashes));
   const r = runGate(editPayload("src/feature.ts"), { ESK_SELECTION: selPath, ESK_LOADED: loadedPath, ESK_SKILLS_DIR: sb.skillsDir });
   assert.equal(r.code, 0, r.out);
+});
+
+test("a passing edit inside a SUBAGENT records the file to the subagent ledger (issue #176) - discriminating", () => {
+  const sb = sandbox();
+  const selPath = join(sb.base, "selection.json"); writeFileSync(selPath, JSON.stringify(sb.sel));
+  const loadedPath = join(sb.base, "loaded.json"); writeFileSync(loadedPath, JSON.stringify(sb.hashes));
+  const ledger = join(sb.base, "subagents.jsonl");
+  const r = runGate({ tool_name: "Write", tool_input: { file_path: "src/feature.ts", content: "x" }, session_id: "s1", agent_name: "impl-7" }, { ESK_SELECTION: selPath, ESK_LOADED: loadedPath, ESK_SKILLS_DIR: sb.skillsDir, ESK_SUBAGENTS_FILE: ledger });
+  assert.equal(r.code, 0, r.out);
+  const entries = readFileSync(ledger, "utf8").trim().split(/\r?\n/).map((l) => JSON.parse(l));
+  assert.ok(entries.some((e) => e.agent === "impl-7" && e.changed_files.includes("src/feature.ts") && e.receipt_ok === false), "the subagent edit must be recorded unreceipted");
+});
+
+test("a passing edit in the MAIN session (no agent id) does NOT write the subagent ledger - discriminating", () => {
+  const sb = sandbox();
+  const selPath = join(sb.base, "selection.json"); writeFileSync(selPath, JSON.stringify(sb.sel));
+  const loadedPath = join(sb.base, "loaded.json"); writeFileSync(loadedPath, JSON.stringify(sb.hashes));
+  const ledger = join(sb.base, "subagents2.jsonl");
+  const r = runGate({ tool_name: "Write", tool_input: { file_path: "src/feature.ts", content: "x" }, session_id: "s1" }, { ESK_SELECTION: selPath, ESK_LOADED: loadedPath, ESK_SKILLS_DIR: sb.skillsDir, ESK_SUBAGENTS_FILE: ledger });
+  assert.equal(r.code, 0, r.out);
+  assert.ok(!existsSync(ledger), "a main-session edit is covered by the main task record, not the subagent ledger");
 });
 
 test("a selected-but-unloaded skill DENIES the edit (exit 2, 'load ... then retry') - discriminating", () => {

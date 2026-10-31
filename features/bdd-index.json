@@ -529,6 +529,28 @@
   },
   {
     "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "A subagent that changes code runs select, load, plan, build, prove and receipt for its part",
+    "domain": "always-on",
+    "audience": "subagent",
+    "usecase": "subagent-runs-formula",
+    "category": "happy",
+    "quality": "functional",
+    "severity": "critical",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "A subagent that skipped the threat model cannot hand back",
+    "domain": "always-on",
+    "audience": "subagent",
+    "usecase": "subagent-skips-plan",
+    "category": "negative",
+    "quality": "security",
+    "severity": "critical",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
     "scenario": "A user-facing change carries accessibility, browser and usability verdicts",
     "domain": "always-on",
     "audience": "agent",
@@ -734,6 +756,127 @@
     "category": "permission",
     "quality": "functional",
     "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/subagents-apply-skills.feature",
+    "scenario": "A brief that names no skill still gets the skills the work needs",
+    "domain": "always-on",
+    "audience": "subagent",
+    "usecase": "brief-names-no-skill",
+    "category": "edge",
+    "quality": "functional",
+    "severity": "critical",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/subagents-apply-skills.feature",
+    "scenario": "A read-only reviewer hands back findings that each carry evidence",
+    "domain": "always-on",
+    "audience": "subagent",
+    "usecase": "reviewer-findings-carry-evidence",
+    "category": "edge",
+    "quality": "reliability",
+    "severity": "medium",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/subagents-apply-skills.feature",
+    "scenario": "A subagent cut off mid-task leaves its unreceipted edits flagged",
+    "domain": "always-on",
+    "audience": "subagent",
+    "usecase": "interrupted-subagent-flagged",
+    "category": "timeout",
+    "quality": "reliability",
+    "severity": "medium",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/subagents-apply-skills.feature",
+    "scenario": "A subagent on a smaller model is held to the same rules",
+    "domain": "always-on",
+    "audience": "subagent",
+    "usecase": "smaller-model-same-rules",
+    "category": "edge",
+    "quality": "functional",
+    "severity": "medium",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/subagents-apply-skills.feature",
+    "scenario": "A subagent that changed files cannot hand back without a receipt",
+    "domain": "always-on",
+    "audience": "subagent",
+    "usecase": "subagent-edits-need-receipt",
+    "category": "negative",
+    "quality": "functional",
+    "severity": "critical",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/subagents-apply-skills.feature",
+    "scenario": "A subagent that will change code has the needed skill text before its first edit",
+    "domain": "always-on",
+    "audience": "subagent",
+    "usecase": "subagent-gets-skill-text",
+    "category": "happy",
+    "quality": "functional",
+    "severity": "critical",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/subagents-apply-skills.feature",
+    "scenario": "A subagent told to apply a skill cannot hand back work without having read it",
+    "domain": "always-on",
+    "audience": "subagent",
+    "usecase": "named-skill-must-be-read",
+    "category": "negative",
+    "quality": "functional",
+    "severity": "critical",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/subagents-apply-skills.feature",
+    "scenario": "A subagent's \"verified\" claim is not passed to the operator as verified unless it can be re-run",
+    "domain": "always-on",
+    "audience": "operator",
+    "usecase": "subagent-claims-not-taken-on-trust",
+    "category": "adverse",
+    "quality": "reliability",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/subagents-apply-skills.feature",
+    "scenario": "Agents started by a workflow get the same enforcement as other subagents",
+    "domain": "always-on",
+    "audience": "subagent",
+    "usecase": "workflow-agent-covered",
+    "category": "edge",
+    "quality": "functional",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/subagents-apply-skills.feature",
+    "scenario": "If a subagent's own check did not run, the main session's finish check still catches its edits",
+    "domain": "always-on",
+    "audience": "subagent",
+    "usecase": "uncovered-subagent-caught-by-parent",
+    "category": "error",
+    "quality": "reliability",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/subagents-apply-skills.feature",
+    "scenario": "Subagents working on separate copies of a package each bring a receipt to the merge",
+    "domain": "always-on",
+    "audience": "subagent",
+    "usecase": "parallel-copies-merge-receipts",
+    "category": "concurrency",
+    "quality": "reliability",
+    "severity": "medium",
     "status": "covered"
   },
   {

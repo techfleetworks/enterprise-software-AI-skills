@@ -13,6 +13,31 @@ begins landing a second batch, the ten issues (#174 to #183) from an agent-sessi
 held to include; the first of those (#178) adds build-comparison rigor and the executable BDD harness they all
 ride on.
 
+### Added (subagents held to the formula, ADR-0102, issue #176 - the last audit issue)
+
+- **A `SubagentStop` hand-back check (#176).** `always-on/subagent-check.mjs` reads the subagent's own transcript
+  and refuses the hand-back when the subagent changed files with no receipt, when the brief named a skill it never
+  loaded or read, or when a read-only reviewer's report carries no evidence (`claim-lint --strict`). It fails
+  closed and is a no-op when not wired; `esk-init --enforce` registers it on `SubagentStop`.
+- **A parent backstop (#176).** Each hand-back, and each subagent edit (recorded by the edit-gate at edit time),
+  appends to a per-session subagent ledger. The parent's `Stop` finish-check reads it and holds the parent's turn
+  for any subagent whose changed files are not covered by a receipt, named by agent, so a subagent cut off before
+  its own check ran (a usage limit, a crash) is still caught.
+- **Preloaded skills by role (#176).** Shipped agent definitions `.claude/agents/esk-implementer.md`,
+  `esk-reviewer.md`, and `esk-auditor.md` carry `skills:` frontmatter so the skill text is in a subagent's context
+  before it starts; the edit-gate already fires inside subagents for the edit-time select/load/plan check.
+- **No laundering of a subagent's claim (#176).** `always-on/subagent-claim.mjs` relabels a subagent's
+  "verified / gate green / fixed" as "reported by a subagent, not re-run by the parent" unless the parent re-ran it.
+- **Brief guidance (#176).** A shared brief template (`always-on/subagent-brief-template.md`) with the imperative
+  "Load and apply with the Skill tool" wording and the hand-back bar, and a designed (not-yet-run) wording
+  experiment (`docs/research/subagent-brief-wording-experiment.md`).
+- **One transcript parser (#176).** `always-on/transcript-files.mjs` owns reading a transcript for changed files,
+  skills read, the brief, and the final report; the finish-check and the subagent-check both use it (no second copy).
+- **Proof.** `test/transcript-files`, `test/subagent-check`, `test/subagent-claim`, plus edit-gate ledger and
+  parent-backstop additions (discriminating), and 13 BDD scenarios (2 in the formula feature, 11 in a new
+  `subagents-apply-skills.feature`) that drive the real scripts; the chain is green at 95 scenarios. ADR-0102.
+  **This lands the last of the ten audit issues (#174 to #183).**
+
 ### Added (enforcement activation + install, ADR-0101, issue #174 PR-B)
 
 - **The formula is now HELD, not just delivered (#174).** `esk-init --enforce` registers the five enforcement

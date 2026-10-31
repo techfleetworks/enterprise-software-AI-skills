@@ -394,7 +394,7 @@ const ENFORCE_HOOKS = [
   { event: "PreToolUse", name: "edit-gate.mjs", status: "Checking skill selection and load before edit", timeout: 15, matcher: "Write|Edit|MultiEdit|NotebookEdit" },
   { event: "PostToolUse", name: "record-load.mjs", status: "Recording skill load", timeout: 10, matcher: "Skill" },
   { event: "Stop", name: "finish-check.mjs", status: "Checking the skills formula before the turn ends", timeout: 20 },
-  { event: "SubagentStop", name: "finish-check.mjs", status: "Checking the skills formula before the subagent ends", timeout: 20 },
+  { event: "SubagentStop", name: "subagent-check.mjs", status: "Checking the subagent's hand-back (skills + receipt)", timeout: 20 },
 ];
 // True if a hook group under settings.hooks[event] references `basename`. Used to find/verify our enforcement entries.
 function groupRefsBasename(h, basename) {
@@ -483,6 +483,7 @@ function enforcementCanary() {
     ["finish-check.mjs", JSON.stringify({ session_id: "canary" })],          // no transcript -> read-only -> exit 0
     ["edit-gate.mjs", JSON.stringify({ tool_name: "Read", session_id: "canary" })], // non-edit tool -> allow -> exit 0
     ["session-setup.mjs", JSON.stringify({ session_id: "canary" })],         // self-test + announce -> exit 0
+    ["subagent-check.mjs", JSON.stringify({ session_id: "canary" })],        // no agent transcript -> allow -> exit 0
   ];
   for (const [name, input] of runs) {
     const r = spawnSync("node", [expand(scriptRef(name))], { input, encoding: "utf8", env });

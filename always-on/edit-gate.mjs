@@ -21,7 +21,7 @@
 // When ESK_SELECTION is unset the machine has not wired the gate, so the hook emits a NOTICE and allows rather
 // than break unrelated work; where it IS set, a missing selection is a deny. It FAILS CLOSED (deny) on its own
 // errors, because a PreToolUse hook that crashes otherwise fails open.
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, appendFileSync, mkdirSync } from "node:fs";
 import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
@@ -108,6 +108,14 @@ process.stdin.on("end", () => {
     } else {
       notes.push("the plan check is not wired");
     }
+    // Edit-time subagent ledger (issue #176): when THIS edit runs inside a subagent (the payload carries an agent
+    // id), record the file to the subagent ledger now, marked unreceipted. The subagent-check reconciles it at
+    // hand-back; but if the subagent is cut off (a usage limit, a crash) before its hand-back check runs, this
+    // edit-time entry is what lets the PARENT's finish-check still catch the uncovered file. A main-session edit
+    // (no agent id) is NOT recorded here - the main task record already covers it.
+    const agent = payload.agent_name || payload.subagent_type || payload.agent || payload.agentType || null;
+    const ledgerPath = agent && targetPath ? resolvePath("subagents", "ESK_SUBAGENTS_FILE", sessionId) : null;
+    if (ledgerPath) { try { mkdirSync(dirname(ledgerPath), { recursive: true }); appendFileSync(ledgerPath, JSON.stringify({ agent, changed_files: [targetPath.split("\\").join("/")], receipt_ok: false, source: "edit-gate" }) + "\n"); } catch { /* best effort */ } }
     allow(notes.length ? `edit allowed; ${notes.join("; ")}.` : undefined);
   } catch (e) {
     deny(`edit-gate failed (${e && e.message}); failing closed.`);

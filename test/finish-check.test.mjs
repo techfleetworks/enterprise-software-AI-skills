@@ -305,6 +305,52 @@ test("a transcript_path that cannot be read fails closed (block, exit 2) - discr
   assert.match(r.out, /could not be read|failing closed/);
 });
 
+test("PARENT: an uncovered subagent file in the ledger blocks the parent's turn, even when the parent changed nothing (exit 2) - discriminating", () => {
+  const sc = scenario();
+  const base = join(sc.base, "esk-home-sub"); mkdirSync(join(base, "subagents"), { recursive: true });
+  writeFileSync(join(base, "subagents", "s1.jsonl"), JSON.stringify({ agent: "impl-2", changed_files: ["src/leak.py"], receipt_ok: false }) + "\n");
+  // parent transcript is read-only (only a Read), so the parent itself changed nothing
+  const ro = join(sc.base, "ro-parent.jsonl");
+  writeFileSync(ro, JSON.stringify({ type: "tool_use", name: "Read", input: { file_path: sc.src } }) + "\n");
+  const rp = writeRecord(sc.base, sc.record);
+  const r = run({ transcript_path: ro, session_id: "s1" }, { ESK_ENFORCE: "1", ESK_HOME: base, ESK_TASK_RECORD: rp, ESK_RECEIPT: sc.receipt, ESK_SKILLS_DIR: sc.skillsDir });
+  assert.equal(r.status, 2, r.out);
+  assert.match(r.out, /impl-2/);
+  assert.match(r.out, /src\/leak\.py/);
+});
+
+test("PARENT: a file the hand-back receipt never covered stays flagged (per-file, not per-agent last-wins) - discriminating", () => {
+  const sc = scenario();
+  const base = join(sc.base, "esk-home-sub3"); mkdirSync(join(base, "subagents"), { recursive: true });
+  // edit-gate logged a.py and b.py (unreceipted); the hand-back receipt covered ONLY b.py (receipt_ok true for b).
+  // Per-agent last-wins would clear a.py; per-file coverage must keep a.py flagged.
+  writeFileSync(join(base, "subagents", "s1.jsonl"),
+    JSON.stringify({ agent: "impl-9", changed_files: ["src/a.py"], receipt_ok: false, source: "edit-gate" }) + "\n" +
+    JSON.stringify({ agent: "impl-9", changed_files: ["src/b.py"], receipt_ok: false, source: "edit-gate" }) + "\n" +
+    JSON.stringify({ agent: "impl-9", changed_files: ["src/b.py"], receipt_ok: true }) + "\n");
+  const ro = join(sc.base, "ro-parent3.jsonl");
+  writeFileSync(ro, JSON.stringify({ type: "tool_use", name: "Read", input: { file_path: sc.src } }) + "\n");
+  const rp = writeRecord(sc.base, sc.record);
+  const r = run({ transcript_path: ro, session_id: "s1" }, { ESK_ENFORCE: "1", ESK_HOME: base, ESK_TASK_RECORD: rp, ESK_RECEIPT: sc.receipt, ESK_SKILLS_DIR: sc.skillsDir });
+  assert.equal(r.status, 2, r.out);
+  assert.match(r.out, /src\/a\.py/);
+  assert.doesNotMatch(r.out, /src\/b\.py/); // b was covered, so only a is flagged
+});
+
+test("PARENT: a subagent that later wrote its receipt (last entry receipt_ok) does NOT block (exit 0)", () => {
+  const sc = scenario();
+  const base = join(sc.base, "esk-home-sub2"); mkdirSync(join(base, "subagents"), { recursive: true });
+  // same agent: a refused hand-back, then a fixed one. Last entry wins.
+  writeFileSync(join(base, "subagents", "s1.jsonl"),
+    JSON.stringify({ agent: "impl-3", changed_files: ["src/a.py"], receipt_ok: false }) + "\n" +
+    JSON.stringify({ agent: "impl-3", changed_files: ["src/a.py"], receipt_ok: true }) + "\n");
+  const ro = join(sc.base, "ro-parent2.jsonl");
+  writeFileSync(ro, JSON.stringify({ type: "tool_use", name: "Read", input: { file_path: sc.src } }) + "\n");
+  const rp = writeRecord(sc.base, sc.record);
+  const r = run({ transcript_path: ro, session_id: "s1" }, { ESK_ENFORCE: "1", ESK_HOME: base, ESK_TASK_RECORD: rp, ESK_RECEIPT: sc.receipt, ESK_SKILLS_DIR: sc.skillsDir });
+  assert.equal(r.status, 0, r.out);
+});
+
 test("a malformed payload fails closed (block, exit 2)", () => {
   const sc = scenario();
   const rp = writeRecord(sc.base, sc.record);
