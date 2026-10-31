@@ -21,7 +21,7 @@ function settingsWith(omit) {
     PreToolUse: [H("edit-gate.mjs")],
     PostToolUse: [H("record-load.mjs")],
     Stop: [H("finish-check.mjs")],
-    SubagentStop: [H("finish-check.mjs")],
+    SubagentStop: [H("subagent-check.mjs")],
   };
   if (omit === "Stop") all.Stop = [];
   return { hooks: all };

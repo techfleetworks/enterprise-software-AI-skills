@@ -1,6 +1,6 @@
 // Discriminating tests for the --enforce wiring in esk-init.mjs (issue #174 PR-B). --enforce must register the five
 // enforcement hooks (session-setup + reload-skills on SessionStart, edit-gate on PreToolUse, record-load on
-// PostToolUse, finish-check on Stop AND SubagentStop) and set env ESK_ENFORCE=1, idempotently, while a PLAIN install
+// PostToolUse, finish-check on Stop, subagent-check on SubagentStop) and set env ESK_ENFORCE=1, idempotently, while a PLAIN install
 // writes NONE of them (opt-in). A no-op wiring (enforcement ignored) flips tests 1-2; a non-idempotent one flips 4.
 // Uses a clean fakeSkillsRepo (a copy of always-on/, NOT a git repo) so the emitter is under the target (portable
 // hooks, no --allow-absolute) and the uncommitted-tree drift check does not fire during --check.
@@ -41,7 +41,7 @@ const REQUIRED = [
   ["PreToolUse", "edit-gate.mjs", "Write|Edit|MultiEdit|NotebookEdit"],
   ["PostToolUse", "record-load.mjs", "Skill"],
   ["Stop", "finish-check.mjs", undefined],
-  ["SubagentStop", "finish-check.mjs", undefined],
+  ["SubagentStop", "subagent-check.mjs", undefined],
 ];
 
 test("a PLAIN install writes NO enforcement hooks and no ESK_ENFORCE (opt-in, discriminating)", () => {

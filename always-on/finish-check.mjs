@@ -24,13 +24,13 @@
 //
 // Exit 0 = let the turn end (read-only, all steps proven, not wired, or the loop cap reached -> escalate). Exit 2
 // = BLOCK with {decision:"block","reason":...} naming each missing item and its fix.
-import { readFileSync, writeFileSync, existsSync, statSync, mkdirSync, openSync, readSync, closeSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, statSync, mkdirSync } from "node:fs";
 import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { resolvePath, enforcementOn } from "./esk-paths.mjs";
+import { changedFilesFromTranscript } from "./transcript-files.mjs";
 
-const EDIT_TOOLS = new Set(["Write", "Edit", "MultiEdit", "NotebookEdit"]);
 const QUESTIONS = ["boundary", "ownership", "dependency", "error-handling"]; // the four questions a review covers
 const here = dirname(fileURLToPath(import.meta.url));
 const TASK_RECEIPT = join(here, "..", ".claude", "skills", "judge-arch", "scripts", "task-receipt.mjs");
@@ -65,33 +65,41 @@ process.stdin.on("end", () => {
     // The task record: an explicit ESK_TASK_RECORD wins; else, when enforcement is on (ESK_ENFORCE=1), it is
     // derived from the base store plus this session id; else null = not wired (the turn may end).
     const recordPath = resolvePath("record", "ESK_TASK_RECORD", SESSION);
-    // Not wired (enforcement off AND no explicit record): the turn may end, so an un-bootstrapped machine is never
-    // broken. If enforcement IS on but the path could not be resolved (a missing/unsafe session id with no explicit
-    // record), that is an error, not "not wired" - handled after the read-only check so a read-only turn still ends.
-    if (!recordPath && !enforcementOn()) allow("the finish-check is not wired (no task record configured); the turn may end.");
+    // Subagent coverage (issue #176): a subagent that changed files with no receipt - or one cut off before its own
+    // hand-back check ran - leaves the parent on the hook. Read the subagent ledger and flag any changed file with no
+    // receipt, naming the agent. Computed FIRST (it reads only the ledger, not the transcript) so that even a
+    // half-wired parent (an explicit ESK_SUBAGENTS_FILE but no task record) still gets backstopped before the
+    // not-wired escape below.
+    const subProblems = subagentProblems();
+
+    // Not wired (enforcement off AND no explicit record AND no subagent ledger problems): the turn may end, so an
+    // un-bootstrapped machine is never broken. If enforcement IS on but the record path could not be resolved (a
+    // missing/unsafe session id with no explicit record), that is an error, handled after the read-only check so a
+    // read-only turn still ends.
+    if (!recordPath && !enforcementOn() && subProblems.length === 0) allow("the finish-check is not wired (no task record configured); the turn may end.");
     if (!blocksPath) blocksPath = resolvePath("blocks", "ESK_BLOCKS", SESSION);
 
     // Derive the files the task changed from the transcript (edit-tool inputs), read up to a fixed point.
     const tpath = payload.transcript_path || payload.agent_transcript_path || null;
     const changed = tpath ? changedFilesFromTranscript(tpath) : [];
 
-    // Read-only task: nothing changed, so no formula and no receipt. End at once (no operator-visible delay).
-    if (changed.length === 0) allow("read-only task: no files changed, no receipt required.");
+    // Read-only parent AND no uncovered subagent edits: end at once (no operator-visible delay).
+    if (changed.length === 0 && subProblems.length === 0) allow("read-only task: no files changed, no receipt required.");
 
     // Enforcement is on but the task record path could not be resolved for a file-changing task (a missing or
     // unsafe session id, with no explicit ESK_TASK_RECORD): fail CLOSED rather than let the turn end unchecked.
-    if (!recordPath) block("enforcement is on but no usable session id was provided, so the per-session task record path could not be resolved; failing closed. Set ESK_TASK_RECORD explicitly, or ensure the Stop payload carries a session_id.");
+    if (changed.length > 0 && !recordPath) block("enforcement is on but no usable session id was provided, so the per-session task record path could not be resolved; failing closed. Set ESK_TASK_RECORD explicitly, or ensure the Stop payload carries a session_id.");
 
     // Loop safety: if we have already blocked up to the cap, escalate instead of blocking again. stop_hook_active
     // (Claude Code re-invoking the hook after a prior block) does not change the decision: the block counter
     // already tracks the run, so the cap alone is the trigger.
     const priorBlocks = readBlocks();
     if (priorBlocks >= blockCap) {
-      const missing = evaluate(recordPath, changed);
+      const missing = [...(changed.length ? evaluate(recordPath, changed) : []), ...subProblems];
       allow(`escalated after ${priorBlocks} block(s) in a row: the task is ending with these still missing - ${missing.length ? missing.join("; ") : "none"}. Operator: review before accepting.`);
     }
 
-    const missing = evaluate(recordPath, changed);
+    const missing = [...(changed.length ? evaluate(recordPath, changed) : []), ...subProblems];
     if (missing.length) block(missing);
     // Reset the block counter on a clean finish.
     if (blocksPath) { try { writeFileSync(blocksPath, JSON.stringify({ count: 0 })); } catch { /* best effort */ } }
@@ -142,6 +150,40 @@ function operatorWaivers() {
   return WAIVERS;
 }
 function waived(step) { return operatorWaivers().some((w) => w && w.step === step && w.by === "operator" && str(w.reason)); }
+
+// Parent-side subagent coverage (issue #176): read the subagent ledger (one JSONL line per subagent hand-back, written
+// by subagent-check.mjs) and return a problem for every entry whose changed files were not covered by a receipt -
+// including a subagent cut off before it wrote one. Names the agent and the files so the parent knows what to receipt
+// or revert. Fails safe: an unreadable or malformed ledger is skipped (the subagent's own SubagentStop check is the
+// first line of defense; this is the backstop), never a crash.
+function subagentProblems() {
+  const lp = resolvePath("subagents", "ESK_SUBAGENTS_FILE", SESSION);
+  if (!lp || !existsSync(lp)) return [];
+  let entries;
+  try { entries = readFileSync(lp, "utf8").split(/\r?\n/).filter((l) => l.trim()).map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean); }
+  catch { return []; }
+  // A subagent appends more than once: one edit-gate entry per file at edit time (unreceipted), then one
+  // subagent-check entry at hand-back. Coverage is PER FILE, not per agent: a file is covered only when some entry
+  // with receipt_ok=true actually lists it. So a file an edit-gate entry recorded but the hand-back's receipt never
+  // covered (e.g. the hand-back's receipt covered a narrower set) stays flagged, instead of being cleared by a
+  // later true entry that did not include it. A subagent cut off before any true entry leaves every file flagged.
+  const byAgent = new Map();
+  for (const e of entries) {
+    if (!e) continue;
+    const key = str(e.agent) ? e.agent : "(unnamed)";
+    const cur = byAgent.get(key) || { all: new Set(), covered: new Set() };
+    for (const f of (Array.isArray(e.changed_files) ? e.changed_files : [])) { cur.all.add(f); if (e.receipt_ok === true) cur.covered.add(f); }
+    byAgent.set(key, cur);
+  }
+  const problems = [];
+  for (const [agent, { all, covered }] of byAgent) {
+    const flagged = [...all].filter((f) => !covered.has(f));
+    if (flagged.length) {
+      problems.push(`subagent "${agent}" changed ${flagged.length} file(s) with no receipt (${flagged.slice(0, 5).join(", ")}${flagged.length > 5 ? ", ..." : ""}); receipt or revert them before ending.`);
+    }
+  }
+  return problems;
+}
 
 // Order: the file-changing formula runs select -> load -> plan -> build -> prove -> review -> encode -> receipt,
 // in order. A missing or out-of-order step is a hold (done-before-review-refused covers the review case).
@@ -222,40 +264,5 @@ function checkReceipt(rec, changed, problems) {
   if (r.status !== 0) problems.push(`the per-task receipt check did not pass:\n${(r.stdout || "") + (r.stderr || "")}`.trim());
 }
 
-// --- transcript parsing: the files the task changed, from edit-tool calls, read up to a fixed byte point -------
-// The transcript is JSONL and grows while a Stop hook reads it, so snapshot its size and read only that far.
-function changedFilesFromTranscript(tpath) {
-  const abs = resolve(tpath);
-  // A transcript_path was provided, so the transcript must be readable. A missing, non-file, or unreadable
-  // transcript is an ERROR, not an empty change set: it THROWS, the outer handler catches it, and the turn is
-  // BLOCKED (fail closed). Only an empty-but-readable transcript reads as read-only. Returning [] here would
-  // silently reclassify a read failure as "no files changed" and let the turn end with zero enforcement.
-  let text;
-  try {
-    const st = statSync(abs); // throws if missing
-    if (!st.isFile()) throw new Error("the transcript path is not a file");
-    const size = st.size; // fixed point: ignore anything appended after this
-    const fd = openSync(abs, "r");
-    try { const buf = Buffer.alloc(size); readSync(fd, buf, 0, size, 0); text = buf.toString("utf8"); } finally { closeSync(fd); }
-  } catch (e) {
-    throw new Error(`the transcript at ${tpath} could not be read (${e && e.message}); failing closed.`);
-  }
-  const files = new Set();
-  for (const line of text.split(/\r?\n/)) {
-    if (!line.trim()) continue;
-    let obj; try { obj = JSON.parse(line); } catch { continue; }
-    collectEdits(obj, files);
-  }
-  return [...files];
-}
-// Walk a transcript line for any tool_use of an edit tool and record its file_path (handles nested message.content).
-function collectEdits(node, files) {
-  if (!node || typeof node !== "object") return;
-  if (Array.isArray(node)) { for (const x of node) collectEdits(x, files); return; }
-  if ((node.type === "tool_use" || node.toolUse) && EDIT_TOOLS.has(node.name || (node.toolUse && node.toolUse.name))) {
-    const input = node.input || (node.toolUse && node.toolUse.input) || {};
-    const fp = input.file_path || input.filePath || input.notebook_path;
-    if (str(fp)) files.add(String(fp).split("\\").join("/"));
-  }
-  for (const k of Object.keys(node)) if (node[k] && typeof node[k] === "object") collectEdits(node[k], files);
-}
+// Transcript parsing (changed files, read up to a fixed point, fail-closed on a read error) lives in
+// always-on/transcript-files.mjs, shared with the subagent-check (issue #176) so there is one owner, not two.

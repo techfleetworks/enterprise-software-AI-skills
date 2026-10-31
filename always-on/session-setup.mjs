@@ -27,7 +27,7 @@ function readWaivers(p) {
 const REQUIRED_HOOKS = [
   ["PreToolUse", "edit-gate.mjs", "holds an edit until select/load/plan are done"],
   ["Stop", "finish-check.mjs", "holds the turn until the formula is proven"],
-  ["SubagentStop", "finish-check.mjs", "same, for a subagent's turn"],
+  ["SubagentStop", "subagent-check.mjs", "holds a subagent's hand-back until its part is proven"],
   ["PostToolUse", "record-load.mjs", "records a genuine skill load"],
   ["SessionStart", "reload-skills.mjs", "re-flags selected skills to load after a compaction"],
 ];

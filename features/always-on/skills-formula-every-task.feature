@@ -377,3 +377,20 @@ Feature: Every task runs the full enterprise-skills formula, with no reminder
       When the finish check runs
       Then the turn does not end
       And the finding is named
+
+  Rule: Subagents run the same formula for their part of the work
+
+    @audience:subagent @usecase:subagent-runs-formula @category:happy @quality:functional @severity:critical
+    Scenario: A subagent that changes code runs select, load, plan, build, prove and receipt for its part
+      Given the main session starts a subagent to fix one module
+      When the subagent hands back
+      Then its own selection, planning records, test results and receipt exist for that module
+      And the main session's receipt includes them
+
+    @audience:subagent @usecase:subagent-skips-plan @category:negative @quality:security @severity:critical
+    Scenario: A subagent that skipped the threat model cannot hand back
+      Given the subagent changed how a secret value is masked
+      And it wrote no threat model
+      When it tries to hand back
+      Then the hand-back is refused
+      And it is told the threat model step is missing

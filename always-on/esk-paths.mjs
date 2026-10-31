@@ -42,6 +42,7 @@ export function sessionPaths(sessionId) {
     receipt: join(b, "receipts", `${sessionId}.jsonl`),
     blocks: join(b, "blocks", `${sessionId}.json`),
     waivers: join(b, "waivers", `${sessionId}.json`),
+    subagents: join(b, "subagents", `${sessionId}.jsonl`), // the subagent ledger (issue #176): one line per subagent hand-back
   };
 }
 
