@@ -13,6 +13,29 @@ begins landing a second batch, the ten issues (#174 to #183) from an agent-sessi
 held to include; the first of those (#178) adds build-comparison rigor and the executable BDD harness they all
 ride on.
 
+### Added (enforcement activation + install, ADR-0101, issue #174 PR-B)
+
+- **The formula is now HELD, not just delivered (#174).** `esk-init --enforce` registers the five enforcement
+  hooks (edit-gate on `PreToolUse`, finish-check on `Stop`/`SubagentStop`, `record-load` on `PostToolUse`,
+  `session-setup` + `reload-skills` on `SessionStart`) and sets a portable `ESK_ENFORCE=1`. Enforcement stays
+  opt-in: a plain install is byte-identical to before. The wiring is idempotent and additive (foreign hooks and
+  keys preserved), the marker records `enforce:true` so a later reconcile keeps it on, `--check --enforce`
+  reports a removed hook as drift, and an enforcement canary runs the scripts at install time so a dead path is
+  caught.
+- **Activation layer (#174).** `always-on/esk-paths.mjs` derives each hook's per-session state from
+  `ESK_ENFORCE=1` plus the payload `session_id` (`<base>/records|selections|load-state|plans|receipts|blocks|waivers/<session_id>.*`,
+  base `ESK_HOME` or `~/.claude/esk`), so no machine-specific path is committed; an explicit env still wins, and
+  with neither set the hook is a no-op. `finish-check.mjs` and `edit-gate.mjs` resolve their state through it.
+  `always-on/session-setup.mjs` (SessionStart) tells the agent its per-session paths so enforcement is usable.
+- **Operator waivers, and an honest trust model (#174).** A step is waived only by a separate operator file
+  (`by:"operator"` + a reason), never the agent's own record, so the agent cannot self-waive. `session-setup`
+  self-tests the effective settings and WARNS at the start of any session where an enforcement hook is missing
+  or altered. The honest limit is stated, not hidden: `.claude` is agent-writable, so removal is made VISIBLE,
+  not prevented; `always-on/README.md` documents OS-level managed settings as the optional prevention tier.
+- **Proof.** `test/esk-paths.test.mjs`, `test/session-setup.test.mjs`, and `test/esk-enforce-install.test.mjs`
+  (discriminating: a no-op resolver, self-test, or installer flips them), plus 8 BDD scenarios that drive the
+  real installer, self-test, and waiver behavior. ADR-0101. This completes issue #174 (PR-A was the engine).
+
 ### Added (the finish-check engine, ADR-0100, issue #174 PR-A)
 
 - **The finish-check (#174).** `always-on/finish-check.mjs`, the engine of a `Stop`/`SubagentStop` hook, holds a

@@ -39,6 +39,15 @@ test("a non-edit tool is allowed (exit 0)", () => {
   assert.equal(r.code, 0, r.out);
 });
 
+test("enforcement ON but no usable session id: the edit is DENIED (fail closed) - discriminating", () => {
+  const sb = sandbox();
+  // ESK_ENFORCE=1 with no explicit ESK_SELECTION and no session_id: the per-session path cannot be derived. A
+  // fail-OPEN here (exit 0) would let the edit through ungated; it must fail closed.
+  const r = runGate(editPayload("src/x.ts"), { ESK_ENFORCE: "1", ESK_SELECTION: "", ESK_SKILLS_DIR: sb.skillsDir });
+  assert.equal(r.code, 2, r.out);
+  assert.match(r.out, /no usable session id|failing closed/);
+});
+
 test("when the gate is not wired (ESK_SELECTION unset) the edit is allowed with a notice", () => {
   const sb = sandbox();
   const r = runGate(editPayload("src/x.ts"), { ESK_SELECTION: "", ESK_SKILLS_DIR: sb.skillsDir });

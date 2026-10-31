@@ -28,6 +28,7 @@ import { readFileSync, writeFileSync, existsSync, statSync, mkdirSync, openSync,
 import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import { resolvePath, enforcementOn } from "./esk-paths.mjs";
 
 const EDIT_TOOLS = new Set(["Write", "Edit", "MultiEdit", "NotebookEdit"]);
 const QUESTIONS = ["boundary", "ownership", "dependency", "error-handling"]; // the four questions a review covers
@@ -47,7 +48,10 @@ process.on("uncaughtException", (e) => block(`finish-check crashed, failing clos
 process.stdin.on("error", () => block("finish-check could not read its input; failing closed."));
 
 // --- loop safety: count blocks in a row; at the cap, escalate (end the turn with a plain message) not loop ----
-const blocksPath = process.env.ESK_BLOCKS ? resolve(process.env.ESK_BLOCKS) : null;
+// blocksPath is resolved from ESK_BLOCKS at top; when enforcement is on it is derived per session after the
+// payload is parsed (the session id lives in the payload), so it is `let`, read by readBlocks/bumpBlocks at call time.
+let blocksPath = process.env.ESK_BLOCKS ? resolve(process.env.ESK_BLOCKS) : null;
+let SESSION = null; // the payload's session_id, used to derive per-session paths when enforcement is on
 const blockCap = Number(process.env.ESK_BLOCK_CAP || "3");
 function readBlocks() { if (!blocksPath) return 0; try { return Number(JSON.parse(readFileSync(blocksPath, "utf8")).count) || 0; } catch { return 0; } }
 function bumpBlocks() { if (!blocksPath) return; try { mkdirSync(dirname(blocksPath), { recursive: true }); writeFileSync(blocksPath, JSON.stringify({ count: readBlocks() + 1 })); } catch { /* best effort */ } }
@@ -57,8 +61,15 @@ process.stdin.on("data", (d) => (raw += d));
 process.stdin.on("end", () => {
   try {
     const payload = raw.trim() ? JSON.parse(raw) : {};
-    const recordPath = process.env.ESK_TASK_RECORD;
-    if (!recordPath) allow("the finish-check is not wired (ESK_TASK_RECORD unset); the turn may end.");
+    SESSION = payload.session_id;
+    // The task record: an explicit ESK_TASK_RECORD wins; else, when enforcement is on (ESK_ENFORCE=1), it is
+    // derived from the base store plus this session id; else null = not wired (the turn may end).
+    const recordPath = resolvePath("record", "ESK_TASK_RECORD", SESSION);
+    // Not wired (enforcement off AND no explicit record): the turn may end, so an un-bootstrapped machine is never
+    // broken. If enforcement IS on but the path could not be resolved (a missing/unsafe session id with no explicit
+    // record), that is an error, not "not wired" - handled after the read-only check so a read-only turn still ends.
+    if (!recordPath && !enforcementOn()) allow("the finish-check is not wired (no task record configured); the turn may end.");
+    if (!blocksPath) blocksPath = resolvePath("blocks", "ESK_BLOCKS", SESSION);
 
     // Derive the files the task changed from the transcript (edit-tool inputs), read up to a fixed point.
     const tpath = payload.transcript_path || payload.agent_transcript_path || null;
@@ -66,6 +77,10 @@ process.stdin.on("end", () => {
 
     // Read-only task: nothing changed, so no formula and no receipt. End at once (no operator-visible delay).
     if (changed.length === 0) allow("read-only task: no files changed, no receipt required.");
+
+    // Enforcement is on but the task record path could not be resolved for a file-changing task (a missing or
+    // unsafe session id, with no explicit ESK_TASK_RECORD): fail CLOSED rather than let the turn end unchecked.
+    if (!recordPath) block("enforcement is on but no usable session id was provided, so the per-session task record path could not be resolved; failing closed. Set ESK_TASK_RECORD explicitly, or ensure the Stop payload carries a session_id.");
 
     // Loop safety: if we have already blocked up to the cap, escalate instead of blocking again. stop_hook_active
     // (Claude Code re-invoking the hook after a prior block) does not change the decision: the block counter
@@ -108,14 +123,32 @@ function evaluate(recordPath, changed) {
 
 function str(v) { return typeof v === "string" && v.trim() !== ""; }
 function arr(v) { return Array.isArray(v) && v.length > 0; }
-function waived(rec, step) { return Array.isArray(rec.waivers) && rec.waivers.some((w) => w && w.step === step); }
+
+// Operator waivers come from a SEPARATE operator-written file, never the agent's own task record, so the agent
+// cannot waive a step by writing its own record (agent-cannot-self-waive). An entry counts only when it names the
+// step, is marked by:"operator", and carries a reason. The file is ESK_WAIVERS_FILE, else the per-session
+// <base>/waivers/<session_id>.json when enforcement is on. Honest limit (detection model, ADR-0101): the agent
+// CAN write files, so this does not physically prevent a forged by:"operator" entry. It makes one VISIBLE instead:
+// session-setup.mjs lists EVERY operator waiver in effect at the start of the next session, so a waiver added
+// outside the operator process is surfaced to the operator rather than honored silently.
+let WAIVERS = null;
+function operatorWaivers() {
+  if (WAIVERS !== null) return WAIVERS;
+  WAIVERS = [];
+  const wp = resolvePath("waivers", "ESK_WAIVERS_FILE", SESSION); // one derivation rule, shared with every other path
+  if (wp && existsSync(wp)) {
+    try { const w = JSON.parse(readFileSync(wp, "utf8")); WAIVERS = Array.isArray(w) ? w : (Array.isArray(w.waivers) ? w.waivers : []); } catch { WAIVERS = []; }
+  }
+  return WAIVERS;
+}
+function waived(step) { return operatorWaivers().some((w) => w && w.step === step && w.by === "operator" && str(w.reason)); }
 
 // Order: the file-changing formula runs select -> load -> plan -> build -> prove -> review -> encode -> receipt,
 // in order. A missing or out-of-order step is a hold (done-before-review-refused covers the review case).
 function checkOrder(rec, problems) {
   const REQUIRED = ["select", "load", "plan", "build", "prove", "review", "encode", "receipt"];
   const steps = Array.isArray(rec.steps) ? rec.steps : [];
-  for (const s of REQUIRED) if (!steps.includes(s) && !waived(rec, s)) problems.push(`the ${s} step is missing (the formula runs ${REQUIRED.join(" -> ")} in order).`);
+  for (const s of REQUIRED) if (!steps.includes(s) && !waived(s)) problems.push(`the ${s} step is missing (the formula runs ${REQUIRED.join(" -> ")} in order).`);
   // order: the completed steps must appear in the canonical order
   const idx = steps.map((s) => REQUIRED.indexOf(s)).filter((i) => i >= 0);
   for (let i = 1; i < idx.length; i++) if (idx[i] < idx[i - 1]) { problems.push(`the formula steps are out of order (${steps.join(", ")}).`); break; }
@@ -124,7 +157,7 @@ function checkOrder(rec, problems) {
 // Build: a source change moves a test with it; a new check ships a discriminating test; a coverage number is not
 // itself a pass if a changed branch is uncovered.
 function checkBuild(rec, changed, problems) {
-  if (waived(rec, "build")) return;
+  if (waived("build")) return;
   const b = rec.build || {};
   const touchedSource = changed.some((f) => /\.(ts|js|mjs|py|go|rs|java)$/.test(f) && !/\.(test|spec)\./.test(f) && !/(^|\/)(test|tests|__tests__)\//.test(f));
   const touchedTest = changed.some((f) => /\.(test|spec)\./.test(f) || /(^|\/)(test|tests|__tests__)\//.test(f));
@@ -138,7 +171,7 @@ function checkBuild(rec, changed, problems) {
 // Prove: an evidence ledger, claim-lint --strict exits 0, and each selected checker's command/exit/output is
 // recorded.
 function checkProve(rec, problems) {
-  if (waived(rec, "prove")) return;
+  if (waived("prove")) return;
   const p = rec.prove || {};
   if (p.ledger !== true) problems.push(`the final report has no evidence ledger (skeptical-audit).`);
   if (p.claimLintExit !== 0) problems.push(`claim-lint --strict did not pass on the final report (an untagged claim blocks the finish).`);
@@ -150,7 +183,7 @@ function checkProve(rec, problems) {
 // Review: a fresh-context review that covered every changed file against every question, is logged, did not time
 // out, and left no open HIGH/MEDIUM finding (unless each open one is operator-waived).
 function checkReview(rec, changed, problems) {
-  if (waived(rec, "review")) return;
+  if (waived("review")) return;
   const r = rec.review || {};
   if (r.freshContext !== true) { problems.push(`the review step is missing or was done in the author's own context; run a fresh-context review.`); return; }
   if (r.timedOut === true) { problems.push(`the review timed out before a verdict; start a new review.`); return; }
@@ -171,7 +204,7 @@ function checkReview(rec, changed, problems) {
 
 // Encode: every caught-and-fixed mistake became a rule, or carries a recorded reason for not writing one.
 function checkEncode(rec, problems) {
-  if (waived(rec, "encode")) return;
+  if (waived("encode")) return;
   for (const f of (Array.isArray(rec.encode && rec.encode.findings) ? rec.encode.findings : [])) {
     if (f && f.fixed === true && !str(f.rule) && !str(f.reason)) problems.push(`a caught mistake was fixed but not encoded as a rule and has no recorded reason${f.description ? `: ${f.description}` : ""}.`);
   }
@@ -179,8 +212,10 @@ function checkEncode(rec, problems) {
 
 // Receipt: delegate to the per-task receipt checker (issue #177) over the task's changed files.
 function checkReceipt(rec, changed, problems) {
-  if (waived(rec, "receipt")) return;
-  const receiptPath = process.env.ESK_RECEIPT || rec.receiptPath;
+  if (waived("receipt")) return;
+  // An explicit ESK_RECEIPT wins; then the record's own receiptPath; then the derived per-session receipt (via the
+  // shared resolver, ADR-0097's <base>/receipts/<session_id>.jsonl when enforcement is on).
+  const receiptPath = process.env.ESK_RECEIPT || rec.receiptPath || resolvePath("receipt", "ESK_RECEIPT", SESSION);
   if (!str(receiptPath)) { problems.push(`no per-task receipt for this task; write one covering the changed files and the applied skills.`); return; }
   const skillsDir = process.env.ESK_SKILLS_DIR || ".claude/skills";
   const r = spawnSync(process.execPath, [TASK_RECEIPT, "check", "--receipt", receiptPath, "--changed-list", changed.join(","), "--skills-dir", skillsDir], { encoding: "utf8" });

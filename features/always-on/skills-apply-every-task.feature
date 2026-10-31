@@ -118,3 +118,66 @@ Feature: Skills apply themselves on every task, with no reminder
     When the operator wants proof the skills were followed
     Then the receipt and the checker result for that task already exist
     And the operator does not need to send a message to get them
+
+  Rule: The installer turns the formula ON, and keeps it honest about what it can promise (#174 PR-B)
+
+    @audience:operator @usecase:no-reminder-needed @category:happy @quality:functional @severity:critical
+    Scenario: Installing enforcement means the operator never reminds the agent of a step
+      Given the operator installs the enterprise skills with enforcement on
+      Then the edit-gate, finish-check, record-load and session-setup hooks are all registered
+      And the enforcement flag is set so the hooks are live, not dormant
+
+    @audience:operator @usecase:formula-summary @category:happy @quality:functional @severity:medium
+    Scenario: The installer prints one plain-language line of what enforcement now does
+      Given the operator installs the enterprise skills with enforcement on
+      Then the installer prints a one-line summary that the formula is now held, not just delivered
+
+    @audience:operator @usecase:broken-install-warned-at-start @category:error @quality:reliability @severity:high
+    Scenario: A broken install warns at the start of the session
+      Given enforcement is on but the finish-check hook is missing from settings
+      When a new session starts
+      Then the session is warned that an enforcement hook is not registered
+      And the missing hook is named
+
+    @audience:agent @usecase:enforcement-tamper-visible @category:adverse @quality:reliability @severity:high
+    Scenario: Removing an enforcement hook is visible at the next session start
+      Given enforcement was installed and then an enforcement hook was removed
+      When a new session starts
+      Then the session is warned that enforcement was changed
+      And the removed hook is named
+
+    @audience:agent @usecase:enforcement-cannot-be-removed-by-agent @category:adverse @quality:reliability @severity:high
+    Scenario: Enforcement removed by the agent is reported as drift and restored on reconcile
+      Given enforcement was installed and then an enforcement hook was removed
+      When the install is checked
+      Then the check fails and names the removed hook
+      And re-running the installer restores it
+
+    @audience:operator @usecase:operator-waiver-recorded @category:happy @quality:functional @severity:high
+    Scenario: An operator waiver in the operator file waives a step
+      Given a task is missing the review step
+      And the operator recorded a waiver for the review step with a reason
+      When the finish check runs for that task
+      Then the turn ends
+
+    @audience:agent @usecase:agent-cannot-self-waive-a-step @category:negative @quality:functional @severity:critical
+    Scenario: The agent cannot waive a step from its own record
+      Given a task is missing the review step
+      And only an agent-authored waiver (not an operator one) exists
+      When the finish check runs for that task
+      Then the turn does not end
+      And the review step is still reported missing
+
+    @audience:operator @usecase:waiver-format @category:boundary @quality:functional @severity:medium
+    Scenario: A waiver without a reason does not count
+      Given a task is missing the review step
+      And a waiver for the review step exists but has no reason
+      When the finish check runs for that task
+      Then the turn does not end
+
+    @audience:agent @usecase:session-id-cannot-escape-store @category:negative @quality:security @severity:high
+    Scenario: A crafted session id cannot escape the per-session store
+      Given a session id that contains path traversal
+      When the enforcement resolves its per-session paths
+      Then no path is derived from it
+      And the enforcement fails closed instead of writing outside the store
