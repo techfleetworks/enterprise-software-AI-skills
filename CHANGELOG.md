@@ -3,15 +3,20 @@
 All notable changes to this repository are recorded here. Dates are ISO (YYYY-MM-DD). This project follows
 semantic versioning for the skills library and its gates.
 
-## 1.3.1 - 2026-10-23
+## 1.3.1 - 2026-10-30
 
-A consumer-install correctness release: a batch of issues (#117–#153) from a real consumer that adopts the
-skills with `esk-genesis` and vendors them under `.claude/skills/` showed the gates were never exercised
-end to end on that layout. This release makes a vendoring consumer install green, hardens the gates to fail
-closed and match on anchored paths, and adds the CI harness that keeps the whole class from recurring. It also
-begins landing a second batch, the ten issues (#174 to #183) from an agent-session audit, which this release is
-held to include; the first of those (#178) adds build-comparison rigor and the executable BDD harness they all
-ride on.
+A consumer-install correctness release plus the agent-session audit batch. First, a batch of issues
+(#117 to #153) from a real consumer that adopts the skills with `esk-genesis` and vendors them under
+`.claude/skills/` showed the gates were never exercised end to end on that layout. This release makes a
+vendoring consumer install green, hardens the gates to fail closed and match on anchored paths, and adds the
+CI harness that keeps the whole class from recurring. Second, it lands the full set of ten issues (#174 to
+#183) from an agent-session audit, which this release was held to include: the content family (#178 to #182:
+build-comparison rigor and the executable BDD harness, define fixed/verified, the skeptical-audit and
+reporting additions, and combinatorial testing with tested oracles) and the enforcement-runtime family (#183
+the fail-closed checker runner, #177 per-task receipts tied to file hashes, #175 the edit-time
+select/load/plan gate, #174 the finish-check engine and its opt-in install with an honest trust model, and
+#176 holding subagents to the same formula with a parent backstop). The result: the skills are no longer only
+delivered, they are held, and every gate ships with a discriminating test.
 
 ### Added (subagents held to the formula, ADR-0102, issue #176 - the last audit issue)
 
