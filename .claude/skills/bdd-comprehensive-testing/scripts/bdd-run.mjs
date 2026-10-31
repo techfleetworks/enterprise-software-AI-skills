@@ -180,7 +180,7 @@ if (anyNotPassed) {
   for (const f of report) {
     for (const el of f.elements) {
       const bad = (el.steps || []).find((s) => s.result && s.result.status !== "passed" && s.result.status !== "skipped");
-      if (bad) console.error(`[bdd-run]   FAIL: "${el.name}" at step "${(bad.keyword || "").trim()} ${bad.name}" -> ${(bad.result.error_message || bad.result.status || "").split(/\r?\n/)[0]}`);
+      if (bad) console.error(`[bdd-run]   FAIL: "${el.name}" at step "${(bad.keyword || "").trim()} ${bad.name}" -> ${(bad.result.error_message || bad.result.status || "").split(/\r?\n/).slice(0, 6).join(" | ")}`);
     }
   }
   console.error(`[bdd-run] FAIL - some scenario did not fully pass (${scenarioCount} scenario(s) across ${report.length} feature(s)). See the report${outPath ? ` at ${outPath}` : ""}.`);
