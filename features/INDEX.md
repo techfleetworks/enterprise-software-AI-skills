@@ -4,17 +4,26 @@ Generated from the feature files by `bdd-index-generate.mjs` - do not edit by ha
 
 | Feature | Scenario | Domain | Audience | Use case | Category | Quality | Severity | Status |
 |---|---|---|---|---|---|---|---|---|
+| always-on/skills-apply-every-task.feature | A broken install warns at the start of the session | always-on | operator | broken-install-warned-at-start | error | reliability | high | covered |
 | always-on/skills-apply-every-task.feature | A checker that runs past its time limit counts as a failure | always-on | agent | checker-timeout-fails-closed | timeout | reliability | medium | covered |
+| always-on/skills-apply-every-task.feature | A crafted session id cannot escape the per-session store | always-on | agent | session-id-cannot-escape-store | negative | security | high | covered |
 | always-on/skills-apply-every-task.feature | A missing checker blocks the finish instead of being skipped | always-on | agent | checker-missing-fails-closed | error | reliability | high | covered |
 | always-on/skills-apply-every-task.feature | A read-only task ends with no receipt required | always-on | agent | read-only-task-not-blocked | happy | functional | high | covered |
 | always-on/skills-apply-every-task.feature | A receipt copied from an earlier build is refused | always-on | agent | stale-receipt-refused | negative | reliability | critical | covered |
 | always-on/skills-apply-every-task.feature | A receipt that marks a skill applied without quoting its real text is refused | always-on | agent | receipt-quote-must-be-verbatim | negative | functional | critical | covered |
 | always-on/skills-apply-every-task.feature | A task that changed 400 files is checked in full, not sampled | always-on | agent | large-change-fully-checked | empty-overflow | reliability | medium | covered |
 | always-on/skills-apply-every-task.feature | A task that changed files cannot end without a receipt, and the agent writes it unprompted | always-on | agent | finish-blocked-without-receipt | negative | reliability | critical | covered |
+| always-on/skills-apply-every-task.feature | A waiver without a reason does not count | always-on | operator | waiver-format | boundary | functional | medium | covered |
 | always-on/skills-apply-every-task.feature | After the context is compacted, every skill the next edit needs is in context, not only the ones used before | always-on | agent | reload-after-compaction | edge | functional | high | covered |
 | always-on/skills-apply-every-task.feature | An empty receipt file does not count as a receipt | always-on | agent | empty-receipt-refused | empty-overflow | reliability | high | covered |
+| always-on/skills-apply-every-task.feature | An operator waiver in the operator file waives a step | always-on | operator | operator-waiver-recorded | happy | functional | high | covered |
+| always-on/skills-apply-every-task.feature | Enforcement removed by the agent is reported as drift and restored on reconcile | always-on | agent | enforcement-cannot-be-removed-by-agent | adverse | reliability | high | covered |
+| always-on/skills-apply-every-task.feature | Installing enforcement means the operator never reminds the agent of a step | always-on | operator | no-reminder-needed | happy | functional | critical | covered |
+| always-on/skills-apply-every-task.feature | Removing an enforcement hook is visible at the next session start | always-on | agent | enforcement-tamper-visible | adverse | reliability | high | covered |
 | always-on/skills-apply-every-task.feature | Repeated blocks escalate to the operator instead of looping | always-on | agent | repeated-block-escalates-once | adverse | reliability | high | covered |
 | always-on/skills-apply-every-task.feature | The agent cannot mark a required skill not-applicable on its own | always-on | agent | required-skill-cannot-be-self-waived | negative | functional | high | covered |
+| always-on/skills-apply-every-task.feature | The agent cannot waive a step from its own record | always-on | agent | agent-cannot-self-waive-a-step | negative | functional | critical | covered |
+| always-on/skills-apply-every-task.feature | The installer prints one plain-language line of what enforcement now does | always-on | operator | formula-summary | happy | functional | medium | covered |
 | always-on/skills-apply-every-task.feature | The proof is already attached when the operator asks for it | always-on | operator | proof-already-attached | happy | functional | medium | covered |
 | always-on/skills-apply-every-task.feature | The receipt is enforced even in a folder that is not a git repository | always-on | agent | off-tree-folder-enforced | edge | reliability | high | covered |
 | always-on/skills-apply-every-task.feature | Two sessions working in the same folder keep separate receipts | always-on | agent | parallel-sessions-separate-receipts | concurrency | reliability | medium | covered |

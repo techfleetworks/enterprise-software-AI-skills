@@ -3,7 +3,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { writeFileSync, mkdirSync, mkdtempSync } from "node:fs";
+import { writeFileSync, mkdirSync, mkdtempSync, copyFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -185,11 +185,73 @@ test("after the block cap, the finish ESCALATES (ends the turn) instead of loopi
   assert.match(r.out, /escalated/);
 });
 
-test("when the finish-check is not wired (ESK_TASK_RECORD unset) the turn may end (exit 0)", () => {
+test("when the finish-check is not wired (ESK_TASK_RECORD unset, ESK_ENFORCE unset) the turn may end (exit 0)", () => {
   const sc = scenario();
-  const r = run({ transcript_path: sc.transcript, session_id: "s1" }, { ESK_TASK_RECORD: "", ESK_SKILLS_DIR: sc.skillsDir });
+  const r = run({ transcript_path: sc.transcript, session_id: "s1" }, { ESK_TASK_RECORD: "", ESK_ENFORCE: "", ESK_SKILLS_DIR: sc.skillsDir });
   assert.equal(r.status, 0, r.out);
   assert.match(r.out, /not wired/);
+});
+
+test("ACTIVATION: ESK_ENFORCE=1 alone wires it - a valid DERIVED record+receipt ends the turn (exit 0)", () => {
+  const sc = scenario();
+  const base = join(sc.base, "esk-home");
+  mkdirSync(join(base, "records"), { recursive: true });
+  mkdirSync(join(base, "receipts"), { recursive: true });
+  const rec = { ...sc.record }; delete rec.receiptPath; // force the receipt to resolve from the derived per-session path
+  writeFileSync(join(base, "records", "s1.json"), JSON.stringify(rec));
+  copyFileSync(sc.receipt, join(base, "receipts", "s1.jsonl"));
+  // no ESK_TASK_RECORD and no ESK_RECEIPT: both must be derived from ESK_HOME + the payload session_id
+  const r = run({ transcript_path: sc.transcript, session_id: "s1" }, { ESK_ENFORCE: "1", ESK_HOME: base, ESK_SKILLS_DIR: sc.skillsDir });
+  assert.equal(r.status, 0, r.out);
+});
+
+test("ACTIVATION: ESK_ENFORCE=1 with NO derived record blocks a changed-files task (exit 2) - discriminating", () => {
+  const sc = scenario();
+  const base = join(sc.base, "esk-home-empty");
+  mkdirSync(base, { recursive: true });
+  const r = run({ transcript_path: sc.transcript, session_id: "s1" }, { ESK_ENFORCE: "1", ESK_HOME: base, ESK_SKILLS_DIR: sc.skillsDir });
+  assert.equal(r.status, 2, r.out);
+  assert.match(r.out, /no task record/);
+});
+
+test("ACTIVATION: ESK_ENFORCE=1 with a MISSING session id FAILS a changed-files turn CLOSED (exit 2) - discriminating", () => {
+  const sc = scenario();
+  const base = join(sc.base, "esk-home-nosess"); mkdirSync(base, { recursive: true });
+  // enforcement on, no explicit ESK_TASK_RECORD, and NO session_id: the per-session path cannot be derived. A
+  // fail-OPEN here (exit 0) would let a changed-files turn end unchecked; it must fail closed.
+  const r = run({ transcript_path: sc.transcript }, { ESK_ENFORCE: "1", ESK_HOME: base, ESK_SKILLS_DIR: sc.skillsDir });
+  assert.equal(r.status, 2, r.out);
+  assert.match(r.out, /no usable session id|failing closed/);
+});
+
+test("ACTIVATION: ESK_ENFORCE=1 with a missing session id still ENDS a read-only turn (exit 0)", () => {
+  const sc = scenario();
+  const ro = join(sc.base, "ro2.jsonl");
+  writeFileSync(ro, JSON.stringify({ type: "tool_use", name: "Read", input: { file_path: sc.src } }) + "\n");
+  const base = join(sc.base, "esk-home-nosess2"); mkdirSync(base, { recursive: true });
+  const r = run({ transcript_path: ro }, { ESK_ENFORCE: "1", ESK_HOME: base, ESK_SKILLS_DIR: sc.skillsDir });
+  assert.equal(r.status, 0, r.out); // read-only ends even when enforcement is on and the session id is absent
+});
+
+test("ACTIVATION: an operator waiver file (by:operator) waives a missing step; the agent record cannot (exit 0)", () => {
+  const sc = scenario();
+  const base = join(sc.base, "esk-home-waive");
+  mkdirSync(join(base, "records"), { recursive: true });
+  mkdirSync(join(base, "receipts"), { recursive: true });
+  mkdirSync(join(base, "waivers"), { recursive: true });
+  const rec = { ...sc.record, steps: ["select", "load", "plan", "build", "prove", "encode", "receipt"], review: { freshContext: false } }; // review step missing
+  delete rec.receiptPath;
+  writeFileSync(join(base, "records", "s1.json"), JSON.stringify(rec));
+  copyFileSync(sc.receipt, join(base, "receipts", "s1.jsonl"));
+  // an agent-written self-waiver (by:agent) must NOT count; only an operator waiver does
+  writeFileSync(join(base, "waivers", "s1.json"), JSON.stringify([{ step: "review", by: "agent", reason: "trust me" }]));
+  const blocked = run({ transcript_path: sc.transcript, session_id: "s1" }, { ESK_ENFORCE: "1", ESK_HOME: base, ESK_SKILLS_DIR: sc.skillsDir });
+  assert.equal(blocked.status, 2, blocked.out);
+  assert.match(blocked.out, /review step is missing/);
+  // the operator waiver DOES count
+  writeFileSync(join(base, "waivers", "s1.json"), JSON.stringify([{ step: "review", by: "operator", reason: "accepted risk for this hotfix" }]));
+  const allowed = run({ transcript_path: sc.transcript, session_id: "s1" }, { ESK_ENFORCE: "1", ESK_HOME: base, ESK_SKILLS_DIR: sc.skillsDir });
+  assert.equal(allowed.status, 0, allowed.out);
 });
 
 test("steps recorded out of order are blocked (exit 2) - discriminating", () => {

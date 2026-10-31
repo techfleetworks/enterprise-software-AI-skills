@@ -13,13 +13,20 @@ work is true or good. A human review is still required. This is the floor, not t
 
 - **Input to the hook (stdin):** the Claude Code Stop payload - `transcript_path` or `agent_transcript_path`,
   `stop_hook_active`, `session_id`.
-- **Config (set per session by the installer, issue #174 PR-B):**
-  - `ESK_TASK_RECORD` - the path to the task record described here. **When it is unset the engine is not
+- **Activation (issue #174 PR-B).** The installer (`esk-init --enforce`) sets one portable flag,
+  `ESK_ENFORCE=1`, in settings.json. When it is set the hook derives all of its per-session paths from a base
+  store plus the payload's `session_id` (`always-on/esk-paths.mjs`): `<base>/records/<session_id>.json`,
+  `<base>/receipts/<session_id>.jsonl`, `<base>/blocks/<session_id>.json`, `<base>/waivers/<session_id>.json`,
+  where base is `ESK_HOME` or `~/.claude/esk`. So no machine-specific path has to be committed. An explicit env
+  below still wins when set.
+- **Config (overrides the derived paths; a specific path env wins over `ESK_ENFORCE`):**
+  - `ESK_TASK_RECORD` - the task record path. **When neither it nor `ESK_ENFORCE` is set the engine is not
     wired:** it emits a notice and lets the turn end, so an un-bootstrapped machine is never broken.
   - `ESK_RECEIPT` - the per-task receipt (JSONL) checked by `task-receipt.mjs` (issue #177). Falls back to
-    the record's own `receiptPath`.
+    the record's own `receiptPath`, then to the derived per-session receipt.
+  - `ESK_WAIVERS_FILE` - the operator waivers file (see below). Falls back to the derived per-session waivers.
   - `ESK_SKILLS_DIR` - the skills directory (default `.claude/skills`).
-  - `ESK_BLOCKS` - a small JSON counter file for loop safety (per task).
+  - `ESK_BLOCKS` - a JSON counter file for loop safety (per task); derived per session when unset.
   - `ESK_BLOCK_CAP` - blocks in a row before escalating instead of blocking again (default 3; Claude Code
     caps stop-hook blocks at 8).
 - **Changed files** are derived from the transcript, not from the record: the hook walks the transcript for
@@ -83,12 +90,28 @@ work is true or good. A human review is still required. This is the floor, not t
   },
 
   // --- receipt (issue #177) ---
-  "receiptPath": "/abs/path/receipt.jsonl",  // used when ESK_RECEIPT is unset
-
-  // --- operator waivers (issue #174 PR-B) ---
-  "waivers": [ { "step": "review", "by": "operator", "reason": "..." } ]
+  "receiptPath": "/abs/path/receipt.jsonl"  // used when ESK_RECEIPT is unset
+  // NOTE: waivers are NOT in this record. They live in a SEPARATE operator file (below), so the agent cannot
+  // waive a step by writing its own record.
 }
 ```
+
+## Operator waivers (issue #174 PR-B)
+
+A step can be skipped only with an **operator** waiver, kept in a separate file (`ESK_WAIVERS_FILE`, else the
+per-session `<base>/waivers/<session_id>.json`), never in the agent's own task record:
+
+```jsonc
+[ { "step": "review", "by": "operator", "reason": "accepted risk for this hotfix" } ]
+```
+
+An entry counts only when it names the `step`, is `"by": "operator"`, and carries a non-empty `reason`. Because
+the waivers are read from a file the agent does not write as part of its record, the agent cannot waive a step
+for itself. **Honest limit (ADR-0101):** `.claude` and the base store are writable by the agent, so this does
+not physically *prevent* a forged `by:"operator"` entry. It makes one *visible* instead: `session-setup.mjs`
+lists every operator waiver in effect at the start of the next session, so a waiver added outside the operator
+process is surfaced to the operator rather than honored silently. Prevention needs OS-level managed settings
+(see `always-on/README.md`).
 
 ## What each group checks
 
@@ -102,8 +125,9 @@ work is true or good. A human review is still required. This is the floor, not t
 | receipt | `task-receipt.mjs check` exits non-zero over the task's changed files (missing, empty, stale, ungrounded, uncovered, or hash-mismatched receipt) |
 
 Any single unmet item is a BLOCK (exit 2) whose message names the item and its fix. A step may be skipped
-only with an operator waiver recorded in `waivers` (the agent cannot write its own; that is enforced at
-install time in PR-B).
+only with an operator waiver in the operator waivers file above (the agent cannot write its own; the finish-check
+honors a waiver only from that separate operator file at runtime, and session-setup surfaces every waiver in
+effect).
 
 ## Failure behavior
 

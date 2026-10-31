@@ -25,6 +25,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import { resolvePath, enforcementOn } from "./esk-paths.mjs";
 
 const EDIT_TOOLS = new Set(["Write", "Edit", "MultiEdit", "NotebookEdit"]);
 const here = dirname(fileURLToPath(import.meta.url));
@@ -60,14 +61,24 @@ process.stdin.on("end", () => {
     if (!EDIT_TOOLS.has(tool)) allow();
 
     const targetPath = input.file_path || input.filePath || input.notebook_path || null;
-    const selectionPath = process.env.ESK_SELECTION;
+    // An explicit ESK_SELECTION/ESK_LOADED/ESK_PLANS wins; else, when enforcement is on (ESK_ENFORCE=1), each is
+    // derived from the base store plus this session id (the activation layer, ADR-0101); else null = not wired.
+    const sessionId = payload.session_id;
+    const selectionPath = resolvePath("selection", "ESK_SELECTION", sessionId);
+    const loadedPath = resolvePath("loaded", "ESK_LOADED", sessionId);
+    const plansPath = resolvePath("plans", "ESK_PLANS", sessionId);
     const skillsDir = process.env.ESK_SKILLS_DIR || ".claude/skills";
 
-    // Not wired on this machine: do not break unrelated work. The finish-check (issue #174) still backs this up.
-    if (!selectionPath) allow("the edit-gate is not wired (ESK_SELECTION unset); skipping the select/load check.");
+    // Not wired (enforcement off AND no explicit selection): do not break unrelated work; the finish-check still
+    // backs this up. But if enforcement IS on and the path could not be resolved (a missing/unsafe session id with
+    // no explicit ESK_SELECTION), fail CLOSED (deny) rather than let an unchecked edit through.
+    if (!selectionPath) {
+      if (enforcementOn()) deny("enforcement is on but no usable session id was provided, so the selection record path could not be resolved; failing closed. Set ESK_SELECTION explicitly, or ensure the payload carries a session_id.");
+      allow("the edit-gate is not wired (no selection record configured); skipping the select/load check.");
+    }
 
     // Let the agent create or update the selection record and the load-state themselves (chicken-and-egg).
-    const exempt = [selectionPath, process.env.ESK_LOADED].filter(Boolean).map((p) => resolve(p));
+    const exempt = [selectionPath, loadedPath].filter(Boolean).map((p) => resolve(p));
     if (targetPath && exempt.includes(resolve(targetPath))) allow();
 
     // Step 1 must exist: the selection record. Missing file = the agent has not written the selection yet.
@@ -83,19 +94,19 @@ process.stdin.on("end", () => {
     if (sel.status !== 0) deny(`selection step not satisfied:\n${(sel.stdout || "") + (sel.stderr || "")}`.trim());
 
     const notes = [];
-    // Step 2: every required/applies skill's text must have been loaded this session (when ESK_LOADED is wired).
-    if (process.env.ESK_LOADED) {
-      const load = spawnSync(process.execPath, [CHECK, "loaded", "--selection", selectionPath, "--loaded", process.env.ESK_LOADED, "--skills-dir", skillsDir], { encoding: "utf8" });
+    // Step 2: every required/applies skill's text must have been loaded this session (when the load-state is wired).
+    if (loadedPath) {
+      const load = spawnSync(process.execPath, [CHECK, "loaded", "--selection", selectionPath, "--loaded", loadedPath, "--skills-dir", skillsDir], { encoding: "utf8" });
       if (load.status !== 0) deny(`load step not satisfied (load the skill, then retry the edit):\n${(load.stdout || "") + (load.stderr || "")}`.trim());
     } else {
-      notes.push("the load-state is not wired (ESK_LOADED unset)");
+      notes.push("the load-state is not wired");
     }
-    // Step 3: the planning records for the selected skills must exist and be complete (when ESK_PLANS is wired).
-    if (process.env.ESK_PLANS) {
-      const plan = spawnSync(process.execPath, [CHECK, "plan", "--selection", selectionPath, "--plans", process.env.ESK_PLANS, "--skills-dir", skillsDir], { encoding: "utf8" });
+    // Step 3: the planning records for the selected skills must exist and be complete (when plans are wired).
+    if (plansPath) {
+      const plan = spawnSync(process.execPath, [CHECK, "plan", "--selection", selectionPath, "--plans", plansPath, "--skills-dir", skillsDir], { encoding: "utf8" });
       if (plan.status !== 0) deny(`plan step not satisfied (write the missing planning records, then retry):\n${(plan.stdout || "") + (plan.stderr || "")}`.trim());
     } else {
-      notes.push("the plan check is not wired (ESK_PLANS unset)");
+      notes.push("the plan check is not wired");
     }
     allow(notes.length ? `edit allowed; ${notes.join("; ")}.` : undefined);
   } catch (e) {

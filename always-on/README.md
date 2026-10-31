@@ -183,6 +183,36 @@ For the zero-approval Layer 1 in another project, add one line to that project's
 `@../enterprise-software-AI-skills/always-on/enterprise-skills-always-on.md`. See
 [`.claude/skills/bootstrap/SKILL.md`](../.claude/skills/bootstrap/SKILL.md).
 
+## Turn the ENFORCEMENT on (hold the formula, do not just deliver it)
+
+The directive install above delivers the skills and the evidence rule. It does not hold a task to them. To
+actually hold the formula, add `--enforce`:
+
+```bash
+node .claude/skills/bootstrap/scripts/esk-init.mjs --yes --enforce   # register the enforcement hooks + ESK_ENFORCE=1
+```
+
+This registers the edit-gate (`PreToolUse`, holds an edit until select/load/plan exist), the finish-check
+(`Stop`/`SubagentStop`, holds the turn until build/prove/review/encode/receipt are proven), `record-load`
+(`PostToolUse`), and `session-setup` (`SessionStart`, the self-test). The hooks derive their per-session state
+from `ESK_ENFORCE=1` plus the session id (`always-on/esk-paths.mjs`); `session-setup` tells the agent the paths
+at the start of each session. `--check --enforce` reports a removed hook as drift, and re-running the installer
+restores it.
+
+### What this can and cannot promise (ADR-0101)
+
+`.claude/settings.json` is writable by the agent, so this install makes removing or altering an enforcement
+hook **visible**, not **prevented**: every session that starts after a hook is removed opens with a warning
+naming it, and `--check` reports the drift. Operator waivers live in an operator file, not the agent's record,
+so the agent cannot waive a step for itself; a forged waiver is detectable, not physically blocked.
+
+**For actual prevention**, place the enforcement hooks in OS-level **managed settings** that the agent's user
+cannot write (on macOS, `/Library/Application Support/ClaudeCode/managed-settings.json`; on Linux,
+`/etc/claude-code/managed-settings.json`; on Windows, `C:\ProgramData\ClaudeCode\managed-settings.json`), which
+Claude Code merges with and takes precedence over project and user settings. That requires administrator rights
+and per-machine setup, so it is the stronger optional tier, not the default `esk-init` install. Copy the
+enforcement `hooks` and the `env.ESK_ENFORCE` from a `--enforce` install's `settings.json` into the managed file.
+
 ## Confirm it works (recommended, especially on Windows)
 
 Per the Claude Code docs, exec form runs without a shell on all platforms, but if it does

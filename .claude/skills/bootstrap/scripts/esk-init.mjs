@@ -47,15 +47,17 @@ const opt = (n) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : un
 
 // --- usage + unknown-flag guard, before any work (#140) ----------------------------------------------------
 const USAGE = `esk-init - turn the enterprise always-on hook on for this repo or machine, and reconcile it.
-Usage: node esk-init.mjs [--check] [--yes] [--personal] [--skills] [--skills-target <dir>]
+Usage: node esk-init.mjs [--check] [--yes] [--personal] [--enforce] [--skills] [--skills-target <dir>]
                          [--repo <dir>] [--settings <path>] [--shell powershell] [--allow-absolute]
   no action flag = plan only (dry run); --check = report drift (exit 1 on drift); --yes = apply.
-  --personal installs into ~/.claude; --skills also mirrors the repo's skills; -h / --help shows this.`;
+  --personal installs into ~/.claude; --skills also mirrors the repo's skills; -h / --help shows this.
+  --enforce also registers the enforcement hooks (edit-gate, finish-check, record-load, session-setup,
+  reload-skills) and sets ESK_ENFORCE=1, so the skills formula is actually held, not just delivered.`;
 if (flag("--help") || flag("-h")) { console.log(USAGE); process.exit(0); }
 {
   // Reject an unknown --flag so a typo (e.g. --persnal for --personal) cannot silently fall back to a different
   // scope or mode. Values of --opt flags are paths/shell names (never --prefixed), so this only catches real typos.
-  const KNOWN = new Set(["--check", "--yes", "--personal", "--skills", "--skills-target", "--repo", "--settings", "--shell", "--allow-absolute", "--dry-run", "--help"]);
+  const KNOWN = new Set(["--check", "--yes", "--personal", "--skills", "--skills-target", "--repo", "--settings", "--shell", "--allow-absolute", "--dry-run", "--help", "--enforce"]);
   const unknown = args.filter((a) => a.startsWith("--") && !KNOWN.has(a));
   if (unknown.length) die(`unknown flag(s): ${unknown.join(", ")}. Run with --help for usage.`);
 }
@@ -92,6 +94,7 @@ const settingsDir = dirname(settingsPath);
 const markerPath = join(settingsDir, ".esk-installed");
 const logPath = join(settingsDir, "ESK-INSTALL-LOG.md");
 const useShell = (opt("--shell") || "").toLowerCase() === "powershell";
+const enforce = flag("--enforce");
 
 // Portability of the hook command: a committed repo settings.json must not hardcode a machine-specific
 // absolute path to the emitter, or every other clone gets a dead hook. If the emitter lives UNDER the
@@ -367,6 +370,74 @@ function withHooks(obj) {
   return { obj: next, actions };
 }
 
+// --- enforcement hooks (--enforce): register the gate hooks + the self-test + ESK_ENFORCE ---------------------
+// These five scripts live beside emit-directive in always-on/, so they resolve the same portable/absolute way.
+// The enforcement is behind --enforce so a plain install (just the directive) is byte-identical to before.
+const alwaysOnDir = dirname(emitter);
+const scriptRef = (name) => {
+  const abs = join(alwaysOnDir, name);
+  if (userLevel) return abs;
+  return emitterUnderTarget ? "${CLAUDE_PROJECT_DIR}/" + relative(targetRepoRoot, abs).split(sep).join("/") : abs;
+};
+function enforceEntry(name, statusMessage, timeout, matcher) {
+  const ref = scriptRef(name);
+  const base = useShell
+    ? { type: "command", shell: "powershell", command: `node "${ref}"`, timeout, statusMessage }
+    : { type: "command", command: "node", args: [ref], timeout, statusMessage };
+  return matcher ? { matcher, hooks: [base] } : { hooks: [base] };
+}
+// The managed enforcement entries, keyed by event. Each carries the script basename that identifies OUR entry so a
+// reconcile updates it in place and never duplicates it; matcher (if any) is part of the desired group.
+const ENFORCE_HOOKS = [
+  { event: "SessionStart", name: "session-setup.mjs", status: "Enterprise skills: self-test + per-session setup", timeout: 10 },
+  { event: "SessionStart", name: "reload-skills.mjs", status: "Flagging selected skills to re-load after compaction", timeout: 10, matcher: "compact" },
+  { event: "PreToolUse", name: "edit-gate.mjs", status: "Checking skill selection and load before edit", timeout: 15, matcher: "Write|Edit|MultiEdit|NotebookEdit" },
+  { event: "PostToolUse", name: "record-load.mjs", status: "Recording skill load", timeout: 10, matcher: "Skill" },
+  { event: "Stop", name: "finish-check.mjs", status: "Checking the skills formula before the turn ends", timeout: 20 },
+  { event: "SubagentStop", name: "finish-check.mjs", status: "Checking the skills formula before the subagent ends", timeout: 20 },
+];
+// True if a hook group under settings.hooks[event] references `basename`. Used to find/verify our enforcement entries.
+function groupRefsBasename(h, basename) {
+  const s = (Array.isArray(h.args) ? h.args.map(String).join(" ") : "") + " " + (typeof h.command === "string" ? h.command : "");
+  return s.includes(basename);
+}
+// Merge the enforcement entries + ESK_ENFORCE into an object. Idempotent: updates our entry in place, collapses
+// duplicates, preserves foreign hooks and keys. Returns {obj, actions}.
+function withEnforcement(obj) {
+  const next = JSON.parse(JSON.stringify(obj));
+  const actions = [];
+  next.hooks = next.hooks && typeof next.hooks === "object" && !Array.isArray(next.hooks) ? next.hooks : {};
+  for (const spec of ENFORCE_HOOKS) {
+    const { event, name, status, timeout, matcher } = spec;
+    if (next.hooks[event] !== undefined && !Array.isArray(next.hooks[event])) die(`settings.json "hooks.${event}" is not an array; fix or remove it before installing.`);
+    const groups = Array.isArray(next.hooks[event]) ? next.hooks[event] : (next.hooks[event] = []);
+    const desired = enforceEntry(name, status, timeout, matcher);
+    // Our entry for THIS spec is a group whose single hook references this basename AND matches this matcher (so the
+    // plain SessionStart session-setup and the matcher:compact reload-skills are told apart even though both are
+    // SessionStart; two different basenames are never confused).
+    const locs = [];
+    groups.forEach((g, gi) => { if (g && Array.isArray(g.hooks) && (g.matcher || undefined) === (matcher || undefined) && g.hooks.some((h) => groupRefsBasename(h, name))) locs.push(gi); });
+    if (locs.length === 0) { groups.push(desired); actions.push(`add ${event} ${matcher ? `(${matcher}) ` : ""}enforcement hook -> ${name}`); continue; }
+    const before = JSON.stringify(groups[locs[0]]);
+    groups[locs[0]] = desired;
+    for (let k = locs.length - 1; k >= 1; k--) groups.splice(locs[k], 1);
+    if (locs.length > 1) actions.push(`collapse ${locs.length} duplicate ${event} ${name} hooks into one`);
+    else if (JSON.stringify(desired) !== before) actions.push(`update ${event} enforcement hook -> ${name}`);
+  }
+  // Turn enforcement on with a portable flag (safe to commit; not machine-specific). The hooks derive their
+  // per-session paths from it (always-on/esk-paths.mjs).
+  next.env = next.env && typeof next.env === "object" && !Array.isArray(next.env) ? next.env : {};
+  if (next.env.ESK_ENFORCE !== "1") { next.env.ESK_ENFORCE = "1"; actions.push("set env ESK_ENFORCE=1"); }
+  return { obj: next, actions };
+}
+// Which enforcement hooks are MISSING from a settings object (for --check and the self-test).
+function missingEnforcement(obj) {
+  return ENFORCE_HOOKS.filter(({ event, name, matcher }) => {
+    const groups = Array.isArray(obj?.hooks?.[event]) ? obj.hooks[event] : [];
+    return !groups.some((g) => g && Array.isArray(g.hooks) && (g.matcher || undefined) === (matcher || undefined) && g.hooks.some((h) => groupRefsBasename(h, name)));
+  });
+}
+
 // --- canary: the hook command, run as configured, must emit the directive ----
 // Honest scope: this proves the emitter + path + directive work. It does NOT prove Claude Code
 // invokes the hook in a real session (settings shape willing); that end-to-end proof is the manual
@@ -396,6 +467,29 @@ function canary() {
 function readMarker() {
   if (!existsSync(markerPath)) return null;
   try { return JSON.parse(readFileSync(markerPath, "utf8")); } catch { return { version: "unparseable" }; }
+}
+
+// Enforcement canary: run the enforcement scripts as configured (expanding ${CLAUDE_PROJECT_DIR} to the target
+// repo) with a harmless payload and ESK_ENFORCE=1; each must START and exit 0 (finish-check on a read-only turn,
+// edit-gate on a non-edit tool, session-setup on a bare SessionStart). This catches a dead path or a broken script
+// the way canary() catches a dead emitter, without needing any task state.
+// Honest scope: it exercises only the ALLOW/no-op paths (the scripts load and run), so it proves the wiring is
+// live, NOT that the block/deny logic still works - that is proven by the scripts' own discriminating test suites,
+// not here.
+function enforcementCanary() {
+  const expand = (s) => s.replace("${CLAUDE_PROJECT_DIR}", targetRepoRoot);
+  const env = { ...process.env, ESK_ENFORCE: "1" };
+  const runs = [
+    ["finish-check.mjs", JSON.stringify({ session_id: "canary" })],          // no transcript -> read-only -> exit 0
+    ["edit-gate.mjs", JSON.stringify({ tool_name: "Read", session_id: "canary" })], // non-edit tool -> allow -> exit 0
+    ["session-setup.mjs", JSON.stringify({ session_id: "canary" })],         // self-test + announce -> exit 0
+  ];
+  for (const [name, input] of runs) {
+    const r = spawnSync("node", [expand(scriptRef(name))], { input, encoding: "utf8", env });
+    if (r.error) return { ok: false, why: `${name} could not start (${r.error.code || r.error.message})` };
+    if (r.status !== 0) return { ok: false, why: `${name} exited ${r.status} on a harmless payload (expected 0)` };
+  }
+  return { ok: true };
 }
 
 // --- current-state assessment (drives --check and the plan) ------------------
@@ -455,6 +549,15 @@ function assess() {
       if (targetDrift.length) problems.push(`mirrored skills on disk differ from what was installed (local change, stale/other copy, or unreadable); re-run \`--yes --skills\` to re-mirror them (any local change is backed up first): ${targetDrift.join(", ")}`);
     }
   }
+  // Enforcement drift: when --enforce is requested now, or the marker says it was installed, every enforcement hook
+  // must still be registered and ESK_ENFORCE set. A removed hook is reported here (and warned about at SessionStart).
+  const wantEnforce = enforce || !!(marker && marker.enforce);
+  if (wantEnforce) {
+    const miss = missingEnforcement(obj);
+    for (const m of miss) problems.push(`enforcement hook not registered: ${m.event} -> ${m.name} (run --yes --enforce to restore)`);
+    if (obj?.env?.ESK_ENFORCE !== "1") problems.push("ESK_ENFORCE=1 is not set, so the enforcement hooks are no-ops");
+    if (!miss.length) { const ec = enforcementCanary(); if (!ec.ok) problems.push(`enforcement canary: ${ec.why}`); }
+  }
   const c = canary();
   if (!c.ok) problems.push(`canary: ${c.why}`);
   return { obj, existed, marker, problems };
@@ -485,7 +588,13 @@ if (mode === "check") {
 const before = readSettings();
 const marker = readMarker();
 const fresh = !marker;
-const { obj: planned, actions } = withHooks(before.obj);
+const base = withHooks(before.obj);
+// Enforcement is installed when --enforce is passed now, or it was installed before (marker.enforce): once on, a
+// later plain reconcile keeps it on (and keeps it current) rather than silently dropping it.
+const enforceInstalled = enforce || !!(marker && marker.enforce);
+const enf = enforceInstalled ? withEnforcement(base.obj) : { obj: base.obj, actions: [] };
+const planned = enf.obj;
+const actions = base.actions.concat(enf.actions);
 const skillsPlan = planSkills(marker);
 const nothingToDo = actions.length === 0 && marker && marker.version === version && !skillsPlan.changed;
 
@@ -494,6 +603,7 @@ console.log(`  repo:      ${repoRoot} (version ${version})`);
 console.log(`  settings:  ${settingsPath}${before.existed ? "" : " (will be created)"}`);
 console.log(`  marker:    ${markerPath}${marker ? ` (installed version ${marker.version})` : " (none yet)"}`);
 console.log(`  hook form: ${useShell ? "PowerShell shell form" : "exec form (no shell)"}`);
+console.log(`  enforce:   ${enforceInstalled ? "ON (edit-gate, finish-check, record-load, session-setup, reload-skills + ESK_ENFORCE=1)" : "off (directive delivery only; pass --enforce to hold the formula)"}`);
 // Surface the footgun in the dry run too, so --yes never refuses out of nowhere.
 if (committedFootgun) console.log(`  ! WARNING:  --yes would REFUSE this write (machine-specific emitter path into a git-tracked settings.json).\n` + footgunGuidance);
 if (withSkills) console.log(`  skills:    mirror ${skillsPlan.mirror.length} skill(s) from .claude/skills -> ${skillsTarget}`);
@@ -547,6 +657,13 @@ for (const event of EVENTS) {
 }
 const c = canary();
 if (!c.ok) restore(`canary failed (${c.why})`);
+if (enforceInstalled) {
+  const miss = missingEnforcement(reread);
+  if (miss.length) restore(`enforcement hook(s) missing after writing: ${miss.map((m) => `${m.event}->${m.name}`).join(", ")}`);
+  if (reread?.env?.ESK_ENFORCE !== "1") restore("ESK_ENFORCE=1 was not set after writing");
+  const ec = enforcementCanary();
+  if (!ec.ok) restore(`enforcement canary failed (${ec.why})`);
+}
 
 // Skills mirror (opt-in), after the hook is verified. The repo is authoritative and foreign skills are
 // never named, so no backup is needed; a failed copy is fixed by re-running --yes --skills.
@@ -588,7 +705,7 @@ if (withSkills) {
 
 // Success: write the marker + the log.
 const stamp = new Date().toISOString();
-writeFileSync(markerPath, JSON.stringify({ version, installedAt: stamp, settings: settingsPath, repo: repoRoot, form: useShell ? "powershell" : "exec", ...(skillsInstalled ? { skills: skillsInstalled } : {}) }, null, 2) + "\n");
+writeFileSync(markerPath, JSON.stringify({ version, installedAt: stamp, settings: settingsPath, repo: repoRoot, form: useShell ? "powershell" : "exec", ...(enforceInstalled ? { enforce: true } : {}), ...(skillsInstalled ? { skills: skillsInstalled } : {}) }, null, 2) + "\n");
 const logLine = `\n## ${stamp}: ${fresh ? "installed" : "reconciled"} always-on (v${version}, ${useShell ? "powershell" : "exec"} form)\n` +
   actions.map((a) => `- ${a}`).join("\n") +
   (skillsInstalled ? `\n- mirrored ${skillsInstalled.names.length} skill(s) into ${skillsInstalled.target}` : "") +
@@ -597,6 +714,11 @@ try { writeFileSync(logPath, (existsSync(logPath) ? readFileSync(logPath, "utf8"
 catch (e) { console.error(`[esk-init] note: could not write the install log ${logPath} (${e.message}); the install itself succeeded.`); }
 
 console.log(`\n[esk-init] OK:always-on ${fresh ? "installed" : "reconciled"} (v${version}). Backup: ${backup || "none"}.`);
+if (enforceInstalled) {
+  console.log(`[esk-init] enforcement ON: the skills formula is now HELD, not just delivered - edit-gate holds an edit until select/load/plan,`);
+  console.log(`           finish-check holds the turn until build/prove/review/encode/receipt, session-setup self-tests the wiring each session.`);
+  console.log(`           Honest limit: .claude is agent-writable, so removal is made VISIBLE (a SessionStart warning), not prevented; for prevention use managed settings (always-on/README.md).`);
+}
 console.log(`What you should still do: open a FRESH session and ask it to quote the first line of the directive,`);
 console.log(`and have it spawn a subagent and do the same. That is the only true end-to-end proof the hook fires.`);
 process.exit(0);

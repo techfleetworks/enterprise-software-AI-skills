@@ -1,6 +1,17 @@
 [
   {
     "feature": "always-on/skills-apply-every-task.feature",
+    "scenario": "A broken install warns at the start of the session",
+    "domain": "always-on",
+    "audience": "operator",
+    "usecase": "broken-install-warned-at-start",
+    "category": "error",
+    "quality": "reliability",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-apply-every-task.feature",
     "scenario": "A checker that runs past its time limit counts as a failure",
     "domain": "always-on",
     "audience": "agent",
@@ -8,6 +19,17 @@
     "category": "timeout",
     "quality": "reliability",
     "severity": "medium",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-apply-every-task.feature",
+    "scenario": "A crafted session id cannot escape the per-session store",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "session-id-cannot-escape-store",
+    "category": "negative",
+    "quality": "security",
+    "severity": "high",
     "status": "covered"
   },
   {
@@ -78,6 +100,17 @@
   },
   {
     "feature": "always-on/skills-apply-every-task.feature",
+    "scenario": "A waiver without a reason does not count",
+    "domain": "always-on",
+    "audience": "operator",
+    "usecase": "waiver-format",
+    "category": "boundary",
+    "quality": "functional",
+    "severity": "medium",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-apply-every-task.feature",
     "scenario": "After the context is compacted, every skill the next edit needs is in context, not only the ones used before",
     "domain": "always-on",
     "audience": "agent",
@@ -94,6 +127,50 @@
     "audience": "agent",
     "usecase": "empty-receipt-refused",
     "category": "empty-overflow",
+    "quality": "reliability",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-apply-every-task.feature",
+    "scenario": "An operator waiver in the operator file waives a step",
+    "domain": "always-on",
+    "audience": "operator",
+    "usecase": "operator-waiver-recorded",
+    "category": "happy",
+    "quality": "functional",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-apply-every-task.feature",
+    "scenario": "Enforcement removed by the agent is reported as drift and restored on reconcile",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "enforcement-cannot-be-removed-by-agent",
+    "category": "adverse",
+    "quality": "reliability",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-apply-every-task.feature",
+    "scenario": "Installing enforcement means the operator never reminds the agent of a step",
+    "domain": "always-on",
+    "audience": "operator",
+    "usecase": "no-reminder-needed",
+    "category": "happy",
+    "quality": "functional",
+    "severity": "critical",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-apply-every-task.feature",
+    "scenario": "Removing an enforcement hook is visible at the next session start",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "enforcement-tamper-visible",
+    "category": "adverse",
     "quality": "reliability",
     "severity": "high",
     "status": "covered"
@@ -118,6 +195,28 @@
     "category": "negative",
     "quality": "functional",
     "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-apply-every-task.feature",
+    "scenario": "The agent cannot waive a step from its own record",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "agent-cannot-self-waive-a-step",
+    "category": "negative",
+    "quality": "functional",
+    "severity": "critical",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-apply-every-task.feature",
+    "scenario": "The installer prints one plain-language line of what enforcement now does",
+    "domain": "always-on",
+    "audience": "operator",
+    "usecase": "formula-summary",
+    "category": "happy",
+    "quality": "functional",
+    "severity": "medium",
     "status": "covered"
   },
   {
