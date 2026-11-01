@@ -22,9 +22,17 @@ ADR-0015), and each skill ships its own checker under its `scripts/` folder.
 - `test-pyramid-gap-analysis.md`: the `comprehensive-test-strategy` and `bdd-comprehensive-testing` skills
   measured against Fowler and Vocke's *The Practical Test Pyramid*. It separated what the skills already
   covered from the real gaps, and fed ADR-0005 (align the test skills with the practical test pyramid).
+- `poeaa-2026-11/poeaa-adversarial-audit.md`: the `pattern-selector` and `enterprise-architecture-standards`
+  skills measured, adversarially, against Fowler's *Patterns of Enterprise Application Architecture*. It
+  scored all 51 catalog patterns (4 covered well, 7 poorly, 1 miscited, 39 missing), proved the catalog gate
+  passes wrong and missing pages, and fed ADR-0103 and the v1.4 spec in `docs/design/poeaa-v1.4/`. A
+  plain-language version is `poeaa-2026-11/plain-english-summary.md` (grade 4 by
+  `usability-ux-universal-design/scripts/readability.mjs --max-grade 7`, exit 0).
 
 ## Adding an audit
 
-Name the file for what it audits (`<subject>-gap-analysis.md` or `<subject>-audit.md`). State the source
+Name the file for what it audits (`<subject>-gap-analysis.md` or `<subject>-audit.md`). An audit that ships
+more than one file (for example a full report and a plain-language summary) goes in a dated folder,
+`<subject>-<yyyy-mm>/`, as `poeaa-2026-11/` does. State the source
 and the retrieval date up front, mark every "what we have" claim `[observed]` with a re-runnable source,
 and end with the gaps and the decision or ADR they lead to.
