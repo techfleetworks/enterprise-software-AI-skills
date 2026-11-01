@@ -16,7 +16,11 @@
         "CONTRIBUTING.md",
         "CLAUDE.md",
         "docs/arch-reviews/README.md",
-        "docs/audit/README.md"
+        "docs/audit/README.md",
+        "docs/audit/poeaa-2026-11/**/*.md",
+        "docs/design/poeaa-v1.4/**/*.md",
+        "docs/design/poeaa-v1.4/**/*.feature",
+        "docs/adr/0103-poeaa-v1-4-upgrade-program.md"
       ],
       "forbid": ["\\u2014", "\\u2013", "\\u2012", "\\u2015", "\\u2212"],
       "message": "House style: no em or en dashes in prose. Use a period, a comma, or parentheses. Add a skill's path here once it is rewritten clean."
