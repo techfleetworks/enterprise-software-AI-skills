@@ -61,6 +61,7 @@ Generated from the feature files by `bdd-index-generate.mjs` - do not edit by ha
 | always-on/skills-formula-every-task.feature | An "applied" entry that points at a file outside the change is refused | always-on | agent | receipt-files-in-change | negative | reliability | high | covered |
 | always-on/skills-formula-every-task.feature | An ADR with an unfilled placeholder or a link to a missing file is refused | always-on | agent | adr-placeholder-or-dead-link | negative | reliability | high | covered |
 | always-on/skills-formula-every-task.feature | An architecture change applies the standards in code, not only by name | always-on | agent | architecture-standards-applied | edge | reliability | medium | covered |
+| always-on/skills-formula-every-task.feature | An edit named by its absolute path still gets the skills its folder requires | always-on | agent | router-matches-absolute-edit-path | edge | functional | critical | covered |
 | always-on/skills-formula-every-task.feature | An edit tried before skill selection is held | always-on | agent | edit-before-selection-held | negative | functional | critical | covered |
 | always-on/skills-formula-every-task.feature | An untagged claim holds the turn | always-on | agent | untagged-claim-blocks | negative | functional | critical | covered |
 | always-on/skills-formula-every-task.feature | Each checker's command, exit code and output hash are recorded | always-on | agent | checker-results-recorded | happy | reliability | high | covered |

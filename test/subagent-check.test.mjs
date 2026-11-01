@@ -115,3 +115,13 @@ test("not wired (no ESK_ENFORCE and no transcript) allows the hand-back (exit 0)
   const r = spawnSync(process.execPath, [SC], { input: JSON.stringify({ session_id: "s1" }), encoding: "utf8", env: { ...process.env, ESK_ENFORCE: "", ESK_SKILLS_DIR: sc.skillsDir } });
   assert.equal(r.status, 0, (r.stdout || "") + (r.stderr || ""));
 });
+
+test("an absolute edited path is ledgered and receipted repo-relative, matching the edit-gate's entry (ADR-0104) - discriminating", () => {
+  const sc = scenario();
+  const rel = "feature.ts";
+  const receipt = join(sc.base, "receipt-rel.jsonl");
+  writeFileSync(receipt, JSON.stringify({ task_id: "t1", changed_files: [{ path: rel, sha256: sha256(Buffer.from("export const x = 1;\n")) }], skills: [{ name: "comprehensive-test-strategy", verdict: "applied", heading: "the-core-rule", quote: QUOTE, files: [rel] }] }) + "\n");
+  const r = run(sc, {}, { ESK_RECEIPT: receipt, CLAUDE_PROJECT_DIR: join(sc.base, "work") });
+  assert.equal(r.status, 0, r.out);
+  assert.deepEqual(ledgerEntries(sc).at(-1).changed_files, [rel]);
+});

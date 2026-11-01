@@ -55,3 +55,11 @@ test("lastAssistantText returns the last assistant turn's text, skipping tool-on
 test("a missing transcript throws (callers fail closed)", () => {
   assert.throws(() => changedFilesFromTranscript(join(tmpdir(), "nope-xyz.jsonl")), /could not be read/);
 });
+
+test("changedFilesFromTranscript with a root returns repo-relative paths (ADR-0104) - discriminating", () => {
+  const p = write([
+    { type: "assistant", message: { role: "assistant", content: [{ type: "tool_use", name: "Write", input: { file_path: "C:\\Users\\dev\\repo\\src\\a.ts" } }] } },
+    { type: "assistant", message: { role: "assistant", content: [{ type: "tool_use", name: "Edit", input: { file_path: "C:\\Users\\dev\\notes\\b.md" } }] } },
+  ]);
+  assert.deepEqual(changedFilesFromTranscript(p, "C:\\Users\\dev\\repo").sort(), ["C:/Users/dev/notes/b.md", "src/a.ts"]);
+});

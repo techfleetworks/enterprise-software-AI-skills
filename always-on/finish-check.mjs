@@ -28,7 +28,7 @@ import { readFileSync, writeFileSync, existsSync, statSync, mkdirSync } from "no
 import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { resolvePath, enforcementOn } from "./esk-paths.mjs";
+import { resolvePath, enforcementOn, projectRoot } from "./esk-paths.mjs";
 import { changedFilesFromTranscript } from "./transcript-files.mjs";
 
 const QUESTIONS = ["boundary", "ownership", "dependency", "error-handling"]; // the four questions a review covers
@@ -52,6 +52,7 @@ process.stdin.on("error", () => block("finish-check could not read its input; fa
 // payload is parsed (the session id lives in the payload), so it is `let`, read by readBlocks/bumpBlocks at call time.
 let blocksPath = process.env.ESK_BLOCKS ? resolve(process.env.ESK_BLOCKS) : null;
 let SESSION = null; // the payload's session_id, used to derive per-session paths when enforcement is on
+let ROOT = null; // the project root changed files are made relative to (ADR-0104)
 const blockCap = Number(process.env.ESK_BLOCK_CAP || "3");
 function readBlocks() { if (!blocksPath) return 0; try { return Number(JSON.parse(readFileSync(blocksPath, "utf8")).count) || 0; } catch { return 0; } }
 function bumpBlocks() { if (!blocksPath) return; try { mkdirSync(dirname(blocksPath), { recursive: true }); writeFileSync(blocksPath, JSON.stringify({ count: readBlocks() + 1 })); } catch { /* best effort */ } }
@@ -62,6 +63,7 @@ process.stdin.on("end", () => {
   try {
     const payload = raw.trim() ? JSON.parse(raw) : {};
     SESSION = payload.session_id;
+    ROOT = projectRoot(payload);
     // The task record: an explicit ESK_TASK_RECORD wins; else, when enforcement is on (ESK_ENFORCE=1), it is
     // derived from the base store plus this session id; else null = not wired (the turn may end).
     const recordPath = resolvePath("record", "ESK_TASK_RECORD", SESSION);
@@ -81,7 +83,7 @@ process.stdin.on("end", () => {
 
     // Derive the files the task changed from the transcript (edit-tool inputs), read up to a fixed point.
     const tpath = payload.transcript_path || payload.agent_transcript_path || null;
-    const changed = tpath ? changedFilesFromTranscript(tpath) : [];
+    const changed = tpath ? changedFilesFromTranscript(tpath, ROOT) : [];
 
     // Read-only parent AND no uncovered subagent edits: end at once (no operator-visible delay).
     if (changed.length === 0 && subProblems.length === 0) allow("read-only task: no files changed, no receipt required.");
@@ -259,9 +261,10 @@ function checkReceipt(rec, changed, problems) {
   // shared resolver, ADR-0097's <base>/receipts/<session_id>.jsonl when enforcement is on).
   const receiptPath = process.env.ESK_RECEIPT || rec.receiptPath || resolvePath("receipt", "ESK_RECEIPT", SESSION);
   if (!str(receiptPath)) { problems.push(`no per-task receipt for this task; write one covering the changed files and the applied skills.`); return; }
-  const skillsDir = process.env.ESK_SKILLS_DIR || ".claude/skills";
-  const r = spawnSync(process.execPath, [TASK_RECEIPT, "check", "--receipt", receiptPath, "--changed-list", changed.join(","), "--skills-dir", skillsDir], { encoding: "utf8" });
-  if (r.status !== 0) problems.push(`the per-task receipt check did not pass:\n${(r.stdout || "") + (r.stderr || "")}`.trim());
+  const skillsDir = resolve(process.env.ESK_SKILLS_DIR || ".claude/skills");
+  // The changed files are repo-relative, so the checker hashes them from the project root (ADR-0104).
+  const r = spawnSync(process.execPath, [TASK_RECEIPT, "check", "--receipt", resolve(receiptPath), "--changed-list", changed.join(","), "--skills-dir", skillsDir], { encoding: "utf8", cwd: ROOT });
+  if (r.status !== 0) problems.push(`the per-task receipt check did not pass:\n${(r.stdout || "") + (r.stderr || "")}${r.error ? `could not run the receipt checker from the project root ${ROOT} (${r.error.message})` : ""}`.trim());
 }
 
 // Transcript parsing (changed files, read up to a fixed point, fail-closed on a read error) lives in

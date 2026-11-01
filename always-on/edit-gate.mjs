@@ -25,7 +25,7 @@ import { readFileSync, existsSync, appendFileSync, mkdirSync } from "node:fs";
 import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { resolvePath, enforcementOn } from "./esk-paths.mjs";
+import { resolvePath, enforcementOn, projectRoot, toRepoPath } from "./esk-paths.mjs";
 
 const EDIT_TOOLS = new Set(["Write", "Edit", "MultiEdit", "NotebookEdit"]);
 const here = dirname(fileURLToPath(import.meta.url));
@@ -86,7 +86,10 @@ process.stdin.on("end", () => {
       deny("write the skill selection for this task first (every skill marked required / applies / not-applicable with a reason). The edit is held until it exists.");
     }
 
-    const changed = targetPath ? ["--changed-list", targetPath.split("\\").join("/")] : [];
+    // The router's globs are anchored to the repo root, but Claude Code hands us an absolute path: make it
+    // repo-relative first (ADR-0104), or every src/**, docs/adr/** rule silently never fires.
+    const repoPath = targetPath ? toRepoPath(targetPath, projectRoot(payload)) : null;
+    const changed = repoPath ? ["--changed-list", repoPath] : [];
     const waivers = process.env.ESK_WAIVERS ? ["--waivers", process.env.ESK_WAIVERS] : [];
 
     // Step 1: validate the selection (completeness, reasons, no self-waive of a router-required skill).
@@ -114,8 +117,8 @@ process.stdin.on("end", () => {
     // edit-time entry is what lets the PARENT's finish-check still catch the uncovered file. A main-session edit
     // (no agent id) is NOT recorded here - the main task record already covers it.
     const agent = payload.agent_name || payload.subagent_type || payload.agent || payload.agentType || null;
-    const ledgerPath = agent && targetPath ? resolvePath("subagents", "ESK_SUBAGENTS_FILE", sessionId) : null;
-    if (ledgerPath) { try { mkdirSync(dirname(ledgerPath), { recursive: true }); appendFileSync(ledgerPath, JSON.stringify({ agent, changed_files: [targetPath.split("\\").join("/")], receipt_ok: false, source: "edit-gate" }) + "\n"); } catch { /* best effort */ } }
+    const ledgerPath = agent && repoPath ? resolvePath("subagents", "ESK_SUBAGENTS_FILE", sessionId) : null;
+    if (ledgerPath) { try { mkdirSync(dirname(ledgerPath), { recursive: true }); appendFileSync(ledgerPath, JSON.stringify({ agent, changed_files: [repoPath], receipt_ok: false, source: "edit-gate" }) + "\n"); } catch { /* best effort */ } }
     allow(notes.length ? `edit allowed; ${notes.join("; ")}.` : undefined);
   } catch (e) {
     deny(`edit-gate failed (${e && e.message}); failing closed.`);

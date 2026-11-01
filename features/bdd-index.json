@@ -628,6 +628,17 @@
   },
   {
     "feature": "always-on/skills-formula-every-task.feature",
+    "scenario": "An edit named by its absolute path still gets the skills its folder requires",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "router-matches-absolute-edit-path",
+    "category": "edge",
+    "quality": "functional",
+    "severity": "critical",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/skills-formula-every-task.feature",
     "scenario": "An edit tried before skill selection is held",
     "domain": "always-on",
     "audience": "agent",
