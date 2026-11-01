@@ -5,6 +5,7 @@
 // an empty result, so a read failure is never mistaken for "nothing happened".
 import { readFileSync, existsSync, statSync, openSync, readSync, closeSync } from "node:fs";
 import { resolve } from "node:path";
+import { toRepoPath } from "./esk-paths.mjs";
 
 const EDIT_TOOLS = new Set(["Write", "Edit", "MultiEdit", "NotebookEdit"]);
 const str = (v) => typeof v === "string" && v.trim() !== "";
@@ -26,7 +27,9 @@ export function readTranscript(tpath) {
 function* lines(text) { for (const line of text.split(/\r?\n/)) { if (line.trim()) { try { yield JSON.parse(line); } catch { /* skip */ } } } }
 
 // The files the task changed, from edit-tool tool_use calls (handles nested message.content and both key spellings).
-export function changedFilesFromTranscript(tpath) {
+// With a project root, each path is made repo-relative (ADR-0104), the same spelling the edit-gate records, so the
+// review matrix, the receipt, and the subagent ledger all key a file one way.
+export function changedFilesFromTranscript(tpath, root) {
   const files = new Set();
   const walk = (node) => {
     if (!node || typeof node !== "object") return;
@@ -35,7 +38,7 @@ export function changedFilesFromTranscript(tpath) {
     if ((node.type === "tool_use" || node.toolUse) && EDIT_TOOLS.has(name)) {
       const input = node.input || (node.toolUse && node.toolUse.input) || {};
       const fp = input.file_path || input.filePath || input.notebook_path;
-      if (str(fp)) files.add(fwd(fp));
+      if (str(fp)) files.add(root ? toRepoPath(fp, root) : fwd(fp));
     }
     for (const k of Object.keys(node)) if (node[k] && typeof node[k] === "object") walk(node[k]);
   };

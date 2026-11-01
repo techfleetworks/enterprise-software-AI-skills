@@ -56,3 +56,37 @@ test("resolvePath: explicit env wins; enforcement-on derives; off or unsafe retu
   // enforcement on but unsafe session: null (never derive from an unsafe id)
   withEnv({ ESK_TASK_RECORD: undefined, ESK_ENFORCE: "1", ESK_HOME: "/tmp/esk-base" }, () => assert.equal(resolvePath("record", "ESK_TASK_RECORD", "../x"), null));
 });
+
+// ADR-0104: hooks receive absolute paths; the routing globs and receipts are repo-relative. An identity toRepoPath
+// (the pre-fix behavior) flips every inside-the-root case below.
+test("toRepoPath makes an absolute path inside the root repo-relative (Windows and POSIX) - discriminating", async () => {
+  const { toRepoPath } = await load();
+  assert.equal(toRepoPath("C:\\Users\\dev\\repo\\src\\domain\\orders\\repository.ts", "C:\\Users\\dev\\repo"), "src/domain/orders/repository.ts");
+  assert.equal(toRepoPath("c:/users/dev/repo/docs/adr/0200-x.md", "C:\\Users\\dev\\repo"), "docs/adr/0200-x.md");
+  assert.equal(toRepoPath("C:\\Users\\dev\\repo\\src\\a.ts", "C:/Users/dev/repo/"), "src/a.ts");
+  assert.equal(toRepoPath("/home/dev/repo/src/domain/orders/repository.ts", "/home/dev/repo"), "src/domain/orders/repository.ts");
+  assert.equal(toRepoPath("/home/dev/repo/./prisma/../prisma/schema.prisma", "/home/dev/repo"), "prisma/schema.prisma");
+});
+
+test("toRepoPath passes a path outside the root, or in another path family, through unchanged (forward slashes)", async () => {
+  const { toRepoPath } = await load();
+  assert.equal(toRepoPath("/home/dev/elsewhere/src/a.ts", "/home/dev/repo"), "/home/dev/elsewhere/src/a.ts");
+  assert.equal(toRepoPath("/home/dev/repo-two/src/a.ts", "/home/dev/repo"), "/home/dev/repo-two/src/a.ts"); // a sibling with a shared prefix is outside
+  assert.equal(toRepoPath("D:\\other\\src\\a.ts", "C:\\Users\\dev\\repo"), "D:/other/src/a.ts");
+  assert.equal(toRepoPath("C:\\Users\\dev\\repo\\src\\a.ts", "/home/dev/repo"), "C:/Users/dev/repo/src/a.ts");
+  assert.equal(toRepoPath("/home/dev/repo", "/home/dev/repo"), "/home/dev/repo"); // the root itself is not a file in it
+});
+
+test("toRepoPath leaves an already-relative path relative (forward slashes, no leading ./)", async () => {
+  const { toRepoPath } = await load();
+  assert.equal(toRepoPath("src\\a.ts", "/home/dev/repo"), "src/a.ts");
+  assert.equal(toRepoPath("./src/a.ts", "C:\\repo"), "src/a.ts");
+  assert.equal(toRepoPath("C:\\repo\\src\\a.ts", null), "C:/repo/src/a.ts"); // no root: only the separators change
+});
+
+test("projectRoot prefers CLAUDE_PROJECT_DIR, then the payload cwd, then the process cwd", async () => {
+  const { projectRoot } = await load();
+  withEnv({ CLAUDE_PROJECT_DIR: "/proj" }, () => assert.equal(projectRoot({ cwd: "/other" }), "/proj"));
+  withEnv({ CLAUDE_PROJECT_DIR: undefined }, () => assert.equal(projectRoot({ cwd: "/other" }), "/other"));
+  withEnv({ CLAUDE_PROJECT_DIR: undefined }, () => assert.equal(projectRoot({}), process.cwd()));
+});

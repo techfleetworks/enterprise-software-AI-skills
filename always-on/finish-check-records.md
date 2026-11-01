@@ -32,6 +32,10 @@ work is true or good. A human review is still required. This is the floor, not t
 - **Changed files** are derived from the transcript, not from the record: the hook walks the transcript for
   edit-tool (`Write`/`Edit`/`MultiEdit`/`NotebookEdit`) `file_path`s. A task that changed nothing is
   read-only and ends at once.
+- **Paths are repo-relative (ADR-0104).** Claude Code records absolute paths; the hook makes each one relative
+  to the project root (`CLAUDE_PROJECT_DIR`, else the payload `cwd`) with forward slashes. So the review matrix
+  keys and the receipt's `changed_files[].path` and `skills[].files` name an in-repo file as `src/feature.ts`,
+  never `C:/.../src/feature.ts`. A file outside the project root keeps its absolute path.
 
 ## The record
 
