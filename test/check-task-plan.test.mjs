@@ -3,7 +3,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { writeFileSync, mkdirSync, mkdtempSync, readFileSync } from "node:fs";
+import { writeFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -199,6 +199,102 @@ test("plan: a pattern-decision missing a part (simpler alternative) HOLDS (exit 
   const r = planCheck(sb, planSelection(), plans);
   assert.equal(r.code, 2, r.out);
   assert.match(r.out, /simplerAlternative/);
+});
+
+// --- PoEAA citations in the pattern decision (ADR-0106, spec R2.12) ---
+// A sandbox whose pattern-selector skill has the real page registry and its reader installed.
+function sandboxWithRegistry() {
+  const sb = sandbox();
+  const src = join(REPO, ".claude", "skills", "pattern-selector");
+  for (const [dir, file] of [["scripts", "poeaa-registry.mjs"], ["references", "poeaa-registry.json"]]) {
+    mkdirSync(join(sb.skillsDir, "pattern-selector", dir), { recursive: true });
+    writeFileSync(join(sb.skillsDir, "pattern-selector", dir, file), readFileSync(join(src, dir, file)));
+  }
+  return sb;
+}
+function decisionPlans(sb, decision, extra = {}) {
+  const plans = buildPlans(writeAdr(sb.base));
+  Object.assign(plans["pattern-decision"], { decision }, extra);
+  return plans;
+}
+
+for (const [decision, problem] of [
+  ["Repository (17)", /Repository is on page 322, not 17/],
+  ["Florble (100)", /Florble is not in the registry/],
+  ["Repository (322) over a Data Mapper (166)", /Data Mapper is on page 165, not 166/],
+]) {
+  test(`plan: a pattern decision citing "${decision}" HOLDS (exit 2), named - discriminating`, () => {
+    const sb = sandboxWithRegistry();
+    const r = planCheck(sb, planSelection(), decisionPlans(sb, decision));
+    assert.equal(r.code, 2, r.out);
+    assert.match(r.out, problem);
+  });
+}
+
+// Regressions from the WP2 fresh-context review.
+for (const decision of ["Unit of work (999)", "repository (999)", "Data Transfer Object (DTO) (999)", "Repository (p. 999)", "Repository ( 999 )"]) {
+  test(`plan: "${decision}" (another spelling of a wrong page) HOLDS (review regression)`, () => {
+    const sb = sandboxWithRegistry();
+    const r = planCheck(sb, planSelection(), decisionPlans(sb, decision));
+    assert.equal(r.code, 2, r.out);
+    assert.match(r.out, /is on page \d+, not 999/);
+  });
+}
+for (const decision of ["Model-View-Controller (330)", "Null Object (496)", "follow-up in PR (415) and ADR (106)"]) {
+  test(`plan: "${decision}" (the catalog's spelling, or an acronym) passes (review regression)`, () => {
+    const sb = sandboxWithRegistry();
+    const r = planCheck(sb, planSelection(), decisionPlans(sb, decision));
+    assert.equal(r.code, 0, r.out);
+  });
+}
+test("plan: a wrong page inside a list field of the decision HOLDS too", () => {
+  const sb = sandboxWithRegistry();
+  const r = planCheck(sb, planSelection(), decisionPlans(sb, "Repository (322)", { candidatesConsidered: ["Data Mapper (999)"] }));
+  assert.equal(r.code, 2, r.out);
+  assert.match(r.out, /Data Mapper is on page 165, not 999/);
+});
+test("plan: a half-installed PoEAA check (the reader without the registry) HOLDS, not not-assessed", () => {
+  const sb = sandboxWithRegistry();
+  rmSync(join(sb.skillsDir, "pattern-selector", "references", "poeaa-registry.json"));
+  const r = planCheck(sb, planSelection(), decisionPlans(sb, "Repository (322)"));
+  assert.equal(r.code, 2, r.out);
+  assert.match(r.out, /half installed/);
+});
+
+test("plan: a wrong page in another field of the decision (verify) HOLDS too", () => {
+  const sb = sandboxWithRegistry();
+  const r = planCheck(sb, planSelection(), decisionPlans(sb, "Repository (322)", { verify: "test the Unit of Work (185) commit" }));
+  assert.equal(r.code, 2, r.out);
+  assert.match(r.out, /Unit of Work is on page 184, not 185/);
+});
+
+test("plan: a correct PoEAA citation in the decision passes (exit 0)", () => {
+  const sb = sandboxWithRegistry();
+  const r = planCheck(sb, planSelection(), decisionPlans(sb, "Repository (322) over Data Mapper (165)", { verify: "arch-gate rule poeaa-repository" }));
+  assert.equal(r.code, 0, r.out);
+  assert.doesNotMatch(r.out, /not-assessed/);
+});
+
+test("plan: a short numbered step such as \"Step (2)\" is not read as a PoEAA citation (exit 0)", () => {
+  const sb = sandboxWithRegistry();
+  const r = planCheck(sb, planSelection(), decisionPlans(sb, "no pattern: Step (2) of the import stays a plain function"));
+  assert.equal(r.code, 0, r.out);
+});
+
+test("plan: without an installed registry the PoEAA check is reported not-assessed, not held (exit 0)", () => {
+  const sb = sandbox();
+  const r = planCheck(sb, planSelection(), decisionPlans(sb, "Repository (322)"));
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /not-assessed: PoEAA registry not installed/);
+  assert.match(r.out, /Refresh the skills/);
+});
+
+test("plan: an installed registry that is broken HOLDS (exit 2, fail closed)", () => {
+  const sb = sandboxWithRegistry();
+  writeFileSync(join(sb.skillsDir, "pattern-selector", "references", "poeaa-registry.json"), "{ not json");
+  const r = planCheck(sb, planSelection(), decisionPlans(sb, "Repository (322)"));
+  assert.equal(r.code, 2, r.out);
+  assert.match(r.out, /could not be read/);
 });
 
 test("plan: a threat with no control HOLDS (exit 2)", () => {

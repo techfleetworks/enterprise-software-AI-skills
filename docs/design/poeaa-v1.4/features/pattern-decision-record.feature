@@ -1,5 +1,6 @@
 Feature: The agent's pattern decision is required for design-layer changes and checked for substance
-  Work packages 2, 3, and 9 of the v1.4 PoEAA program. Fixes integration findings I1, I2, and I3 and carries
+  Work packages 3 and 9 of the v1.4 PoEAA program (its WP2 scenarios graduated to
+  features/always-on/pattern-decision-citations.feature). Fixes integration findings I1, I2, and I3 and carries
   out operator decision D1 ("Make it required"). Today no rule makes pattern-selector required, and when an
   agent does write a pattern decision, a record with "x" in every field passes. After v1.4, a change to
   repository, service, domain, mapper, or gateway code needs a real decision, and the decision is checked
@@ -76,36 +77,6 @@ Feature: The agent's pattern decision is required for design-layer changes and c
       | x                        |
       | the Florble pattern      |
       | d                        |
-
-  @audience:agent @usecase:wrong-page-in-record-held @category:negative @quality:reliability @severity:high
-  Scenario Outline: A wrong or unknown PoEAA page in the record is held
-    Given the PoEAA page registry is installed
-    And a pattern decision whose decision is "<decision>"
-    When the plan is checked
-    Then the check holds and names "<problem>"
-
-    Examples:
-      | decision          | problem                            |
-      | Repository (17)   | Repository is on page 322, not 17  |
-      | Florble (100)     | Florble is not in the registry     |
-
-  @audience:agent @usecase:right-page-in-record-passes @category:happy @quality:functional @severity:medium
-  Scenario: A correct PoEAA citation in the record passes
-    Given the PoEAA page registry is installed
-    And a complete pattern decision whose decision is "Repository (322) over Data Mapper (165)"
-    And its verify field names the kit item for Repository
-    When the plan is checked
-    Then the check passes
-
-  @audience:agent @usecase:older-mirror-not-blocked @category:edge @quality:reliability @severity:medium
-  Scenario: An install without the page registry is told, not blocked
-    Given the installed skills have no PoEAA page registry
-    And a complete pattern decision whose decision is "Repository (322)"
-    And its verify field names the kit item for Repository
-    When the plan is checked
-    Then the check passes
-    And it prints "not-assessed: PoEAA registry not installed"
-    And the notice says to refresh the skills
 
   @audience:operator @usecase:record-fields-match-skill @category:edge @quality:reliability @severity:medium
   Scenario: The validator and the skill ask for the same record fields

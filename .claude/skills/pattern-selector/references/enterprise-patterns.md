@@ -5,7 +5,11 @@ modelling, messaging, presentation wiring, or the functional/immutable style mos
 is written in today. This reference is that layer. Every entry is on the **same strict template
 as the GoF catalog** (`design-patterns-catalog.md`), a mechanical gate (`scripts/check-catalog-completeness.mjs`)
 verifies every entry carries every label **and** a citation token (a non-Wikipedia `http(s)` URL,
-a `doi:`, an `ISBN`, or a book page as `(p. NNN)`).
+a `doi:`, an `ISBN`, or a book page as `(p. NNN)`). PoEAA is cited in one of two forms, and the gate checks
+each against the page registry (`poeaa-registry.json`): a pattern and its printed page, `Fowler, *PoEAA*,
+<Pattern> (<page>)`, for example `Fowler, *PoEAA*, Repository (322)`; or a chapter, `Fowler, *PoEAA*, ch. <n>`,
+for a claim that lives in the book's narrative chapters 1 to 18. A Source that names PoEAA needs one of the
+two; the ISBN alone is not enough. Every `<Pattern> (<page>)` token in this file must carry the registry page.
 
 **Main sources (no Wikipedia). Most are primary; a few newer patterns cite the originating author's
 article or the reference library instead:**
