@@ -27,7 +27,7 @@ function fakeRepo(version) {
   copyFileSync(join(REPO, "always-on", "sync-nudge.mjs"), join(root, "always-on", "sync-nudge.mjs"));
   // emit-directive.mjs imports enforcement-nudge.mjs too, so the copy must ship with it.
   copyFileSync(join(REPO, "always-on", "enforcement-nudge.mjs"), join(root, "always-on", "enforcement-nudge.mjs"));
-  // and the bootstrap skill's skill-signature.mjs (ADR-0104), loaded by a dynamic import for the content-drift check.
+  // and the bootstrap skill's skill-signature.mjs (ADR-0105), loaded by a dynamic import for the content-drift check.
   mkdirSync(join(root, SIG_REL, ".."), { recursive: true });
   copyFileSync(join(REPO, SIG_REL), join(root, SIG_REL));
   writeFileSync(join(root, "always-on", "enterprise-skills-always-on.md"), "Enterprise engineering skills, always on.\nThis is a stub directive for the test.");
@@ -118,7 +118,7 @@ test("a marker for a DIFFERENT repo does not drive this repo's nudge (Finding 2)
   assert.doesNotMatch(ctx, /OUT OF DATE/, "a marker naming a different repo must be ignored");
 });
 
-// --- same-version content drift (ADR-0104) through the emitter -----------------------------------------
+// --- same-version content drift (ADR-0105) through the emitter -----------------------------------------
 // A fake repo with two source skills, a fake mirror target, and a marker for THIS repo at the SAME version whose
 // per-skill signatures are either the real current ones (in sync) or a stale one for "beta" (drifted).
 function skillsSetup(root, home, { staleBeta = false, dropAlphaFromTarget = false, target } = {}) {

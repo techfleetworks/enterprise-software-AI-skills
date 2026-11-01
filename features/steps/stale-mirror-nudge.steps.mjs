@@ -1,4 +1,4 @@
-// Step definitions for features/always-on/stale-mirror-nudge.feature (ADR-0104).
+// Step definitions for features/always-on/stale-mirror-nudge.feature (ADR-0105).
 //
 // Every scenario drives the REAL always-on/emit-directive.mjs as a SessionStart hook against a sandboxed repo
 // (a copy of the emitter, its nudge modules, and the bootstrap skill's skill-signature.mjs, plus two stub

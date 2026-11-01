@@ -34,7 +34,7 @@ export function compareSemver(a, b) {
  *   currentVersion   the repo version now (from the repo package.json)
  *   installedVersion the version recorded in the install marker, or null/undefined if unknown
  *   state            the persisted nudge state { forVersion, count } (or null on first run)
- *   driftedSkills    names of mirrored skills that no longer match the repo (ADR-0104): commits that changed a
+ *   driftedSkills    names of mirrored skills that no longer match the repo (ADR-0105): commits that changed a
  *                    skill without a version bump. The boundary computes it from the install marker's per-skill
  *                    signatures (.claude/skills/bootstrap/scripts/skill-signature.mjs); [] when nothing
  *                    drifted or there is no skills record, null when the check was skipped or failed.

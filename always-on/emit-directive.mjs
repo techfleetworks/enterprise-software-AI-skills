@@ -62,7 +62,7 @@ text = clean(text);
 // best-effort: any failure means no nudge, never a broken directive. Prepended (not appended) so it survives
 // the MAX-length truncation below, which cuts the end.
 function readJson(p) { try { return JSON.parse(readFileSync(p, "utf8")); } catch { return null; } }
-// Same-version content drift (ADR-0104): which mirrored skills no longer match the repo, by the per-skill
+// Same-version content drift (ADR-0105): which mirrored skills no longer match the repo, by the per-skill
 // signatures the installer recorded in the marker. The rule lives in the bootstrap skill's skill-signature.mjs
 // (shared with `esk-init --check`); it is loaded here by a dynamic import so a missing or broken module (a repo
 // that vendors always-on/ without the bootstrap skill) means no drift verdict, never a crashed emitter. Any

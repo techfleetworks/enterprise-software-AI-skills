@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * skill-signature.mjs: the ONE owner of the skill-mirror content fingerprint and of the "which mirrored skills
- * no longer match the repo" rule (ADR-0104). The installer (the sibling esk-init.mjs) records these signatures
+ * no longer match the repo" rule (ADR-0105). The installer (the sibling esk-init.mjs) records these signatures
  * when it mirrors the skills and checks them in `--check`; the SessionStart emitter (always-on/emit-directive.mjs)
  * reads the same rule so a session rooted outside the repo is told when its global mirror is stale even though
  * the version string did not move. Both import this file, so the two can never disagree about what "changed"

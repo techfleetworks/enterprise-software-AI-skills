@@ -1,7 +1,7 @@
 Feature: A stale global skill mirror is named at session start, even at an unchanged version
   A session rooted outside the skills repo runs the skills mirrored into the user's global skills folder.
   Commits that change a skill without a version bump left that mirror stale with no warning, because the
-  session nudge compared only version strings. Source: ADR-0104. Observed 2026-10-31 on the maintainer's
+  session nudge compared only version strings. Source: ADR-0105. Observed 2026-10-31 on the maintainer's
   machine: installed and repo versions both 1.3.1, while the installer's check named 8 skills whose content
   had changed since they were mirrored.
 

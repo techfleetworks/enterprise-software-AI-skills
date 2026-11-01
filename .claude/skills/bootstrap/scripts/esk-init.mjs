@@ -35,7 +35,7 @@ import { dirname, resolve, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
 import { spawnSync } from "node:child_process";
-// The skill-mirror fingerprint and drift rule have ONE owner (ADR-0104), shared with the SessionStart emitter so
+// The skill-mirror fingerprint and drift rule have ONE owner (ADR-0105), shared with the SessionStart emitter so
 // the session nudge and `--check` agree on what "changed" means.
 import { signatureOf, mirrorDrift, skillNamesIn, SKILL_MIRROR_SKIP } from "./skill-signature.mjs";
 
@@ -222,7 +222,7 @@ function planSkills(marker) {
   const remove = prev.filter((n) => !src.includes(n));
   const behind = !marker || !marker.skills || marker.skills.version !== version || marker.skills.target !== skillsTarget;
   // Missing skills and content drift (a source fingerprint that differs from the one recorded when we last
-  // mirrored it) come from mirrorDrift, the same rule `--check` and the SessionStart nudge use (ADR-0104), so a
+  // mirrored it) come from mirrorDrift, the same rule `--check` and the SessionStart nudge use (ADR-0105), so a
   // reconcile clears exactly what they report. A skill with no stored signature (a pre-signature marker, or a
   // newly added skill) reads as changed, so the first reconcile re-mirrors and records the baseline.
   const sigs = skillSignatures(src);
@@ -498,7 +498,7 @@ function assess() {
       const names = sourceSkillNames();
       // Missing skills, and same-version content drift: a present skill whose current fingerprint differs from
       // the one recorded at mirror time (a git pull that edited or added a file inside the folder). The rule is
-      // owned by mirrorDrift (ADR-0104), the same one the SessionStart nudge uses. skillSignature fails closed.
+      // owned by mirrorDrift (ADR-0105), the same one the SessionStart nudge uses. skillSignature fails closed.
       const stored = marker.skills.signatures || {};
       const { missing: miss, changed: contentChanged } = mirrorDrift({ targetDir: tgt, names, recorded: stored, sign: skillSignature });
       if (miss.length) problems.push(`skills missing from ${tgt}: ${miss.join(", ")}`);

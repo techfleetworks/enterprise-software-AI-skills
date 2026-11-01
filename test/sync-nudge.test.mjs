@@ -64,7 +64,7 @@ test("unparseable version: do not guess, no nudge", () => {
   assert.equal(decideNudge({ currentVersion: "1.1.0", installedVersion: "garbage", state: null }).text, null);
 });
 
-// --- same-version content drift (ADR-0104) ---------------------------------------------------------------
+// --- same-version content drift (ADR-0105) ---------------------------------------------------------------
 test("same version but drifted skills: LOUD nudge naming each skill and the fix (discriminating)", () => {
   const r = decideNudge({ currentVersion: "1.3.1", installedVersion: "1.3.1", state: null, driftedSkills: ["judge-arch", "bootstrap"] });
   assert.equal(r.behind, true, "a stale mirror at the same version must count as behind");

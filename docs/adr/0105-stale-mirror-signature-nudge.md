@@ -4,7 +4,7 @@ date: 2026-10-31
 decision-makers: mdenner
 ---
 
-# 0104 - The session sync nudge also fires on a stale skill mirror at an unchanged version
+# 0105 - The session sync nudge also fires on a stale skill mirror at an unchanged version
 
 Found while auditing how the v1.4 PoEAA upgrade would reach agents (the v1.4 design spec, section 7, finding
 I4, staged on the unmerged branch `audit/poeaa-2026-11`). It is a defect in today's delivery path,
