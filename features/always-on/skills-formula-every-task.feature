@@ -57,6 +57,15 @@ Feature: Every task runs the full enterprise-skills formula, with no reminder
       Then "architectural-decision-records" and "release-deployment-safety" are marked "required"
       And the agent cannot mark either one "not-applicable"
 
+    @audience:agent @usecase:router-matches-absolute-edit-path @category:edge @quality:functional @severity:critical
+    Scenario: An edit named by its absolute path still gets the skills its folder requires
+      Source: ADR-0104 (Claude Code hands the edit hook an absolute path; the routing globs start at the repo root).
+      Given the project root is "/home/dev/repo"
+      And the selection marks "architectural-decision-records" as "not-applicable"
+      When the agent edits "/home/dev/repo/docs/adr/0200-x.md" by its absolute path
+      Then the edit does not run
+      And the router names "architectural-decision-records" as required
+
     @audience:agent @usecase:tiny-change-full-selection @category:boundary @quality:functional @severity:high
     Scenario: A one-line change still gets a full selection and a receipt
       Source: "There is NO triviality exemption: a one-line or copy-only change still ships a receipt."

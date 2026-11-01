@@ -18,7 +18,7 @@
 // base = ESK_HOME (if set) else ~/.claude/esk. A specific full-path env (ESK_TASK_RECORD, ESK_SELECTION, ...)
 // still wins when set, so tests and bespoke installs keep working unchanged.
 import { homedir } from "node:os";
-import { join, resolve } from "node:path";
+import { join, resolve, win32, posix } from "node:path";
 
 const SAFE_NAME = /^[A-Za-z0-9._-]+$/; // a session id must be a plain name: no separators, no traversal
 export function isSafeSession(id) { return typeof id === "string" && SAFE_NAME.test(id) && id !== "." && id !== ".."; }
@@ -53,4 +53,28 @@ export function resolvePath(kind, envName, sessionId) {
   if (!enforcementOn()) return null;
   if (!isSafeSession(sessionId)) return null;
   return sessionPaths(sessionId)[kind] || null;
+}
+
+// The project root a hook anchors edited paths to: CLAUDE_PROJECT_DIR (set by Claude Code for hooks), else the
+// payload's cwd, else the hook's own cwd. One rule, so the edit-gate and the Stop checks agree on every path.
+export function projectRoot(payload) {
+  return process.env.CLAUDE_PROJECT_DIR || (payload && payload.cwd) || process.cwd();
+}
+
+// An edited file's path as the routing globs and receipts expect it: relative to the project root, with forward
+// slashes (ADR-0104). Claude Code hands hooks ABSOLUTE paths, and a root-anchored glob (src/**, docs/adr/**) never
+// matches an absolute path. A path outside the root (or in another path family, e.g. a Windows path against a
+// POSIX root) is returned unchanged with forward slashes: it is never dropped, so it still counts as changed and
+// still meets every **/ rule, as before. Windows paths compare case-insensitively (path.win32.relative).
+const WIN_ABS = /^(?:[A-Za-z]:[\\/]|[\\/]{2})/;
+export function toRepoPath(p, root) {
+  const fwd = String(p).split("\\").join("/");
+  const s = String(p);
+  const winPath = WIN_ABS.test(s);
+  if (!root || (!winPath && !s.startsWith("/"))) return fwd.replace(/^(?:\.\/)+/, ""); // already relative
+  if (winPath !== WIN_ABS.test(String(root))) return fwd; // different path families: cannot be inside the root
+  const lib = winPath ? win32 : posix;
+  const rel = lib.relative(lib.resolve(String(root)), lib.resolve(s));
+  if (rel === "" || rel === ".." || rel.startsWith("../") || rel.startsWith("..\\") || lib.isAbsolute(rel)) return fwd;
+  return rel.split("\\").join("/");
 }

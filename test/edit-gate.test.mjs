@@ -136,6 +136,57 @@ test("step 3: an edit is DENIED when a required planning record is missing (exit
   assert.match(r.out, /plan step not satisfied|planning record/);
 });
 
+// ADR-0104: Claude Code hands the hook an ABSOLUTE path, but the router's globs are anchored to the repo root. The
+// selection below marks the two skills the source-change rule (src/**/*.ts) requires as not-applicable, so the
+// edit must be DENIED. If the gate stops making the path repo-relative, no root-anchored rule fires and the edit
+// is allowed, so each of these flips. The paths need not exist: the router matches strings, not files.
+function routerSandbox() {
+  const sb = sandbox();
+  const sel = { ...sb.sel };
+  for (const name of ["comprehensive-test-strategy", "bdd-comprehensive-testing"]) sel[name] = { verdict: "not-applicable", reason: "claimed not relevant" };
+  const selPath = join(sb.base, "selection.json"); writeFileSync(selPath, JSON.stringify(sel));
+  return { sb, selPath };
+}
+for (const [style, root, file, sub] of [
+  ["Windows", "C:\\Users\\dev\\repo", "C:\\Users\\dev\\repo\\src\\domain\\orders\\repository.ts", null],
+  ["Windows (mixed case, forward slashes)", "C:\\Users\\dev\\repo", "c:/users/dev/repo/src/domain/orders/repository.ts", null],
+  ["POSIX", "/home/dev/repo", "/home/dev/repo/src/domain/orders/repository.ts", null],
+  ["POSIX root from the payload cwd", null, "/home/dev/repo/src/domain/orders/repository.ts", "/home/dev/repo"],
+]) {
+  test(`an ABSOLUTE ${style} path is routed repo-relative, so a src/** rule fires (deny) - discriminating`, () => {
+    const { sb, selPath } = routerSandbox();
+    const payload = { ...editPayload(file), ...(sub ? { cwd: sub } : {}) };
+    const r = runGate(payload, { ESK_SELECTION: selPath, ESK_SKILLS_DIR: sb.skillsDir, CLAUDE_PROJECT_DIR: root || "" });
+    assert.equal(r.code, 2, r.out);
+    assert.match(r.out, /comprehensive-test-strategy|bdd-comprehensive-testing/);
+  });
+}
+
+test("an absolute docs/adr path is routed repo-relative, so an ADR edit needs the ADR skill (deny) - discriminating", () => {
+  const sb = sandbox();
+  const sel = { ...sb.sel, "architectural-decision-records": { verdict: "not-applicable", reason: "claimed not relevant" } };
+  const selPath = join(sb.base, "selection.json"); writeFileSync(selPath, JSON.stringify(sel));
+  const r = runGate(editPayload("/home/dev/repo/docs/adr/0200-x.md"), { ESK_SELECTION: selPath, ESK_SKILLS_DIR: sb.skillsDir, CLAUDE_PROJECT_DIR: "/home/dev/repo" });
+  assert.equal(r.code, 2, r.out);
+  assert.match(r.out, /architectural-decision-records/);
+});
+
+test("a path OUTSIDE the project root is passed through unchanged, so a root-anchored rule cannot claim it (allow)", () => {
+  const { sb, selPath } = routerSandbox();
+  const r = runGate(editPayload("/home/dev/elsewhere/src/domain/orders/repository.ts"), { ESK_SELECTION: selPath, ESK_SKILLS_DIR: sb.skillsDir, CLAUDE_PROJECT_DIR: "/home/dev/repo" });
+  assert.equal(r.code, 0, r.out);
+});
+
+test("a subagent edit at an absolute path is recorded repo-relative in the ledger (ADR-0104) - discriminating", () => {
+  const sb = sandbox();
+  const selPath = join(sb.base, "selection.json"); writeFileSync(selPath, JSON.stringify(sb.sel));
+  const ledger = join(sb.base, "subagents-abs.jsonl");
+  const r = runGate({ tool_name: "Write", tool_input: { file_path: "/home/dev/repo/src/feature.ts", content: "x" }, session_id: "s1", agent_name: "impl-8" }, { ESK_SELECTION: selPath, ESK_SKILLS_DIR: sb.skillsDir, ESK_SUBAGENTS_FILE: ledger, CLAUDE_PROJECT_DIR: "/home/dev/repo" });
+  assert.equal(r.code, 0, r.out);
+  const entries = readFileSync(ledger, "utf8").trim().split(/\r?\n/).map((l) => JSON.parse(l));
+  assert.deepEqual(entries.map((e) => e.changed_files), [["src/feature.ts"]]);
+});
+
 test("a malformed payload fails closed (deny, exit 2)", () => {
   try {
     execFileSync(process.execPath, [GATE], { encoding: "utf8", input: "{ not json", env: { ...process.env, ESK_SELECTION: "x" } });

@@ -14,7 +14,7 @@
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
-import { enforcementOn, isSafeSession, sessionPaths } from "./esk-paths.mjs";
+import { enforcementOn, isSafeSession, sessionPaths, projectRoot } from "./esk-paths.mjs";
 
 // Read the operator waivers file and return its entries (or []). Used to SURFACE every waiver in effect at session
 // start, so a waiver added outside the operator process (a forged by:"operator" entry) is visible, not silent.
@@ -59,7 +59,7 @@ process.stdin.on("end", () => {
   if (!enforcementOn()) process.exit(0); // not wired: say nothing
 
   // Candidate settings files that could carry the hooks: the project's, its local override, and the personal one.
-  const projectDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+  const projectDir = projectRoot(payload);
   const candidates = [
     join(projectDir, ".claude", "settings.json"),
     join(projectDir, ".claude", "settings.local.json"),
