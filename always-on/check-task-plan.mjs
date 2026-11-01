@@ -20,6 +20,7 @@
 // structural check of each planning record (the deep ADR gate stays check_adr; this is the edit-time pre-check).
 import { readFileSync, existsSync, statSync, readdirSync } from "node:fs";
 import { resolve, join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { createHash } from "node:crypto";
 import { loadRoutingConfig, requiredSkillsForPaths } from "./routing-lib.mjs";
 
@@ -157,6 +158,7 @@ if (mode === "plan") {
   const sel = selectionObj();
   const plans = loadJson(opt("--plans"), "plans");
   if (!plans || typeof plans !== "object" || Array.isArray(plans)) hold("the plans must be a JSON object of record-type -> record.");
+  const poeaa = await poeaaChecker(skillsDir);
 
   // Every required/applies skill that defines a planning record must have it, complete, before a source edit.
   const need = Object.entries(sel)
@@ -168,12 +170,53 @@ if (mode === "plan") {
     if (rec == null) hold(`skill "${name}" is ${sel[name].verdict} but its ${rt} planning record is missing; the source edit is held until it exists.`);
     const problem = validateRecord(rt, rec);
     if (problem) hold(`skill "${name}": the ${rt} record is incomplete - ${problem}.`);
+    if (rt === "pattern-decision") {
+      if (!poeaa) console.log(`[check-task-plan] not-assessed: PoEAA registry not installed, so the pattern decision's PoEAA pages were not checked. Refresh the skills (esk-init --skills) to get pattern-selector/references/poeaa-registry.json.`);
+      else {
+        const cite = poeaa.problem(rec);
+        if (cite) hold(`skill "${name}": the pattern-decision record cites PoEAA wrongly - ${cite}.`);
+      }
+    }
   }
   console.log(`[check-task-plan] OK - ${need.length} planning record(s) present and complete. A human must still review that the plan is sound.`);
   process.exit(0);
 }
 
 hold(`unknown mode "${mode}" (expected selection | loaded | plan). Run with --help.`);
+
+// --- PoEAA citations in a pattern decision (ADR-0106, spec R2.12) -------------------------------------------
+// The installed pattern-selector skill owns the page registry and the code that reads it; this check calls that
+// code rather than copying the rule. An older install that has neither file is reported as not-assessed, not
+// held (the edit-gate's "not wired" convention), because blocking every edit on files the agent cannot get would
+// be worse than the gap. Exactly one of the two present is a broken install, not an old one, and is held; so is
+// a registry that is present but unreadable or invalid (fail closed). Trust: the reader runs in this process,
+// with the same trust as the hook scripts of the same install (ADR-0106).
+async function poeaaChecker(skillsDir) {
+  const lib = join(skillsDir, "pattern-selector", "scripts", "poeaa-registry.mjs");
+  const data = join(skillsDir, "pattern-selector", "references", "poeaa-registry.json");
+  const haveLib = existsSync(lib), haveData = existsSync(data);
+  if (!haveLib && !haveData) return null;
+  if (haveLib !== haveData) hold(`the PoEAA check is half installed: ${haveLib ? data : lib} is missing (refresh the skills with esk-init --skills).`);
+  let P, rows;
+  try { P = await import(pathToFileURL(lib).href); rows = P.loadRegistry(data); }
+  catch (e) { hold(`the PoEAA registry is installed but could not be read (${e.message}).`); }
+  const bad = P.validateRegistry(rows);
+  if (bad.length) hold(`the installed PoEAA registry is invalid: ${bad[0]}.`);
+  return {
+    // The first wrong or unknown "<Pattern> (<page>)" token in any field of the record, or null.
+    problem(rec) {
+      // Every string in the record, nested ones included (a list field such as candidates considered).
+      const strings = (v) => (typeof v === "string" ? [v] : v && typeof v === "object" ? Object.values(v).flatMap(strings) : []);
+      const text = strings(rec).join("\n");
+      const wrong = P.wrongPages(text, rows, P.ANY_PAGE)[0];
+      if (wrong) return `${wrong.name} is on page ${wrong.page}, not ${wrong.cited}`;
+      // A title-case name with a three-digit page reads as a PoEAA citation; "Step (2)" and "PR (415)" do not.
+      const unknown = P.unknownNamedTokens(text, rows)[0];
+      if (unknown) return `${unknown.name} is not in the registry (the PoEAA patterns are listed in pattern-selector/references/poeaa-registry.json)`;
+      return null;
+    },
+  };
+}
 
 // --- planning-record validators (fast structural checks; the deep ADR gate stays check_adr) ------------------
 function str(v) { return typeof v === "string" && v.trim() !== ""; }

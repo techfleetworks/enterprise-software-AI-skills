@@ -133,7 +133,10 @@ Picking the right pattern is a judgment call, so it cannot be fully automated. B
 chooses from can be kept honest, and it must be, because every other skill here ships a gate.
 `scripts/check-catalog-completeness.mjs` fails when any catalog entry is missing a template field or a
 primary-source citation. So a half-filled or uncited entry cannot ship. It comes with a test that strips a
-field from a sample entry and confirms the gate then fails.
+field from a sample entry and confirms the gate then fails. For Fowler's PoEAA it also checks that each
+citation is right, not just present: every page must match `references/poeaa-registry.json`, the one owner
+of the book's page facts, and every one of the book's 51 patterns must be covered by an entry or declined
+with a reason.
 
 The decision-record habit (every choice names its forces, its simpler option, and the failure it prevents)
 is held by the Definition of done below and by a fresh-context `judge-arch` review. A later change-type to
@@ -172,6 +175,7 @@ greppable ("data access only through a Repository in `domain/`"), turn it into a
 | The honest limits: patterns as a smell, language features that replace them, patterns that widen the attack surface, measured risks | `references/criticism-and-limits.md` |
 | Anti-patterns and smells to find and remove | `references/anti-patterns-and-smells.md` |
 | The gate: catalog-completeness and citation linter (fails closed, has a discriminating test) | `scripts/check-catalog-completeness.mjs` |
+| The PoEAA page registry: each of the book's 51 patterns, its printed page, and whether the catalog covers it | `references/poeaa-registry.json` (read through `scripts/poeaa-registry.mjs`) |
 
 ## Evidence & skeptical assessment (required)
 

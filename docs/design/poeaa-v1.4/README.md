@@ -20,7 +20,8 @@ step definitions, in the pull request that builds it.
   exit code, a field in a catalog entry, a row in the chooser, arch-gate's output on a fixture. These
   become gated tests. Where a Then still states intent rather than an exact string (some WP4 to WP8
   scenarios, written before the entries exist), spec section 4 requires it to name an exact anchor string
-  before it graduates; `existing-entries.feature` and `citation-gate.feature` already do.
+  before it graduates; `existing-entries.feature` already does, and `citation-gate.feature` did before it
+  graduated in WP2.
 - **`evals/agent-choice.feature`: agent-behavior evals.** Whether an agent picks the right pattern is
   probabilistic, so these are scored by running each prompt in a fresh agent session and grading the
   decision record it writes. They are tagged `@eval` and never move into `features/`.
@@ -34,7 +35,7 @@ tags).
 | File | Work package | Findings | Cases |
 |---|---|---|---|
 | `spec.md` | all | all | the requirements, outcomes, order, and risks |
-| `features/citation-gate.feature` | WP2 | F1, F2 | 11 scenarios, 5 outlines (25 rows) |
+| `features/citation-gate.feature` | WP2 | F1, F2 | graduated in WP2 to `features/pattern-selector/citation-gate.feature` (11 scenarios, 5 outlines, 25 rows) |
 | `features/existing-entries.feature` | WP3 | F2, F3, F5, F9, F10, F11, F17, F18, F19, F20 | 13 scenarios |
 | `features/domain-logic-and-data-source.feature` | WP4 | F4, F13 | 4 scenarios, 1 outline (6 rows) |
 | `features/concurrency-and-session.feature` | WP5 | F5, F12 | 5 scenarios, 1 outline (7 rows) |
@@ -43,10 +44,11 @@ tags).
 | `features/web-presentation.feature` | WP8 | F16 | 2 scenarios, 1 outline (6 rows) |
 | `features/prove-it-kit.feature` | WP9 | F7 | 6 scenarios, 3 outlines (17 rows) |
 | `features/chooser-routing.feature` | WP3 to WP7, row by row | F8 | 2 scenarios, 1 outline (12 rows) |
-| `features/pattern-decision-record.feature` | WP2, WP3 (most), WP9 | I1, I2, I3, D1 | 11 scenarios, 4 outlines (19 rows) |
+| `features/pattern-decision-record.feature` | WP3 (most), WP9 | I1, I2, I3, D1 | 9 scenarios, 3 outlines (17 rows); its 2 scenarios and 1 outline (2 rows) for WP2 graduated to `features/always-on/pattern-decision-citations.feature` |
 | `evals/agent-choice.feature` | measured after each WP | F1 to F6, F9, F11, F12, F15, F20 | 11 evals |
 
-Totals: 63 scenarios plus 115 outline rows, so 178 system test cases, and 11 agent-behavior evals.
+Totals: 63 scenarios plus 115 outline rows, so 178 system test cases, and 11 agent-behavior evals. WP2
+graduated 40 of them (13 scenarios plus 27 outline rows), which now run in CI; 138 remain here.
 
 ## How to read a scenario
 
