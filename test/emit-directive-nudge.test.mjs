@@ -7,12 +7,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, writeFileSync, copyFileSync, existsSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, copyFileSync, existsSync, readFileSync, rmSync, cpSync } from "node:fs";
 import { resolve, join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
+import { signatureOf } from "../.claude/skills/bootstrap/scripts/skill-signature.mjs";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const SIG_REL = join(".claude", "skills", "bootstrap", "scripts", "skill-signature.mjs");
 const created = [];
 
 // Build a throwaway repo: always-on/{emit-directive.mjs, sync-nudge.mjs, directive}, and a package.json with
@@ -25,6 +27,9 @@ function fakeRepo(version) {
   copyFileSync(join(REPO, "always-on", "sync-nudge.mjs"), join(root, "always-on", "sync-nudge.mjs"));
   // emit-directive.mjs imports enforcement-nudge.mjs too, so the copy must ship with it.
   copyFileSync(join(REPO, "always-on", "enforcement-nudge.mjs"), join(root, "always-on", "enforcement-nudge.mjs"));
+  // and the bootstrap skill's skill-signature.mjs (ADR-0104), loaded by a dynamic import for the content-drift check.
+  mkdirSync(join(root, SIG_REL, ".."), { recursive: true });
+  copyFileSync(join(REPO, SIG_REL), join(root, SIG_REL));
   writeFileSync(join(root, "always-on", "enterprise-skills-always-on.md"), "Enterprise engineering skills, always on.\nThis is a stub directive for the test.");
   writeFileSync(join(root, "package.json"), JSON.stringify({ name: "fake", version }) + "\n");
   return { root, emit: join(root, "always-on", "emit-directive.mjs") };
@@ -111,6 +116,87 @@ test("a marker for a DIFFERENT repo does not drive this repo's nudge (Finding 2)
   const home = fakeHome({ version: "0.0.1", repo: "/some/other/repo" });
   const { ctx } = emit(e, "SessionStart", home);
   assert.doesNotMatch(ctx, /OUT OF DATE/, "a marker naming a different repo must be ignored");
+});
+
+// --- same-version content drift (ADR-0104) through the emitter -----------------------------------------
+// A fake repo with two source skills, a fake mirror target, and a marker for THIS repo at the SAME version whose
+// per-skill signatures are either the real current ones (in sync) or a stale one for "beta" (drifted).
+function skillsSetup(root, home, { staleBeta = false, dropAlphaFromTarget = false, target } = {}) {
+  const src = join(root, ".claude", "skills");
+  const tgt = target || join(home, ".claude", "skills");
+  for (const n of ["alpha", "beta"]) {
+    mkdirSync(join(src, n), { recursive: true });
+    writeFileSync(join(src, n, "SKILL.md"), `# ${n}\nsource body\n`);
+    if (!(dropAlphaFromTarget && n === "alpha")) cpSync(join(src, n), join(tgt, n), { recursive: true });
+  }
+  const sigs = { alpha: signatureOf(join(src, "alpha"), "alpha"), beta: signatureOf(join(src, "beta"), "beta") };
+  if (staleBeta) sigs.beta = "0".repeat(64); // the repo changed beta after it was mirrored, at the same version
+  writeFileSync(join(home, ".claude", ".esk-installed"), JSON.stringify({
+    version: "1.1.0", repo: root, settings: "x", form: "exec",
+    skills: { target: tgt, names: ["alpha", "beta"], version: "1.1.0", signatures: sigs },
+  }) + "\n");
+}
+
+test("SAME version but a mirrored skill drifted: the nudge names it and the fix (discriminating)", () => {
+  const { root, emit: e } = fakeRepo("1.1.0");
+  const home = fakeHome(null);
+  skillsSetup(root, home, { staleBeta: true });
+  const { status, ctx } = emit(e, "SessionStart", home);
+  assert.equal(status, 0);
+  assert.match(ctx, /OUT OF DATE/, "a stale mirror at an unchanged version must still nudge");
+  assert.match(ctx, /STALE: beta\./, "only the drifted skill is named");
+  assert.match(ctx, /--personal --yes --skills/);
+  assert.match(ctx, /Enterprise engineering skills/, "the directive still follows the nudge");
+});
+
+test("SAME version, a skill missing from the mirror: the nudge names it", () => {
+  const { root, emit: e } = fakeRepo("1.1.0");
+  const home = fakeHome(null);
+  skillsSetup(root, home, { dropAlphaFromTarget: true });
+  const { ctx } = emit(e, "SessionStart", home);
+  assert.match(ctx, /STALE: alpha\./);
+});
+
+test("SAME version and every signature matches: no nudge", () => {
+  const { root, emit: e } = fakeRepo("1.1.0");
+  const home = fakeHome(null);
+  skillsSetup(root, home);
+  const { ctx } = emit(e, "SessionStart", home);
+  assert.doesNotMatch(ctx, /OUT OF DATE/, "an in-sync mirror must not be nudged");
+});
+
+test("a missing skill-signature module means no drift nudge, never a broken directive (best-effort)", () => {
+  const { root, emit: e } = fakeRepo("1.1.0");
+  const home = fakeHome(null);
+  skillsSetup(root, home, { staleBeta: true });
+  rmSync(join(root, SIG_REL));
+  const { status, ctx } = emit(e, "SessionStart", home);
+  assert.equal(status, 0);
+  assert.doesNotMatch(ctx, /OUT OF DATE/);
+  assert.match(ctx, /Enterprise engineering skills/, "the directive is still emitted");
+});
+
+test("a drift scan past its time budget stops: no drift nudge, and the directive is still emitted", () => {
+  const { root, emit: e } = fakeRepo("1.1.0");
+  const home = fakeHome(null);
+  skillsSetup(root, home, { staleBeta: true });
+  const statePath = join(home, ".claude", ".esk-nudge.json");
+  writeFileSync(statePath, JSON.stringify({ forVersion: "1.1.0+content:beta", count: 12 }) + "\n");
+  const { status, ctx } = emit(e, "SessionStart", home, { ESK_DRIFT_BUDGET_MS: "0" });
+  assert.equal(status, 0);
+  assert.doesNotMatch(ctx, /OUT OF DATE/, "a scan cut off by the budget must not report a partial verdict");
+  assert.match(ctx, /Enterprise engineering skills/);
+  assert.equal(JSON.parse(readFileSync(statePath, "utf8")).count, 12, "a skipped scan must keep the counter, not clear it as in sync");
+});
+
+test("a non-default mirror folder is named in the printed fix", () => {
+  const { root, emit: e } = fakeRepo("1.1.0");
+  const home = fakeHome(null);
+  const custom = join(home, "custom-skills");
+  skillsSetup(root, home, { staleBeta: true, target: custom });
+  const { ctx } = emit(e, "SessionStart", home);
+  assert.match(ctx, /STALE: beta\./);
+  assert.ok(ctx.includes(`--skills-target "${custom}"`), "the fix must re-mirror the folder that is stale");
 });
 
 // --- enforcement nudge (ADR-0066) integration through the emitter ------------------------------------

@@ -759,6 +759,61 @@
     "status": "covered"
   },
   {
+    "feature": "always-on/stale-mirror-nudge.feature",
+    "scenario": "A broken drift check never costs the session its directive",
+    "domain": "always-on",
+    "audience": "agent",
+    "usecase": "drift-check-failure-keeps-directive",
+    "category": "error",
+    "quality": "reliability",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/stale-mirror-nudge.feature",
+    "scenario": "A mirror recorded for a different clone does not drive this clone's message",
+    "domain": "always-on",
+    "audience": "operator",
+    "usecase": "other-clone-marker-ignored",
+    "category": "negative",
+    "quality": "reliability",
+    "severity": "medium",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/stale-mirror-nudge.feature",
+    "scenario": "A mirror that matches the repo gets no sync message",
+    "domain": "always-on",
+    "audience": "operator",
+    "usecase": "current-mirror-not-nudged",
+    "category": "happy",
+    "quality": "functional",
+    "severity": "medium",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/stale-mirror-nudge.feature",
+    "scenario": "A skill changed in the repo after it was mirrored is named at session start",
+    "domain": "always-on",
+    "audience": "operator",
+    "usecase": "stale-mirror-named-at-start",
+    "category": "edge",
+    "quality": "reliability",
+    "severity": "high",
+    "status": "covered"
+  },
+  {
+    "feature": "always-on/stale-mirror-nudge.feature",
+    "scenario": "A skill missing from the global mirror is named at session start",
+    "domain": "always-on",
+    "audience": "operator",
+    "usecase": "missing-mirrored-skill-named",
+    "category": "edge",
+    "quality": "reliability",
+    "severity": "medium",
+    "status": "covered"
+  },
+  {
     "feature": "always-on/subagents-apply-skills.feature",
     "scenario": "A brief that names no skill still gets the skills the work needs",
     "domain": "always-on",

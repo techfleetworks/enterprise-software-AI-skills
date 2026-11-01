@@ -73,6 +73,11 @@ Generated from the feature files by `bdd-index-generate.mjs` - do not edit by ha
 | always-on/skills-formula-every-task.feature | Two tasks keep their proof separate | always-on | agent | two-tasks-kept-apart | concurrency | functional | high | covered |
 | always-on/skills-formula-every-task.feature | When the agent is unsure whether a skill applies, it applies it | always-on | agent | unsure-means-apply | edge | functional | high | covered |
 | always-on/skills-formula-every-task.feature | When the audiences are not certain, the agent asks the operator and waits | always-on | operator | unsure-audience-asks | permission | functional | high | covered |
+| always-on/stale-mirror-nudge.feature | A broken drift check never costs the session its directive | always-on | agent | drift-check-failure-keeps-directive | error | reliability | high | covered |
+| always-on/stale-mirror-nudge.feature | A mirror recorded for a different clone does not drive this clone's message | always-on | operator | other-clone-marker-ignored | negative | reliability | medium | covered |
+| always-on/stale-mirror-nudge.feature | A mirror that matches the repo gets no sync message | always-on | operator | current-mirror-not-nudged | happy | functional | medium | covered |
+| always-on/stale-mirror-nudge.feature | A skill changed in the repo after it was mirrored is named at session start | always-on | operator | stale-mirror-named-at-start | edge | reliability | high | covered |
+| always-on/stale-mirror-nudge.feature | A skill missing from the global mirror is named at session start | always-on | operator | missing-mirrored-skill-named | edge | reliability | medium | covered |
 | always-on/subagents-apply-skills.feature | A brief that names no skill still gets the skills the work needs | always-on | subagent | brief-names-no-skill | edge | functional | critical | covered |
 | always-on/subagents-apply-skills.feature | A read-only reviewer hands back findings that each carry evidence | always-on | subagent | reviewer-findings-carry-evidence | edge | reliability | medium | covered |
 | always-on/subagents-apply-skills.feature | A subagent cut off mid-task leaves its unreceipted edits flagged | always-on | subagent | interrupted-subagent-flagged | timeout | reliability | medium | covered |
