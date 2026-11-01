@@ -18,7 +18,7 @@ import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
-import { resolvePath, enforcementOn } from "./esk-paths.mjs";
+import { resolvePath, enforcementOn, projectRoot } from "./esk-paths.mjs";
 import { changedFilesFromTranscript, skillsReadInTranscript, firstUserText, lastAssistantText } from "./transcript-files.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -75,8 +75,10 @@ process.stdin.on("end", () => {
     const tpath = payload.agent_transcript_path || payload.transcript_path || null;
     if (!tpath) allow("no subagent transcript was provided; nothing to check (the parent finish-check backstops).");
 
-    CHANGED = changedFilesFromTranscript(tpath); // throws on a read error -> block (fail closed)
-    const skillsDir = process.env.ESK_SKILLS_DIR || ".claude/skills";
+    // Repo-relative (ADR-0104), the same spelling the edit-gate writes to the ledger, so per-file coverage matches.
+    const root = projectRoot(payload);
+    CHANGED = changedFilesFromTranscript(tpath, root); // throws on a read error -> block (fail closed)
+    const skillsDir = resolve(process.env.ESK_SKILLS_DIR || ".claude/skills");
     const read = skillsReadInTranscript(tpath);
     const brief = firstUserText(tpath);
     const installed = existsSync(skillsDir) ? readdirSync(skillsDir, { withFileTypes: true }).filter((e) => e.isDirectory() && existsSync(join(skillsDir, e.name, "SKILL.md"))).map((e) => e.name) : [];
@@ -92,9 +94,9 @@ process.stdin.on("end", () => {
       const receiptPath = process.env.ESK_RECEIPT || resolvePath("receipt", "ESK_RECEIPT", SESSION);
       if (!str(receiptPath)) { problems.push(`you changed ${CHANGED.length} file(s) but have no receipt; write one covering ${CHANGED.slice(0, 5).join(", ")} and the skills you applied.`); }
       else {
-        const r = spawnSync(process.execPath, [TASK_RECEIPT, "check", "--receipt", receiptPath, "--changed-list", CHANGED.join(","), "--skills-dir", skillsDir], { encoding: "utf8" });
+        const r = spawnSync(process.execPath, [TASK_RECEIPT, "check", "--receipt", resolve(receiptPath), "--changed-list", CHANGED.join(","), "--skills-dir", skillsDir], { encoding: "utf8", cwd: root });
         RECEIPT_OK = r.status === 0;
-        if (!RECEIPT_OK) problems.push(`the receipt does not cover your changed files:\n${(r.stdout || "") + (r.stderr || "")}`.trim());
+        if (!RECEIPT_OK) problems.push(`the receipt does not cover your changed files:\n${(r.stdout || "") + (r.stderr || "")}${r.error ? `could not run the receipt checker from the project root ${root} (${r.error.message})` : ""}`.trim());
       }
     } else {
       // 3. A read-only reviewer: no code receipt, but its findings must carry evidence (claim-lint on the report).

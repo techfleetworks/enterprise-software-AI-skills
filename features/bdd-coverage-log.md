@@ -124,6 +124,16 @@ them (the receipt).
 - severity: critical, high, medium
 - gate: check-gherkin-valid OK, check-bdd-tags OK, check-bdd-coverage OK, bdd-run OK, check-bdd-executed OK
 
+## 2026-10-31 - the router matches an edit named by its absolute path (ADR-0104)
+- event: added
+- change: fix/edit-gate-absolute-paths
+- scenarios: router-matches-absolute-edit-path
+- audiences: agent
+- categories: edge
+- quality: functional
+- severity: critical
+- gate: bdd-run OK, check-bdd-executed OK (96 scenarios)
+
 ## 2026-10-31 - name a stale global skill mirror at session start (ADR-0105)
 - event: added
 - change: fix/stale-mirror-signature-nudge

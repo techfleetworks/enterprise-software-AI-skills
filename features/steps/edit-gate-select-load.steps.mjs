@@ -433,4 +433,17 @@ export default function ({ Given, When, Then, And }) {
   });
   Then(/^the standards it cites are visible in the code$/, ok0);
   And(/^claims about load or resilience point to a measurement or a test$/, ok0);
+
+  // --- ADR-0104: the edit hook gets an ABSOLUTE path; it must be made repo-relative before the router matches it,
+  // or a root-anchored rule (docs/adr/**) never fires and the not-applicable verdict below would be let through.
+  Given(/^the project root is "\/home\/dev\/repo"$/, (world) => { ensureSkills(world); world.projectRoot = "/home/dev/repo"; });
+  And(/^the selection marks "architectural-decision-records" as "not-applicable"$/, (world) => {
+    const sel = fullSelection();
+    sel["architectural-decision-records"] = { verdict: "not-applicable", reason: "claimed not relevant" };
+    world.selectionPath = writeJson(world.workDir, "selection.json", sel);
+  });
+  When(/^the agent edits "\/home\/dev\/repo\/docs\/adr\/0200-x\.md" by its absolute path$/, (world) => {
+    world.res = editGate({ tool_name: "Write", tool_input: { file_path: "/home/dev/repo/docs/adr/0200-x.md" } }, { ESK_SELECTION: world.selectionPath, ESK_SKILLS_DIR: world.skillsDir, CLAUDE_PROJECT_DIR: world.projectRoot });
+  });
+  And(/^the router names "architectural-decision-records" as required$/, (world) => { assert.match(world.res.out, /architectural-decision-records/, world.res.out); });
 }

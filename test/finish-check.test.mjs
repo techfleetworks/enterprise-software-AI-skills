@@ -67,6 +67,31 @@ test("a task with every formula step proven and a passing receipt ends (exit 0)"
   assert.equal(r.status, 0, r.out);
 });
 
+test("an absolute edited path is made repo-relative, so a repo-relative receipt and review matrix cover it (ADR-0104) - discriminating", () => {
+  // The transcript carries the ABSOLUTE path Claude Code records; the receipt and the review matrix name the file
+  // the way the record docs show it (repo-relative). Without the normalization the matrix and receipt miss it.
+  const sc = scenario();
+  const rel = "feature.ts";
+  const receipt = join(sc.base, "receipt-rel.jsonl");
+  writeFileSync(receipt, JSON.stringify({
+    task_id: "t1", changed_files: [{ path: rel, sha256: sha256(Buffer.from("export const x = 1;\n")) }],
+    skills: [{ name: "comprehensive-test-strategy", verdict: "applied", heading: "the-core-rule", quote: QUOTE, files: [rel] }],
+  }) + "\n");
+  const rec = { ...sc.record, receiptPath: receipt, review: { ...sc.record.review, matrix: { [rel]: sc.record.review.matrix[sc.src] } } };
+  const rp = writeRecord(sc.base, rec);
+  const r = run({ transcript_path: sc.transcript, session_id: "s1" }, { ESK_TASK_RECORD: rp, ESK_RECEIPT: receipt, ESK_SKILLS_DIR: sc.skillsDir, CLAUDE_PROJECT_DIR: sc.work });
+  assert.equal(r.status, 0, r.out);
+});
+
+test("a project root that does not exist BLOCKS and names the root, not a silent pass (ADR-0104) - discriminating", () => {
+  const sc = scenario();
+  const rp = writeRecord(sc.base, sc.record);
+  const missingRoot = join(sc.base, "no-such-root");
+  const r = run({ transcript_path: sc.transcript, session_id: "s1" }, { ESK_TASK_RECORD: rp, ESK_RECEIPT: sc.receipt, ESK_SKILLS_DIR: sc.skillsDir, CLAUDE_PROJECT_DIR: missingRoot });
+  assert.equal(r.status, 2, r.out);
+  assert.match(r.out, /could not run the receipt checker from the project root/);
+});
+
 test("a read-only task (no edits in the transcript) ends with no receipt (exit 0)", () => {
   const sc = scenario();
   const empty = join(sc.base, "ro.jsonl");
