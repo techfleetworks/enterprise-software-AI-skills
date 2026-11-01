@@ -1,5 +1,5 @@
 ---
-status: "accepted"
+status: "superseded by ADR-0107 for the append-only logs (CHANGELOG.md stays on union as decided here)"
 date: 2026-10-24
 decision-makers: mdenner
 ---

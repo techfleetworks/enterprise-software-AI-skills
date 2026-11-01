@@ -22,7 +22,8 @@
     "_comment_test_bdd": "Executable BDD (ADR-0091): run the .feature scenarios with the dependency-free step runner (bdd-run.mjs) and reconcile the Cucumber JSON against the committed datastore (check-bdd-executed). This is what makes 'the scenarios actually ran and every one passed' provable, not just that the .feature files parse. CI (the bdd job in test.yml) also runs check-gherkin-valid/tags/coverage over features/. The report .bdd-report.json is gitignored.",
     "test:bdd": "node .claude/skills/bdd-comprehensive-testing/scripts/bdd-run.mjs features --steps features/steps --out .bdd-report.json && node .claude/skills/bdd-comprehensive-testing/scripts/check-bdd-executed.mjs features --results .bdd-report.json",
     "_comment_prepare": "Self-dogfood (ADR-0053): arm this repo's own .githooks/pre-push on `npm install`, with zero per-clone steps, by pointing core.hooksPath at .githooks. install-hooks.mjs never clobbers an existing core.hooksPath and never fails the install (ADR-0050). The hook runs the repo's fast offline gates locally before a push; CI stays the authority.",
-    "prepare": "node .githooks/install-hooks.mjs"
+    "_comment_prepare_merge_driver": "Also registers the append-log merge driver for the append-only logs (ADR-0107). It is repo-only, so it is chained here and NOT added to install-hooks.mjs, which must stay byte-identical to the template shipped to consumers.",
+    "prepare": "node .githooks/install-hooks.mjs && node scripts/merge-append-log.mjs --install"
   },
   "engines": {
     "node": ">=20"
