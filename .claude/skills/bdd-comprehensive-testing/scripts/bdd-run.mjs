@@ -11,9 +11,10 @@
  * @cucumber/cucumber behind that one contract with no change to the reconciler.
  *
  * Honest limit (documented): it supports the Gherkin subset these feature files use - Feature, Rule,
- * Background, Scenario, and Given/When/Then/And/But steps, with @tags. It does NOT implement Scenario
- * Outline / Examples, data tables, or doc strings; it fails closed (exit 2) if it meets one, naming
- * the file, rather than silently passing. If the suite ever needs those, swap in @cucumber/cucumber.
+ * Background, Scenario, Scenario Outline with Examples (one run per row, "<column>" replaced in the step
+ * text; ADR-0106), and Given/When/Then/And/But steps, with @tags. It does NOT implement data tables or doc
+ * strings, and an Examples block with no rows fails closed (exit 2). If the suite ever needs more, swap in
+ * @cucumber/cucumber.
  *
  *   node bdd-run.mjs [featuresDir] --steps <stepsDir> [--out <cucumber.json>]
  *
@@ -103,8 +104,19 @@ function scenarioRuns(doc) {
   const featureBg = [];
   for (const c of feature.children || []) if (c.background) featureBg.push(...stepsOf(c.background));
   const addScenario = (scn, inheritedBg) => {
-    if (scn.examples && scn.examples.length) die(`Scenario Outline is not supported by this minimal runner: "${scn.name}". Use plain Scenarios, or swap in @cucumber/cucumber.`);
-    runs.push({ name: scn.name, steps: [...inheritedBg, ...stepsOf(scn)] });
+    if (!scn.examples || !scn.examples.length) { runs.push({ name: scn.name, steps: [...inheritedBg, ...stepsOf(scn)] }); return; }
+    // A Scenario Outline runs once per Examples row, with each <column> in its step text replaced by that row's
+    // cell, as Cucumber does. Every row keeps the outline's name, so check-bdd-executed needs all rows to pass.
+    for (const ex of scn.examples) {
+      const cols = ((ex.tableHeader && ex.tableHeader.cells) || []).map((c) => c.value);
+      const body = ex.tableBody || [];
+      if (!cols.length || !body.length) die(`Scenario Outline "${scn.name}" has an Examples block with no header or no rows (fail closed; an outline that runs zero times proves nothing).`);
+      for (const row of body) {
+        // One pass, so a cell whose value looks like another column ("<m>") is kept as written, as in Cucumber.
+        const fill = (text) => text.replace(/<([^<>]+)>/g, (whole, col) => (cols.includes(col) ? row.cells[cols.indexOf(col)].value : whole));
+        runs.push({ name: scn.name, steps: [...inheritedBg, ...stepsOf(scn).map((s) => ({ ...s, text: fill(s.text) }))] });
+      }
+    }
   };
   for (const c of feature.children || []) {
     if (c.scenario) addScenario(c.scenario, featureBg);
