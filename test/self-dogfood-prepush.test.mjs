@@ -52,7 +52,8 @@ test("SELF-DOGFOOD pre-push: BLOCKS when a different gate fails too", () => {
 
 test("SELF-DOGFOOD: the zero-step arming is wired (prepare -> install-hooks, hooks present)", () => {
   const pkg = JSON.parse(readFileSync(join(REPO, "package.json"), "utf8"));
-  assert.equal(pkg.scripts.prepare, "node .githooks/install-hooks.mjs", "package.json prepare must arm the hook on npm install");
+  assert.equal(pkg.scripts.prepare, "node .githooks/install-hooks.mjs && node scripts/merge-append-log.mjs --install",
+    "package.json prepare must arm the hook and register the append-log merge driver (ADR-0107) on npm install");
   assert.ok(existsSync(HOOK), ".githooks/pre-push must exist");
   assert.ok(existsSync(join(REPO, ".githooks/install-hooks.mjs")), ".githooks/install-hooks.mjs must exist");
 });
