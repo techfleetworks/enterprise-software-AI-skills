@@ -6,7 +6,10 @@ decision-makers: mdenner
 
 # 0108 - Each change records itself in its own new file, so two open pull requests cannot conflict
 
-Supersedes ADR-0087 (the `merge=union` driver for the logs and the changelog). The operator asked on 2026-11-02:
+Supersedes ADR-0087 (the `merge=union` driver for the logs and the changelog) and ADR-0107 (the `append-log`
+merge driver, PR 201, which merged while this change was in review). With no shared append file left, neither
+driver has anything to merge, so the `append-log` script, its `npm install` step, and its tests are removed.
+The operator asked on 2026-11-02:
 "there keeps being new merge conflicts. fix the root of the issue. make it structurally impossible to break fail
 error or have merge conflicts again."
 
