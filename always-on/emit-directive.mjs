@@ -26,7 +26,7 @@
  */
 import { readFileSync, writeFileSync, existsSync, unlinkSync, mkdirSync, readdirSync } from "node:fs";
 import { dirname, resolve, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { homedir } from "node:os";
 import { decideNudge } from "./sync-nudge.mjs";
 import { decideEnforcementNudge, rulesetRequires } from "./enforcement-nudge.mjs";
@@ -62,7 +62,44 @@ text = clean(text);
 // best-effort: any failure means no nudge, never a broken directive. Prepended (not appended) so it survives
 // the MAX-length truncation below, which cuts the end.
 function readJson(p) { try { return JSON.parse(readFileSync(p, "utf8")); } catch { return null; } }
-function sessionNudge() {
+// Same-version content drift (ADR-0105): which mirrored skills no longer match the repo, by the per-skill
+// signatures the installer recorded in the marker. The rule lives in the bootstrap skill's skill-signature.mjs
+// (shared with `esk-init --check`); it is loaded here by a dynamic import so a missing or broken module (a repo
+// that vendors always-on/ without the bootstrap skill) means no drift verdict, never a crashed emitter. Any
+// failure (unreadable dir, bad marker) returns null ("not assessed": no content nudge, counter kept) and logs
+// one stderr line for human logs. No skills record returns [] (nothing to compare).
+// The hashing is synchronous inside a hook that is killed at 10 seconds, and a killed hook loses the WHOLE
+// directive, so the scan has a time budget (ESK_DRIFT_BUDGET_MS, default 2000): past it, the scan stops and the
+// session falls back to the version-only nudge.
+const DRIFT_BUDGET_MS = Number.isFinite(Number(process.env.ESK_DRIFT_BUDGET_MS)) && process.env.ESK_DRIFT_BUDGET_MS !== ""
+  ? Number(process.env.ESK_DRIFT_BUDGET_MS) : 2000;
+async function driftedSkills(repoRoot, marker) {
+  const skills = marker && marker.skills;
+  if (!skills || typeof skills.target !== "string") return []; // skills were not mirrored by the installer
+  try {
+    const deadline = Date.now() + DRIFT_BUDGET_MS;
+    const sourceDir = join(repoRoot, ".claude", "skills");
+    const { mirrorDrift, skillNamesIn, signatureOf } = await import(pathToFileURL(join(sourceDir, "bootstrap", "scripts", "skill-signature.mjs")).href);
+    const sign = (n) => {
+      if (Date.now() >= deadline) throw new Error(`skill drift scan passed its ${DRIFT_BUDGET_MS} ms budget`);
+      return signatureOf(join(sourceDir, n), `skill ${n}`);
+    };
+    const { missing, changed } = mirrorDrift({ targetDir: skills.target, names: skillNamesIn(sourceDir), recorded: skills.signatures, sign });
+    return [...missing, ...changed];
+  } catch (e) {
+    process.stderr.write(`[enterprise-skills] skill drift check skipped (${e && e.message}); the sync nudge uses the version only.\n`);
+    return null; // not assessed: decideNudge keeps the counter instead of reading this as "in sync"
+  }
+}
+// The mirror folder when it is not the default, so the nudge's fix command re-mirrors the folder that is stale.
+function customSkillsTarget(marker) {
+  const t = marker && marker.skills && marker.skills.target;
+  if (typeof t !== "string") return null;
+  const def = join(homedir(), ".claude", "skills");
+  const same = process.platform === "win32" ? resolve(t).toLowerCase() === resolve(def).toLowerCase() : resolve(t) === resolve(def);
+  return same ? null : t;
+}
+async function sessionNudge() {
   const repoRoot = dirname(here); // always-on/ sits at the repo root, so its parent is the repo root
   const pkg = readJson(join(repoRoot, "package.json"));
   const currentVersion = pkg && typeof pkg.version === "string" ? pkg.version : null;
@@ -70,18 +107,20 @@ function sessionNudge() {
   // Find the install marker that points at THIS repo: prefer one whose .repo matches, else the user-level one.
   const candidates = [join(homedir(), ".claude", ".esk-installed"), join(repoRoot, ".claude", ".esk-installed")];
   let installedVersion = null;
+  let ownMarker = null; // only a marker that names THIS repo may drive the skill-content check
   for (const c of candidates) {
     const m = readJson(c);
     if (!m || typeof m.version !== "string") continue;
-    if (m.repo === repoRoot) { installedVersion = m.version; break; } // the install for THIS repo: authoritative
+    if (m.repo === repoRoot) { installedVersion = m.version; ownMarker = m; break; } // the install for THIS repo: authoritative
     // Fallback ONLY to a legacy marker that names no repo; never trust a marker that names a DIFFERENT repo
     // (a global install for repo A must not drive a behind/in-sync verdict for an unrelated clone B).
     if (installedVersion == null && m.repo == null) installedVersion = m.version;
   }
   if (installedVersion == null) return null; // not installed via the installer: say nothing
+  const drifted = await driftedSkills(repoRoot, ownMarker);
   const statePath = join(homedir(), ".claude", ".esk-nudge.json");
   const state = readJson(statePath);
-  const { text: nudge, nextState } = decideNudge({ currentVersion, installedVersion, state });
+  const { text: nudge, nextState } = decideNudge({ currentVersion, installedVersion, state, driftedSkills: drifted, skillsTarget: customSkillsTarget(ownMarker) });
   // Persist the counter (best-effort). null nextState means in-sync: clear the file so a later drift restarts.
   // mkdir first so the counter can advance (and the cap be reached) even on a repo-only install with no ~/.claude.
   try {
@@ -128,7 +167,7 @@ function enforcementNudge() {
 // directive text is not coupled to the ambient install marker (repo-local OR user-level) and its version.
 if (event === "SessionStart" && !missing && !process.env.ESK_NUDGE_DISABLE) {
   try {
-    const nudge = sessionNudge();
+    const nudge = await sessionNudge();
     if (nudge) text = nudge + "\n\n---\n\n" + text;
   } catch { /* never let the nudge break the directive */ }
   // Prepended AFTER the sync nudge, so the enforcement nudge appears FIRST: a security gap outranks a version

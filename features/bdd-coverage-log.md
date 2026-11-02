@@ -143,3 +143,12 @@ them (the receipt).
 - quality: reliability, functional
 - severity: critical, high, medium, low
 - gate: check-gherkin-valid OK, check-bdd-tags OK, check-bdd-coverage OK, bdd-run OK, check-bdd-executed OK
+
+## 2026-10-31 - name a stale global skill mirror at session start (ADR-0105)
+- event: added
+- change: fix/stale-mirror-signature-nudge
+- scenarios: stale-mirror-named-at-start, missing-mirrored-skill-named, current-mirror-not-nudged, drift-check-failure-keeps-directive, other-clone-marker-ignored
+- audiences: operator, agent
+- categories: happy, negative, edge, error
+- quality: functional, reliability
+- severity: high, medium

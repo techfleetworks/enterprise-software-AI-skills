@@ -35,7 +35,9 @@ import { dirname, resolve, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
 import { spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
+// The skill-mirror fingerprint and drift rule have ONE owner (ADR-0105), shared with the SessionStart emitter so
+// the session nudge and `--check` agree on what "changed" means.
+import { signatureOf, mirrorDrift, skillNamesIn, SKILL_MIRROR_SKIP } from "./skill-signature.mjs";
 
 function die(msg) { console.error(`[esk-init] FAIL: ${msg}`); process.exit(2); }
 
@@ -162,52 +164,18 @@ if (committedFootgun && flag("--yes")) {
 const withSkills = flag("--skills");
 const skillsTarget = resolve(opt("--skills-target") || join(homedir(), ".claude", "skills"));
 const repoSkillsDir = join(repoRoot, ".claude", "skills");
-const SKILL_MIRROR_SKIP = new Set(["vendor", "node_modules", ".git"]);
 if (withSkills && !existsSync(repoSkillsDir)) {
   die(`--skills was requested but ${repoSkillsDir} does not exist; is this the enterprise-skills repo, and has it been pulled?`);
 }
 function sourceSkillNames() {
-  if (!existsSync(repoSkillsDir)) return [];
-  let entries;
   // Do NOT swallow a read error here. If the dir exists but cannot be read (a locked ACL, a transient I/O
   // error, a dehydrated OneDrive folder), returning [] would be read as "the repo has no skills" and a
   // reconcile would then remove every mirrored skill. Fail closed instead.
-  try { entries = readdirSync(repoSkillsDir, { withFileTypes: true }); }
+  try { return skillNamesIn(repoSkillsDir); }
   catch (e) { die(`cannot read the repo skills dir ${repoSkillsDir} (${e.message}); refusing to run so a read error is never mistaken for an empty repo and used to remove mirrored skills`); }
-  return entries.filter((e) => e.isDirectory() && existsSync(join(repoSkillsDir, e.name, "SKILL.md")))
-    .map((e) => e.name).sort();
 }
-// Content fingerprint of one source skill: a sha256 over the sorted (relative-path, file-hash) pairs of every
-// file the mirror would copy, using the SAME skip set as mirrorOneSkill so the signature reflects exactly what
-// lands at the target (the gitignored vendor text and node_modules never move the signature). This is what lets
-// a reconcile notice a content change made INSIDE an installed skill at an UNCHANGED package version (a git pull
-// that edits or adds a file within a skill folder): the version string alone cannot see it. Paths are joined with
-// "/" so the digest is stable across OSes. Read errors fail closed (die), the same rule sourceSkillNames follows,
-// so a transient I/O or dehydrated-OneDrive read is never mistaken for "unchanged" and left un-mirrored.
-// Core walk: a sha256 over the sorted (relative-path, file-hash) pairs under `root`, using the SAME skip set as
-// mirrorOneSkill. THROWS on a read error (the caller decides whether that is fatal). Used against both the repo
-// source (skillSignature) and the installed target (targetSignature), so an untouched mirror of a source hashes
-// to the SAME value as that source, and any added/edited file inside the target changes it.
-function signatureOf(root, label) {
-  const parts = [];
-  const walk = (dir, rel) => {
-    let entries;
-    try { entries = readdirSync(dir, { withFileTypes: true }); }
-    catch (e) { throw new Error(`cannot read ${dir} while fingerprinting ${label} (${e.message})`); }
-    for (const e of entries.filter((x) => !SKILL_MIRROR_SKIP.has(x.name)).sort((a, b) => (a.name < b.name ? -1 : 1))) {
-      const abs = join(dir, e.name);
-      const r = rel ? `${rel}/${e.name}` : e.name;
-      if (e.isDirectory()) { walk(abs, r); continue; }
-      if (!e.isFile()) continue; // symlinks and specials: mirrorOneSkill copies them, but they carry no content to fingerprint here
-      let buf;
-      try { buf = readFileSync(abs); }
-      catch (err) { throw new Error(`cannot read ${abs} while fingerprinting ${label} (${err.message})`); }
-      parts.push(`${r}\0${createHash("sha256").update(buf).digest("hex")}`);
-    }
-  };
-  walk(root, "");
-  return createHash("sha256").update(parts.join("\n")).digest("hex");
-}
+// signatureOf (the shared owner, ./skill-signature.mjs) fingerprints a skill folder with the SAME skip set
+// mirrorOneSkill uses, so an untouched mirror hashes to the same value as its source. It THROWS on a read error.
 // Content fingerprint of one SOURCE skill (the repo's .claude/skills/<name>). A read error fails closed (die),
 // the same rule sourceSkillNames follows, so a transient I/O or dehydrated-OneDrive read is never mistaken for
 // "unchanged" and left un-mirrored. This is what lets a reconcile notice a content change made INSIDE an
@@ -253,14 +221,13 @@ function planSkills(marker) {
   const prev = marker && marker.skills && Array.isArray(marker.skills.names) ? marker.skills.names : [];
   const remove = prev.filter((n) => !src.includes(n));
   const behind = !marker || !marker.skills || marker.skills.version !== version || marker.skills.target !== skillsTarget;
-  const missing = src.filter((n) => !existsSync(join(skillsTarget, n, "SKILL.md")));
-  // Content drift: compare each source skill's current fingerprint to the one recorded when we last mirrored it.
-  // A skill whose stored signature is absent (a pre-signature marker, or a newly added skill) reads as changed,
-  // so the first reconcile after this fix re-mirrors and records the baseline. This is the fix for a same-version
-  // edit inside an installed skill, which version/target/missing-top-level checks all miss.
+  // Missing skills and content drift (a source fingerprint that differs from the one recorded when we last
+  // mirrored it) come from mirrorDrift, the same rule `--check` and the SessionStart nudge use (ADR-0105), so a
+  // reconcile clears exactly what they report. A skill with no stored signature (a pre-signature marker, or a
+  // newly added skill) reads as changed, so the first reconcile re-mirrors and records the baseline.
   const sigs = skillSignatures(src);
   const stored = (marker && marker.skills && marker.skills.signatures) || {};
-  const contentChanged = src.filter((n) => stored[n] !== sigs[n]);
+  const { missing, changed: contentChanged } = mirrorDrift({ targetDir: skillsTarget, names: src, recorded: stored, sign: (n) => sigs[n] });
   // Classify each installed target once (baseline-agnostic, so a pre-signature marker is handled: see classifyTarget).
   const cls = {};
   for (const n of src) cls[n] = classifyTarget(join(skillsTarget, n), sigs[n], stored[n] ?? null);
@@ -529,15 +496,13 @@ function assess() {
       const tgt = marker.skills.target || skillsTarget;
       if (marker.skills.version !== version) problems.push(`mirrored skills (v${marker.skills.version}) are behind the repo version ${version}`);
       const names = sourceSkillNames();
-      const miss = names.filter((n) => !existsSync(join(tgt, n, "SKILL.md")));
-      if (miss.length) problems.push(`skills missing from ${tgt}: ${miss.join(", ")}`);
-      // Same-version content drift: a skill whose current fingerprint differs from the one recorded at mirror
-      // time changed on disk since we installed it (a git pull that edited or added a file inside the folder).
-      // Only present skills are compared here; missing ones are already reported above. A skill with no stored
-      // signature (a marker written before this fix) reads as drift so the next reconcile records the baseline.
+      // Missing skills, and same-version content drift: a present skill whose current fingerprint differs from
+      // the one recorded at mirror time (a git pull that edited or added a file inside the folder). The rule is
+      // owned by mirrorDrift (ADR-0105), the same one the SessionStart nudge uses. skillSignature fails closed.
       const stored = marker.skills.signatures || {};
-      const present = names.filter((n) => existsSync(join(tgt, n, "SKILL.md")));
-      const contentChanged = present.filter((n) => stored[n] !== skillSignature(n));
+      const { missing: miss, changed: contentChanged } = mirrorDrift({ targetDir: tgt, names, recorded: stored, sign: skillSignature });
+      if (miss.length) problems.push(`skills missing from ${tgt}: ${miss.join(", ")}`);
+      const present = names.filter((n) => !miss.includes(n));
       if (contentChanged.length) problems.push(`mirrored skills changed in the repo since install (re-mirror needed): ${contentChanged.join(", ")}`);
       // #130: classify the TARGET too (baseline-agnostic, so a pre-signature marker is covered), so a mirrored
       // skill whose on-disk content drifted - a local edit, an older/different copy, or an unreadable folder - is
