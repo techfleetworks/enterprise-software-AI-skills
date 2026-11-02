@@ -4,6 +4,9 @@ Generated from the feature files by `bdd-index-generate.mjs` - do not edit by ha
 
 | Feature | Scenario | Domain | Audience | Use case | Category | Quality | Severity | Status |
 |---|---|---|---|---|---|---|---|---|
+| always-on/pattern-decision-citations.feature | A correct PoEAA citation in the record passes | always-on | agent | right-page-in-record-passes | happy | functional | medium | covered |
+| always-on/pattern-decision-citations.feature | A wrong or unknown PoEAA page in the record is held | always-on | agent | wrong-page-in-record-held | negative | reliability | high | covered |
+| always-on/pattern-decision-citations.feature | An install without the page registry is told, not blocked | always-on | agent | older-mirror-not-blocked | edge | reliability | medium | covered |
 | always-on/skills-apply-every-task.feature | A broken install warns at the start of the session | always-on | operator | broken-install-warned-at-start | error | reliability | high | covered |
 | always-on/skills-apply-every-task.feature | A checker that runs past its time limit counts as a failure | always-on | agent | checker-timeout-fails-closed | timeout | reliability | medium | covered |
 | always-on/skills-apply-every-task.feature | A crafted session id cannot escape the per-session store | always-on | agent | session-id-cannot-escape-store | negative | security | high | covered |
@@ -100,3 +103,19 @@ Generated from the feature files by `bdd-index-generate.mjs` - do not edit by ha
 | evidence/claims-match-evidence.feature | The agent observes which part owns a behavior before building on it | evidence | agent | ownership-observed-before-build | negative | reliability | high | covered |
 | evidence/claims-match-evidence.feature | The check that decides "leaked or not" is itself tested before "0 leaks" is claimed | evidence | agent | oracle-unit-tested | error | security | high | covered |
 | evidence/claims-match-evidence.feature | The headline number is the one chosen before the results, with every other cut shown | evidence | operator | headline-is-predeclared | negative | reliability | high | covered |
+| pattern-selector/citation-gate.feature | A bare cross-reference with a wrong page fails too | pattern-selector | operator | poeaa-bare-page-checked | negative | reliability | critical | covered |
+| pattern-selector/citation-gate.feature | A citation to a pattern name that is not in the book fails | pattern-selector | operator | poeaa-unknown-pattern-fails | negative | reliability | high | covered |
+| pattern-selector/citation-gate.feature | A claim from a narrative chapter cites the chapter, and the chapter must exist | pattern-selector | operator | poeaa-chapter-citation | boundary | reliability | medium | covered |
+| pattern-selector/citation-gate.feature | A covered pattern matches its catalog heading by the registry's heading field | pattern-selector | operator | poeaa-heading-matches-registry | edge | reliability | high | covered |
+| pattern-selector/citation-gate.feature | A declined pattern must give a reason | pattern-selector | operator | poeaa-declined-needs-reason | empty-overflow | reliability | medium | covered |
+| pattern-selector/citation-gate.feature | A missing registry is a block, not a pass | pattern-selector | operator | poeaa-registry-missing-fails-closed | error | reliability | high | covered |
+| pattern-selector/citation-gate.feature | An entry that cites the right page passes | pattern-selector | operator | poeaa-correct-page-passes | happy | reliability | high | covered |
+| pattern-selector/citation-gate.feature | An entry that cites the wrong page fails and says what the page should be | pattern-selector | operator | poeaa-wrong-page-fails | negative | reliability | critical | covered |
+| pattern-selector/citation-gate.feature | An entry that names a PoEAA pattern without a page fails | pattern-selector | operator | poeaa-missing-page-fails | negative | reliability | critical | covered |
+| pattern-selector/citation-gate.feature | Every catalog pattern is either covered or declined on purpose | pattern-selector | operator | poeaa-every-pattern-covered-or-declined | negative | reliability | high | covered |
+| pattern-selector/citation-gate.feature | The book's ISBN alone no longer satisfies an entry sourced to PoEAA | pattern-selector | operator | poeaa-isbn-alone-not-enough | negative | reliability | critical | covered |
+| pattern-selector/citation-gate.feature | The catalog header describes the citation form the gate enforces | pattern-selector | operator | poeaa-header-matches-gate | edge | reliability | low | covered |
+| pattern-selector/citation-gate.feature | The gate's own tests fail when the page check is switched off | pattern-selector | operator | poeaa-gate-test-discriminates | negative | reliability | critical | covered |
+| pattern-selector/citation-gate.feature | The registry must hold exactly the 51 catalog patterns | pattern-selector | operator | poeaa-registry-has-51 | empty-overflow | reliability | high | covered |
+| pattern-selector/citation-gate.feature | The registry rejects a page that breaks the book's order | pattern-selector | operator | poeaa-registry-pages-rise | boundary | reliability | high | covered |
+| pattern-selector/citation-gate.feature | The registry test pins the pages the audit observed, so an in-order typo still fails | pattern-selector | operator | poeaa-registry-pins-observed-pages | negative | reliability | high | covered |
