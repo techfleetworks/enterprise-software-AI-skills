@@ -69,9 +69,9 @@ all, or when:
 
 1. a feature has **only happy-path scenarios** (no non-happy path for it);
 2. a **declared audience** for that feature has **no scenario** tagged for it;
-3. the centralized datastore (`features/bdd-index.json` + `features/INDEX.md`) is **missing or out of
+3. a present centralized datastore (`features/bdd-index.json` + `features/INDEX.md`) is **out of
    sync** with the `.feature` files - regenerate → diff → fail on drift, so the shared source of truth
-   can never silently fall behind;
+   can never silently fall behind (an absent one is derived from the feature files);
 4. the coverage log is **missing or empty**, carries an **unknown event**, or (when the base revision is
    given) was **not a clean append** - a prior entry was edited or removed (history must be immutable).
 
@@ -90,7 +90,8 @@ The checks above prove the *specification* is complete, legal, and categorized; 
 the scenarios were executed. `check-bdd-executed` closes that gap: the strict BDD runner executes the
 scenarios against the real system and emits a machine-readable report (Cucumber JSON), and this gate
 reconciles the report against the datastore - it **fails closed unless every scenario in
-`features/bdd-index.json` executed and passed, with zero undefined / pending / skipped / failed**.
+`features/bdd-index.json` (or the datastore derived from the feature files, when that is not committed)
+executed and passed, with zero undefined / pending / skipped / failed**.
 
 ```bash
 # run the suite with a JSON report, then reconcile it against the datastore
@@ -115,7 +116,15 @@ coverage/sync/log, execution). Drop one from the required set and you reopen its
 them together.
 
 **Append-only is verifiable only against the previous revision**, so CI MUST hand the coverage gate the
-base-revision log, or it cannot check history (and says so rather than falsely claiming it did):
+base revision, or it cannot check history (and says so rather than falsely claiming it did). For the
+`features/bdd-coverage-log/` folder, name the base git ref (the checkout needs that ref's history, for
+example `fetch-depth: 0`):
+
+```bash
+BDD_LOG_BASE_REF="origin/${GITHUB_BASE_REF:-main}" BDD_REQUIRE_LOG_BASE=1 node scripts/check-bdd-coverage.mjs features
+```
+
+For a legacy single `features/bdd-coverage-log.md`, pass the base file instead:
 
 ```bash
 git show "origin/${GITHUB_BASE_REF:-main}:features/bdd-coverage-log.md" > /tmp/bdd-log-base.md 2>/dev/null || : > /tmp/bdd-log-base.md
@@ -123,7 +132,7 @@ BDD_LOG_BASE=/tmp/bdd-log-base.md BDD_REQUIRE_LOG_BASE=1 node scripts/check-bdd-
 ```
 
 `BDD_REQUIRE_LOG_BASE=1` makes a missing base a hard failure, so the tamper-evidence guarantee can't be
-silently skipped in CI. Without `BDD_LOG_BASE` the gate still runs every other check but reports
+silently skipped in CI. Without a base the gate still runs every other check but reports
 "log append-only NOT verified" instead of claiming a guarantee it did not perform.
 
 ## Honest limitations (stated, not hidden)

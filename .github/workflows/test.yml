@@ -22,7 +22,11 @@ jobs:
         # Lower bound (engines.node) and current, so a fix that relies on a newer Node is caught.
         node: [20, 24]
     steps:
+      # Full history so origin/main exists: the receipt test checks every receipt file this change adds against
+      # origin/main (ADR-0108).
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
@@ -79,9 +83,14 @@ jobs:
         run: node .claude/skills/bdd-comprehensive-testing/scripts/check-gherkin-valid.mjs features
       - name: BDD tag taxonomy gate
         run: node .claude/skills/bdd-comprehensive-testing/scripts/check-bdd-tags.mjs features
+      # The coverage log is a directory of one file per entry (ADR-0108); append-only means no entry the base
+      # has may be edited or removed. The base is origin/main on a pull request, and the commit before the push on
+      # a push to main (origin/main IS the pushed commit there, so comparing with it would check nothing).
+      # BDD_REQUIRE_LOG_BASE makes a missing base a failure, not a skip.
       - name: BDD coverage + append-only gate
-        run: |
-          git show origin/main:features/bdd-coverage-log.md > "$RUNNER_TEMP/base-log.md" 2>/dev/null || true
-          BDD_LOG_BASE="$RUNNER_TEMP/base-log.md" node .claude/skills/bdd-comprehensive-testing/scripts/check-bdd-coverage.mjs features
+        env:
+          BDD_LOG_BASE_REF: ${{ github.event_name == 'push' && github.event.before || 'origin/main' }}
+          BDD_REQUIRE_LOG_BASE: "1"
+        run: node .claude/skills/bdd-comprehensive-testing/scripts/check-bdd-coverage.mjs features
       - name: Run the scenarios and reconcile (executable)
         run: npm run test:bdd

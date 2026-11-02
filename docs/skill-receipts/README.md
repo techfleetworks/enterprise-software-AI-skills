@@ -1,7 +1,13 @@
 # Skill-application receipts
 
-This directory holds `log.jsonl`, an append-only, tamper-evident record of how the enterprise skills were
-applied on each change (one entry per pull request, keyed by branch). It mirrors `docs/arch-reviews/log.jsonl`.
+The `entries/` folder holds an append-only, tamper-evident record of how the enterprise skills were applied on
+each change: one JSON file per pull request, keyed by branch, named `<YYYYMMDDTHHMMSSZ>-<slug>.json` (the UTC
+time it was written, then a slug of the branch). It mirrors `docs/arch-reviews/entries/`.
+
+One file per entry, never one shared file, so two open pull requests add two different files and cannot
+conflict (ADR-0108). Append-only means a new file only: never edit or delete another entry. The gate checks that
+against a git ref with `--base origin/main`. The entries up to 2026-11-02 were split byte for byte out of the
+old `log.jsonl`.
 
 The `check-skill-receipt` gate (`npm run check:receipt`) proves each receipt is GROUNDED: every skill is
 covered (applied or not-applicable), every `applied` entry cites a real skill heading, quotes it verbatim

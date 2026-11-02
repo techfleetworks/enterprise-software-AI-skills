@@ -3,30 +3,8 @@
 All notable changes to this repository are recorded here. Dates are ISO (YYYY-MM-DD). This project follows
 semantic versioning for the skills library and its gates.
 
-## Unreleased
-
-### Fixed (merges silently dropped append-only log lines, ADR-0107)
-
-- Merging main into a branch dropped main's new lines from `docs/arch-reviews/log.jsonl` and
-  `docs/skill-receipts/log.jsonl` with no conflict. Cause: a hand-set `merge.union.driver = true` in the clone's
-  `.git/config` replaced git's built-in `union` driver with "keep ours". Even when working, `union` put the
-  branch's lines before main's, which fails the checkers' prefix check. The logs and `features/bdd-coverage-log.md`
-  now use a committed `append-log` driver (`scripts/merge-append-log.mjs`) that keeps both sides with the upstream
-  side first (merge either way, rebase, cherry-pick), keeps a shared entry once, and refuses a side that edited
-  history with conflict markers. `npm install` registers it and warns about a shadowed built-in driver.
-  `test/union-merge.test.mjs` merges ~21,000-character lines and fails if a line is lost, duplicated, or out of
-  order. Run `npm install` after pulling this. On a branch opened before it, run
-  `git checkout origin/main -- .gitattributes` before the next `git merge origin/main`.
-
-### Fixed (edit-time routing never fired for root-anchored globs, ADR-0104)
-
-- The edit-gate passed Claude Code's absolute file path to the router, whose globs are anchored to the repo
-  root, so every `src/`, `lib/`, `app/`, `test/`, `tests/`, `docs/adr/`, `docs/decisions/`, `prisma/`, and
-  `db/migrations/` rule never fired at edit time. The hooks now make each edited path repo-relative first
-  (`toRepoPath` and `projectRoot` in `always-on/esk-paths.mjs`). The finish-check and subagent-check take the
-  same repo-relative spelling from the transcript, so the review matrix, the receipt, and the subagent ledger
-  key a file one way. A path outside the project root is passed through unchanged. Discriminating tests feed
-  absolute Windows-style and POSIX-style paths.
+Changes not yet released live in `changelog.d/`, one file per change (ADR-0108). A pull request never edits
+this file; the release step folds those files in under the new version with `scripts/changelog-release.mjs`.
 
 ## 1.3.1 - 2026-10-30
 

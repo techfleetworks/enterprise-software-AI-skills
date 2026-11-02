@@ -6,17 +6,20 @@
 // `finding` and every `cleared` cell (no silent clears), valid @question/@severity on every finding,
 // and the grep-battery recorded as run. Fail-closed. See references/review-log-and-coverage.md.
 //
-//   node check-arch-review-coverage.mjs --change <ref> --changed-list a.ts,b.ts [--log docs/arch-reviews/log.jsonl] [--base <base-log>]
+//   node check-arch-review-coverage.mjs --change <ref> --changed-list a.ts,b.ts [--log docs/arch-reviews/entries] [--base <ref>]
+//
+// The log is a directory of one-file-per-entry (entry-log.mjs, ADR-0108); --base is then a git ref. A legacy
+// one-line-per-entry .jsonl file still reads, with --base naming a file that holds its base revision.
 //
 // Exit 0 = the change is fully, evidently reviewed. Exit 1 = a gap or missing input.
-import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
+import { readEntries, verifyAppendOnly, defaultLogPath } from "./entry-log.mjs";
 
 const die = (m) => { console.error(`[check-arch-review-coverage] FAIL - ${m}`); process.exit(1); };
 const args = process.argv.slice(2);
 const opt = (n) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : undefined; };
 
-const logPath = resolve(opt("--log") ?? "docs/arch-reviews/log.jsonl");
+const logPath = resolve(opt("--log") ?? defaultLogPath("docs/arch-reviews/entries", "docs/arch-reviews/log.jsonl"));
 const changedArg = opt("--changed-list");
 const change = opt("--change");
 const basePath = opt("--base");
@@ -46,29 +49,20 @@ const isExcluded = (f) => EXCLUDE_PREFIXES.some((p) => f === p || f.startsWith(p
 const reviewable = changed.filter((f) => !isExcluded(f));
 const excludedCount = changed.length - reviewable.length;
 
-if (!existsSync(logPath)) die(`review log not found: ${logPath}`);
-const raw = readFileSync(logPath, "utf8");
-if (!raw.trim()) die(`review log is empty: ${logPath}`);
+let entries;
+try { entries = readEntries(logPath); } catch (e) { die(`review ${e.message}`); }
 
-// Append-only: the committed log must be a clean append to the base revision's log. CI should pass the
-// base-revision log via --base; set ARCH_REQUIRE_LOG_BASE=1 to make its absence a hard failure. We
-// never silently skip AND claim it was checked - the OK line discloses exactly what was verified.
+// Append-only: no prior entry may be edited or removed. CI should pass --base (a git ref such as origin/main);
+// set ARCH_REQUIRE_LOG_BASE=1 to make its absence a hard failure. We never silently skip AND claim it was
+// checked - the OK line discloses exactly what was verified.
 let logNote;
 if (basePath) {
-  if (!existsSync(basePath)) die(`--base given but not found: ${basePath} - cannot verify append-only (fail closed).`);
-  const base = readFileSync(basePath, "utf8");
-  if (base && !raw.startsWith(base)) die("review log is not append-only - a prior entry was edited or removed (history must be immutable).");
-  logNote = "append-only verified";
+  try { logNote = verifyAppendOnly(logPath, basePath).note; } catch (e) { die(`review ${e.message}`); }
 } else if (process.env.ARCH_REQUIRE_LOG_BASE) {
-  die("ARCH_REQUIRE_LOG_BASE is set but no --base was given - cannot verify append-only. In CI, pass --base <base-revision log> (e.g. git show origin/main:docs/arch-reviews/log.jsonl > base.jsonl).");
+  die("ARCH_REQUIRE_LOG_BASE is set but no --base was given - cannot verify append-only. In CI, pass --base origin/main.");
 } else {
   logNote = "append-only NOT verified (pass --base to check history)";
 }
-
-const lines = raw.split(/\r?\n/).filter((l) => l.trim());
-let entries;
-try { entries = lines.map((l) => JSON.parse(l)); }
-catch (e) { die(`a log entry is not valid JSON: ${e.message}`); }
 // The review must be FOR this change - not just any past entry that happens to mention these files.
 const entry = [...entries].reverse().find((e) => e && e.change === change);
 if (!entry) die(`no review record whose change == "${change}" - append a review for THIS change (a stale entry for an unrelated change does not count).`);

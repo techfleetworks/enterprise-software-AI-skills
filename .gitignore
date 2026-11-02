@@ -24,3 +24,9 @@ Thumbs.db
 
 # Cucumber JSON report written by `npm run test:bdd` (regenerated each run; CI writes its own).
 .bdd-report.json
+
+# The BDD datastore is generated from the feature files (`npm run bdd:index`). It is not committed: every PR that
+# adds a scenario would edit the same two files, and two open PRs would conflict on them (ADR-0108). The gates
+# derive it from the feature files when it is absent.
+features/bdd-index.json
+features/INDEX.md

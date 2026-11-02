@@ -5,7 +5,9 @@
  * still open, so "done" cannot be claimed over an unresolved HIGH. The finish check (issue #174) calls
  * this at task end; it is also runnable on its own.
  *
- *   node check-open-high-findings.mjs [--log docs/arch-reviews/log.jsonl] [--change <name>]
+ *   node check-open-high-findings.mjs [--log docs/arch-reviews/entries] [--change <name>]
+ *
+ * The log is a directory of one-file-per-entry, or a legacy .jsonl file (entry-log.mjs, ADR-0108).
  *
  * A review-log entry is a JSON object with a `findings` array; a finding is an object with a `severity`
  * string and, when resolved, a non-empty `resolution` string or a `waiver` object (reason, approver,
@@ -17,31 +19,25 @@
  * (names them). Exit 2 = fail closed (no log, unreadable, a line that is not valid JSON, a finding with
  * no severity).
  */
-import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
+import { readEntries, defaultLogPath } from "./entry-log.mjs";
 
 function die(msg) { console.error(`[check-open-high-findings] FAIL (closed) - ${msg}`); process.exit(2); }
 
 const args = process.argv.slice(2);
 const opt = (n) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : undefined; };
 if (args.includes("--help") || args.includes("-h")) {
-  console.log("usage: node check-open-high-findings.mjs [--log <log.jsonl>] [--change <name>]");
+  console.log("usage: node check-open-high-findings.mjs [--log <entries dir | log.jsonl>] [--change <name>]");
   process.exit(0);
 }
 const known = new Set(["--log", "--change", "--help", "-h"]);
 const unknown = args.filter((a) => a.startsWith("-") && !known.has(a));
 if (unknown.length) die(`unknown flag(s): ${unknown.join(", ")}`);
 
-const logPath = resolve(opt("--log") ?? "docs/arch-reviews/log.jsonl");
+const logPath = resolve(opt("--log") ?? defaultLogPath("docs/arch-reviews/entries", "docs/arch-reviews/log.jsonl"));
 const change = opt("--change");
-if (!existsSync(logPath)) die(`review log not found: ${logPath}`);
-const raw = readFileSync(logPath, "utf8");
-if (!raw.trim()) die(`review log is empty: ${logPath}`);
-
-const lines = raw.split(/\r?\n/).filter((l) => l.trim());
 let entries;
-try { entries = lines.map((l) => JSON.parse(l)); }
-catch (e) { die(`a review-log line is not valid JSON: ${e.message}`); }
+try { entries = readEntries(logPath); } catch (e) { die(`review ${e.message}`); }
 
 const isHigh = (sev) => /\b(high|critical)\b/i.test(sev);
 

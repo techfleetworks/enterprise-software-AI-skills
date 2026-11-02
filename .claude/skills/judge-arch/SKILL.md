@@ -288,17 +288,21 @@ quarter"). The vocabulary is enforced by `check-arch-review-coverage`.
 A review is a durable record, not throwaway output. It is the evidence that the change was actually
 examined, and the history of what the architecture has been held to. Store it in the project repo.
 
-- **Location.** Append each review to `docs/arch-reviews/log.jsonl` (canonical, machine-readable, one JSON
-  object per review) with a human-readable companion `docs/arch-reviews/<date>-<scope>.md`.
+- **Location.** Write each review as its own new file in `docs/arch-reviews/entries/`, named
+  `<YYYYMMDDTHHMMSSZ>-<slug>.json` (canonical, machine-readable, one JSON object per file), with a
+  human-readable companion `docs/arch-reviews/<date>-<scope>.md`. Never append to one shared log file: two
+  open pull requests would both edit it and conflict, and a host such as GitHub ignores merge drivers when it
+  decides that. One file per review means two pull requests add two different files and cannot conflict.
 - **Each entry records:** date, change ref (commit or PR), scope (the changed file list), the **matrix**
   (per file, per question: `finding`, `cleared`, or `n/a` plus evidence or reason), every finding with its
   `@question`, `@severity`, and `@file` plus an Evidence line, the grep-battery commands run, the
   mechanical `arch-gate` result, and the final verdict (`PASS` or `N findings`).
-- **Append-only, tamper-evident.** Entries are only appended. A past entry is never edited or deleted (the
-  committed log must be a clean append to the prior one; git history is the backing record). This is how a
+- **Append-only, tamper-evident.** Entries are only added. A past entry file is never edited or deleted (the
+  coverage gate checks every entry file the base git ref has is still there unchanged, with `--base
+  origin/main`; git history is the backing record). This is how a
   reviewer later sees not just "is it clean now" but "what was reviewed, found, and proved, and when", the
   same discipline the `compliance-data-lifecycle` skill applies to audit logs.
-- **One source of truth.** The `.md` view is generated from the `.jsonl` log, not hand-kept in parallel,
+- **One source of truth.** The `.md` view is generated from the entry file, not hand-kept in parallel,
   so the two cannot drift.
 
 ## Making drift impossible to skip: the gate suite

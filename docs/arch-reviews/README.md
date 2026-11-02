@@ -6,7 +6,10 @@ and what evidence backed each verdict.
 
 ## What is here
 
-- `log.jsonl`: the canonical log. One JSON object per review, appended in order, never edited or deleted.
+- `entries/`: the canonical log. One JSON file per review, named `<YYYYMMDDTHHMMSSZ>-<slug>.json` (the UTC
+  time it was written, then a slug of the change), so name order is review order. Never edited or deleted.
+  One file per review, never one shared file, so two open pull requests add two different files and cannot
+  conflict (ADR-0108). The entries up to 2026-11-02 were split byte for byte out of the old `log.jsonl`.
   Each entry records the date, the change ref (commit or PR), the scope (the changed file list), the review
   matrix (every changed file crossed with the four questions, each cell a verdict plus evidence or reason),
   every finding with its `@question`, `@severity`, and `@file` tags, the grep-battery commands run, the
@@ -14,15 +17,15 @@ and what evidence backed each verdict.
 
 ## The rules
 
-- **Append-only.** A new review is a clean append to the end of `log.jsonl`. A past entry is never changed
-  or removed. Git history is the backing record, so the log is tamper-evident: anyone can read back what
+- **Append-only.** A new review is a new file in `entries/`. A past entry is never changed or removed, and
+  the coverage gate checks that against a git ref (`--base origin/main`). Git history is the backing record, so the log is tamper-evident: anyone can read back what
   was reviewed, found, and proved, and when. This mirrors the audit-log discipline in the
   `compliance-data-lifecycle` skill.
 - **Evidence on every cell.** A `cleared` verdict carries a re-runnable source (the grep that came back
   empty, the `file:line` that shows the logic lives in the right layer), exactly like a finding does. A
   cell cleared with no evidence is a defect, not a pass.
-- **One source of truth.** Any human-readable `<date>-<scope>.md` companion is generated from the `.jsonl`
-  log, not kept in parallel by hand, so the two cannot drift.
+- **One source of truth.** Any human-readable `<date>-<scope>.md` companion is generated from the entry
+  files, not kept in parallel by hand, so the two cannot drift.
 
 ## The mechanical gate result field
 
@@ -54,6 +57,6 @@ non-vacuous by `test/arch-gate-wired.test.mjs`, and a given run's clean result i
 
 ## How a review gets here
 
-`judge-arch` appends the entry as the last step of a review (see `.claude/skills/judge-arch/SKILL.md`, "Storing reviews
+`judge-arch` adds the entry file as the last step of a review (see `.claude/skills/judge-arch/SKILL.md`, "Storing reviews
 permanently"). The `check-arch-review-coverage` gate reads this log to confirm a change was reviewed
 across every changed file and every question before it can be called done.

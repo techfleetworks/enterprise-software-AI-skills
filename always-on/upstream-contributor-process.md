@@ -8,7 +8,7 @@ directive in `enterprise-skills-always-on.md`.
 
 ## Before you open or update a pull request
 Run `judge-arch` in fresh context on the change (it dispatches the review to a subagent), resolve or
-explicitly waive every finding, and record the review in `docs/arch-reviews/log.jsonl`. The committed PR
+explicitly waive every finding, and record the review as a new file in `docs/arch-reviews/entries/`. The committed PR
 template and `CONTRIBUTING.md` carry the full checklist. The mechanical gates are required CI checks that
 block merge on their own: the gate-script tests and `check:architecture` (the `test` job). The `routing`
 check (change-type to required-artifact) blocks merge once the committed ruleset is applied with
@@ -17,7 +17,11 @@ routed artifact is present and the repo passes its gates; they do NOT verify tha
 happened (no required check reads the review log) or that the judgment was sound. The review is required by
 this directive and the PR checklist, not by a gate, so run it anyway: loaded is not the same as reviewed.
 
-Also append a skill-application receipt for the change to `docs/skill-receipts/log.jsonl`: one entry per PR
+Never edit a shared file just to record a change: the review, the receipt, the BDD coverage entry, and the
+changelog note are each a NEW file named `<YYYYMMDDTHHMMSSZ>-<slug>`, so two open PRs cannot conflict on them
+(ADR-0108). Never edit `CHANGELOG.md` in a PR (add a `changelog.d/` file) and never edit another change's file.
+
+Also add a skill-application receipt for the change as a new file in `docs/skill-receipts/entries/`: one entry per PR
 covering EVERY skill (applied or not-applicable), each `applied` entry citing a real skill heading, quoting at
 least eight exact words from under that heading, and pointing at files really in the change. `npm run
 check:receipt` checks it is complete and that every quote is a verbatim run from the cited section; add

@@ -10,10 +10,13 @@ discipline from `compliance-data-lifecycle` `[documented]`.
 
 ## Location & the two views
 
-- **`docs/arch-reviews/log.jsonl`** - canonical, machine-readable: one JSON object per review, one line
-  each (JSON Lines). The gates read this file; it is the source of truth.
+- **`docs/arch-reviews/entries/`** - canonical, machine-readable: one JSON file per review, named
+  `<YYYYMMDDTHHMMSSZ>-<slug>.json`, so name order is review order. The gates read this folder
+  (`scripts/entry-log.mjs`); it is the source of truth. It is a folder of files, not one shared file, so two
+  open pull requests add two different files and cannot conflict on the log. A legacy one-line-per-review
+  `log.jsonl` still reads.
 - **`docs/arch-reviews/<date>-<scope>.md`** - a human-readable companion **generated from** the
-  `.jsonl` entry, never hand-kept in parallel. One source of truth, so the two can't drift.
+  entry file, never hand-kept in parallel. One source of truth, so the two can't drift.
 
 ## One log entry - schema
 
@@ -62,14 +65,16 @@ non-negotiable #10). Tag vocabulary (`question`, `severity`) is the one taxonomy
 ## Append-only & tamper-evident
 
 - Entries are **only appended** - a prior entry is never edited or deleted.
-- The committed `log.jsonl` must be a **clean append** to the base revision: `git diff` of the file vs
-  the merge-base changes only by added trailing lines; any edit to an existing line fails the gate.
+- The log only **grows**: against the base git ref (`--base origin/main`), every entry file the base has must
+  still exist here unchanged (line endings aside). Adding a file is the only allowed change; editing or
+  deleting an existing entry fails the gate and names that entry. (A legacy `log.jsonl` must instead be a
+  clean append to the base revision's file, passed as `--base <file>`.)
   Git history is the backing record.
-- The `.md` view is regenerated from `.jsonl`; it is never the source and never edited directly.
+- The `.md` view is regenerated from the entry file; it is never the source and never edited directly.
 
 ## `check-arch-review-coverage` - proves a complete review was recorded
 
-Reads `docs/arch-reviews/log.jsonl`, finds the record whose `change`/`scope` matches this change, and
+Reads `docs/arch-reviews/entries/`, finds the record whose `change`/`scope` matches this change, and
 **fails closed** unless all hold. It does **not** judge whether the verdicts are *correct* - only that a
 complete, evidenced review exists (see "The honest limit"). Fail-closed conditions:
 
@@ -83,7 +88,7 @@ complete, evidenced review exists (see "The honest limit"). Fail-closed conditio
 6. **Any finding missing or mis-valued `@question`/`@severity`** (outside the controlled vocabulary) →
    fail.
 7. **`grepCommands` not recorded as run** → fail.
-8. **The log is not a clean append** (an existing entry was edited/deleted) → fail.
+8. **The log did not only grow** (an existing entry file was edited or deleted against the base ref) → fail.
 
 Like the BDD coverage gate, it takes the **changed-file list via an argument/env var** (not only
 `git`), so its own discriminating test can feed it a known file set. Ships with a faithful fixture and a

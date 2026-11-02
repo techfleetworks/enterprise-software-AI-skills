@@ -24,6 +24,8 @@ const UPSTREAM_ONLY = [
   "check:architecture",
   "docs/arch-reviews/log.jsonl",
   "docs/skill-receipts/log.jsonl",
+  "docs/arch-reviews/entries",
+  "docs/skill-receipts/entries",
   "CONTRIBUTING.md",
   "apply-ruleset.sh",
   // Also guard the rest of the upstream-only surface named by the ADR/CHANGELOG, so a future re-add of any of
@@ -50,7 +52,8 @@ test("the universal directive still carries the universal core (skills mandatory
 
 test("the upstream contributor process DOES carry the repo-specific artifacts (they moved, not vanished)", () => {
   const p = readFileSync(UPSTREAM, "utf8");
-  for (const tok of ["docs/arch-reviews/log.jsonl", "docs/skill-receipts/log.jsonl", "check:receipt", "CONTRIBUTING.md"]) {
+  // The review and receipt logs are folders of one file per change since ADR-0108.
+  for (const tok of ["docs/arch-reviews/entries/", "docs/skill-receipts/entries/", "check:receipt", "CONTRIBUTING.md"]) {
     assert.ok(p.includes(tok), `upstream-contributor-process.md must still name "${tok}"`);
   }
   assert.match(p, /Before you open or update a pull request/);

@@ -28,8 +28,8 @@ This repo holds its own changes to the standards it ships. Before you open or up
 
 1. **Run the mechanical gates locally.** `npm test` must pass and `npm run check:architecture` must exit 0.
 2. **Run a fresh-context `judge-arch` review** of the change, resolve or explicitly waive every finding, and
-   append the review to `docs/arch-reviews/log.jsonl`.
-3. **Append a skill-application receipt** to `docs/skill-receipts/log.jsonl`: one entry for the change covering
+   record the review as a new file in `docs/arch-reviews/entries/`.
+3. **Add a skill-application receipt** as a new file in `docs/skill-receipts/entries/`: one entry for the change covering
    every skill (applied or not-applicable), each `applied` entry citing a real skill heading, quoting at least
    eight exact words from under that heading, and naming files in the change. Run `npm run check:receipt` to
    confirm it is complete and every quote is a verbatim run from the cited section; add `--changed-list` to
@@ -37,7 +37,19 @@ This repo holds its own changes to the standards it ships. Before you open or up
    merge-blocking CI job that passes the diff and base is deferred to the techfleetnetwork release. The gate
    proves grounding, not that the work is good, so a reviewer still audits it against the diff. See
    `docs/specs/skill-application-receipt.md`.
-4. **Fill in the PR template checklist.** It is the list CI and reviewers expect.
+4. **Describe the change in a new `changelog.d/` file.** Never edit `CHANGELOG.md` in a PR; the release step
+   folds `changelog.d/` in (`changelog.d/README.md`).
+5. **Fill in the PR template checklist.** It is the list CI and reviewers expect.
+
+### Never edit a shared file just to record your change
+
+Each record a change leaves (its review, its receipt, its BDD coverage entry, its changelog note) is its own
+new file, named `<YYYYMMDDTHHMMSSZ>-<slug>` with the UTC time you write it and a slug of your branch. Two open
+PRs then add two different files and cannot conflict on them, on GitHub or locally (ADR-0108). Never edit or
+delete another change's file: the logs are append-only, and the gates check that against `origin/main`. The
+BDD datastore (`features/bdd-index.json`, `features/INDEX.md`) is generated and not committed; run
+`npm run bdd:index` to read it locally. New tests are found by `scripts/run-tests.mjs`; do not list them in
+`package.json`.
 
 CI runs the required checks `test (20)`, `test (24)` (the gate-script tests plus `check:architecture`), and
 `routing` (change-type to required-artifact: a new skill needs an ADR, a new gate needs a test). All three
