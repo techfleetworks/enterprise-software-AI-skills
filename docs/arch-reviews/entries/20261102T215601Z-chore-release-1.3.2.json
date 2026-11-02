@@ -1,0 +1,31 @@
+{
+  "date": "2026-11-02",
+  "change": "chore/release-1.3.2",
+  "reviewer": "fresh-context subagent (general-purpose), release-cut review, adversarial on version-consistency and semver level",
+  "scope": ["VERSION", "package.json", "package-lock.json", "gate-manifest.json", "CHANGELOG.md", "changelog.d/ (5 fragments deleted)"],
+  "matrix": {
+    "version files (VERSION, package.json, package-lock.json x2, gate-manifest version+generatedFrom)": {
+      "boundary": { "verdict": "cleared", "evidence": "git diff main shows ONLY version-string lines changed (1.3.1->1.3.2); no gate/schema/logic lines touched. gate-manifest diff is exactly the version + generatedFrom lines." },
+      "ownership": { "verdict": "cleared", "evidence": "All locations agree on 1.3.2: cat VERSION=1.3.2; package.json L3=1.3.2; package-lock.json L3 and L9=1.3.2; gate-manifest L2 version=1.3.2 and L3 generatedFrom '...@1.3.2'. No mismatch." },
+      "dependency": { "verdict": "n/a", "evidence": "Version bump; no dependency-direction surface." },
+      "error-handling": { "verdict": "n/a", "evidence": "No control flow changed." }
+    },
+    "CHANGELOG.md + changelog.d fold": {
+      "boundary": { "verdict": "cleared", "evidence": "CHANGELOG.md is the only narrative file edited and only by the release step, matching CONTRIBUTING/ADR-0108. The 5 changelog.d/*.md fragments are deleted; ls changelog.d/ returns README.md only." },
+      "ownership": { "verdict": "cleared", "evidence": "Single well-formed section '## 1.3.2 - 2026-11-02' (grep -c =1) above '## 1.3.1 - 2026-10-30'. Folded text matches the 5 deleted fragments (ADR-0104, 0107, 0108, 0109, 0110)." },
+      "dependency": { "verdict": "n/a", "evidence": "Documentation." },
+      "error-handling": { "verdict": "cleared", "evidence": "Fold left changelog.d clean and the new section is valid markdown with no orphaned/duplicate headers." }
+    },
+    "semver level (is PATCH correct?)": {
+      "boundary": { "verdict": "cleared", "evidence": "ADR-0049 defines patch=no change to what a consumer must do; the operative rule is consumer-impact (turns a green consumer red -> at least minor)." },
+      "ownership": { "verdict": "cleared", "evidence": "No folded change turns a currently-green consumer red: git diff v1.3.1 main -- gate-manifest.json ignoring version lines shows the only structural delta is the ADDITIVE consumerRequiredGates array; the installable gates section is byte-unchanged. ADR-0109 documents that consumerRequiredGates are classified only, not installed/run/provenance-compared in any consumer. ADR-0108 steps are contributor actions; ADR-0110 ships docs only. See F1." },
+      "dependency": { "verdict": "n/a", "evidence": "n/a" },
+      "error-handling": { "verdict": "cleared", "evidence": "n/a" }
+    }
+  },
+  "findings": [
+    { "id": "F1", "severity": "med", "question": "ownership", "status": "fixed", "note": "ADR-0049 lists 'a new capability' (minor) and 'changing the manifest shape' (major example) as higher-tier triggers, and this window added the consumerRequiredGates manifest section (ADR-0109), so the patch call brushes both triggers on their face. It is DEFENSIBLE as a patch because ADR-0049's operative rule is consumer-impact and ADR-0109 proves the new section is dormant (not installed/run/compared in a consumer) with the installable gates section unchanged. Reviewer recommended recording this judgment in the release notes. FIXED: a '_Released as a patch, not a minor_' note was added to the CHANGELOG 1.3.2 section stating exactly this." },
+    { "id": "F2", "severity": "low", "question": "error-handling", "status": "documented", "note": "The 1.3.2 CHANGELOG documents the ADR-0107 append-log merge driver and immediately notes it was superseded by ADR-0108 within the same unreleased window. Transparent but potentially confusing. Left as-is: the text is the verbatim fold of already-merged, already-reviewed fragments, and rewriting merged changelog text during a release cut is a needless risk." }
+  ],
+  "verdict": "PASS (all version locations agree on 1.3.2; folded changelog well-formed; no folded change forces consumer action, so PATCH is justified. F1 recommendation addressed in the CHANGELOG; F2 is low/cosmetic.)"
+}

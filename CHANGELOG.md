@@ -6,6 +6,87 @@ semantic versioning for the skills library and its gates.
 Changes not yet released live in `changelog.d/`, one file per change (ADR-0108). A pull request never edits
 this file; the release step folds those files in under the new version with `scripts/changelog-release.mjs`.
 
+## 1.3.2 - 2026-11-02
+
+_Released as a patch, not a minor: ADR-0109 adds a new `consumerRequiredGates` manifest section, which
+ADR-0049 could read as a new capability or manifest-shape change. It stays a patch because that section is
+classified only, not installed into, run in, or provenance-compared against any consumer, and the installable
+`gates` section is unchanged since 1.3.1, so no currently-green consumer turns red. Consumers upgrade when
+they like._
+
+### Fixed (edit-time routing never fired for root-anchored globs, ADR-0104)
+
+- The edit-gate passed Claude Code's absolute file path to the router, whose globs are anchored to the repo
+  root, so every `src/`, `lib/`, `app/`, `test/`, `tests/`, `docs/adr/`, `docs/decisions/`, `prisma/`, and
+  `db/migrations/` rule never fired at edit time. The hooks now make each edited path repo-relative first
+  (`toRepoPath` and `projectRoot` in `always-on/esk-paths.mjs`). The finish-check and subagent-check take the
+  same repo-relative spelling from the transcript, so the review matrix, the receipt, and the subagent ledger
+  key a file one way. A path outside the project root is passed through unchanged. Discriminating tests feed
+  absolute Windows-style and POSIX-style paths.
+
+### Fixed (merges silently dropped append-only log lines, ADR-0107)
+
+- Merging main into a branch dropped main's new lines from `docs/arch-reviews/log.jsonl` and
+  `docs/skill-receipts/log.jsonl` with no conflict. Cause: a hand-set `merge.union.driver = true` in the clone's
+  `.git/config` replaced git's built-in `union` driver with "keep ours". Even when working, `union` put the
+  branch's lines before main's, which fails the checkers' prefix check. The logs and `features/bdd-coverage-log.md`
+  now use a committed `append-log` driver (`scripts/merge-append-log.mjs`) that keeps both sides with the upstream
+  side first (merge either way, rebase, cherry-pick), keeps a shared entry once, and refuses a side that edited
+  history with conflict markers. `npm install` registers it and warns about a shadowed built-in driver.
+  `test/union-merge.test.mjs` merges ~21,000-character lines and fails if a line is lost, duplicated, or out of
+  order. Run `npm install` after pulling this. On a branch opened before it, run
+  `git checkout origin/main -- .gitattributes` before the next `git merge origin/main`.
+
+- Superseded before release by ADR-0108: the logs and the changelog are now folders of one file per change, so
+  nothing needs a merge driver, and the `append-log` driver, its `npm install` step, and `merge=union` are removed.
+
+### Fixed (every two open pull requests conflicted on the shared logs, ADR-0108)
+
+- Each change now records itself in its own new file: reviews in `docs/arch-reviews/entries/`, receipts in
+  `docs/skill-receipts/entries/`, BDD coverage entries in `features/bdd-coverage-log/`, and changelog notes in
+  `changelog.d/`, each named `<YYYYMMDDTHHMMSSZ>-<slug>`. Two open pull requests add two different files, so they
+  cannot conflict on them, on GitHub or locally, with no merge driver. The old logs were split byte for byte.
+- Append-only is checked per file against a git ref (`--base origin/main`, `BDD_LOG_BASE_REF`), and names the
+  entry that was edited or removed. A legacy single-file log still reads.
+- `CHANGELOG.md` is no longer edited in pull requests; `scripts/changelog-release.mjs` folds `changelog.d/` in at
+  release time.
+- The generated BDD datastore is no longer committed; the gates derive it when it is absent and still fail on a
+  stale copy. `npm test` finds test files itself (`scripts/run-tests.mjs`), so adding a test no longer edits
+  `package.json`.
+- The `merge=union` rules are removed: GitHub never applied them, and a clone's config override of that driver
+  silently dropped log lines.
+
+### Added (every consumer-facing checker declares its scope, ADR-0109)
+
+- Every `check-*.mjs` under a skill's `scripts/` now carries exactly one scope marker: `bootstrap-v2-gate`
+  (installable), `bootstrap-v2-consumer-gate` (needs the consumer's own input; listed in a new
+  `gate-manifest.json` `consumerRequiredGates` section with an `acceptance` contract), `bootstrap-v2-upstream-only`
+  (self-governance, never shipped), or `bootstrap-v2-machinery`. The upstream-integrity gate
+  (`check-upstream-manifest-integrity.mjs`) now fails closed on any unclassified or misclassified checker, matches
+  the marker only as a comment-only line, and runs against this repo itself in CI (a real-repo assertion in
+  `test/upstream-manifest-integrity.test.mjs`, which `npm test` runs). This closes gap 1 of issue 203: a skill can
+  no longer ship a consumer-facing gate the manifest never accounts for. The 12 previously unlisted consumer gates
+  (the four BDD gates, test-shape, arch-review-coverage, arch-rules-discriminate, open-high-findings,
+  security-coverage, a11y-checklist, axe-results, has-test) are now classified and manifested.
+
+### Added
+
+- Design and decision record for the org-wide **genesis bot** that closes gap 2 (a repo that never ran
+  `esk-genesis` still has no gates). ADR-0110 (`docs/adr/0110-org-wide-genesis-bot-closes-gap-2.md`, status
+  proposed) and the full design (`docs/design/genesis-bot/README.md`) describe a scheduled reconciliation
+  loop: a GitHub App for least-privilege, revocable identity plus a daily GitHub Actions workflow in a
+  central governance repo, driving the existing `esk-genesis` installer across every repo in the org and
+  opening a pull request for each uncovered or drifted one. It is a driver, not a rebuild, so there stays
+  one owner of how a repo gets gated. The honest limits are stated: no bot code ships here (the bot is an
+  org actor that must live in a governance repo and be granted org permission by a human once), private
+  repos on the free plan get advisory gates only, the bot never self-merges and never passes
+  `--adopt-existing`, and the one code dependency (`esk-genesis --check`, a read-only covered/drifted
+  predicate) is specified but not yet built. The README gains a "Making Every Repo Covered Automatically"
+  section explaining it, labeled designed-not-shipped.
+- A "Where this skill's scripts run" pointer in each of the ten skills whose scripts were classified in
+  ADR-0109, pointing at `gate-manifest.json` and ADR-0109 as the single source of truth for install scope
+  rather than restating per-script scopes (which would drift).
+
 ## 1.3.1 - 2026-10-30
 
 A consumer-install correctness release plus the agent-session audit batch. First, a batch of issues
