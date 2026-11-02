@@ -16,6 +16,14 @@
       "requires": [
         { "artifact": "discriminating-test", "changed": ["test/**/*.test.mjs", "**/test/*.test.mjs"], "ownerGate": "verifiable-quality-gates (check-has-test, verify-check-discrimination)", "hint": "add a test under test/ that spawns the new gate and asserts its exit codes on clean and dirty inputs" }
       ]
+    },
+    {
+      "id": "new-gate-needs-manifest",
+      "description": "A new gate script (check-*.mjs) must be registered in gate-manifest.json in the SAME change, so the manifest can never silently under-promise relative to the gates the skills ship (ADR-0109, #204). This catches the omission at change time; check-upstream-manifest-integrity verifies the registration is correct and complete at CI. Keyed on ADDED, not changed, so editing an existing upstream-only or helper script does not false-fire (those need no manifest change). A new self-governance gate that is deliberately bootstrap-v2-upstream-only is the one exception and is waived with a reason.",
+      "when": { "added": ["**/scripts/check-*.mjs"] },
+      "requires": [
+        { "artifact": "gate-manifest", "changed": ["gate-manifest.json"], "ownerGate": "judge-arch (check-upstream-manifest-integrity)", "hint": "register the new gate in gate-manifest.json (gates or consumerRequiredGates); or, if it is a self-governance gate, mark it bootstrap-v2-upstream-only and add a routing waiver with a reason" }
+      ]
     }
   ],
   "waivers": []

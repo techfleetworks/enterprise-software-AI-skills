@@ -60,6 +60,14 @@ or misclassified script.
   asserts `run(process.cwd())` exits 0, and `npm test` runs in the `test` job on Node 20 and 24
   (`.github/workflows/test.yml`). So a script added later without a marker, or marked but unmanifested, turns the
   required build red.
+- `[proven]` A change-time routing rule (`new-gate-needs-manifest` in `routing-rules.config.json`) adds a second,
+  earlier line of defense (issue 204 criterion C): adding a new `scripts/check-*.mjs` requires a `gate-manifest.json`
+  change in the same PR (`test/change-routing.test.mjs`, the REAL-config case). It is keyed on `added`, not
+  `changed`, on purpose: editing an existing `upstream-only` or `helper` script needs no manifest change, so a
+  `changed` rule would false-fire on it. The CI integrity gate above is the precise, always-on enforcer (it also
+  covers edits and correctness, which a glob rule cannot); the routing rule is the belt-and-suspenders that catches
+  the omission at change time. The one exception, a new self-governance gate deliberately left `upstream-only`, is
+  waived with a reason.
 - The marker is matched only as a comment line that is nothing but the marker (anchored, multiline), so the gate
   never matches a marker-shaped string inside code (its own regex literals, an error message, a `<id>` doc
   example). `[observed]` the gate passes against the real repo:

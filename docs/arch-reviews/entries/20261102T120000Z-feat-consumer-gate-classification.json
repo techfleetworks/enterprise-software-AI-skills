@@ -10,7 +10,9 @@
     "test/gate-manifest-schema.test.mjs",
     "features/repo-process/consumer-gate-classification.feature",
     "features/steps/consumer-gate-classification.steps.mjs",
-    "19 consumer-gate/upstream-only markers + 18 helper markers (one comment line each)"
+    "19 consumer-gate/upstream-only markers + 18 helper markers (one comment line each)",
+    ".claude/skills/judge-arch/assets/routing-rules.config.json (new-gate-needs-manifest rule)",
+    "test/change-routing.test.mjs (REAL-config discrimination for the new rule)"
   ],
   "matrix": {
     ".claude/skills/judge-arch/scripts/check-upstream-manifest-integrity.mjs": {
@@ -48,6 +50,12 @@
       "ownership": { "verdict": "cleared", "evidence": "the marker is the single owner of each script's scope" },
       "dependency": { "verdict": "n/a", "evidence": "comment only; no code path change" },
       "error-handling": { "verdict": "cleared", "evidence": "npm test (minus known env flakiness) and the real-repo integrity assertion pass with all markers" }
+    },
+    "routing-rules.config.json + change-routing.test.mjs": {
+      "boundary": { "verdict": "cleared", "evidence": "data-only routing policy in the one active config the gate reads; correct home" },
+      "ownership": { "verdict": "cleared", "evidence": "the rule is additive; no second routing config; the manifest-registration coupling is also enforced (precisely) by the integrity gate, not duplicated logic" },
+      "dependency": { "verdict": "n/a", "evidence": "config + test" },
+      "error-handling": { "verdict": "cleared", "evidence": "keyed on added (not changed) to avoid false-firing on upstream-only/helper edits; waivable for a new upstream-only gate; REAL-config discrimination test proves it fires and clears" }
     }
   },
   "findings": [
