@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-helper: compare-gate-runs
 /**
  * compare-gate-runs - compare a BASE gate run against a CHANGED gate run and report NEW failures,
  * in a way that is STRUCTURALLY UNABLE to report a false "clean" (reference implementation).

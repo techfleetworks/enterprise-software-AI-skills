@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-helper: bdd-index-generate
 // bdd-index-generate - (re)generate the centralized datastore from the feature files.
 //
 // The feature files are the single source of truth for scenario content; this derives the registry

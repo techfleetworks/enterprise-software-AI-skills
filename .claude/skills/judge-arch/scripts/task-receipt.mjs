@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-helper: task-receipt
 // task-receipt - per-task skill-application receipts for work done OUTSIDE a repo (issue #177).
 //
 // The repo's receipt (check-skill-receipt.mjs) is one entry per pull request. Work done in a folder that is not

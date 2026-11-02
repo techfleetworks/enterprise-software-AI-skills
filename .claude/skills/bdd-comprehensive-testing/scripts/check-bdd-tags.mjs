@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-consumer-gate: bdd-tags
 // check-bdd-tags - every scenario must carry the full taxonomy, each value in-vocabulary.
 //
 // Dimensions (see SKILL.md "Categorization"): @audience (in the declared list, if one is configured),

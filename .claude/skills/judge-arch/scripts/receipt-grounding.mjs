@@ -1,3 +1,4 @@
+// bootstrap-v2-helper: receipt-grounding
 // receipt-grounding - the one owner of the skill-receipt grounding PRIMITIVES, shared by the PR-level gate
 // (check-skill-receipt.mjs) and the per-task gate (task-receipt.mjs): heading slugs, section-by-heading
 // extraction, whitespace-insensitive matching, and the >= 8 exact-words threshold. Sharing these keeps the two

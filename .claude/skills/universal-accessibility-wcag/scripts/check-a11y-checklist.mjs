@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-consumer-gate: a11y-checklist
 /**
  * check-a11y-checklist - fail unless every item in the combined accessibility checklist has a verdict.
  *

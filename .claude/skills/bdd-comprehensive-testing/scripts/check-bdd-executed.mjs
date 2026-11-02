@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-consumer-gate: bdd-executed
 // check-bdd-executed - prove the suite actually RAN, not just that the .feature files are valid.
 //
 // Reads the BDD runner's machine-readable results (Cucumber JSON) and reconciles them against the

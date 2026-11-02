@@ -1,3 +1,4 @@
+// bootstrap-v2-helper: verifiable-lib
 // verifiable-lib.mjs - shared helpers for the two verifiable-quality gates.
 //
 // check-has-test (coverage) and verify-check-discrimination (mutation) both load the same config,

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-upstream-only: catalog-completeness
 /**
  * check-catalog-completeness, the pattern-selector skill's own mechanical gate.
  *

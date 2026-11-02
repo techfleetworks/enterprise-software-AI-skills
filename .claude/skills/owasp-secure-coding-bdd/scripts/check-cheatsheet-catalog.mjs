@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-upstream-only: cheatsheet-catalog
 // check-cheatsheet-catalog.mjs - the completeness gate for the per-cheat-sheet OWASP files.
 //
 // The owasp-secure-coding-bdd skill turns every OWASP cheat sheet into its own reference file under

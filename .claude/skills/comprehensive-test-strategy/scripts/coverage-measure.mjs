@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-helper: coverage-measure
 // coverage-measure - measure the t-way combination coverage of a set of test rows (a covering-array check).
 //
 //   node coverage-measure.mjs <plan.json> [--strength t]

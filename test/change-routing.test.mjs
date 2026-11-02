@@ -41,6 +41,18 @@ test("hardening: the REAL routing config requires a test for a NON-check gate sc
   assert.equal(ok.status, 0, ok.out);
 });
 
+test("hardening (ADR-0109 #204): the REAL config requires a gate-manifest change when a new check-*.mjs is added", () => {
+  const REAL = path.resolve(HERE, "..", ".claude", "skills", "judge-arch", "assets", "routing-rules.config.json");
+  const added = ".claude/skills/x/scripts/check-new.mjs";
+  // Test is present (satisfies new-gate-needs-test) but the manifest is NOT touched -> new-gate-needs-manifest fires.
+  const bad = run(["--config", REAL, "--changed-list", added + ",test/new.test.mjs", "--added-list", added]);
+  assert.equal(bad.status, 1, bad.out);
+  assert.match(bad.out, /new-gate-needs-manifest/);
+  // Test + manifest both in the change -> clean.
+  const ok = run(["--config", REAL, "--changed-list", added + ",test/new.test.mjs,gate-manifest.json", "--added-list", added]);
+  assert.equal(ok.status, 0, ok.out);
+});
+
 test("fires + required artifact present -> exit 0", () => {
   const c = tmp(BASE);
   const r = run(["--config", c.p, "--changed-list", "a/SKILL.md,docs/adr/0031-x.md", "--added-list", "a/SKILL.md"]);

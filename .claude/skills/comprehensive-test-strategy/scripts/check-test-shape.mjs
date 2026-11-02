@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-consumer-gate: test-shape
 /**
  * check-test-shape - fail when the test suite drifts off the pyramid (the ice-cream-cone anti-pattern).
  *

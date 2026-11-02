@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-helper: run-axe
 /**
  * run-axe - SCAFFOLD: drive a real browser, run axe-core on each configured page, and write the
  * results JSON that check-axe-results.mjs then judges. This is the browser half of the accessibility

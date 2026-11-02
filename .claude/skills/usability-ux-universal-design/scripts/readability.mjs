@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-helper: readability
 // readability - measure the reading grade of a report before it is sent.
 //
 //   node readability.mjs <file.md | ->  [--max-grade N]

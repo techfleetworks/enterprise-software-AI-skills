@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-consumer-gate: open-high-findings
 /**
  * check-open-high-findings - a HIGH (or critical) review finding blocks "done" until it is fixed or an
  * operator waives it. This reads the structured fresh-context review log and fails if any HIGH finding is

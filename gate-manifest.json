@@ -205,6 +205,128 @@
       "test": "test/gate-matrix.test.mjs"
     }
   ],
+  "consumerRequiredGates": [
+    {
+      "id": "bdd-coverage",
+      "origin": "upstream",
+      "skill": "bdd-comprehensive-testing",
+      "script": "scripts/ci/check-bdd-coverage.mjs",
+      "sha256": "d3605182b96f07e821ac12d4487701d74df256a472359cbfe35b28ae173f9c4a",
+      "test": "test/bdd-gates.test.mjs",
+      "testSha256": "18a4f29f246ce57b9f564e16b54379e547fa17dc57f1929753a193b61133c381",
+      "acceptance": "The repo's features/ enumerate every change's use cases as tagged Gherkin, logged append-only."
+    },
+    {
+      "id": "bdd-executed",
+      "origin": "upstream",
+      "skill": "bdd-comprehensive-testing",
+      "script": "scripts/ci/check-bdd-executed.mjs",
+      "sha256": "618e2ca467aa8d7c0e42a68e71dfdf25ac43c69af3a217755cb94c2d7d9a7987",
+      "test": "test/bdd-gates.test.mjs",
+      "testSha256": "18a4f29f246ce57b9f564e16b54379e547fa17dc57f1929753a193b61133c381",
+      "acceptance": "The repo runs its .feature scenarios in CI and reconciles the results, so every scenario actually ran and passed."
+    },
+    {
+      "id": "bdd-tags",
+      "origin": "upstream",
+      "skill": "bdd-comprehensive-testing",
+      "script": "scripts/ci/check-bdd-tags.mjs",
+      "sha256": "5cc1a18b8f997669399bd9f65005723b63ff4830fba1e426fbc461fdd86bb8db",
+      "test": "test/bdd-gates.test.mjs",
+      "testSha256": "18a4f29f246ce57b9f564e16b54379e547fa17dc57f1929753a193b61133c381",
+      "acceptance": "Every scenario in the repo's features/ carries a legal tag from the taxonomy."
+    },
+    {
+      "id": "gherkin-valid",
+      "origin": "upstream",
+      "skill": "bdd-comprehensive-testing",
+      "script": "scripts/ci/check-gherkin-valid.mjs",
+      "sha256": "505d00f17599bf6eafc4577ec1d273aec2530e38a6466a2a256aebde41283746",
+      "test": "test/bdd-gates.test.mjs",
+      "testSha256": "18a4f29f246ce57b9f564e16b54379e547fa17dc57f1929753a193b61133c381",
+      "acceptance": "Every .feature file in the repo parses as valid Gherkin."
+    },
+    {
+      "id": "test-shape",
+      "origin": "upstream",
+      "skill": "comprehensive-test-strategy",
+      "script": "scripts/ci/check-test-shape.mjs",
+      "sha256": "d62211dfc6d00d18ae5d994f9bad9c3941aae2ed1f1f9a203c94d7370247c2ea",
+      "test": "test/test-shape.test.mjs",
+      "testSha256": "2344e48a07b84b0ca0e44132dceeb3b6dbc82f50c6f8e1aa76e81987c00958bd",
+      "acceptance": "The repo's test suite meets the test-pyramid shape thresholds (unit, integration, e2e)."
+    },
+    {
+      "id": "arch-review-coverage",
+      "origin": "upstream",
+      "skill": "judge-arch",
+      "script": "scripts/ci/check-arch-review-coverage.mjs",
+      "sha256": "515872cafbeeb9730e381c34e074edc652c6279f8a17ba958a18c72f72c38a93",
+      "test": "test/arch-review-gates.test.mjs",
+      "testSha256": "5365b89b13e0f044dfed4be38c0bc56db44876f7ff7ef2f34f688e1c1742edd1",
+      "acceptance": "The repo keeps a fresh-context judge-arch review log covering every changed file against the four questions."
+    },
+    {
+      "id": "arch-rules-discriminate",
+      "origin": "upstream",
+      "skill": "judge-arch",
+      "script": "scripts/ci/check-arch-rules-discriminate.mjs",
+      "sha256": "7036f7355005ec9e3b1da9d30c1a9502e1096edfde50ca6d6de8a38cf11ab287",
+      "test": "test/arch-review-gates.test.mjs",
+      "testSha256": "5365b89b13e0f044dfed4be38c0bc56db44876f7ff7ef2f34f688e1c1742edd1",
+      "acceptance": "The repo ships planted-violation fixtures the mechanical arch layer must flag every one of."
+    },
+    {
+      "id": "open-high-findings",
+      "origin": "upstream",
+      "skill": "judge-arch",
+      "script": "scripts/ci/check-open-high-findings.mjs",
+      "sha256": "30d16c747586f5435c0d5ab4d235edee4eace1a792d92a36a424f5ec7493013e",
+      "test": "test/open-high-findings.test.mjs",
+      "testSha256": "b4cd49f30b4833df9a96d16a9fceb01497761e750867d6d0e374456be3e0650b",
+      "acceptance": "The repo's review log has no open HIGH finding for the change."
+    },
+    {
+      "id": "security-coverage",
+      "origin": "upstream",
+      "skill": "owasp-secure-coding-bdd",
+      "script": "scripts/ci/check-security-coverage.mjs",
+      "sha256": "6c7ab3aab157c8322f5043b5fc15cf02da1a9a65cb9e40c1e91368752c0754cb",
+      "test": "test/owasp-security-coverage.test.mjs",
+      "testSha256": "47ef07d3f9214f277dc9d76bec648ebd29f6097b9d3a529ffdd2d7ccd752ae17",
+      "acceptance": "Every security control in the change ships an executable @security scenario in the repo's features/."
+    },
+    {
+      "id": "a11y-checklist",
+      "origin": "upstream",
+      "skill": "universal-accessibility-wcag",
+      "script": "scripts/ci/check-a11y-checklist.mjs",
+      "sha256": "021e4ba987c9528986eab4f3f2970758fc96cd49b715ac70b47458614361c6a2",
+      "test": "test/a11y-checklist.test.mjs",
+      "testSha256": "b56276509aa2b04b4c2d4ac74e7cf75c8f39b9498b2cd3c016595c90fc8bddac",
+      "acceptance": "The repo records a WCAG 2.2 AA checklist verdict for each criterion on UI changes."
+    },
+    {
+      "id": "axe-results",
+      "origin": "upstream",
+      "skill": "universal-accessibility-wcag",
+      "script": "scripts/ci/check-axe-results.mjs",
+      "sha256": "9dc96b6baed8353411719fc838616c3b2ed32d26d8f9a7222847bacf2e7f6cd3",
+      "test": "test/axe-results.test.mjs",
+      "testSha256": "39bd516414e9509c1a376d93fda472b485e980eb287126f3dc42c7fcb8115a1f",
+      "acceptance": "The repo runs axe on its UI and commits results with no failing accessibility violations."
+    },
+    {
+      "id": "has-test",
+      "origin": "upstream",
+      "skill": "verifiable-quality-gates",
+      "script": "scripts/ci/check-has-test.mjs",
+      "sha256": "f3fb3adf3a3f6d87cb5be814d4ee9accd8865cb52ae87e5d8e9da2c36e9fe314",
+      "test": "test/verifiable-gates.test.mjs",
+      "testSha256": "bffec4b691f14bafbfbbc92add4f55d24203338ad5562ec172756f15659c2303",
+      "acceptance": "Every non-allowlisted check in the repo has a crediting test (mutation-proven)."
+    }
+  ],
   "aggregator": {
     "requiredCheck": "enterprise-gates"
   }

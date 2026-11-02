@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-upstream-only: verbatim
 // check-verbatim.mjs - the license-hygiene gate for the per-cheat-sheet OWASP files.
 //
 // The OWASP Cheat Sheet Series is licensed CC-BY-SA-4.0; this repo's own files are MIT (ADR-0017). The skill

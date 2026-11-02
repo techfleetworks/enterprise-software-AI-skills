@@ -1,3 +1,4 @@
+// bootstrap-v2-helper: entry-log
 // entry-log - the one reader for the append-only review and receipt logs (ADR-0108).
 //
 // A log is a DIRECTORY with one file per entry, never one shared file every change appends to. Two open pull

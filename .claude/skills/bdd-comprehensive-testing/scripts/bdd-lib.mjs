@@ -1,3 +1,4 @@
+// bootstrap-v2-helper: bdd-lib
 // bdd-lib.mjs - shared helpers for the BDD gates.
 //
 // The OFFICIAL @cucumber/gherkin parser is the oracle for "valid Gherkin": we never regex-parse

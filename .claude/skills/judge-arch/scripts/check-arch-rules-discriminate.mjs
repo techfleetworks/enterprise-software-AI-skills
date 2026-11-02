@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-consumer-gate: arch-rules-discriminate
 // check-arch-rules-discriminate - prove the mechanical review layer actually DETECTS (mutation-test
 // the reviewer). Runs arch-gate against a set of planted violations (one per question) and requires
 // it to flag every one. If arch-gate reports nothing (e.g. it was no-opped), or a planted violation

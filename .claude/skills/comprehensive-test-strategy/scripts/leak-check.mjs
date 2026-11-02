@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-helper: leak-check
 // leak-check - a reference secret-leak checker, and the worked example of a TESTED oracle.
 //
 //   node leak-check.mjs --secret "VALUE" [--secret "VALUE" ...] <output-file | ->

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-consumer-gate: arch-review-coverage
 // check-arch-review-coverage - a change isn't "reviewed" unless the review log proves it.
 //
 // For the changed code files, the latest entry in the append-only review log must cover EVERY file

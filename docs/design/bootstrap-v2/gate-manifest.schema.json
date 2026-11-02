@@ -27,6 +27,11 @@
       "type": "array",
       "items": { "$ref": "#/$defs/machinery" }
     },
+    "consumerRequiredGates": {
+      "description": "Gates a consumer repo must run that need the consumer's OWN input (its features/, its review log, its axe run), so they are not installed as blocking upstream gates in the authoring repo. Each is bound to its source (self-declaring marker + sha256) exactly like an upstream gate, and carries a machine-readable acceptance contract the consumer must satisfy (ADR-0109). Optional; the upstream-integrity gate enforces that every consumer-gate-marked script is listed here and vice versa.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/consumerGate" }
+    },
     "aggregator": {
       "description": "The single branch-protection status check all gates feed, so adding/removing a gate never changes the required-check set.",
       "type": "object",
@@ -52,6 +57,25 @@
         "script": { "type": "string", "pattern": "^[^\\0]+\\.(mjs|js|sh)$" },
         "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
         "test": { "type": "string", "minLength": 1 }
+      }
+    },
+    "consumerGate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "skill", "script", "sha256", "test", "testSha256", "acceptance"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+        "origin": { "type": "string", "enum": ["upstream", "repo-local"] },
+        "skill": { "type": "string", "minLength": 1 },
+        "script": { "type": "string", "pattern": "^[^\\0]+\\.(mjs|js|sh)$" },
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "test": { "type": "string", "minLength": 1 },
+        "testSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "acceptance": {
+          "description": "What the consumer repo must provide for this gate to pass (plain text, recorded for genesis and humans; not executed by the schema).",
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
     "gate": {
