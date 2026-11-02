@@ -291,3 +291,12 @@ escaped defect is treated as a missing lower-level test.
   October 2010 (<https://doi.org/10.6028/NIST.SP.800-142>): covering arrays, t-way (combinatorial) testing, the
   interaction rule that most failures are triggered by a few interacting values, and measuring combinatorial
   coverage. The basis for `references/combinatorial-testing.md`. `[documented]`
+
+---
+
+## Where this skill's scripts run
+
+Every script this skill ships declares an install scope in a comment marker, and `esk-genesis` installs
+only what the gate manifest lists. Which scripts run in a consumer repo, which are enforced there, and
+which govern only this authoring repo are defined by `gate-manifest.json` and ADR-0109, not restated here,
+so there is one source of truth.

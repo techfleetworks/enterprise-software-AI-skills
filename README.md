@@ -17,6 +17,7 @@ An open source repository made and kept up to date by **[Tech Fleet](https://tec
 - [How a skill gets picked and enforced](#how-a-skill-gets-picked-and-enforced)
 - [Set it up and keep it current](#set-it-up-and-keep-it-current)
 - [The checks travel to any project (v1.2)](#the-checks-travel-to-any-project-v12)
+- [Making every repo covered automatically (planned)](#making-every-repo-covered-automatically)
 - [Three examples in plain English](#three-examples-in-plain-english)
 - [Turn on the architecture check, step by step](#turn-on-the-architecture-check-step-by-step)
 - [How the skills work together](#how-the-skills-work-together)
@@ -402,6 +403,121 @@ not that the work is good.
 > The full technical design is in
 > [`docs/design/bootstrap-v2/`](docs/design/bootstrap-v2/), and the decisions behind it are
 > the ADRs numbered 0047 and 0056 through 0065 in [`docs/adr/`](docs/adr/).
+
+---
+
+# Making Every Repo Covered Automatically
+
+> **Status: designed, not shipped yet.** This section describes the plan for closing the
+> last gap in coverage. The pieces below are a design (recorded in ADR-0110, with the full
+> write-up under `docs/design/genesis-bot/`), not a feature that runs today. Everything
+> above this line is built and working.
+
+The two installers above (`esk-init` and `esk-genesis`) only do their job when a person
+runs them. In a real organization with many repos, that step gets skipped, so some repos
+stay unprotected and nobody notices. Reminders in a chat have not fixed this. And nothing
+inside this project can reach into another repo to fix it for them. The plan is a small
+**genesis bot** that runs on its own and brings every repo up to the standard, without
+anyone asking.
+
+## What it does
+
+The bot is a steady loop for a whole GitHub organization. On a schedule it looks at every
+repo and asks one question: does this repo have the checks installed and turned on? For any
+repo that does not, it runs the existing `esk-genesis` tool and opens a pull request that
+adds them. Think of it like a thermostat: the target is "every repo is covered," and the
+bot keeps nudging reality toward that target, over and over, on its own.
+
+In one pass it:
+
+1. Lists the organization's repos (skipping archived ones, forks, and any tagged to opt out).
+2. Runs a read-only check on each to see if it is uncovered or has fallen behind the pinned version.
+3. For any repo that needs it, runs the installer on a branch and **opens or updates a pull request** with the checks, the pipeline step, and the list.
+4. On **public** repos, turns the required check on so merges are actually blocked.
+5. Writes a short **status report**: which repos are covered, which have a request waiting, which are still bare. That report is the always-on signal that a repo is uncovered.
+
+## What kind of bot it is
+
+Not an AI and not a chat bot. It is a plain automation bot made of two ordinary GitHub
+parts:
+
+- a **GitHub App**, which is its identity and its permissions (what it is allowed to touch), and
+- a **scheduled workflow**, which is its body (the code that runs on a timer).
+
+The know-how for installing the checks already lives in `esk-genesis`. The bot does not
+redo any of that. It is only a **driver** that calls the existing tool across many repos.
+
+## Where it lives
+
+In a small central **governance repo** inside the organization. The schedule runs there on
+the organization's own pipeline. The bot signs in as the GitHub App, reads each repo, runs
+the pinned installer against it, and pushes a branch and a pull request back. Nothing runs
+on your machine or on a server you have to keep alive.
+
+## How it works
+
+```
+        ┌───────────────────────────────────────────────┐
+        │ this project (the single source of truth)      │
+        │   the check list   +   the esk-genesis tool    │
+        └──────────────────────┬────────────────────────┘
+                               │ pinned version
+   one-time human grant        ▼
+   (an org admin installs ──▶ ┌──────────────────────────┐
+    the GitHub App once)      │  GENESIS BOT             │
+                              │  • GitHub App (identity) │
+                              │  • scheduled workflow in │
+                              │    a governance repo     │
+                              └────────────┬─────────────┘
+         for each repo in the org:         │
+     ┌───────────────┬───────────────┬─────┴────────┬──────────────┐
+     ▼               ▼               ▼              ▼              ▼
+   check:         needs work?    open/update    public: make    write a
+  is it covered ─▶ yes       ─▶ a pull         the check       status report
+  and current?      │           request        required        (the always-on
+                 no─▶ skip      (never merged   private: checks  signal)
+                                 unreviewed)    run, advisory
+```
+
+## Why it is built this way
+
+Each choice answers a real constraint, and some carry honest limits worth stating up front.
+
+- **Why a central bot at all.** Nothing inside one repo can install files into a different
+  repo, and nothing can hand itself organization-wide permission. So "automatic across the
+  org" has to be a central actor that holds that permission, and the permission can only be
+  granted once, by a human admin, by installing the App. That one human step cannot be
+  engineered away. Everything after it runs with no prompting.
+
+- **Why a driver around the existing installer, not new code.** `esk-genesis` already
+  installs the checks, verifies every file, does nothing when there is nothing to do, and
+  does no harm when run twice. Rewriting that inside the bot would be a second copy of the
+  same logic that drifts out of step. The bot reuses the one tool that owns the job.
+
+- **Why a GitHub App, not a person's token.** An App hands out short-lived, narrow,
+  cancelable keys and acts as the bot, so its actions are easy to audit and are not tied to
+  one person's account. A personal token is a broad, standing key tied to a human. The App
+  is the safer owner of the bot's power.
+
+- **Why a schedule first, with instant triggers optional.** A daily sweep needs no
+  always-on server and is safe to repeat, and it closes the gap within a day. Reacting the
+  moment a repo is created would be faster, but it needs a running web endpoint, which is
+  more to maintain and a bigger target. So the plan starts with the schedule and adds the
+  instant trigger only if a same-day gap turns out to be too slow.
+
+- **Why it opens a request and does not merge on its own.** A bot that silently merges
+  pipeline changes into every repo's main branch is a very powerful and risky thing: if the
+  bot or its source were ever tampered with, it would push changes everywhere with no human
+  in the loop. So it opens a request and lets a person, or the code owners, merge it. This
+  is the one place "fully hands-off" meets "safe," and the plan chooses safe.
+
+- **Why public repos get real enforcement and private ones do not, yet.** On the free
+  GitHub plan, a required check can block merges only on public repos; private repos need a
+  paid plan. The bot still installs and runs the checks on private repos, so they report on
+  every request. It just cannot block a merge there until the plan is upgraded. This limit
+  is stated, not hidden.
+
+---
 
 # Turn on the architecture check
 

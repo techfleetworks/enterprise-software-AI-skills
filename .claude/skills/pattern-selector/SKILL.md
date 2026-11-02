@@ -254,3 +254,12 @@ peer-reviewed studies below.
   2017, doi:10.1109/QRS.2017.37. Measured trade-offs. `[documented]`
 - Almadi, Hooshyar, Ahmad, *Bad Smells of Gang of Four Design Patterns: A Decade Systematic Literature
   Review*, Sustainability 13(18):10256, 2021, doi:10.3390/su131810256. Measured risks. `[documented]`
+
+---
+
+## Where this skill's scripts run
+
+Every script this skill ships declares an install scope in a comment marker, and `esk-genesis` installs
+only what the gate manifest lists. Which scripts run in a consumer repo, which are enforced there, and
+which govern only this authoring repo are defined by `gate-manifest.json` and ADR-0109, not restated here,
+so there is one source of truth.

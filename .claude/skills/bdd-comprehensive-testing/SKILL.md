@@ -486,3 +486,12 @@ repo admin can still deliberately and visibly disable a gate.
 | Converting use cases to Gherkin; per-stack framework setup & step definitions | `references/gherkin-and-frameworks.md` |
 | Feature-file layout, the centralized datastore, and CI/CD wiring details | `references/storage-and-ci-wiring.md` |
 | The gate suite (`check-bdd-coverage`, `check-gherkin-valid`, `check-bdd-tags`): what each enforces, strict-mode config, and how each is proven | `references/bdd-gates.md` |
+
+---
+
+## Where this skill's scripts run
+
+Every script this skill ships declares an install scope in a comment marker, and `esk-genesis` installs
+only what the gate manifest lists. Which scripts run in a consumer repo, which are enforced there, and
+which govern only this authoring repo are defined by `gate-manifest.json` and ADR-0109, not restated here,
+so there is one source of truth.

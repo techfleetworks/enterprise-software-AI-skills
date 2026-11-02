@@ -232,3 +232,12 @@ the second, and both are stated, not hidden.
 - The install and first-run plan (the bootstrap design doc the maintainer provided): the phases, the
   no-inferred rule, the consent-and-transparency requirement, and the skeptical risks this skill answers.
   `[reported]`
+
+---
+
+## Where this skill's scripts run
+
+Every script this skill ships declares an install scope in a comment marker, and `esk-genesis` installs
+only what the gate manifest lists. Which scripts run in a consumer repo, which are enforced there, and
+which govern only this authoring repo are defined by `gate-manifest.json` and ADR-0109, not restated here,
+so there is one source of truth.

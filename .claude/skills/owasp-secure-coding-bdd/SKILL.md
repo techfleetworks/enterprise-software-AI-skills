@@ -393,3 +393,12 @@ before relying on it.
   read this session. `[documented]`
 - `bdd-comprehensive-testing` (this repo): owns the shared feature-file index, the official-parser gherkin
   validation, and the CI wiring that runs the `@security` scenarios. `[documented]`
+
+---
+
+## Where this skill's scripts run
+
+Every script this skill ships declares an install scope in a comment marker, and `esk-genesis` installs
+only what the gate manifest lists. Which scripts run in a consumer repo, which are enforced there, and
+which govern only this authoring repo are defined by `gate-manifest.json` and ADR-0109, not restated here,
+so there is one source of truth.
