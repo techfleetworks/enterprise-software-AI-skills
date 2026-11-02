@@ -1,7 +1,7 @@
 # Skill-application receipt - requirements spec
 
 Status: accepted and built (ADR-0038). The gate is `check-skill-receipt.mjs`, the log is
-`docs/skill-receipts/log.jsonl`, the coupling map is `judge-arch/assets/skill-receipt.config.json`, and the
+`docs/skill-receipts/entries/` (one file per change, ADR-0108), the coupling map is `judge-arch/assets/skill-receipt.config.json`, and the
 tests are `test/skill-receipt.test.mjs`. Plain language, no em or en dashes (house style). This spec is written
 by applying the repo's own skills to itself; the sections below include the receipt for this document, a
 pattern selection, the four architecture questions, a threat model, and an evidence ledger, because that is
@@ -53,12 +53,13 @@ impossible, which is why the human review is mandatory.
 
 - One receipt per change (per PR), covering every applied-per-change skill: the 16 (13 engineering + 3
   requirements). `bootstrap` is tooling, not a per-change discipline, so it is excluded (open decision 8a).
-- Append-only and tamper-evident, like `docs/arch-reviews/log.jsonl`.
+- Append-only and tamper-evident, like `docs/arch-reviews/entries/`.
 
 ## 4. Receipt format
 
-Append-only JSONL at `docs/skill-receipts/log.jsonl`, one entry per change, keyed by a change ref, mirroring the
-arch-review log:
+Append-only, one JSON file per change in `docs/skill-receipts/entries/`, named `<YYYYMMDDTHHMMSSZ>-<slug>.json`
+and keyed by a change ref, mirroring the arch-review log. (Until ADR-0108 this was one shared `log.jsonl`, which
+made every two open pull requests conflict; a legacy `.jsonl` file still reads.) One entry:
 
 ```
 {
@@ -203,7 +204,7 @@ Each proven to discriminate (mutation-verified where feasible), per verifiable-q
 ## 10. Deliverables (when built)
 
 - `docs/specs/skill-application-receipt.md` (this spec, finalized).
-- `check-skill-receipt.mjs` + `assets/skill-receipt.config.json` (the coupling map) + `docs/skill-receipts/log.jsonl`
+- `check-skill-receipt.mjs` + `assets/skill-receipt.config.json` (the coupling map) + `docs/skill-receipts/entries/`
   (seeded with this change's own receipt).
 - `test/skill-receipt.test.mjs` (section 9).
 - A `@security` scenario for the crafted-receipt case.

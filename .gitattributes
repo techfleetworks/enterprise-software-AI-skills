@@ -8,21 +8,10 @@
 # (CI and the ADR/ruleset gate tests) fails on CR bytes (`$'\r': command not found`).
 *.sh text eol=lf
 
-# Append-only logs (the skill-application receipt log, the arch-review log) get ONE new line per PR,
-# always at the end. Two PRs open at once therefore collide on that last line every time. `merge=union`
-# is git's built-in driver for exactly this: on a merge it keeps BOTH sides' added lines instead of
-# raising a conflict, so append-only logs never block a PR. It is safe here precisely because these
-# files are append-only (no line is ever edited in place, so there is nothing to mis-merge). GitHub
-# honors this driver when it merges, so the conflicts stop at the source, not just locally.
-# Any file named log.jsonl, in any directory, is one of these logs.
-log.jsonl merge=union
-
-# The changelog is the third file every PR edits: each PR adds a "### Fixed (...)" block near the top, so
-# two open PRs collide there the same way the logs do (ADR-0087). It only ever gains new blocks (existing
-# entries are not rewritten), so the same union driver is the right fix: a merge keeps both PRs' new
-# entries instead of raising a conflict. union is NEVER applied to source code, only to these accumulating
-# text files, because concatenating both sides of a code conflict can produce wrong code.
-CHANGELOG.md merge=union
+# No merge drivers here, on purpose (ADR-0108, superseding ADR-0087). GitHub ignores merge drivers when it
+# decides whether a pull request conflicts, and a local override of a driver name can silently drop lines. The
+# files every PR used to append to (the review log, the receipt log, the BDD coverage log, the changelog) are now
+# directories of one file per change, so two PRs add two different files and there is nothing to merge.
 
 # The pre-push hook template is a shebang script; it must check out with LF so it runs under the shell
 # that git invokes it with, even on Windows.

@@ -81,20 +81,22 @@ These are not optional and not left to judgment. Every time this skill runs:
    declared audience with no scenario, a scenario with no severity tag - fail the build closed.
 
 7. **A centralized BDD datastore, maintained in the repo.** Every repo that pushes code using this
-   skill MUST create and keep up to date a **single, central datastore of all BDD scenarios, committed
-   in the repo itself** - one source of truth any developer can open to see the whole picture: for
-   each scenario, its definition/purpose, its Given/When/Then, its audiences, its use case, its
-   severity, and its **coverage status** (`covered | N/A:<reason> | pending`). It lives in one place
-   (canonical machine-readable `features/bdd-index.json`, plus a human-readable `features/INDEX.md`
+   skill MUST create and keep up to date a **single, central datastore of all BDD scenarios, derived
+   from the feature files in the repo itself** - one source of truth any developer can open to see the
+   whole picture: for each scenario, its definition/purpose, its Given/When/Then, its audiences, its use
+   case, its severity, and its **coverage status** (`covered | N/A:<reason> | pending`). It lives in one
+   place (canonical machine-readable `features/bdd-index.json`, plus a human-readable `features/INDEX.md`
    view) and is **generated from the feature files**, so it is always maintained and can never become
    a second, drifting copy - the `.feature` files stay the source of truth for scenario content, and
-   the datastore is the derived, committed registry over them. The `check-bdd-coverage` gate **fails
-   the build if the datastore is missing, stale, or out of sync** with the feature files. (Live
-   pass/fail for a run is linked from the CI report, not duplicated into the datastore.)
+   the datastore is the derived registry over them. Commit it or generate it on demand: a committed copy
+   is one file every scenario-adding pull request edits, so two open pull requests conflict on it. A team
+   that runs pull requests in parallel should gitignore it and let the gates derive it. The
+   `check-bdd-coverage` gate **fails the build if a present datastore is stale or out of sync** with the
+   feature files. (Live pass/fail for a run is linked from the CI report, not duplicated into the datastore.)
 
 8. **An append-only log of the receipts - the history, not just the snapshot.** Beyond the current
    scenarios (source of truth) and the datastore (current state), maintain a committed, **append-only
-   coverage/evidence log** (`features/bdd-coverage-log.md`) that records the *history*: for every
+   coverage/evidence log** (`features/bdd-coverage-log/`, one file per entry) that records the *history*: for every
    behavioral change, a dated entry naming the change (commit/PR), the scenarios added / updated /
    removed with their audience · use case · severity, and the gate outcome that proved them - the
    receipt. **Entries are only ever appended; past entries are never edited or deleted**, so the log is
@@ -224,12 +226,15 @@ Layout that makes this work:
   (`covered | N/A:<reason> | pending`) - so any developer can open one place and see the full
   behavioral surface, coverage, categories, and gaps. **It is generated from the `.feature` files, not hand-kept
   in parallel** (the feature files stay the single source of truth for scenario content; the datastore
-  is the derived registry over them), regenerated on change and committed, and the
-  `check-bdd-coverage` gate fails the build if it is missing or drifts from the feature files.
-- **Append-only history (the log of receipts).** Alongside the datastore, keep
-  `features/bdd-coverage-log.md` - an **append-only** log of every behavioral change: date, change ref
+  is the derived registry over them), regenerated on change, and the `check-bdd-coverage` gate fails the
+  build if a present copy drifts from the feature files. When it is not committed, the gates derive it, so
+  it can never be missing.
+- **Append-only history (the log of receipts).** Alongside the datastore, keep the
+  `features/bdd-coverage-log/` folder - an **append-only** log of every behavioral change, one Markdown
+  file per entry named `<YYYYMMDDTHHMMSSZ>-<slug>.md`, never one shared file: two open pull requests then add
+  two different files and cannot conflict on the log. Each entry records the date, change ref
   (commit/PR), the event type (`added`/`updated`/`removed`/…), the scenarios touched (with their full
-  taxonomy tags), and the gate result that proved them. New entries are appended; prior entries are immutable. The datastore answers "what is
+  taxonomy tags), and the gate result that proved them. New entries are new files; prior entries are immutable. The datastore answers "what is
   covered now"; the log answers "how did we get here, and what proved it then." It is tamper-evident
   (the gate rejects any edit to a past entry) and backed by git history.
 - **One home per feature - additive across skills.** Security (`@security`), release-safety
@@ -262,7 +267,7 @@ do not invent categories; they draw from this vocabulary, and `check-bdd-tags` r
 location** (`features/<domain>/<feature>.feature`), not a separate tag, so it can never drift from where
 the file actually lives.
 
-**Log-record categories** (each `features/bdd-coverage-log.md` entry):
+**Log-record categories** (each `features/bdd-coverage-log/` entry file):
 
 | Field | Values |
 |---|---|
@@ -307,9 +312,9 @@ are no feature files at all, or when:
 
 1. a feature has only happy-path scenarios (no non-happy path for it),
 2. a declared audience for that feature has no scenario tagged for it,
-3. the centralized datastore (`features/bdd-index.json` + `features/INDEX.md`) is missing or out of
+3. a present centralized datastore (`features/bdd-index.json` + `features/INDEX.md`) is out of
    sync with the `.feature` files (regenerate → diff → fail on drift), so the shared source of truth
-   can never silently fall behind,
+   can never silently fall behind (an absent one is derived from the feature files),
 4. the coverage log is missing or empty, carries an unknown event, or (when the base revision is given)
    was not a clean append - a prior entry was edited or removed (history must be immutable).
 
@@ -394,7 +399,7 @@ completeness and live execution are **both** required; neither alone is enough.
 - [ ] Each use case severity-rated; highest-severity scenarios written/reviewed first and tagged so critical paths are unmistakable.
 - [ ] Every scenario carries the full taxonomy - `@audience:` + `@usecase:` + `@category:` + `@quality:` + `@severity:` - each value in-vocabulary.
 - [ ] Scenarios committed to the project repo's permanent `features/` index; security/release/reliability/compliance scenarios added to the same files.
-- [ ] A new entry appended to the `features/bdd-coverage-log.md` history for this change; no prior entry altered (append-only).
+- [ ] A new entry file added to the `features/bdd-coverage-log/` history for this change; no prior entry altered (append-only).
 - [ ] Suite wired into CI as a blocking gate (and a pre-push hook).
 - [ ] `check-bdd-coverage` passes and is itself proven by a discriminating test.
 - [ ] Evidence ledger attached: each central claim carries an evidence state + re-runnable source, and any `not-assessed` gap is listed (per the Evidence & skeptical assessment section).
@@ -430,7 +435,7 @@ output attached) · `documented` (an authoritative doc says so; URL + date) · `
 facts) · `reported` · `not-assessed` (a stated gap, never a silent pass). Do not report BDD coverage
 "done" without the ledger: which scenarios exist, which gate run proves them, and what is still
 `not-assessed`. This ledger is not only per-change - it **persists as the append-only coverage/evidence
-log** (`features/bdd-coverage-log.md`), so the *history* of receipts, not just the latest snapshot,
+log** (`features/bdd-coverage-log/`), so the *history* of receipts, not just the latest snapshot,
 lives in version control.
 
 ### This skill's central claims and how each is proven

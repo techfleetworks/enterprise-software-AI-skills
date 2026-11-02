@@ -24,20 +24,27 @@ and test - <https://en.wikipedia.org/wiki/Specification_by_example> `[documented
 features/
   payments/refund.feature
   auth/login.feature
-  bdd-index.json        # canonical, machine-readable datastore (generated)
-  INDEX.md              # human-readable view (generated)
-  bdd-coverage-log.md   # append-only history of receipts
+  bdd-index.json        # canonical, machine-readable datastore (generated; commit it or gitignore it)
+  INDEX.md              # human-readable view (generated; commit it or gitignore it)
+  bdd-coverage-log/     # append-only history of receipts, one file per entry
+    20261102T013000Z-fix-refund-rounding.md   # an example entry  link-check:ignore
 ```
 
 ## The centralized datastore - `bdd-index.json` (+ `INDEX.md`)
 
-One central, committed registry of every scenario any developer can open to see the whole picture.
+One central registry of every scenario any developer can open to see the whole picture.
 `features/bdd-index.json` is canonical and machine-readable; `features/INDEX.md` is the human view.
 **Both are GENERATED from the `.feature` files, not hand-maintained** - the feature files stay the
 single source of truth for scenario content, and the datastore is the derived registry over them. This
 avoids a second, drifting copy (two owners of the same fact always disagree eventually). It is
-regenerated on change and committed, and `check-bdd-coverage` fails the build if it is missing, stale,
-or out of sync (regenerate → diff → fail on drift).
+regenerated on change, and `check-bdd-coverage` fails the build if a present copy is stale or out of sync
+(regenerate → diff → fail on drift).
+
+**Commit it, or don't.** A committed datastore is one file that every scenario-adding pull request edits, so
+any two open pull requests conflict on it, and a host like GitHub cannot merge them on its own. A team that
+runs pull requests in parallel should gitignore both files and generate them on demand
+(`bdd-index-generate.mjs features`). When they are absent, `check-bdd-coverage` and `check-bdd-executed`
+derive the datastore from the feature files, so it is never missing.
 
 Fields recorded per scenario:
 
@@ -55,10 +62,13 @@ Fields recorded per scenario:
 
 Live pass/fail for a run is linked from the CI report, not duplicated into the datastore.
 
-## The append-only coverage log - `bdd-coverage-log.md`
+## The append-only coverage log - `bdd-coverage-log/`
 
 The datastore answers "what is covered now"; the log answers "how did we get here, and what proved it
-then." `features/bdd-coverage-log.md` is an **append-only** history of receipts. Each entry records:
+then." `features/bdd-coverage-log/` is an **append-only** history of receipts, one Markdown file per entry,
+named `<YYYYMMDDTHHMMSSZ>-<slug>.md` (the UTC time it was written, then a slug of the change). It is a folder
+of files, not one shared file, so two open pull requests add two different files and cannot conflict on the
+log. A legacy single `features/bdd-coverage-log.md` still reads. Each entry records:
 
 | Field | Value |
 |---|---|
@@ -68,9 +78,9 @@ then." `features/bdd-coverage-log.md` is an **append-only** history of receipts.
 | `scenario` | scenario name(s) touched + their full taxonomy tags |
 | `gate` | the proving run's result (pass + the check names) - the receipt |
 
-**Entries are only ever appended; past entries are never edited or deleted.** The log is
-tamper-evident - `check-bdd-coverage` rejects any edit to a prior entry (the committed log must be a
-clean append onto the base revision; git history is the backing record).
+**Entries are only ever added; past entries are never edited or deleted.** The log is
+tamper-evident - `check-bdd-coverage` rejects any edit to a prior entry (with `BDD_LOG_BASE_REF` set to the
+base git ref, every entry file the base has must still be there unchanged; git history is the backing record).
 
 ## The shared semantic taxonomy (self-contained restatement)
 

@@ -5,7 +5,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, writeFileSync, symlinkSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, symlinkSync, readdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -251,16 +251,28 @@ test("without --changed-list, a coupling miss is not caught and the OK line disc
   assert.match(out(r), /NOT checked/i);
 });
 
-// Enforcement against the real repo: the committed latest receipt must be complete and grounded against the
-// real skills at all times. This bare run checks completeness + anchors + quotes + banner; diff binding,
-// coupling, and append-only need the change diff and the base revision, which the deferred CI job will pass
-// (--changed-list / --base), not this test.
-test("the repository's own latest receipt is complete and grounded against the real skills", () => {
+// Enforcement against the real repo: every receipt this change ADDS (entry files not on origin/main) must be
+// complete and grounded against the real skills. Receipts are one file per change (ADR-0108), so "the newest
+// name" may belong to another PR that merged first; checking the added files instead means a PR's own broken
+// receipt cannot hide behind someone else's good one. With nothing added (a push to main after merge), the
+// newest receipt is checked. This bare run checks completeness + anchors + quotes + banner; diff binding and
+// coupling need the change diff, which the deferred CI job will pass (--changed-list), not this test.
+test("every receipt this change adds is complete and grounded against the real skills", () => {
   const GATE_REAL = resolve(REPO, ".claude/skills/judge-arch/scripts/check-skill-receipt.mjs");
-  const r = spawnSync(process.execPath, [GATE_REAL,
-    "--receipt", resolve(REPO, "docs/skill-receipts/log.jsonl"),
-    "--skills-dir", resolve(REPO, ".claude/skills")], { encoding: "utf8" });
-  assert.equal(r.status, 0, out(r));
+  const dir = resolve(REPO, "docs/skill-receipts/entries");
+  const base = spawnSync("git", ["ls-tree", "--name-only", "origin/main", "--"], { cwd: dir, encoding: "utf8" });
+  assert.equal(base.status, 0, `cannot list origin/main's receipts (the checkout needs origin/main; fetch full history): ${base.stderr}`);
+  const onBase = new Set(base.stdout.split("\n").filter(Boolean));
+  const all = readdirSync(dir).filter((n) => n.endsWith(".json")).sort();
+  const added = all.filter((n) => !onBase.has(n));
+  const targets = added.length ? added : all.slice(-1);
+  assert.ok(targets.length > 0, "no receipts found at all (fail closed)");
+  for (const name of targets) {
+    const change = JSON.parse(readFileSync(join(dir, name), "utf8")).change;
+    const r = spawnSync(process.execPath, [GATE_REAL, "--receipt", dir, "--change", change,
+      "--skills-dir", resolve(REPO, ".claude/skills")], { encoding: "utf8" });
+    assert.equal(r.status, 0, `${name}: ${out(r)}`);
+  }
 });
 
 // --- ISSUE-140: --help exits 0 with usage; an unknown flag is rejected (fail-closed) ---

@@ -19,8 +19,11 @@
 // What it CANNOT do: verify the receipt is TRUE (the guidance was really applied) or that it was applied WELL.
 // That is irreducible. A grounded receipt plus a HUMAN REVIEW is the guarantee; the gate is only the grounding.
 //
-//   node check-skill-receipt.mjs [--receipt docs/skill-receipts/log.jsonl] [--change <ref>] \
-//        [--changed-list a,b,c] [--skills-dir .claude/skills] [--config <coupling.json>] [--base <base-log>]
+//   node check-skill-receipt.mjs [--receipt docs/skill-receipts/entries] [--change <ref>] \
+//        [--changed-list a,b,c] [--skills-dir .claude/skills] [--config <coupling.json>] [--base <ref>]
+//
+// The receipt log is a directory of one-file-per-entry (entry-log.mjs, ADR-0108); --base is then a git ref. A
+// legacy one-line-per-entry .jsonl file still reads, with --base naming a file that holds its base revision.
 //
 // --change omitted = validate the LAST entry (the one just appended). --changed-list omitted = diff binding and
 // coupling are DISCLOSED as not-checked (they need the diff), the rest still runs. --base omitted = append-only
@@ -32,6 +35,7 @@
 import { readFileSync, existsSync, readdirSync, statSync, realpathSync } from "node:fs";
 import { resolve, join, dirname, relative, sep } from "node:path";
 import { MIN_QUOTE_WORDS, norm, slugify, sectionText } from "./receipt-grounding.mjs";
+import { readEntries, verifyAppendOnly, defaultLogPath } from "./entry-log.mjs";
 
 const STATUSES = new Set(["applied", "not-applicable"]);
 const BANNER = "This receipt is the agent's self-report. A human must review the work against the diff. It does not prove the work was done or done well.";
@@ -43,7 +47,7 @@ const parseList = (s) => (s == null ? null : String(s).split(",").map((x) => x.t
 
 // --- usage + unknown-flag guard, before any work (#140) ----------------------------------------------------
 const USAGE = `check-skill-receipt - verify the skill-application receipt log for a change is complete and grounded.
-Usage: node check-skill-receipt.mjs [--change <name>] [--receipt <log.jsonl>] [--skills-dir <dir>]
+Usage: node check-skill-receipt.mjs [--change <name>] [--receipt <entries dir | log.jsonl>] [--skills-dir <dir>]
                                     [--config <path>] [--changed-list <csv>] [--base <ref>]
   Default: validate the latest receipt entry. --changed-list also checks diff-binding + coupling.`;
 if (args.includes("--help") || args.includes("-h")) { console.log(USAGE); process.exit(0); }
@@ -53,7 +57,7 @@ if (args.includes("--help") || args.includes("-h")) { console.log(USAGE); proces
   if (unknown.length) die2(`unknown flag(s): ${unknown.join(", ")}. Run with --help for usage.`);
 }
 
-const receiptPath = resolve(opt("--receipt", "docs/skill-receipts/log.jsonl"));
+const receiptPath = resolve(opt("--receipt", defaultLogPath("docs/skill-receipts/entries", "docs/skill-receipts/log.jsonl")));
 const skillsDir = resolve(opt("--skills-dir", ".claude/skills"));
 const configPath = resolve(opt("--config", join(skillsDir, "judge-arch", "assets", "skill-receipt.config.json")));
 const change = opt("--change", null);
@@ -89,27 +93,23 @@ try {
 if (skillSet.length === 0) die2(`no skills found under ${skillsDir} (fail closed; a read glitch must not look like an empty set).`);
 
 // --- the receipt log -----------------------------------------------------------------------------------------
-if (!existsSync(receiptPath)) die2(`receipt log not found: ${receiptPath}`);
-const raw = readFileSync(receiptPath, "utf8");
-if (!raw.trim()) die2(`receipt log is empty: ${receiptPath}`);
+let entries;
+try { entries = readEntries(receiptPath); } catch (e) { die2(`receipt ${e.message}`); }
 
-// Append-only: the committed log must be a clean append to the base revision. Disclose exactly what was checked.
+// Append-only: no prior entry may be edited or removed. Disclose exactly what was checked. An edited entry is a
+// history failure (exit 1); a base that cannot be read is fail-closed (exit 2).
 let logNote;
 if (basePath) {
-  if (!existsSync(basePath)) die2(`--base given but not found: ${basePath} - cannot verify append-only (fail closed).`);
-  const base = readFileSync(basePath, "utf8");
-  if (base && !raw.startsWith(base)) { console.error("[check-skill-receipt] FAIL - receipt log is not append-only; a prior entry was edited or removed (history must be immutable)."); process.exit(1); }
-  logNote = "append-only verified";
+  try { logNote = verifyAppendOnly(receiptPath, basePath).note; }
+  catch (e) {
+    if (/not append-only/.test(e.message)) { console.error(`[check-skill-receipt] FAIL - receipt ${e.message}.`); process.exit(1); }
+    die2(e.message);
+  }
 } else if (process.env.RECEIPT_REQUIRE_LOG_BASE) {
-  die2("RECEIPT_REQUIRE_LOG_BASE is set but no --base given - cannot verify append-only. In CI pass --base (e.g. git show origin/main:docs/skill-receipts/log.jsonl > base.jsonl).");
+  die2("RECEIPT_REQUIRE_LOG_BASE is set but no --base given - cannot verify append-only. In CI pass --base origin/main.");
 } else {
   logNote = "append-only NOT verified (pass --base to check history)";
 }
-
-const lines = raw.split(/\r?\n/).filter((l) => l.trim());
-let entries;
-try { entries = lines.map((l) => JSON.parse(l)); }
-catch (e) { die2(`a receipt log line is not valid JSON: ${e.message}`); }
 
 const entry = change ? [...entries].reverse().find((e) => e && e.change === change) : entries[entries.length - 1];
 if (!entry) die2(change ? `no receipt whose change == "${change}" (fail closed).` : "no receipt entry found (fail closed).");
@@ -118,6 +118,7 @@ if (!("humanReviewed" in entry)) die2("the receipt entry is missing the required
 if (!entry.skills || typeof entry.skills !== "object" || Array.isArray(entry.skills)) die2("the receipt entry has no `skills` object (fail closed).");
 
 // --- the human-review banner must be present where a reader sees it ------------------------------------------
+// The banner lives in the receipts folder: the parent of the entries directory, or of a legacy log file.
 const receiptsReadme = join(dirname(receiptPath), "README.md");
 const bannerText = existsSync(receiptsReadme) ? readFileSync(receiptsReadme, "utf8") : "";
 if (!norm(bannerText).includes(norm(BANNER))) {

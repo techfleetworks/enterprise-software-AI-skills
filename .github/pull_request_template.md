@@ -7,12 +7,13 @@
 ## Review checklist (required before merge)
 
 - [ ] **Mechanical gates green.** `npm test` passes and `npm run check:architecture` exits 0 locally; the required CI checks (`test (20)`, `test (24)`, `routing`) are green.
-- [ ] **Fresh-context judge-arch run.** The change was reviewed by `judge-arch` in fresh context (it dispatches the review to a subagent), every finding is resolved or explicitly waived, and the review is recorded in `docs/arch-reviews/log.jsonl`.
+- [ ] **Fresh-context judge-arch run.** The change was reviewed by `judge-arch` in fresh context (it dispatches the review to a subagent), every finding is resolved or explicitly waived, and the review is recorded as a new file in `docs/arch-reviews/entries/`.
 - [ ] **Discriminating tests.** Every new or changed gate has a test that fails if the gate stops detecting (verifiable-quality-gates); new behavior has a test that would fail without the change.
 - [ ] **Evidence ledger.** Factual claims in this PR and in any ADR carry an evidence state, a re-runnable source, and a named limitation (skeptical-audit); nothing is called done, secure, or passing without it.
 - [ ] **ADR for decisions.** Any architectural or schema decision has an ADR under `docs/adr/` in this same change (architectural-decision-records).
 - [ ] **Routed artifacts present.** The kind of change carries its discipline's artifact: a new skill needs an ADR, a new gate script needs a test, and so on. The `routing` check confirms it.
-- [ ] **Skill-application receipt.** `docs/skill-receipts/log.jsonl` has an entry for this change covering every skill (applied or not-applicable); each `applied` entry cites a real skill heading, quotes at least eight exact words from under that heading, and names files in this change. `npm run check:receipt` passes (completeness, anchors, quotes, banner); run it with `--changed-list` to also check diff binding and coupling. This proves grounding, not that the work is good, so review it against the diff.
+- [ ] **No shared file edited to record the change.** The review, receipt, BDD coverage entry, and changelog note are each a new stamped file (`docs/arch-reviews/entries/`, `docs/skill-receipts/entries/`, `features/bdd-coverage-log/`, `changelog.d/`), and no other change's file was edited (ADR-0108). `CHANGELOG.md` is untouched.
+- [ ] **Skill-application receipt.** `docs/skill-receipts/entries/` has an entry for this change covering every skill (applied or not-applicable); each `applied` entry cites a real skill heading, quotes at least eight exact words from under that heading, and names files in this change. `npm run check:receipt` passes (completeness, anchors, quotes, banner); run it with `--changed-list` to also check diff binding and coupling. This proves grounding, not that the work is good, so review it against the diff.
 
 ## Honest limit
 

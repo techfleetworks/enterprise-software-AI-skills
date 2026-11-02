@@ -304,7 +304,7 @@ was *loaded* and one that was *actually followed*.
 10. It gets added in.
 
 ## Verification
-Every change carries a **receipt** (`docs/skill-receipts/log.jsonl`): one
+Every change carries a **receipt** (a new file in `docs/skill-receipts/entries/`): one
 entry that covers every skill. For each one it used, it names a real section, quotes at
 least eight exact words from it, and lists the files it shaped. A command checks that the
 receipt is complete and that each quote really appears in the section it names. A quiet

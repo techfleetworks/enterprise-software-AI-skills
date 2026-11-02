@@ -2,7 +2,8 @@
 // check-bdd-executed - prove the suite actually RAN, not just that the .feature files are valid.
 //
 // Reads the BDD runner's machine-readable results (Cucumber JSON) and reconciles them against the
-// committed datastore: every scenario in features/bdd-index.json must have executed and PASSED, with
+// datastore: every scenario in features/bdd-index.json (or, when that generated file is not committed,
+// the index derived from the feature files, ADR-0108) must have executed and PASSED, with
 // zero undefined / pending / skipped / failed. A misconfigured job that runs nothing - or silently
 // skips scenarios - fails closed instead of going green. This is what makes "the autotests really ran
 // and covered every scenario" provable rather than assumed.
@@ -12,7 +13,8 @@
 //
 // Exit 0 = every datastore scenario executed and passed. Exit 1 = a gap, or missing/bad input.
 import { resolve, join } from "node:path";
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
+import { buildIndex } from "./bdd-lib.mjs";
 
 const args = process.argv.slice(2);
 const root = resolve(args.find((a) => !a.startsWith("--")) ?? "features");
@@ -23,8 +25,13 @@ const fail = (m) => { console.error(`[check-bdd-executed] FAIL - ${m}`); process
 if (!resultsPath) fail("no results report given (pass --results <cucumber.json> or set BDD_RESULTS). A run with no report cannot be trusted.");
 
 let index, report;
-try { index = JSON.parse(readFileSync(join(root, "bdd-index.json"), "utf8")); }
-catch { fail(`cannot read datastore ${join(root, "bdd-index.json")} - run bdd-index-generate.mjs`); }
+const indexPath = join(root, "bdd-index.json");
+if (existsSync(indexPath)) {
+  try { index = JSON.parse(readFileSync(indexPath, "utf8")); }
+  catch (e) { fail(`cannot parse datastore ${indexPath} (${e.message}) - run bdd-index-generate.mjs`); }
+} else {
+  index = buildIndex(root).records;
+}
 try { report = JSON.parse(readFileSync(resolve(resultsPath), "utf8")); }
 catch (e) { fail(`cannot read/parse results report ${resultsPath}: ${e.message}`); }
 
