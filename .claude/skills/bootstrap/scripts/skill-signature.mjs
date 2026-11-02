@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-helper: skill-signature
 /**
  * skill-signature.mjs: the ONE owner of the skill-mirror content fingerprint and of the "which mirrored skills
  * no longer match the repo" rule (ADR-0105). The installer (the sibling esk-init.mjs) records these signatures

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-helper: bdd-run
 /**
  * bdd-run - a small, dependency-free step runner that EXECUTES the .feature scenarios and emits the
  * standard Cucumber JSON report that check-bdd-executed reconciles.

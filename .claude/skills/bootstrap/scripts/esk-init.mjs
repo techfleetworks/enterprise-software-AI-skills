@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-helper: esk-init
 /**
  * esk-init.mjs: install, verify, and keep current the enterprise-skills always-on hook.
  *

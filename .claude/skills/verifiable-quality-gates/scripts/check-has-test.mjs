@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-consumer-gate: has-test
 /**
  * check-has-test - the COVERAGE gate (reference implementation).
  *

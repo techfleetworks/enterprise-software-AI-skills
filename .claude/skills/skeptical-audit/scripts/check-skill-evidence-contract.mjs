@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-upstream-only: skill-evidence-contract
 // check-skill-evidence-contract - every skill must carry the shared evidence contract.
 //
 // For each SKILL.md it requires (per evidence-discipline.md §5):

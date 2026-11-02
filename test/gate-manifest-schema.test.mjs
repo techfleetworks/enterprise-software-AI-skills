@@ -104,6 +104,33 @@ test("the schema accepts a machinery entry and discriminates a bad one", () => {
   assert.ok(validate(noSkill, schema, schema).length, "machinery missing skill must fail (the integrity gate needs it to resolve the source)");
 });
 
+test("the schema accepts a consumerRequiredGates entry and discriminates a bad one (ADR-0109)", () => {
+  const withConsumer = {
+    version: "1.0.0",
+    gates: [{ id: "x", skill: "s", script: "a.mjs", sha256: "a".repeat(64), test: "t.mjs", lane: "required" }],
+    consumerRequiredGates: [
+      { id: "bdd-coverage", skill: "bdd", script: "scripts/ci/check-bdd-coverage.mjs", sha256: "c".repeat(64), test: "test/bdd.test.mjs", testSha256: "d".repeat(64), acceptance: "the repo's features/ cover every change" },
+    ],
+    aggregator: { requiredCheck: "enterprise-gates" },
+  };
+  assert.deepEqual(validate(withConsumer, schema, schema), [], "a well-formed consumer gate is valid");
+  const noAcceptance = structuredClone(withConsumer);
+  delete noAcceptance.consumerRequiredGates[0].acceptance;
+  assert.ok(validate(noAcceptance, schema, schema).length, "a consumer gate missing its acceptance contract must fail");
+  const noTestSha = structuredClone(withConsumer);
+  delete noTestSha.consumerRequiredGates[0].testSha256;
+  assert.ok(validate(noTestSha, schema, schema).length, "a consumer gate missing its testSha256 must fail (ADR-0109 F2)");
+  const emptyAcceptance = structuredClone(withConsumer);
+  emptyAcceptance.consumerRequiredGates[0].acceptance = "";
+  assert.ok(validate(emptyAcceptance, schema, schema).length, "an empty acceptance must fail (minLength)");
+  const badHash = structuredClone(withConsumer);
+  badHash.consumerRequiredGates[0].sha256 = "nothex";
+  assert.ok(validate(badHash, schema, schema).length, "a consumer gate with a bad sha256 must fail");
+  const extraProp = structuredClone(withConsumer);
+  extraProp.consumerRequiredGates[0].lane = "required";
+  assert.ok(validate(extraProp, schema, schema).length, "an unexpected property on a consumer gate must fail");
+});
+
 test("the validator itself discriminates: known-bad manifests are rejected", () => {
   const bad = (mutate) => {
     const m = structuredClone(example);

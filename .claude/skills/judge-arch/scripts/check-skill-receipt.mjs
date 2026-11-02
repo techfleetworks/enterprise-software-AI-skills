@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-upstream-only: skill-receipt
 // check-skill-receipt - a change does not ship a credible "I applied the skills" claim unless a grounded,
 // complete, append-only receipt proves it. See docs/specs/skill-application-receipt.md and ADR-0038.
 //

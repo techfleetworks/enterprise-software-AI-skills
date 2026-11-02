@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-helper: claim-lint
 // claim-lint - a smoke alarm for unproven claims in a text/markdown draft.
 //
 //   node claim-lint.mjs <file.md> [--strict]

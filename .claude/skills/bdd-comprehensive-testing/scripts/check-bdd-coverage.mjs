@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-consumer-gate: bdd-coverage
 // check-bdd-coverage - the completeness gate, fail-closed. Proves the matrix, the datastore, and the
 // append-only log all hold. Pairs with check-gherkin-valid (syntax) and check-bdd-tags (taxonomy).
 //

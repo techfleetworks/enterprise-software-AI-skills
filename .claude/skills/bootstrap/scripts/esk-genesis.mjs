@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-helper: esk-genesis
 /**
  * esk-genesis.mjs: bootstrap (and reconcile) a consumer repo's bootstrap-v2 gates from the upstream
  * skills repo's single source of truth, gate-manifest.json (ADR-0046, ADR-0047).

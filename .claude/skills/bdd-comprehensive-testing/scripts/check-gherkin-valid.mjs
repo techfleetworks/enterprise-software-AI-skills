@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-consumer-gate: gherkin-valid
 // check-gherkin-valid - every .feature file must parse with the OFFICIAL Gherkin parser.
 //
 // "Valid Gherkin" is defined as what @cucumber/gherkin accepts, so there is no heuristic to be wrong

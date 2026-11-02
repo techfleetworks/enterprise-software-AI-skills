@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-consumer-gate: security-coverage
 // check-security-coverage.mjs - enforce the OWASP selection flow at the OUTCOME.
 //
 // The idea (like pattern-selector forcing a pattern): a change that touches a security-relevant surface must

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// bootstrap-v2-consumer-gate: axe-results
 /**
  * check-axe-results - the pass/fail VERDICT for an axe-core accessibility run (the part that must be
  * provably correct). Pairs with run-axe.mjs, the browser scaffold that PRODUCES the results.

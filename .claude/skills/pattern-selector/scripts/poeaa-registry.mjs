@@ -1,3 +1,4 @@
+// bootstrap-v2-helper: poeaa-registry
 // poeaa-registry - the one reader of references/poeaa-registry.json (ADR-0106).
 //
 // The registry owns every PoEAA page fact. This module loads it, checks its shape, and finds PoEAA

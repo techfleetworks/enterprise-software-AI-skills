@@ -1,0 +1,61 @@
+{
+  "date": "2026-11-02",
+  "change": "fix/genesis-coverage-unskippable",
+  "reviewer": "fresh-context subagent (general-purpose), scoped diff + four questions, adversarial probe of the completeness rule",
+  "scope": [
+    ".claude/skills/judge-arch/scripts/check-upstream-manifest-integrity.mjs",
+    "gate-manifest.json",
+    "docs/design/bootstrap-v2/gate-manifest.schema.json",
+    "test/upstream-manifest-integrity.test.mjs",
+    "test/gate-manifest-schema.test.mjs",
+    "features/repo-process/consumer-gate-classification.feature",
+    "features/steps/consumer-gate-classification.steps.mjs",
+    "19 consumer-gate/upstream-only markers + 18 helper markers (one comment line each)"
+  ],
+  "matrix": {
+    ".claude/skills/judge-arch/scripts/check-upstream-manifest-integrity.mjs": {
+      "boundary": { "verdict": "cleared", "evidence": "classification + completeness live in the one gate that owns manifest<->source integrity; correct home" },
+      "ownership": { "verdict": "cleared", "evidence": "a script's scope is owned once by its in-file marker; manifest membership is a checked projection (bidirectional), not a second copy" },
+      "dependency": { "verdict": "cleared", "evidence": "self-governance tool; reads the manifest and recurses skill dirs; no HTTP/business layer; env seams GATE_MANIFEST_FILE/GATE_SKILLS_DIR" },
+      "error-handling": { "verdict": "cleared", "evidence": "fail(1) for drift, failClosed(2) for missing/malformed manifest and id-collision; anchored comment-only marker avoids self-match; no ReDoS (disjoint quantifiers). F1-F4 below fixed." }
+    },
+    "gate-manifest.json": {
+      "boundary": { "verdict": "cleared", "evidence": "data file; consumerRequiredGates is the correct section" },
+      "ownership": { "verdict": "cleared", "evidence": "each entry binds id/skill/script/sha256/testSha256 to one source; no duplicate scope store" },
+      "dependency": { "verdict": "n/a", "evidence": "data" },
+      "error-handling": { "verdict": "cleared", "evidence": "absent/empty handled by Array.isArray guards in the gate" }
+    },
+    "docs/design/bootstrap-v2/gate-manifest.schema.json": {
+      "boundary": { "verdict": "cleared", "evidence": "owns the manifest data shape" },
+      "ownership": { "verdict": "cleared", "evidence": "consumerGate $def: required id/skill/script/sha256/test/testSha256/acceptance, additionalProperties false" },
+      "dependency": { "verdict": "n/a", "evidence": "data" },
+      "error-handling": { "verdict": "cleared", "evidence": "schema test discriminates missing acceptance, missing testSha256, bad sha, extra prop" }
+    },
+    "test/upstream-manifest-integrity.test.mjs + test/gate-manifest-schema.test.mjs": {
+      "boundary": { "verdict": "cleared", "evidence": "own discrimination + the real-repo assertion run(process.cwd())===0" },
+      "ownership": { "verdict": "n/a", "evidence": "tests" },
+      "dependency": { "verdict": "cleared", "evidence": "spawn the real gate via env seams" },
+      "error-handling": { "verdict": "cleared", "evidence": "cover F1 (unmarked any-name), F2 (no testSha256), F3 (nested), F4 (dup id fails closed), plus sha/acceptance/upstream-only/helper cases" }
+    },
+    "features/repo-process/consumer-gate-classification.feature + steps": {
+      "boundary": { "verdict": "cleared", "evidence": "repo-process feature; steps run the REAL gate in throwaway fixtures" },
+      "ownership": { "verdict": "n/a", "evidence": "tests" },
+      "dependency": { "verdict": "cleared", "evidence": "steps spawn the gate; no shared mutable state" },
+      "error-handling": { "verdict": "cleared", "evidence": "8 scenarios map to the rules incl. non-check-gate-cannot-escape (F1) and helper-declared-passes" }
+    },
+    "19 scope markers + 18 helper markers": {
+      "boundary": { "verdict": "cleared", "evidence": "one comment line each, after the shebang or at top; grep confirms exactly one marker per file" },
+      "ownership": { "verdict": "cleared", "evidence": "the marker is the single owner of each script's scope" },
+      "dependency": { "verdict": "n/a", "evidence": "comment only; no code path change" },
+      "error-handling": { "verdict": "cleared", "evidence": "npm test (minus known env flakiness) and the real-repo integrity assertion pass with all markers" }
+    }
+  },
+  "findings": [
+    { "id": "F1", "severity": "high", "question": "error-handling", "status": "fixed", "note": "Completeness keyed on the check-* filename, so a gate shipped under another name (live example: claim-lint.mjs) escaped. Fixed: every .mjs under a skill's scripts/ must now declare a scope (new bootstrap-v2-helper for non-gates); an unmarked .mjs of any name is a violation. Tests: F1 case + helper-declared-passes." },
+    { "id": "F2", "severity": "medium", "question": "error-handling", "status": "fixed", "note": "consumer-gate testSha256 was optional, leaving the consumer-gates that run in this repo's CI open to test-hollowing. Fixed: testSha256 now required and verified for gate AND consumer-gate; schema requires it. Test: F2 case." },
+    { "id": "F3", "severity": "low", "question": "error-handling", "status": "fixed", "note": "Reverse scan did not recurse into scripts/ subdirectories. Fixed: the scan now recurses. Test: F3 nested case." },
+    { "id": "F4", "severity": "low", "question": "ownership", "status": "fixed", "note": "A duplicate id across manifest sections overwrote the expected map and printed a misleading message. Fixed: a reused id now fails closed (exit 2). Test: F4 case." },
+    { "id": "F5", "severity": "low", "question": "ownership", "status": "documented", "note": "The machine-readable acceptance string parallels each SKILL.md definition-of-done row. Different consumers (genesis machine vs human doc); not a single-owner violation. Left as a note in ADR-0109." }
+  ],
+  "verdict": "PASS (all findings fixed or documented; no open HIGH)"
+}
