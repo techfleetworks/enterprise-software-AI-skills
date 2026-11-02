@@ -1,0 +1,51 @@
+{
+  "date": "2026-11-02",
+  "change": "design/genesis-bot-adr-0110",
+  "reviewer": "fresh-context subagent (general-purpose), scoped diff + four questions, adversarial probe for drift-prone duplication and design overclaim",
+  "scope": [
+    "docs/adr/0110-org-wide-genesis-bot-closes-gap-2.md",
+    "docs/design/genesis-bot/README.md",
+    "README.md (diff only)",
+    ".claude/skills/bdd-comprehensive-testing/SKILL.md",
+    ".claude/skills/bootstrap/SKILL.md",
+    ".claude/skills/comprehensive-test-strategy/SKILL.md",
+    ".claude/skills/judge-arch/SKILL.md",
+    ".claude/skills/owasp-secure-coding-bdd/SKILL.md",
+    ".claude/skills/pattern-selector/SKILL.md",
+    ".claude/skills/skeptical-audit/SKILL.md",
+    ".claude/skills/universal-accessibility-wcag/SKILL.md",
+    ".claude/skills/usability-ux-universal-design/SKILL.md",
+    ".claude/skills/verifiable-quality-gates/SKILL.md"
+  ],
+  "matrix": {
+    "10 SKILL.md pointer blocks": {
+      "boundary": { "verdict": "cleared", "evidence": "git diff origin/main -- .claude/skills shows 10 identical appended '## Where this skill's scripts run' blocks (grep -c = 10). Each is a cross-reference pointer in the skill doc, the correct home for a 'where to look' note; the authoritative facts stay in gate-manifest.json and ADR-0109." },
+      "ownership": { "verdict": "cleared", "evidence": "THE critical check. Scope classification is owned by three places (in-script marker, gate-manifest.json, ADR-0109 lines 41-50). Ran: git diff origin/main -- .claude/skills | grep '^+' | grep -Ei 'bootstrap-v2-(gate|consumer-gate|upstream-only|machinery|helper)|check-[a-z-]+\\.mjs|consumerRequiredGates' -> NONE. The notes name no specific script, scope, or manifest section; text says 'defined by gate-manifest.json and ADR-0109, not restated here, so there is one source of truth.' No FOURTH copy. Directly honors ADR-0109 lines 79-81 (option 2 rejected precisely because a SKILL.md scope block would be a second drift-prone copy)." },
+      "dependency": { "verdict": "n/a", "evidence": "Docs pointer blocks; reference gate-manifest.json and ADR-0109 by name, the correct direction (doc -> source of truth)." },
+      "error-handling": { "verdict": "n/a", "evidence": "No failure paths in a static cross-reference note." }
+    },
+    "docs/adr/0110-org-wide-genesis-bot-closes-gap-2.md": {
+      "boundary": { "verdict": "cleared", "evidence": "MADR format, status proposed (lines 1-5). Holds the decision + alternatives and defers the full write-up to docs/design/genesis-bot/README.md. Correct home: decision in ADR, detail in design doc." },
+      "ownership": { "verdict": "cleared", "evidence": "Does not restate per-script scopes. References esk-genesis and gate-manifest as owners; names re-implementing install logic as 'the data-ownership drift the architecture gate exists to stop' and keeps one owner of how a repo gets gated = esk-genesis." },
+      "dependency": { "verdict": "cleared", "evidence": "Design depends on esk-genesis via its CLI: 'driver, not a rebuild ... does not re-implement install logic'; '--check must reuse the installer's existing resolution and hash-verification logic'. Dependency points at the public tool, not internals." },
+      "error-handling": { "verdict": "cleared", "evidence": "'What this does not fix, said plainly' states: no bot code exists; free-plan private-repo ceiling; no auto-merge; never --adopt-existing; --check specified not built; irreducible one-time human App-install step; webhook deferred. All limits surfaced." }
+    },
+    "docs/design/genesis-bot/README.md": {
+      "boundary": { "verdict": "cleared", "evidence": "Full design (reconciliation loop, piece-by-piece detail, build list), 'Status: designed, not shipped yet', points back to ADR-0110 for the decision. Correct split." },
+      "ownership": { "verdict": "cleared", "evidence": "'driver, not a rebuild ... one owner of how a repo gets gated stays esk-genesis'; '--check must reuse the installer's existing resolution and hash logic ... so there is still one owner of that fact.' No scope facts duplicated." },
+      "dependency": { "verdict": "cleared", "evidence": "'The installer, driven across repos': runs the existing esk-genesis CLI with --yes on a branch; never passes --adopt-existing (honors the tool's provenance guard); never self-merges. Depends on the public CLI, keeps one owner." },
+      "error-handling": { "verdict": "cleared", "evidence": "'What this does not do, said plainly' and 'Enforcement: public vs private' state the same limits as the ADR, plus 'The one human step that cannot be automated away'. Honest throughout." }
+    },
+    "README.md (diff)": {
+      "boundary": { "verdict": "cleared", "evidence": "New top-level section 'Making Every Repo Covered Automatically' is a plain-English narrative summary with its own ASCII diagram, deferring the full design to ADR-0110 and docs/design/genesis-bot/. Matches the existing bootstrap-v2 summary-plus-pointer pattern. TOC entry anchors to the heading slug and carries '(planned)'." },
+      "ownership": { "verdict": "cleared", "evidence": "README narrative owns no scope fact; describes the proposed bot and points to the ADR/design. No per-script scope restated (same grep over the whole diff)." },
+      "dependency": { "verdict": "cleared", "evidence": "States the bot reuses esk-genesis and is 'only a driver that calls the existing tool across many repos.' Consistent with ADR/design." },
+      "error-handling": { "verdict": "cleared", "evidence": "Leads with 'Status: designed, not shipped yet' and honest-limit bullets: one-time human App grant cannot be engineered away; opens a request and does not merge; names the free-plan ceiling 'stated, not hidden.' No unqualified overclaim." }
+    }
+  },
+  "findings": [
+    { "id": "F1", "severity": "low", "question": "ownership", "status": "documented", "note": "Pre-existing, NOT introduced by this change and out of scope: ADR-0109 lines 113-114 already records that skeptical-audit/SKILL.md describes claim-lint --strict as 'wired as a blocking CI gate', which overstates current state. This change only appends the neutral pointer block to that file and does not touch or worsen that line. Tracked as an ADR-0109 follow-up." },
+    { "id": "F2", "severity": "low", "question": "boundary", "status": "documented", "note": "The ASCII diagram in README.md and the one in docs/design/genesis-bot/README.md are two renderings of the same flow. Consistent, not contradictory; prose illustrations, not a single owned fact, so no drift-prone duplication. Noted only because two hand-drawn diagrams of one design can diverge if edited independently later; neither is authoritative." }
+  ],
+  "verdict": "PASS (full matrix observed clean; no open HIGH; both findings are pre-existing/out-of-scope and documented)"
+}

@@ -256,3 +256,12 @@ numbers and wording against the normative spec before relying on them.
   `[documented]`
 - Legal and regulatory context: the ADA, Section 508 (US), EN 301 549 and the European Accessibility Act
   (EU), all of which reference WCAG. `[documented]`
+
+---
+
+## Where this skill's scripts run
+
+Every script this skill ships declares an install scope in a comment marker, and `esk-genesis` installs
+only what the gate manifest lists. Which scripts run in a consumer repo, which are enforced there, and
+which govern only this authoring repo are defined by `gate-manifest.json` and ADR-0109, not restated here,
+so there is one source of truth.
