@@ -1,0 +1,24 @@
+{
+  "date": "2026-11-02",
+  "change": "fix/genesis-testsha256-passthrough",
+  "reviewer": "fresh-context subagent (general-purpose), adversarial on guard-masks-missing-field, mutation-sensitivity, and fixture blast radius",
+  "scope": [".claude/skills/bootstrap/scripts/esk-genesis.mjs", "test/esk-genesis.test.mjs", "docs/adr/0111-genesis-carries-testsha256-through-to-consumer-manifest.md", "changelog.d/20261103T000517Z-genesis-testsha256-passthrough.md"],
+  "matrix": {
+    "esk-genesis.mjs (consumer-manifest gate projection, line 276)": {
+      "boundary": { "verdict": "cleared", "evidence": "esk-genesis.mjs:276 - the testSha256 projection sits in the consumerManifest.gates builder beside the existing sha256/test/lane/invoke/couples projections; the manifest generator is the correct owner." },
+      "ownership": { "verdict": "cleared", "evidence": "esk-genesis.mjs:134 (upstreamGates = src.gates.filter(...)) + :276. Source manifest is the single owner; the consumer manifest is a derived projection regenerated on every genesis/reconcile. testSha256 is projected verbatim like sha256, so no hand-maintained second copy can drift." },
+      "dependency": { "verdict": "cleared", "evidence": "Field already exists on source gate objects and is consumed by check-upstream-manifest-integrity.mjs:146 and check-manifest-provenance.mjs:153. No new or wrong dependency introduced." },
+      "error-handling": { "verdict": "cleared", "evidence": "Guarded spread ...(g.testSha256 ? {...} : {}). check-upstream-manifest-integrity.mjs:146-151 BLOCKS any released gate lacking testSha256 (verified 11/11 real gates carry it). A malformed/pre-release source would omit the field, which then fails CLOSED at the consumer's manifest-provenance (check-manifest-provenance.mjs:153-155), never a silent pass. Consistent with how sha256 is already projected." }
+    },
+    "test/esk-genesis.test.mjs (fixture mkEntry + GENESIS ADR-0111 test)": {
+      "boundary": { "verdict": "cleared", "evidence": "Fixture change at test/esk-genesis.test.mjs:49 and discrimination test at :541, in the correct test file." },
+      "ownership": { "verdict": "cleared", "evidence": "Fixture pins testSha256 on gates only (line 49), not machinery - mirrors the real manifest (11/11 gates, 0/2 machinery). No drift from production shape." },
+      "dependency": { "verdict": "n/a", "evidence": "Test file; no production dependency surface." },
+      "error-handling": { "verdict": "cleared", "evidence": "MUTATION EXECUTED: reverting the spread and running node --test --test-name-pattern=ADR-0111 fails with 'alpha: testSha256 must be carried through, got undefined'. Assertion checks both length===64 and equality to source. Full suite 49/49 pass; existing deepEqual on .map(g=>g.id) and machinery test===undefined checks are unaffected." }
+    }
+  },
+  "findings": [
+    { "id": "F1", "severity": "low", "question": "error-handling", "status": "no_change_needed", "note": "Observation, not a finding: genesis trusts source-manifest completeness for testSha256 (as it already does for sha256). A malformed non-release source surfaces as a deferred, fail-closed provenance failure downstream rather than an error at genesis time. Acceptable and consistent with existing design; the completeness invariant is owned by check-upstream-manifest-integrity. Recorded in ADR-0111 'Honest limits' (Option 2 considered and rejected for the same reason)." }
+  ],
+  "verdict": "PASS (full matrix observed clean; minimal correctly-placed projection restores provenance completeness; accompanying test proven mutation-sensitive; no regression, 49/49). Limitation: the consumer-side manifest-provenance gate was not run end-to-end against a live release asset in this review; downstream fail-closed behavior traced by code reading."
+}

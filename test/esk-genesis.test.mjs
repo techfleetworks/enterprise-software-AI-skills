@@ -41,9 +41,12 @@ function buildSource({ version = "1.0.0", gates = [{ id: "alpha" }], machinery =
     writeFileSync(join(sdir, name), body);
     const script = `scripts/ci/${name}`;
     const testRel = `test/${e.id}.test.mjs`;
-    writeFileSync(join(root, testRel), "// test\n");
+    const testBody = "// test\n";
+    writeFileSync(join(root, testRel), testBody);
     const entry = { id: e.id, script, sha256: sha(body), test: testRel };
-    if (kind === "gate") { entry.origin = "upstream"; entry.skill = "judge-arch"; entry.lane = "required"; if (e.invoke) entry.invoke = e.invoke; }
+    // Gates pin testSha256 (the discrimination test's hash) in the real manifest; machinery does not (its
+    // test never runs in a consumer). Mirror that so the passthrough can be asserted on the generated output.
+    if (kind === "gate") { entry.origin = "upstream"; entry.skill = "judge-arch"; entry.testSha256 = sha(testBody); entry.lane = "required"; if (e.invoke) entry.invoke = e.invoke; }
     else { entry.skill = "judge-arch"; }
     return entry;
   };
@@ -533,6 +536,24 @@ test("GENESIS ISSUE-125: only the manifest-provenance job fetches the upstream m
   // The fetch step is gated so a transient github.com error cannot red a gate job that never reads the file.
   assert.match(yml, /- name: Fetch upstream manifest for provenance\n\s*if: matrix\.gate == 'manifest-provenance'/, "the fetch step must be gated to the provenance job");
   assert.match(yml, /curl -sSL --retry 3 --retry-all-errors/, "the fetch should retry a transient error");
+});
+
+test("GENESIS ADR-0111: the consumer manifest carries testSha256 through for every upstream gate (discriminating)", () => {
+  // manifest-provenance requires BOTH sha256 AND testSha256 to match the published release. If genesis drops
+  // testSha256 (as it did before ADR-0111), every gate in the generated manifest fails provenance with
+  // "testSha256 undefined != published ...". Reverting the passthrough makes this test fail.
+  const src = buildSource({ gates: [{ id: "alpha" }, { id: "beta" }] });
+  const tgt = newTarget();
+  assert.equal(run(src, tgt, ["--yes"]), 0);
+  const srcM = JSON.parse(readFileSync(join(src, "gate-manifest.json"), "utf8"));
+  const srcById = new Map(srcM.gates.map((g) => [g.id, g]));
+  const consumer = readManifest(tgt);
+  const upstreamGates = consumer.gates.filter((g) => g.origin === "upstream");
+  assert.ok(upstreamGates.length >= 2, "fixture has upstream gates to check");
+  for (const g of upstreamGates) {
+    assert.ok(typeof g.testSha256 === "string" && g.testSha256.length === 64, `${g.id}: testSha256 must be carried through, got ${g.testSha256}`);
+    assert.equal(g.testSha256, srcById.get(g.id).testSha256, `${g.id}: testSha256 must match the source manifest`);
+  }
 });
 
 // NOTE: these traversal tests use a script/skill whose basename resolves to a source file that EXISTS
