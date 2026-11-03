@@ -1,0 +1,74 @@
+{
+  "date": "2026-11-03",
+  "change": "feat/promote-helper-consumer-gates",
+  "reviewer": "fresh-context subagent (general-purpose), scoped staged diff + four questions, adversarial on detection re-implementation, fail-closed completeness, secret handling, and gate vacuity",
+  "scope": [
+    ".claude/skills/skeptical-audit/scripts/check-claims-grounded.mjs",
+    ".claude/skills/usability-ux-universal-design/scripts/check-readability.mjs",
+    ".claude/skills/comprehensive-test-strategy/scripts/check-secret-leaks.mjs",
+    ".claude/skills/verifiable-quality-gates/scripts/verify-check-discrimination.mjs",
+    ".claude/skills/skeptical-audit/SKILL.md",
+    "gate-manifest.json",
+    "test/claims-grounded.test.mjs",
+    "test/readability-gate.test.mjs",
+    "test/secret-leaks.test.mjs",
+    "docs/adr/0113-promote-gate-capable-helpers-to-consumer-gates.md",
+    "features/repo-process/consumer-gate-promotion.feature",
+    "features/steps/consumer-gate-promotion.steps.mjs"
+  ],
+  "evidence": [
+    "node always-on/run-check.mjs run judge-arch check-upstream-manifest-integrity.mjs -> exit 0 (11 upstream, 16 consumer-required, 2 machinery match source)",
+    "node --test test/claims-grounded.test.mjs test/readability-gate.test.mjs test/secret-leaks.test.mjs -> all pass",
+    "grep -nE 'require\\(|http|https|fetch|net\\.|dns\\.|axios' over the 3 wrappers -> no matches (node builtins only)",
+    "each wrapper no-op'd -> its test goes red (discrimination proven by stubbing to process.exit(0) and re-running)"
+  ],
+  "matrix": {
+    "check-claims-grounded.mjs": {
+      "boundary": { "verdict": "cleared", "evidence": "Owns only 'which files'; claim-lint is the detection owner (header 8-12, spawn at the per-file loop)." },
+      "ownership": { "verdict": "cleared", "evidence": "Spawns the one owner (CLAIM_LINT); re-implements no detection (imports are node builtins only)." },
+      "dependency": { "verdict": "cleared", "evidence": "CLI + config + child process; no request/response/http/window types." },
+      "error-handling": { "verdict": "cleared", "evidence": "bad config/JSON, no roots, missing root, empty surface, unreadable dir, tool exit 2, unexpected exit all die() exit 2; real violation exit 1. No swallowed error." }
+    },
+    "check-readability.mjs": {
+      "boundary": { "verdict": "cleared", "evidence": "Owns 'which files + the one threshold'; FK computation stays in readability.mjs." },
+      "ownership": { "verdict": "cleared", "evidence": "Single owner spawned; no re-implementation." },
+      "dependency": { "verdict": "cleared", "evidence": "Same shape; no web/request types." },
+      "error-handling": { "verdict": "cleared", "evidence": "missing/non-numeric maxGrade, no roots, missing root, empty surface, unreadable dir, tool exit 2/unexpected all exit 2." }
+    },
+    "check-secret-leaks.mjs": {
+      "boundary": { "verdict": "cleared", "evidence": "Real output-vs-source boundary: scans built OUTPUT for KNOWN values; owasp-lints own SOURCE secret-shaped scanning. Not a duplicate (header + ADR limit)." },
+      "ownership": { "verdict": "cleared", "evidence": "Spawns leak-check per (file x secret); normalize/whole-token compare stays in leak-check; wrapper owns only which secrets/files." },
+      "dependency": { "verdict": "cleared", "evidence": "Reads values from process.env; no web/request types." },
+      "error-handling": { "verdict": "cleared", "evidence": "F1 (below) fixed: fail-closed paths complete; unset/empty env var -> exit 2; value never written to disk and never printed on the success, leak, or (now) fail-closed path." }
+    },
+    "verify-check-discrimination.mjs": {
+      "boundary": { "verdict": "n/a", "evidence": "Diff is one comment line (helper -> consumer-gate); no logic change." },
+      "ownership": { "verdict": "cleared", "evidence": "Manifest entry + integrity gate pass." },
+      "dependency": { "verdict": "n/a", "evidence": "No logic change." },
+      "error-handling": { "verdict": "n/a", "evidence": "No logic change." }
+    },
+    "gate-manifest.json": {
+      "boundary": { "verdict": "cleared", "evidence": "Single source of truth; each entry's sha256/testSha256/acceptance verified by the integrity gate (exit 0)." },
+      "ownership": { "verdict": "cleared", "evidence": "'script: scripts/ci/...' is the established consumer-install convention used by all entries; source resolves by basename to .claude/skills/<skill>/scripts/<file>." },
+      "dependency": { "verdict": "n/a", "evidence": "Data." },
+      "error-handling": { "verdict": "n/a", "evidence": "Data." }
+    },
+    "skeptical-audit/SKILL.md": {
+      "boundary": { "verdict": "cleared", "evidence": "One-line evidence-contract row; now says claim-lint is wired as the claims-grounded consumer-gate, not yet installed/run in a consumer - matches ADR-0113." },
+      "ownership": { "verdict": "cleared", "evidence": "No duplication; references the manifest classification." },
+      "dependency": { "verdict": "n/a", "evidence": "Doc." },
+      "error-handling": { "verdict": "n/a", "evidence": "Doc." }
+    },
+    "test/claims-grounded.test.mjs, test/readability-gate.test.mjs, test/secret-leaks.test.mjs": {
+      "boundary": { "verdict": "cleared", "evidence": "Each spawns the REAL gate via --config and asserts exit 1 on a real violation and exit 2 on empty-surface/missing-config - a no-op gate cannot satisfy those, so the tests discriminate and forbid a vacuous pass." },
+      "ownership": { "verdict": "n/a", "evidence": "Tests." },
+      "dependency": { "verdict": "n/a", "evidence": "Tests." },
+      "error-handling": { "verdict": "cleared", "evidence": "Fail-closed exit-2 cases asserted for every gate." }
+    }
+  },
+  "findings": [
+    { "id": "F1", "severity": "low", "question": "error-handling", "status": "fixed", "note": "check-secret-leaks.mjs forwarded leak-check's raw stderr on the exit-2 fail-closed path; a zero-token ('effectively empty') secret value is echoed by leak-check via JSON.stringify, so the wrapper could print a secret value - a reachable counterexample to the gate's absolute 'never prints the value' claim. Narrow (a real high-entropy secret always yields >=1 token and takes the leak-compare path, never this branch). Fixed: the exit-2 branch now emits a fixed diagnostic naming only the file and the env-var NAME; child output is withheld. Reproduced before (leak-check echoes '%%%!!!---') and confirmed withheld after (wrapper prints only 'WEIRD', exit 2). No test change needed." },
+    { "id": "F2", "severity": "info", "question": "over-engineering", "status": "documented", "note": "The directory walk is copy-pasted across the three wrappers (and mirrors check-upstream-manifest-integrity). ADR-0113 Option 2 (shared lib) was considered and rejected to keep each gate self-contained and dependency-free for per-skill genesis install, matching the existing gate/producer split. Justified; no action." }
+  ],
+  "verdict": "PASS after F1 fix. Matrix otherwise clean/cleared-with-evidence: no detection re-implemented (every wrapper spawns its single oracle), every wrapper fails closed on every input path, the secret gate keeps values off disk and off every path, the tests discriminate and forbid vacuous passes, and the manifest/integrity/ADR are consistent and honest."
+}
