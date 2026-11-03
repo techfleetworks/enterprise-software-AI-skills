@@ -465,9 +465,16 @@ jobs:
       # genesis copies it; a missing test file is therefore a real problem, so fail rather than skip.
       # GATE_DIR points the test at the gate copy CI actually runs (scripts/ci), so a repo that ALSO vendors
       # the skills under .claude/skills does not accidentally exercise that copy instead (issue #112).
+      # GATE_REPO_ROOT is set here for the same reason as the gate step above (ADR-0112): a gate spawned by its
+      # discrimination test with NO --root (e.g. reference-links' "real repository has no dangling references"
+      # case) would otherwise fall back to its UPSTREAM-layout root default (four levels up), which in a
+      # consumer overshoots scripts/ci into the runner's work dir and scans _actions/. Pinning the root to the
+      # workspace makes that real-repo case scan THIS repo only; the planted-violation cases each pass their
+      # own --root/env per spawn, so they are unaffected.
       - name: Run \${{ matrix.gate }} discrimination test
         env:
           GATE_DIR: \${{ github.workspace }}/scripts/ci
+          GATE_REPO_ROOT: \${{ github.workspace }}
         run: |
           t="test/\${{ matrix.gate }}.test.mjs"
           if [ ! -f "$t" ]; then echo "missing discrimination test $t (gate may be unverified)"; exit 1; fi

@@ -494,6 +494,22 @@ test("GENESIS: the scaffolded workflow sets the env so the copied gates resolve 
   assert.match(yml, /GATE_UPSTREAM_REPO:/);
 });
 
+test("GENESIS ADR-0112: the discrimination-test step pins GATE_REPO_ROOT, not just GATE_DIR (discriminating)", () => {
+  // A gate spawned by its discrimination test with no --root (reference-links' real-repo case) must resolve
+  // the repo root to the consumer checkout, not the four-levels-up upstream default that scans the runner's
+  // _actions/. The gate-run step already sets GATE_REPO_ROOT; the test step must too. Reverting the template
+  // (dropping GATE_REPO_ROOT from the test step) makes this fail, since this asserts it inside THAT step's env.
+  const src = buildSource();
+  const tgt = newTarget();
+  run(src, tgt, ["--yes"]);
+  const yml = readFileSync(join(tgt, ".github/workflows/enterprise-gates.yml"), "utf8");
+  assert.match(
+    yml,
+    /- name: Run \$\{\{ matrix\.gate \}\} discrimination test\n\s*env:\n(?:\s+GATE_\w+:[^\n]*\n)*?\s+GATE_REPO_ROOT:\s*\$\{\{ github\.workspace \}\}/,
+    "the discrimination-test step must set GATE_REPO_ROOT in its own env block",
+  );
+});
+
 test("GENESIS: the scaffolded workflow is a per-skill matrix with one required summary check (ADR-0065)", () => {
   const src = buildSource({ gates: [{ id: "alpha" }, { id: "beta" }] });
   const tgt = newTarget();

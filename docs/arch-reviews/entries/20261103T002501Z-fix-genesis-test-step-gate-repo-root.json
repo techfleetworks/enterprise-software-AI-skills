@@ -1,0 +1,24 @@
+{
+  "date": "2026-11-02",
+  "change": "fix/genesis-test-step-gate-repo-root",
+  "reviewer": "fresh-context subagent (general-purpose), adversarial on regex step-scoping, mutation-sensitivity, planted-case behavior, and YAML correctness",
+  "scope": [".claude/skills/bootstrap/scripts/esk-genesis.mjs", "test/esk-genesis.test.mjs", "docs/adr/0112-genesis-test-step-pins-gate-repo-root.md", "changelog.d/20261103T002501Z-genesis-test-step-gate-repo-root.md"],
+  "matrix": {
+    "esk-genesis.mjs (workflow template, discrimination-test step env)": {
+      "boundary": { "verdict": "cleared", "evidence": "The fix lives in the generator that emits the step, not in each consumer (ADR Option 1 over the status-quo hand-patch). esk-genesis.mjs:477 adds GATE_REPO_ROOT beside GATE_DIR; retires job-decoder's per-repo ADR-0034." },
+      "ownership": { "verdict": "cleared", "evidence": "Collapses a duplicated fact (the per-consumer hand-patch, a 'two copies kept in sync' smell) into one owner, the template. Comment at esk-genesis.mjs:468-473." },
+      "dependency": { "verdict": "n/a", "evidence": "No domain/HTTP coupling; grep GATE_REPO_ROOT esk-genesis.mjs -> gate-run step + test step only." },
+      "error-handling": { "verdict": "cleared", "evidence": "Failure path unchanged; the gate fails closed on a bad root (check-reference-links.mjs:46-47). The fix corrects WHICH root resolves. The env-pin-vs-layout-robust choice is a documented honest limit (ADR Option 2 rejected)." }
+    },
+    "test/esk-genesis.test.mjs (GENESIS ADR-0112)": {
+      "boundary": { "verdict": "cleared", "evidence": "Test added in the correct file (test/esk-genesis.test.mjs:497-511); complements the pre-existing 'sets the env' test at :485 (which matches anywhere in the file), binding the assertion to the test step's own env block." },
+      "ownership": { "verdict": "cleared", "evidence": "No duplicate coverage; the two tests are complementary, not a second way to do the same thing." },
+      "dependency": { "verdict": "cleared", "evidence": "Asserts generator output (correct direction); no production dependency." },
+      "error-handling": { "verdict": "cleared", "evidence": "MUTATION CONFIRMED independently: removing the template line -> ADR-0112 fails (48/2) with 'the discrimination-test step must set GATE_REPO_ROOT in its own env block'; restored -> 50/50. Regex is step-scoped: the (?:\\s+GATE_\\w+:...\\n)*? chain cannot cross the run: line, so a repo with GATE_REPO_ROOT only on the gate-run step fails (isolated regex test: fixed=true, reverted=false)." }
+    }
+  },
+  "findings": [
+    { "id": "F1", "severity": "low", "question": "boundary", "status": "no_change_needed", "note": "Scope hygiene, not an architecture finding: two untracked files (docs/research/agentic-governance-real-terms.md, docs/research/poeaa-audit-handoff.md) are unrelated to this fix and must not ride on this branch/PR. Handled: they are not staged, and are moved aside only to satisfy the local pre-push link gate, then restored." }
+  ],
+  "verdict": "PASS (full matrix observed clean; minimal correctly-placed template fix that retires a per-consumer hand-patch; test proven step-scoped and mutation-sensitive; planted-violation cases unaffected; YAML correct). Limitation: no strict YAML-schema parse of the generated file; correctness asserted by indentation inspection against sibling keys plus the passing generator suite."
+}
