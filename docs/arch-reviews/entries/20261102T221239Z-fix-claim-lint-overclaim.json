@@ -1,0 +1,25 @@
+{
+  "date": "2026-11-02",
+  "change": "fix/claim-lint-overclaim",
+  "reviewer": "fresh-context subagent (general-purpose), scoped diff + four questions, adversarial on accuracy and remaining overclaims",
+  "scope": [".claude/skills/skeptical-audit/SKILL.md", "changelog.d/20261102T221239Z-fix-claim-lint-overclaim.md"],
+  "matrix": {
+    ".claude/skills/skeptical-audit/SKILL.md": {
+      "boundary": { "verdict": "cleared", "evidence": "The correction lives in the skill's own evidence-contract table (SKILL.md:155), the authoritative home for how skeptical-audit's own claims are proven; a single table-cell edit with both | delimiters and the two-row table intact." },
+      "ownership": { "verdict": "cleared", "evidence": "New wording is true and consistent with ADR-0109. claim-lint.mjs is a helper: grep bootstrap-v2- in claim-lint.mjs -> line 2 'bootstrap-v2-helper'; grep -c claim-lint gate-manifest.json -> 0. No other line overclaims: grep -n claim-lint SKILL.md -> 119 (aspirational 'to wire'), 155 (fixed), 160 ('green on the draft'), 165 ('scanner'). None asserts current CI-gate status." },
+      "dependency": { "verdict": "n/a", "evidence": "Documentation only; no code/import change." },
+      "error-handling": { "verdict": "cleared", "evidence": "Overclaim removed without hedging into vagueness: the cell names the concrete proven-condition and states the current state plainly. Adversarial CI check: grep claim-lint.mjs in .github/package.json/scripts shows no invocation of claim-lint as a doc gate; only its own discriminating test runs under npm test. Wording refined post-review to say 'not wired as a doc gate in CI, though its own discriminating test runs under npm test' for precision." }
+    },
+    "changelog.d/20261102T221239Z-fix-claim-lint-overclaim.md": {
+      "boundary": { "verdict": "cleared", "evidence": "Per-change fragment under changelog.d/ named <YYYYMMDDTHHMMSSZ>-<slug>, matching ADR-0108; slug matches the branch and the receipt entry." },
+      "ownership": { "verdict": "cleared", "evidence": "Fragment text accurate: claim-lint ships as a helper (bootstrap-v2-helper, not in gate-manifest.json, not wired as a doc gate in CI); matches claim-lint.mjs:2, grep -c=0, ADR-0109." },
+      "dependency": { "verdict": "n/a", "evidence": "Standalone doc fragment." },
+      "error-handling": { "verdict": "cleared", "evidence": "Under '### Fixed', accurately scoped, cross-references the honest evidence-contract row; no overstatement." }
+    }
+  },
+  "findings": [
+    { "id": "F1", "severity": "low", "question": "error-handling", "status": "fixed", "note": "Reviewer info-note: 'not in the manifest or CI' could be misread as the linter having zero CI footprint, when its own discrimination test runs under npm test. Addressed: the cell and the changelog fragment now say 'not wired as a doc gate in CI, though its own discriminating test runs under npm test'." },
+    { "id": "F2", "severity": "info", "question": "boundary", "status": "documented", "note": "Reviewer noted the changelog fragment and receipt were untracked at review time; they are staged before commit." }
+  ],
+  "verdict": "PASS (single-cell honesty correction; wording verified true against ADR-0109 and the helper classification; no remaining overclaim in the file)"
+}

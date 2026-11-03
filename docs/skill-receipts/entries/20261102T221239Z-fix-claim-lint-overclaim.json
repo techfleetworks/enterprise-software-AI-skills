@@ -1,0 +1,18 @@
+{"change":"fix/claim-lint-overclaim","date":"2026-11-02","author":"mdenner","humanReviewed":null,"skills":{
+"skeptical-audit":{"status":"applied","why":"this change is the skill's own discipline turned on the skill's own doc: an overstatement (claim-lint --strict described as already a blocking CI gate) is corrected to match the evidence, since claim-lint.mjs ships as a helper (classified bootstrap-v2-helper in ADR-0109, not in gate-manifest.json and not run in CI).","what":"rewrote the 'becomes proven when' cell so it states the CI-gate wiring as a not-yet condition and names the current reality (ships as a helper today), removing the asserted-but-ungrounded present-tense claim; verified no other line in the file still overclaims.","where":[".claude/skills/skeptical-audit/SKILL.md"],"anchors":["skeptical-audit/SKILL.md#the-one-rule"],"quotes":["If you cannot attach all three, you do not assert it"]},
+"judge-arch":{"status":"applied","why":"the change edits a skill's governing doc, so it got a fresh-context review of every changed file against the four questions, with the accuracy of the new wording (and whether any other line still overclaims) as the adversarial focus.","what":"dispatched a fresh-context subagent review of the one-line diff and the changelog fragment; it verified claim-lint is a helper and the correction introduces no new inaccuracy; the review entry is recorded in docs/arch-reviews/entries/.","where":["docs/arch-reviews/entries/20261102T221239Z-fix-claim-lint-overclaim.json",".claude/skills/skeptical-audit/SKILL.md"],"anchors":["judge-arch/SKILL.md#the-non-negotiables"],"quotes":["These are not optional and not left to discretion. Every review does all of them."]},
+"architectural-decision-records":{"status":"not-applicable","why":"no new architectural decision; ADR-0109 already anticipated this correction as a named follow-up, so the fix needs no new ADR."},
+"pattern-selector":{"status":"not-applicable","why":"no feature, module, or data flow is designed or changed; a one-cell documentation correction selects no pattern."},
+"enterprise-architecture-standards":{"status":"not-applicable","why":"no system, schema, or algorithm changes; a doc wording fix."},
+"bdd-comprehensive-testing":{"status":"not-applicable","why":"no behavior changes; nothing executable is added or modified."},
+"comprehensive-test-strategy":{"status":"not-applicable","why":"no code or test surface changes."},
+"owasp-secure-coding-bdd":{"status":"not-applicable","why":"no input, auth, secret, dependency, or network surface; documentation text only."},
+"release-deployment-safety":{"status":"not-applicable","why":"nothing is deployed or migrated; the fix reaches consumers through the repo and a future release."},
+"sre-operational-readiness":{"status":"not-applicable","why":"no running service, endpoint, SLO, or alert."},
+"compliance-data-lifecycle":{"status":"not-applicable","why":"no personal or regulated data, and no storage, retention, or backup surface."},
+"arch-encode":{"status":"not-applicable","why":"no greppable rule to encode; this corrects a one-off overstatement in prose, which the judge-arch/receipt review already looks for."},
+"verifiable-quality-gates":{"status":"not-applicable","why":"no automated check is added or changed; the correction itself notes claim-lint is not yet a wired gate."},
+"universal-accessibility-wcag":{"status":"not-applicable","why":"no user interface."},
+"universal-browser-device-support":{"status":"not-applicable","why":"no browser or device surface; Markdown only."},
+"usability-ux-universal-design":{"status":"not-applicable","why":"no end-user interactive surface; the edit is reference documentation."}
+}}
