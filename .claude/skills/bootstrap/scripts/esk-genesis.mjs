@@ -268,7 +268,12 @@ const consumerManifest = {
   version,
   generatedFrom: `${upstreamRepo}@${version}`,
   gates: [
-    ...upstreamGates.map((g) => ({ id: g.id, origin: "upstream", skill: g.skill, script: g.script, sha256: g.sha256, test: g.test, lane: g.lane, ...(g.invoke ? { invoke: g.invoke } : {}), ...(g.couples ? { couples: g.couples } : {}) })),
+    // Carry testSha256 through from the source gate (ADR-0111): manifest-provenance requires BOTH the code
+    // sha256 AND the discrimination-test testSha256 to match the published release, so a consumer manifest
+    // that omits testSha256 fails provenance on every gate ("testSha256 undefined != published ..."). The
+    // source manifest pins it per gate; project it verbatim, like sha256, so the generated consumer manifest
+    // is provenance-complete. Optional in the source (a gate may predate it) so guard with a spread.
+    ...upstreamGates.map((g) => ({ id: g.id, origin: "upstream", skill: g.skill, script: g.script, sha256: g.sha256, ...(g.testSha256 ? { testSha256: g.testSha256 } : {}), test: g.test, lane: g.lane, ...(g.invoke ? { invoke: g.invoke } : {}), ...(g.couples ? { couples: g.couples } : {}) })),
     ...repoLocal.map((r) => ({ id: r.id, origin: "repo-local", script: r.script, sha256: r.sha256, test: r.test, lane: r.lane })),
   ],
   // Machinery entries carry NO `test` field in the consumer manifest: esk-genesis copies gate tests but not
@@ -460,9 +465,16 @@ jobs:
       # genesis copies it; a missing test file is therefore a real problem, so fail rather than skip.
       # GATE_DIR points the test at the gate copy CI actually runs (scripts/ci), so a repo that ALSO vendors
       # the skills under .claude/skills does not accidentally exercise that copy instead (issue #112).
+      # GATE_REPO_ROOT is set here for the same reason as the gate step above (ADR-0112): a gate spawned by its
+      # discrimination test with NO --root (e.g. reference-links' "real repository has no dangling references"
+      # case) would otherwise fall back to its UPSTREAM-layout root default (four levels up), which in a
+      # consumer overshoots scripts/ci into the runner's work dir and scans _actions/. Pinning the root to the
+      # workspace makes that real-repo case scan THIS repo only; the planted-violation cases each pass their
+      # own --root/env per spawn, so they are unaffected.
       - name: Run \${{ matrix.gate }} discrimination test
         env:
           GATE_DIR: \${{ github.workspace }}/scripts/ci
+          GATE_REPO_ROOT: \${{ github.workspace }}
         run: |
           t="test/\${{ matrix.gate }}.test.mjs"
           if [ ! -f "$t" ]; then echo "missing discrimination test $t (gate may be unverified)"; exit 1; fi
