@@ -268,7 +268,12 @@ const consumerManifest = {
   version,
   generatedFrom: `${upstreamRepo}@${version}`,
   gates: [
-    ...upstreamGates.map((g) => ({ id: g.id, origin: "upstream", skill: g.skill, script: g.script, sha256: g.sha256, test: g.test, lane: g.lane, ...(g.invoke ? { invoke: g.invoke } : {}), ...(g.couples ? { couples: g.couples } : {}) })),
+    // Carry testSha256 through from the source gate (ADR-0111): manifest-provenance requires BOTH the code
+    // sha256 AND the discrimination-test testSha256 to match the published release, so a consumer manifest
+    // that omits testSha256 fails provenance on every gate ("testSha256 undefined != published ..."). The
+    // source manifest pins it per gate; project it verbatim, like sha256, so the generated consumer manifest
+    // is provenance-complete. Optional in the source (a gate may predate it) so guard with a spread.
+    ...upstreamGates.map((g) => ({ id: g.id, origin: "upstream", skill: g.skill, script: g.script, sha256: g.sha256, ...(g.testSha256 ? { testSha256: g.testSha256 } : {}), test: g.test, lane: g.lane, ...(g.invoke ? { invoke: g.invoke } : {}), ...(g.couples ? { couples: g.couples } : {}) })),
     ...repoLocal.map((r) => ({ id: r.id, origin: "repo-local", script: r.script, sha256: r.sha256, test: r.test, lane: r.lane })),
   ],
   // Machinery entries carry NO `test` field in the consumer manifest: esk-genesis copies gate tests but not
