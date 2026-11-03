@@ -6,6 +6,53 @@ semantic versioning for the skills library and its gates.
 Changes not yet released live in `changelog.d/`, one file per change (ADR-0108). A pull request never edits
 this file; the release step folds those files in under the new version with `scripts/changelog-release.mjs`.
 
+## 1.3.3 - 2026-11-03
+
+### Fixed
+
+- `skeptical-audit/SKILL.md` no longer describes `claim-lint --strict` as already "wired as a blocking CI
+  gate". It ships as a helper today (classified `bootstrap-v2-helper` in ADR-0109: not in `gate-manifest.json`
+  and not wired as a doc gate in CI, though its own discriminating test runs under `npm test`), so the
+  "becomes proven when" cell now states that plainly as a not-yet condition, matching the honest framing of
+  the adjacent evidence-contract row. Closes the ADR-0109 follow-up on this overclaim.
+
+### Fixed (esk-genesis)
+
+`esk-genesis` now carries each upstream gate's `testSha256` through to the generated consumer
+`gate-manifest.json` (ADR-0111). Previously the projection copied the code `sha256` but dropped
+`testSha256`, so a repo genesis'd with v1.3.2 failed its own `manifest-provenance` gate on every gate
+(`testSha256 undefined != published ...`). The vendored test files were authentic; only the manifest
+field was missing. A new discrimination test (`GENESIS ADR-0111`) asserts the passthrough and is
+mutation-proven to fail when it is reverted.
+
+### Fixed (esk-genesis)
+
+The generated `enterprise-gates.yml` now sets `GATE_REPO_ROOT` on the gate discrimination-test step, not
+just the gate-run step (ADR-0112). Without it, a gate spawned by its test with no `--root` (the
+`reference-links` real-repository case) fell back to its upstream four-levels-up root default and scanned
+the runner's `_actions/` cache, failing CI in consumers. Consumers previously hand-patched this after every
+genesis; the fix now ships in the template. A new discrimination test (`GENESIS ADR-0112`) asserts the env
+is set on that step and is mutation-proven.
+
+### Added
+
+- Four gate-capable helpers are promoted to consumer-gates (ADR-0113), so their disciplines ship as tracked,
+  hash-pinned, discrimination-tested gates instead of hand-run tools:
+  - `claims-grounded` (skeptical-audit): walks a configured findings/review doc surface and runs
+    `claim-lint --strict` over every file, so an untagged factual claim cannot escape review by never being
+    named on a command line.
+  - `readability-grade` (usability-ux-universal-design): walks a user-facing doc surface and fails any file
+    above a configured Flesch-Kincaid grade.
+  - `secret-leak` (comprehensive-test-strategy): scans configured build artifacts for the values of named CI
+    environment variables (values resolved from the environment, never the committed config) and reports the
+    env-var name, never the value, on a leak.
+  - `verify-check-discrimination` (verifiable-quality-gates): the general mutation gate, already repo-level,
+    is now classified as a consumer-gate.
+  Each wrapper is self-contained, fails closed on an empty/missing surface, reuses the one underlying tool for
+  detection (no re-implementation), and ships a discrimination test (no-op the gate and its test goes red).
+  Released as a patch: `consumerRequiredGates` is classified only - `esk-genesis` installs neither it nor these
+  gates into any consumer - so no currently-green consumer turns red.
+
 ## 1.3.2 - 2026-11-02
 
 _Released as a patch, not a minor: ADR-0109 adds a new `consumerRequiredGates` manifest section, which
