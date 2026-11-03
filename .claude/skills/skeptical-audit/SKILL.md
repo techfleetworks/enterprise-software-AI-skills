@@ -152,7 +152,7 @@ and how each is proven:
 
 | Claim | Reaches `observed` by | Becomes `proven` when |
 |---|---|---|
-| "This draft carries no untagged factual claims" | `node scripts/claim-lint.mjs <draft> --strict` exit 0 | `claim-lint --strict` is wired as a blocking CI gate over findings docs, with its discriminating test (not yet: it ships as a helper today, not in the manifest and not wired as a doc gate in CI, though its own discriminating test runs under `npm test`) |
+| "This draft carries no untagged factual claims" | `node scripts/claim-lint.mjs <draft> --strict` exit 0 | `claim-lint` is wired as the `claims-grounded` consumer-gate (classified in `gate-manifest.json` with a pinned discrimination test), which runs `claim-lint --strict` over every doc in the configured findings surface. In this repo its discrimination test runs under `npm test`; in a consumer it blocks once genesis installs and runs the consumer-gates (ADR-0113; not yet installed/run there) |
 | "Every skill carries the evidence contract" | `node scripts/check-skill-evidence-contract.mjs .` exit 0 | that gate runs in CI with a discriminating test; the shrink-only allowlist tightens to 100% |
 
 **Definition of done** for any audit or finding this skill produces: the evidence ledger is attached,

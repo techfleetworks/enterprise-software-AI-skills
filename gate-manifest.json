@@ -325,6 +325,46 @@
       "test": "test/verifiable-gates.test.mjs",
       "testSha256": "bffec4b691f14bafbfbbc92add4f55d24203338ad5562ec172756f15659c2303",
       "acceptance": "Every non-allowlisted check in the repo has a crediting test (mutation-proven)."
+    },
+    {
+      "id": "verify-check-discrimination",
+      "origin": "upstream",
+      "skill": "verifiable-quality-gates",
+      "script": "scripts/ci/verify-check-discrimination.mjs",
+      "sha256": "0fd06902680462ec94cfd34348b2d1086a9f2b487fac103396ae7ef6b2241711",
+      "test": "test/verifiable-gates.test.mjs",
+      "testSha256": "bffec4b691f14bafbfbbc92add4f55d24203338ad5562ec172756f15659c2303",
+      "acceptance": "The consumer provides verifiable-gates.config.json naming its checks and tests; every non-allowlisted check's test fails when the check is stubbed to a no-op (the mutation gate)."
+    },
+    {
+      "id": "claims-grounded",
+      "origin": "upstream",
+      "skill": "skeptical-audit",
+      "script": "scripts/ci/check-claims-grounded.mjs",
+      "sha256": "b66d6158d640b7a8a943174d2dbab92918d38b6f82521e8a299150299aa8a74e",
+      "test": "test/claims-grounded.test.mjs",
+      "testSha256": "65f001d38abea2812f92afe61804c4f787a8b67d059211b006b72cd068e263b6",
+      "acceptance": "The consumer provides a claims-grounded config naming its findings/review doc surface (roots); every document passes claim-lint --strict, i.e. carries no untagged factual claim or hedge."
+    },
+    {
+      "id": "readability-grade",
+      "origin": "upstream",
+      "skill": "usability-ux-universal-design",
+      "script": "scripts/ci/check-readability.mjs",
+      "sha256": "20c55c74244185d4d483a595cf9340795ba8ec64fb56a5bc9ccc1821a82bc2f6",
+      "test": "test/readability-gate.test.mjs",
+      "testSha256": "097820214d44fa51006e5614e822036ee4d39dc0eb18e1ed41ff227e8be27b2a",
+      "acceptance": "The consumer provides a readability config naming its user-facing doc surface (roots) and a maxGrade; every document reads at or below that Flesch-Kincaid grade."
+    },
+    {
+      "id": "secret-leak",
+      "origin": "upstream",
+      "skill": "comprehensive-test-strategy",
+      "script": "scripts/ci/check-secret-leaks.mjs",
+      "sha256": "1fb57ae6ca0938230e77abe6b5a5da6ebde12f397b0a5eb0b517338f60ae53b0",
+      "test": "test/secret-leaks.test.mjs",
+      "testSha256": "83d295e3b897a75327648daf199056c521a4a1dc36b963ece437856f4ec9d855",
+      "acceptance": "The consumer provides a secret-leak config naming the CI env vars that hold its secrets and the build artifacts to scan; no secret value appears in any artifact. Values come from the CI environment, never the committed config."
     }
   ],
   "aggregator": {

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// bootstrap-v2-helper: verify-check-discrimination
+// bootstrap-v2-consumer-gate: verify-check-discrimination
 /**
  * verify-check-discrimination - the MUTATION gate (reference implementation).
  *
