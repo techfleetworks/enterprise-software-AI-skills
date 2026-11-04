@@ -293,7 +293,9 @@ examined, and the history of what the architecture has been held to. Store it in
   human-readable companion `docs/arch-reviews/<date>-<scope>.md`. Never append to one shared log file: two
   open pull requests would both edit it and conflict, and a host such as GitHub ignores merge drivers when it
   decides that. One file per review means two pull requests add two different files and cannot conflict.
-- **Each entry records:** date, change ref (commit or PR), scope (the changed file list), the **matrix**
+- **Each entry records:** date; change ref (a stable identifier the entry is keyed to: the **branch name** or
+  a **PR ref**, never the change's own commit SHA, which is permanently unsatisfiable and the gate rejects it,
+  #213); scope (the changed file list), the **matrix**
   (per file, per question: `finding`, `cleared`, or `n/a` plus evidence or reason), every finding with its
   `@question`, `@severity`, and `@file` plus an Evidence line, the grep-battery commands run, the
   mechanical `arch-gate` result, and the final verdict (`PASS` or `N findings`).
