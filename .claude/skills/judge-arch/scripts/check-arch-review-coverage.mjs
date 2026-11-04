@@ -9,6 +9,10 @@
 //
 //   node check-arch-review-coverage.mjs --change <ref> --changed-list a.ts,b.ts [--log docs/arch-reviews/entries] [--base <ref>]
 //
+// --change is a STABLE identifier the review entry is keyed to - the branch name (CI: github.head_ref) or a PR
+// ref (e.g. pr-123) - NEVER the change's own commit SHA. The entry is committed IN this change, so no entry can
+// carry this commit's SHA; keying --change on `git rev-parse HEAD` / github.sha is permanently unsatisfiable (#213).
+//
 // The log is a directory of one-file-per-entry (entry-log.mjs, ADR-0108); --base is then a git ref. A legacy
 // one-line-per-entry .jsonl file still reads, with --base naming a file that holds its base revision.
 //
@@ -30,7 +34,20 @@ const SEVERITY = new Set(["high", "med", "low"]);
 const QUESTION_TAGS = new Set([...QUESTIONS, "over-engineering", "under-engineering"]);
 const nonEmpty = (v) => v != null && String(v).trim() !== "";
 
-if (!change) die("no --change <ref> given (the commit/PR this review must be FOR; fail closed).");
+if (!change) die("no --change <ref> given (the branch/PR ref this review must be FOR; fail closed).");
+// #213: a commit SHA can NEVER identify a review FOR this change - the entry is committed IN the change, so its
+// `change` field cannot carry the commit's own SHA, and matching on it is permanently unsatisfiable. Passing a
+// SHA (git rev-parse HEAD, github.sha, or the PR merge commit) used to fail with a generic "no record", sending
+// authors hunting for a review that could not exist. Reject it fail-closed and name the fix. A 40-hex (SHA-1) or
+// 64-hex (SHA-256) all-hex string is unmistakably a git SHA - no real branch name or PR ref has that shape - so
+// this rule has no false positives on legitimate stable refs.
+if (/^[0-9a-f]{40}$/i.test(change) || /^[0-9a-f]{64}$/i.test(change)) {
+  die(`--change "${change}" is a commit SHA, which can never match a review entry: the entry is committed IN ` +
+      `this change, so no entry can carry this commit's own SHA (keying on it is permanently unsatisfiable). ` +
+      `Key --change on a STABLE ref the author writes into the log - the branch name (CI: github.head_ref) or a ` +
+      `PR ref such as pr-123 - and set the entry's "change" field to the same value. ` +
+      `See judge-arch/references/review-log-and-coverage.md.`);
+}
 if (!changedArg) die("no --changed-list given (the changed code files to require coverage for; fail closed).");
 const changed = changedArg.split(",").map((s) => s.trim().split("\\").join("/")).filter(Boolean);
 if (changed.length === 0) die("empty changed-list (fail closed).");
