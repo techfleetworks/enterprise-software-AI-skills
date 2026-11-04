@@ -673,3 +673,49 @@ test("ISSUE-140: esk-genesis rejects an unknown flag (exit 2)", () => {
   assert.equal(code, 2);
   assert.match(out, /unknown flag/);
 });
+
+// --- ISSUE-203 gap 2: esk-genesis --check is a read-only coverage/drift verdict (ADR-0110) ---
+// Discriminating: a covered consumer is 0, a drifted and an un-gated one are 1, a broken-source one is 2, and
+// --check writes nothing. A no-op --check that always returned 0 would fail every non-zero assertion below.
+test("CHECK: a covered, current consumer exits 0 and reports covered", () => {
+  const src = buildSource({ gates: [{ id: "alpha" }, { id: "beta" }] });
+  const tgt = newTarget();
+  assert.equal(run(src, tgt, ["--yes"]), 0, "genesis must succeed first");
+  const r = runCapture(src, tgt, ["--check"]);
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /covered and current/i);
+});
+test("CHECK: a drifted consumer (a gate script deleted) exits 1 (discriminating)", () => {
+  const src = buildSource({ gates: [{ id: "alpha" }, { id: "beta" }] });
+  const tgt = newTarget();
+  assert.equal(run(src, tgt, ["--yes"]), 0);
+  rmSync(join(tgt, "scripts/ci/check-beta.mjs"));
+  const r = runCapture(src, tgt, ["--check"]);
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.out, /DRIFT/);
+});
+test("CHECK: an un-gated consumer exits 1 and writes NOTHING (read-only)", () => {
+  const src = buildSource();
+  const tgt = newTarget(); // never genesis'd
+  const r = runCapture(src, tgt, ["--check"]);
+  assert.equal(r.code, 1, r.out);
+  assert.ok(!existsSync(join(tgt, "gate-manifest.json")), "--check must not create the manifest");
+  assert.ok(!existsSync(join(tgt, "scripts/ci")), "--check must not copy gate scripts");
+});
+test("CHECK: fails CLOSED (2) when the gates cannot be assessed (a source hash mismatch)", () => {
+  const src = buildSource({ gates: [{ id: "alpha" }] });
+  const tgt = newTarget();
+  assert.equal(run(src, tgt, ["--yes"]), 0);
+  // Corrupt the SOURCE gate script so it no longer matches the source manifest sha256: the installer cannot
+  // trust the source, so --check cannot assess coverage and must fail closed (2), never a false 0.
+  writeFileSync(join(src, ".claude/skills/judge-arch/scripts/check-alpha.mjs"), "// bootstrap-v2-gate: alpha\n// TAMPERED\n");
+  const r = runCapture(src, tgt, ["--check"]);
+  assert.equal(r.code, 2, r.out);
+});
+test("CHECK: --check never writes even with --yes also present (read-only wins)", () => {
+  const src = buildSource();
+  const tgt = newTarget();
+  const r = runCapture(src, tgt, ["--check", "--yes"]);
+  assert.equal(r.code, 1, r.out); // un-gated -> drift verdict
+  assert.ok(!existsSync(join(tgt, "gate-manifest.json")), "--check must suppress --yes writes");
+});

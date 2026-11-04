@@ -40,6 +40,12 @@
  *
  * Exit: 0 = success / already current (or a clean plan). 1 = a problem the user must act on (e.g. a
  * source hash mismatch). 2 = bad usage or an unreadable/unwritable path (fail closed).
+ *
+ * --check (read-only, ADR-0110): computes the same reconcile plan and exits by VERDICT without writing -
+ * 0 = covered and current, 1 = drifted or un-gated (gates missing, behind, or the manifest/workflow absent),
+ * 2 = cannot assess (bad source manifest, unreadable path). It is the consumer's own CI drift gate and the
+ * reconciliation bot's decision function, so it reuses this installer's resolution and hash-verification
+ * rather than re-deriving which gates belong there.
  */
 import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync, rmSync, readdirSync, statSync, chmodSync } from "node:fs";
 import { resolve, dirname, join, basename, sep } from "node:path";
@@ -60,15 +66,17 @@ const cmpSemver = (a, b) => {
 
 // --- usage + unknown-flag guard, before any work (#140) ----------------------------------------------------
 const USAGE = `esk-genesis - install/reconcile the enterprise CI gates into a consumer repo from the upstream manifest.
-Usage: node esk-genesis.mjs [--source <skills-repo>] [--target <repo>] [--yes] [--code-owners "@a @b"]
+Usage: node esk-genesis.mjs [--source <skills-repo>] [--target <repo>] [--yes | --check] [--code-owners "@a @b"]
                             [--version <x.y.z>] [--adopt-existing] [--check-integration-id <app-id|none>]
                             [--allow-downgrade]
-  no --yes = plan only (dry run); --yes = apply. --source defaults to this skills repo, --target to the cwd.`;
+  no --yes = plan only (dry run); --yes = apply; --check = read-only verdict (0 covered+current, 1 drifted/un-gated,
+  2 cannot assess), for a consumer's CI drift gate and the reconciliation bot. --source defaults to this skills repo,
+  --target to the cwd.`;
 if (flag("--help") || flag("-h")) { console.log(USAGE); process.exit(0); }
 {
   // Reject an unknown --flag so a typo cannot silently change behavior. --opt values are paths/owners/versions
   // (never --prefixed), so this only catches real typos.
-  const KNOWN = new Set(["--source", "--target", "--yes", "--code-owners", "--version", "--adopt-existing", "--check-integration-id", "--allow-downgrade", "--help"]);
+  const KNOWN = new Set(["--source", "--target", "--yes", "--check", "--code-owners", "--version", "--adopt-existing", "--check-integration-id", "--allow-downgrade", "--help"]);
   const unknown = args.filter((a) => a.startsWith("--") && !KNOWN.has(a));
   if (unknown.length) die(`unknown flag(s): ${unknown.join(", ")}. Run with --help for usage.`);
 }
@@ -99,7 +107,14 @@ function findSkillsRepo(start) {
 }
 const SOURCE = resolve(opt("--source") || findSkillsRepo(dirname(fileURLToPath(import.meta.url))));
 const TARGET = resolve(opt("--target") || process.cwd());
-const apply = flag("--yes");
+// --check is the read-only coverage/drift predicate (ADR-0110, #203 gap 2): it computes the full reconcile
+// plan and exits by VERDICT instead of writing - 0 when the target is covered and current, 1 when it is
+// drifted or un-gated, 2 when the gates cannot even be assessed (fail closed). It is a consumer's own CI drift
+// gate and the reconciliation bot's decision function, reusing this installer's exact resolution and
+// hash-verification, so nothing re-derives which gates belong there. --check always wins over --yes: it never
+// writes.
+const checkMode = flag("--check");
+const apply = flag("--yes") && !checkMode;
 
 // Hash LINE-ENDING-STABLY (ADR-0058): normalize CRLF to LF before hashing, so a source script verifies
 // against the manifest the same on Windows (CRLF) and Linux/CI (LF). Copy verification still holds (both
@@ -555,10 +570,13 @@ console.log(`  manifest: ${consumerManifestPath}${prior ? (foreignPrior ? ` (for
 if (problems.length) {
   console.error(`  BLOCKERS (nothing will be written):`);
   for (const p of problems) console.error(`    ! ${p}`);
-  process.exit(1);
+  // --check cannot assess coverage when the inputs themselves are broken: fail closed (2), never a false 0.
+  process.exit(checkMode ? 2 : 1);
 }
 if (nothingToDo) {
-  console.log(`  result:   already current. Nothing to change.`);
+  console.log(checkMode
+    ? `\n[esk-genesis --check] OK - the target is covered and current (every manifest gate present and hash-matched, workflow and ruleset in place).`
+    : `  result:   already current. Nothing to change.`);
   process.exit(0);
 }
 console.log(`  changes:`);
@@ -578,6 +596,14 @@ if (prepareAction === "warn-malformed") console.log(`    - NOTE: package.json ex
 if (codeownersAction === "add") console.log(`    - scaffold .github/CODEOWNERS (enforcement paths owned by ${codeOwners.join(" ")}); then enable "require code-owner review" on the ruleset`);
 if (codeownersAction === "warn-existing") console.log(`    - NOTE: .github/CODEOWNERS already exists; leaving it as is. Add the enforcement paths (scripts/ci/, gate-manifest.json, .github/workflows/, .github/CODEOWNERS) owned by ${codeOwners.join(" ")} yourself if they are not covered.`);
 console.log(`  safety:   back up an existing gate-manifest.json first; copies are hash-verified against the manifest.`);
+
+// --check: the plan above is non-empty (nothingToDo already exited 0), so the target is drifted or un-gated.
+// Exit 1 by verdict and write nothing. This is the predicate a consumer's CI drift gate and the reconciliation
+// bot branch on: a covered+current repo is 0, this is 1, a broken-input repo was 2 above.
+if (checkMode) {
+  console.error(`\n[esk-genesis --check] DRIFT - the target is missing or behind the enterprise gates (see the plan above). Run esk-genesis --yes to install or reconcile.`);
+  process.exit(1);
+}
 
 if (!apply) {
   console.log(`\nThis is a dry run. Re-run with --yes to apply.`);
