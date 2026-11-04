@@ -261,9 +261,9 @@
       "origin": "upstream",
       "skill": "judge-arch",
       "script": "scripts/ci/check-arch-review-coverage.mjs",
-      "sha256": "515872cafbeeb9730e381c34e074edc652c6279f8a17ba958a18c72f72c38a93",
+      "sha256": "2169df6f76e5b2a31225b85428375937b7259032f8958b0305e253933d316691",
       "test": "test/arch-review-gates.test.mjs",
-      "testSha256": "5365b89b13e0f044dfed4be38c0bc56db44876f7ff7ef2f34f688e1c1742edd1",
+      "testSha256": "7ff573f5e0ca3724a6b6f1b261d23bcc740d0d534639e8ac9d09b5dc863e1a5f",
       "acceptance": "The repo keeps a fresh-context judge-arch review log covering every changed file against the four questions."
     },
     {
@@ -273,7 +273,7 @@
       "script": "scripts/ci/check-arch-rules-discriminate.mjs",
       "sha256": "7036f7355005ec9e3b1da9d30c1a9502e1096edfde50ca6d6de8a38cf11ab287",
       "test": "test/arch-review-gates.test.mjs",
-      "testSha256": "5365b89b13e0f044dfed4be38c0bc56db44876f7ff7ef2f34f688e1c1742edd1",
+      "testSha256": "7ff573f5e0ca3724a6b6f1b261d23bcc740d0d534639e8ac9d09b5dc863e1a5f",
       "acceptance": "The repo ships planted-violation fixtures the mechanical arch layer must flag every one of."
     },
     {

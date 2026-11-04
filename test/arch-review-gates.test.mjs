@@ -4,7 +4,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, writeFileSync, readFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync, readFileSync, readdirSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -142,6 +142,50 @@ test("coverage: with a matching --base it PASSES and discloses append-only VERIF
 test("coverage: ARCH_REQUIRE_LOG_BASE=1 with no --base FAILS closed (discriminating force-knob)", () => {
   const r = covRun(baseEntry(), "a.ts", [], { ARCH_REQUIRE_LOG_BASE: "1" });
   assert.equal(r.status, 1);
+});
+
+// --- #213: a commit-SHA --change is rejected fail-closed (structurally unsatisfiable) --------------
+// The gate matches an entry by `change` EQUALITY, and the entry is committed IN the change, so no entry can
+// carry this commit's own SHA. These assert the MESSAGE, not just the exit code: no-opping the SHA guard makes
+// a 40/64-hex change fall through to the generic "no review record" failure (still exit 1), so an exit-only
+// assertion would be vacuous. Asserting the SHA diagnostic is what goes red when the guard is removed.
+const SHA1 = "0119256adfc8418a3afbd91fbc3779b94f8079fb";              // 40 hex (the real failing SHA from #213)
+const SHA256 = "a".repeat(64);                                        // 64 hex (git SHA-256 objects)
+test("#213: a 40-hex commit-SHA --change FAILS with the SHA diagnostic (discriminating on the message)", () => {
+  const r = covRun(baseEntry(), "a.ts", [], {}, SHA1);
+  assert.equal(r.status, 1, (r.stdout || "") + (r.stderr || ""));
+  assert.match(r.stderr, /commit SHA|permanently unsatisfiable/i, "must name the SHA footgun, not a generic no-record error");
+});
+test("#213: a 64-hex commit-SHA --change FAILS with the SHA diagnostic", () => {
+  const r = covRun(baseEntry(), "a.ts", [], {}, SHA256);
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /commit SHA|permanently unsatisfiable/i);
+});
+test("#213: a branch-named --change that matches the entry PASSES (no false positive on a real stable ref)", () => {
+  const e = baseEntry(); e.change = "fix/no-shared-append-files";     // a hex-adjacent, real branch name
+  const r = covRun(e, "a.ts", [], {}, "fix/no-shared-append-files");
+  assert.equal(r.status, 0, (r.stdout || "") + (r.stderr || ""));
+});
+test("#213: a short hex-shaped branch name (<40) is NOT rejected (the rule is anchored to full SHA lengths)", () => {
+  const e = baseEntry(); e.change = "abc1234";                        // 7 hex: a plausible branch, not a full SHA
+  const r = covRun(e, "a.ts", [], {}, "abc1234");
+  assert.equal(r.status, 0, (r.stdout || "") + (r.stderr || ""));
+});
+test("#213 real-repo invariant: NO committed arch-review entry is keyed on a commit SHA", () => {
+  // Makes a SHA-keyed entry structurally impossible to merge HERE: npm test is a blocking CI gate, so this scans
+  // the real log and fails if any entry's `change` is 40/64-hex. Discriminating: add such an entry and it reds.
+  const dir = resolve(REPO, "docs/arch-reviews/entries");
+  if (!existsSync(dir)) return; // the folder exists in this repo; guard keeps the test portable if vendored elsewhere
+  const offenders = [];
+  for (const f of readdirSync(dir).filter((n) => n.endsWith(".json"))) {
+    let change;
+    // Report a corrupt entry rather than silently skip it: a malformed file is a real problem the invariant
+    // must surface (no silent catch), and skipping it would be a blind spot for a SHA-keyed corrupt entry.
+    try { change = JSON.parse(readFileSync(join(dir, f), "utf8")).change; }
+    catch (e) { offenders.push(`${f}: unparseable (${e.message})`); continue; }
+    if (typeof change === "string" && (/^[0-9a-f]{40}$/i.test(change) || /^[0-9a-f]{64}$/i.test(change))) offenders.push(`${f}: "${change}"`);
+  }
+  assert.deepEqual(offenders, [], `review entries keyed on a commit SHA (unsatisfiable, #213): ${offenders.join(", ")}`);
 });
 
 // --- check-arch-rules-discriminate ------------------------------------------

@@ -23,7 +23,7 @@ discipline from `compliance-data-lifecycle` `[documented]`.
 ```jsonc
 {
   "date": "2026-10-10",
-  "change": "PR #417",                    // commit SHA or PR ref the review covers
+  "change": "feat/refund-loyalty",        // STABLE ref keyed to: branch name or PR ref - NEVER a commit SHA (#213)
   "scope": ["src/services/refund.ts",     // every changed CODE file - the matrix rows
             "src/domain/loyalty.ts"],
   "matrix": {                             // file → question → { verdict, evidence }
@@ -62,6 +62,36 @@ non-empty evidence/reason (a `cleared` with no source is the lazy-clear the gate
 non-negotiable #10). Tag vocabulary (`question`, `severity`) is the one taxonomy from SKILL.md
 "Categorization"; the gate enforces it.
 
+## Keying the review to the change (`change`), never a commit SHA
+
+The `change` field, and the `--change` the gate is run with, must be a **stable identifier the author writes
+into the log**: the **branch name** or a **PR ref** (`pr-123`). It is matched by exact equality against the
+entry's `change`, so both sides must be the same stable value.
+
+It must **never** be the change's own **commit SHA** (`git rev-parse HEAD`, `github.sha`, or the `pull_request`
+merge commit). The entry is committed *in* this change, so no entry can carry the SHA of the commit that
+contains it; keying on a SHA is **permanently unsatisfiable** (there is no author-side way to make it pass)
+(#213). The gate rejects a SHA-shaped `--change` (40-hex SHA-1 or 64-hex SHA-256) fail-closed with that
+explanation, so the footgun can never silently block a real PR.
+
+**Consumer CI recipe** (the one way to wire the gate so it is satisfiable), keyed on the branch:
+
+```yaml
+# .github/workflows that runs check-arch-review-coverage. On pull_request, github.head_ref is the SOURCE
+# branch; set each review entry's "change" to that same branch name. Never pass github.sha.
+- name: Arch-review coverage
+  env:
+    CHANGE: ${{ github.head_ref || github.ref_name }}   # branch name: the stable key, not a SHA
+    CODE: ${{ steps.changed.outputs.code_files }}        # comma-separated changed code files
+  run: |
+    node scripts/ci/check-arch-review-coverage.mjs \
+      --log docs/arch-reviews/entries --change "$CHANGE" --changed-list "$CODE" --base origin/main
+```
+
+The upstream repo already keys every entry this way (for example `"change": "fix/no-shared-append-files"`), and
+`test/arch-review-gates.test.mjs` asserts no committed entry is ever keyed on a SHA, so the convention cannot
+regress here.
+
 ## Append-only & tamper-evident
 
 - Entries are **only appended** - a prior entry is never edited or deleted.
@@ -78,6 +108,8 @@ Reads `docs/arch-reviews/entries/`, finds the record whose `change`/`scope` matc
 **fails closed** unless all hold. It does **not** judge whether the verdicts are *correct* - only that a
 complete, evidenced review exists (see "The honest limit"). Fail-closed conditions:
 
+0. **`--change` is a commit SHA** (40-hex or 64-hex) → fail with the keying explanation above (a SHA can never
+   match; key on the branch/PR ref). This is checked before any lookup, so the footgun is loud, not silent.
 1. **No matching record** for the change → fail.
 2. **A changed code file missing from `scope`/`matrix`** (not every row present) → fail.
 3. **Any of the four questions missing** for a covered file (boundary · ownership · dependency ·
