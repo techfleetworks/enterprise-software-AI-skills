@@ -51,7 +51,7 @@ repos want both. Do not reach for one when you need the other.
 | What it makes true | an **agent loads and applies** the skills while it works | a **change cannot merge** unless it passes the gates, and a push is pre-checked locally first |
 | Who it binds | the agent in a session (per session, bypassable) | humans and agents at merge (server-side required check, fail-closed) |
 | Where enforcement lives | `settings.json` hook + the version marker | the consumer's `gate-manifest.json`, `scripts/ci/`, and `.github/workflows/enterprise-gates.yml` |
-| Drift / reconcile | `esk-init --check`, re-run to reconcile | re-run `esk-genesis` to re-sync from the upstream manifest |
+| Drift / reconcile | `esk-init --check`, re-run to reconcile | `esk-genesis --check` (read-only verdict), re-run with `--yes` to re-sync from the upstream manifest |
 
 The short rule: run `esk-init` so sessions actually pick the skills up, and run `esk-genesis` so the repo
 enforces them on every pull request. The directive is the honor system that makes agents good citizens; the
@@ -63,6 +63,12 @@ root `CONTRIBUTING.md`; its reference file is listed below. Two things to know b
 - It is safe by default (plans first, writes nothing without `--yes`) and it keeps a consumer's own gates:
   a `check-*.mjs` in `scripts/ci/` that the upstream does not ship is preserved and recorded as
   `repo-local`.
+- `esk-genesis --check` is the read-only coverage/drift verdict (the gates' counterpart to `esk-init --check`,
+  ADR-0110/ADR-0115): it computes the reconcile plan and exits `0` when the repo is covered and current, `1`
+  when it is drifted or un-gated, `2` when it cannot assess (fail closed). It writes nothing even with `--yes`.
+  Wire it into a consumer's CI next to `esk-init --check` so a repo that was never genesis'd, or that drifted
+  after, is a red build rather than a silent gap (issue #203 gap 2). It is also the decision function the
+  org-wide reconciliation bot branches on (ADR-0110), so one predicate drives both.
 - If the repo already has its **own** `gate-manifest.json` from a different system, `esk-genesis` refuses by
   default rather than reconcile against it (reconcile would delete gates it did not install). Adopt it
   deliberately with `--adopt-existing`, which backs the file up and keeps the existing gates as `repo-local`.

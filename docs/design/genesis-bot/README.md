@@ -11,8 +11,9 @@ remembering to run the installer per repo.
 This document and ADR-0110 are the design. **No bot code is in this repo, and none can be:** the bot is
 an org-level actor that must live in a governance repo and be granted org permissions a human has to
 approve once (see "The one human step that cannot be automated away"). What ships here is the design, the
-decision record, and the one buildable change the bot depends on (`esk-genesis --check`, specified below
-but not yet implemented). The build lands in the governance repo, tracked by issue #203 (gap 2).
+decision record, and the one buildable change the bot depends on (`esk-genesis --check`, specified below,
+**now implemented in this repo in ADR-0115**). The bot itself (which consumes `--check`) lands in the
+governance repo, tracked by issue #203 (gap 2).
 
 ## The problem, stated plainly
 
@@ -115,7 +116,7 @@ concerns, so a compromise of one is not automatically the other.
 
 ## The pieces, in detail
 
-### `esk-genesis --check` (the decision function, to be built)
+### `esk-genesis --check` (the decision function, built in ADR-0115)
 
 Today the installer's dry run exits 0 even when work is pending. `[observed]`
 `.claude/skills/bootstrap/scripts/esk-genesis.mjs` (the dry-run path returns success). A reconciliation
@@ -201,8 +202,8 @@ away; it isolates it to one deliberate, auditable act.
 - **It does not auto-merge.** Coverage still waits on a human merging each PR. By design. `[documented]`
 - **It will not adopt a repo running its own enforcement.** It honors `esk-genesis`'s refusal of a foreign
   manifest and reports such repos instead of forcing them. `[observed]` `[documented]`
-- **`--check` is specified here but not built.** It is the one code dependency, and it lands with the bot.
-  `[documented]`
+- **`--check` is now built in this repo (ADR-0115).** It was the one code dependency; what remains is the
+  bot that consumes it, which lands in the governance repo. `[documented]`
 - **The webhook path (instant coverage on repo creation) is deferred.** The daily sweep covers the same
   repos a day later with no standing infrastructure. `[documented]`
 
