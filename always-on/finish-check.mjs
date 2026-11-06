@@ -4,9 +4,10 @@
 // skills formula has left its proof for a file-changing task: order (the steps ran in order), build (tests moved
 // with the code, every new check can fail), prove (an evidence ledger, claim-lint, recorded checker exits),
 // review (a fresh-context review covering every changed file, no open HIGH/MEDIUM), encode (each caught mistake
-// became a tested rule), and the per-task receipt (issue #177). A read-only task ends at once. It FAILS CLOSED:
-// a crash, a missing task record for a change, or any unmet step is a BLOCK, because a Stop hook that exits any
-// way but 2 lets the turn end.
+// became a tested rule), the per-task receipt (issue #177), and - in a repo that adopted the skills - gate
+// coverage (ADR-0116, issue #203 gap 2: the repo is not un-gated or drifted, unless an operator waived it). A
+// read-only task ends at once. It FAILS CLOSED: a crash, a missing task record for a change, or any unmet step
+// is a BLOCK, because a Stop hook that exits any way but 2 lets the turn end.
 //
 // It is wired by the installer (issue #174 PR-B) for Stop and SubagentStop. Here is the engine and its contract;
 // the esk-init registration, operator waivers, hook-file protection, the self-test, the install canary, and the
@@ -19,6 +20,7 @@
 //   ESK_SKILLS_DIR   the skills dir (default .claude/skills)
 //   ESK_BLOCKS       a small JSON counter file for loop safety (per task)
 //   ESK_BLOCK_CAP    blocks-in-a-row before escalating instead of blocking (default 3; Claude Code caps at 8)
+//   ESK_COVERAGE_WAIVER_TTL_DAYS  days an operator coverage waiver stays valid before it lapses (default 30; 0 = never)
 // When ESK_TASK_RECORD is unset the engine is not wired: it emits a NOTICE and lets the turn end, so it never
 // breaks a machine that has not installed it (the install is the bootstrap step).
 //
@@ -97,11 +99,11 @@ process.stdin.on("end", () => {
     // already tracks the run, so the cap alone is the trigger.
     const priorBlocks = readBlocks();
     if (priorBlocks >= blockCap) {
-      const missing = [...(changed.length ? evaluate(recordPath, changed) : []), ...subProblems];
+      const missing = [...(changed.length ? evaluate(recordPath, changed) : []), ...(changed.length ? coverageProblems() : []), ...subProblems];
       allow(`escalated after ${priorBlocks} block(s) in a row: the task is ending with these still missing - ${missing.length ? missing.join("; ") : "none"}. Operator: review before accepting.`);
     }
 
-    const missing = [...(changed.length ? evaluate(recordPath, changed) : []), ...subProblems];
+    const missing = [...(changed.length ? evaluate(recordPath, changed) : []), ...(changed.length ? coverageProblems() : []), ...subProblems];
     if (missing.length) block(missing);
     // Reset the block counter on a clean finish.
     if (blocksPath) { try { writeFileSync(blocksPath, JSON.stringify({ count: 0 })); } catch { /* best effort */ } }
@@ -152,6 +154,76 @@ function operatorWaivers() {
   return WAIVERS;
 }
 function waived(step) { return operatorWaivers().some((w) => w && w.step === step && w.by === "operator" && str(w.reason)); }
+
+// A COVERAGE waiver (ADR-0116) is an operator entry {step:"coverage", by:"operator", reason, date?}. Unlike a
+// formula-step waiver it also LAPSES: it counts only while its affirmation `date` is within
+// ESK_COVERAGE_WAIVER_TTL_DAYS (default 30; 0 = never expires), so a one-time "ship it anyway" cannot silently
+// become permanent. A missing or unparseable date under a non-zero TTL does NOT count (fail toward enforcement).
+// It reuses the SAME operator waivers file and the same agent-cannot-self-waive property as every other step
+// (ADR-0101); the generic waived() above is left unchanged for the formula steps.
+function coverageWaived() {
+  const raw = process.env.ESK_COVERAGE_WAIVER_TTL_DAYS;
+  const parsed = raw == null || raw === "" ? 30 : Number(raw);
+  const ttl = Number.isFinite(parsed) && parsed >= 0 ? parsed : 30;
+  for (const w of operatorWaivers()) {
+    if (!w || w.step !== "coverage" || w.by !== "operator" || !str(w.reason)) continue;
+    if (ttl === 0) return true; // never expires
+    const t = Date.parse(w.date);
+    if (!Number.isFinite(t)) continue; // no/invalid affirmation date: does not count under a TTL
+    const ageDays = (Date.now() - t) / 86400000;
+    if (ageDays >= 0 && ageDays <= ttl) return true;
+  }
+  return false;
+}
+
+// Resolve the esk-genesis installer whose --check verdict we trust. Prefer the repo's OWN mirrored copy (so the
+// verdict matches what the repo's own CI would show: installed gates vs this repo's committed manifest), else
+// finish-check's sibling clone. Returns null when neither exists (handled as fail-closed by the caller).
+function genesisScript(root) {
+  const rel = join(".claude", "skills", "bootstrap", "scripts", "esk-genesis.mjs");
+  const own = root ? join(root, rel) : null;
+  if (own && existsSync(own)) return own;
+  const sibling = join(here, "..", rel);
+  return existsSync(sibling) ? sibling : null;
+}
+
+// Coverage precondition (ADR-0116, issue #203 gap 2): a file-changing task in an ADOPTED repo cannot end while
+// the repo is un-gated or drifted. "Adopted" is an in-repo opt-in signal (the repo-level .claude/.esk-installed
+// marker esk-init writes, or the enterprise-gates workflow), so a user-level enforce install never nags an
+// unrelated repo. finish-check decides WHETHER to ask (adoption); the VERDICT is delegated to esk-genesis --check
+// (ADR-0115), the one owner of "covered", so coverage logic is never re-derived here. FAILS CLOSED: any error
+// assessing coverage returns a problem (a BLOCK via missing[]), never a silent skip. Operator-waivable with a TTL
+// (coverageWaived). The caller runs it only for a file-changing task.
+function coverageProblems() {
+  try {
+    if (coverageWaived()) return [];
+    const root = ROOT || process.cwd();
+    // The skills SOURCE repo (this upstream) is not a consumer of its own travelling gates: its own CI enforces
+    // them directly, and esk-genesis --check reports the source itself as "drift" (it is not genesis'd onto
+    // itself). Never coverage-block it. Identified by the PAIR esk-init's own repo-root walk uses (the directive
+    // AND its emitter), not the directive doc alone, so a stray hand-copied directive file cannot accidentally
+    // exempt a real consumer. Matches the enforcement-nudge, which "fires only in a consumer, never in this
+    // upstream repo"; esk-init never mirrors always-on/ into a consumer, so a genesis'd consumer never has this pair.
+    if (existsSync(join(root, "always-on", "enterprise-skills-always-on.md")) && existsSync(join(root, "always-on", "emit-directive.mjs"))) return [];
+    const adopted = existsSync(join(root, ".claude", ".esk-installed")) || existsSync(join(root, ".github", "workflows", "enterprise-gates.yml"));
+    if (!adopted) return []; // not opted in: never nag an unrelated repo
+    // Manifest-absent shortcut: a conscious, stated choice (arch-review F1). esk-genesis --check also reports an
+    // absent manifest as exit 1 (un-gated), so this does not create a new owner of the verdict; it is a
+    // spawn-avoidance optimization that gives a clearer, actionable message, and must track esk-genesis's exit-1
+    // "manifest/workflow absent = un-gated" definition. The PRESENT-manifest drift verdict stays delegated below.
+    if (!existsSync(join(root, "gate-manifest.json"))) {
+      return [`coverage: this repo adopted the enterprise skills but has no gates installed (no gate-manifest.json). Run "esk-genesis --yes" to install them (Claude will ask you to approve it), or record an operator coverage waiver (#203).`];
+    }
+    const gen = genesisScript(root);
+    if (!gen) return [`coverage: a gate-manifest.json is present but the esk-genesis installer could not be found to verify it; failing closed. Re-run esk-init, or record an operator coverage waiver.`];
+    const r = spawnSync(process.execPath, [gen, "--check"], { encoding: "utf8", cwd: root });
+    if (r.status === 0) return [];
+    if (r.status === 1) return [`coverage: the installed gates are drifted or incomplete (esk-genesis --check reported un-gated/drift). Run "esk-genesis --yes" to reconcile, or record an operator coverage waiver.${(r.stdout || r.stderr) ? `\n${((r.stdout || "") + (r.stderr || "")).trim()}` : ""}`];
+    return [`coverage: gate coverage could not be assessed (esk-genesis --check exit ${r.status === null ? "null" : r.status}${r.error ? `, ${r.error.message}` : ""}); failing closed. Fix the gate source or record an operator coverage waiver.`];
+  } catch (e) {
+    return [`coverage: the coverage check failed (${e && e.message}); failing closed.`];
+  }
+}
 
 // Parent-side subagent coverage (issue #176): read the subagent ledger (one JSONL line per subagent hand-back, written
 // by subagent-check.mjs) and return a problem for every entry whose changed files were not covered by a receipt -
