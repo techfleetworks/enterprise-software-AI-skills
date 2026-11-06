@@ -29,6 +29,8 @@ work is true or good. A human review is still required. This is the floor, not t
   - `ESK_BLOCKS` - a JSON counter file for loop safety (per task); derived per session when unset.
   - `ESK_BLOCK_CAP` - blocks in a row before escalating instead of blocking again (default 3; Claude Code
     caps stop-hook blocks at 8).
+  - `ESK_COVERAGE_WAIVER_TTL_DAYS` - days an operator coverage waiver stays valid before it lapses (default 30;
+    `0` means never expires). See the coverage group and the operator-waiver section below (ADR-0116).
 - **Changed files** are derived from the transcript, not from the record: the hook walks the transcript for
   edit-tool (`Write`/`Edit`/`MultiEdit`/`NotebookEdit`) `file_path`s. A task that changed nothing is
   read-only and ends at once.
@@ -117,6 +119,15 @@ lists every operator waiver in effect at the start of the next session, so a wai
 process is surfaced to the operator rather than honored silently. Prevention needs OS-level managed settings
 (see `always-on/README.md`).
 
+The **coverage** step (ADR-0116) takes the same operator entry, plus an optional `date`, and it LAPSES: it is
+honored only while that affirmation date is within `ESK_COVERAGE_WAIVER_TTL_DAYS` (default 30; `0` = never), so a
+one-time "ship it anyway" cannot silently become permanent. A missing or unparseable `date` under a non-zero TTL
+does not count (fail toward enforcement):
+
+```jsonc
+[ { "step": "coverage", "by": "operator", "reason": "throwaway spike, gates would be overkill", "date": "2026-11-06" } ]
+```
+
 ## What each group checks
 
 | Group   | Holds the turn when                                                                                               |
@@ -127,6 +138,7 @@ process is surfaced to the operator rather than honored silently. Prevention nee
 | review  | `freshContext !== true`; `timedOut === true`; a changed file has no matrix row, or a row missing a `verdict`+`source` for any question; `logged !== true`; an open high/medium/critical finding that is not `fixed`/`waived` |
 | encode  | a finding with `fixed === true` has neither a non-empty `rule` nor a non-empty `reason`                           |
 | receipt | `task-receipt.mjs check` exits non-zero over the task's changed files (missing, empty, stale, ungrounded, uncovered, or hash-mismatched receipt) |
+| coverage | the repo ADOPTED the skills (a repo-level `.claude/.esk-installed` marker or a `.github/workflows/enterprise-gates.yml`) but is un-gated (no `gate-manifest.json`) or `esk-genesis --check` reports drift/cannot-assess; a repo that never opted in is never checked (ADR-0116) |
 
 Any single unmet item is a BLOCK (exit 2) whose message names the item and its fix. A step may be skipped
 only with an operator waiver in the operator waivers file above (the agent cannot write its own; the finish-check
